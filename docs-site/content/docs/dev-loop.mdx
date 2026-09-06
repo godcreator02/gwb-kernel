@@ -1,0 +1,69 @@
+---
+title: 怎么跑、怎么验
+description: 第一次跑起来要做什么、门禁是哪几条、为什么这个仓的验收大半靠实机
+livedoc: none
+---
+
+# 怎么跑、怎么验
+
+## 第一次跑
+
+```powershell
+pnpm install
+pnpm start
+```
+
+`pnpm install` 会顺带把 Electron 的二进制取下来。这一步有个坑值得知道：**electron 这个包
+本身不带 `postinstall`**（它的 `scripts` 是 `null`），二进制得显式跑一次 `install.js` 才会
+落到 `dist/`。不跑的症状是装完起不来，而 pnpm 一声不吭。这里在 `apps/desktop` 挂了一条
+自己的 `postinstall` 补上，`.npmrc` 里配了 npmmirror 镜像（GitHub 直连拉不动）。
+
+`pnpm start` 等于 `electron-vite build && electron .`：构建三个 target（主进程、preload、
+渲染层）再直接跑。**开发期不必全量构建别的东西**——这个仓眼下就一个应用包。
+
+跑起来之后 home 在 `%APPDATA%/gwb-kernel/home`。第一次启动它是空的，只有一个
+`package.json`；要看到界面，得往里装一个声明了 `gwb.shell` 的件，并在 `cordis.yml` 里
+写上条目。怎么写见[写一个件](/docs/plugin)。
+
+## 门禁
+
+```powershell
+pnpm check   # typecheck 全仓 + vitest
+```
+
+提交前跑它。它**不依赖构建产物**：typecheck 和 vitest 吃的都是源码，所以「没 build」和
+「门禁全绿」不冲突。
+
+## 写代码先写测试，但只测该测的
+
+这个仓写逻辑之前先写测试。TDD 在这里最大的用处不是保证正确，是**它自己会把代码逼成可测的
+形状**：写不出测试的那一刻，就知道该把纯逻辑从副作用里抠出来了。
+
+但判据是**「跑它要不要起一个 Electron 或一个子进程」**，不是「这段重不重要」。按这条，
+四刀里能测的只有三块纯逻辑：
+
+| 测什么 | 在哪 |
+| --- | --- |
+| 行协议的解析与路由 | `src/shared/protocol.ts` |
+| 条目解析、入口四档、位查找与越界 | `src/shared/entries.ts` |
+| `gwb://` 的 URL 解析 | `src/shared/asset-url.ts` |
+
+其余——`spawn`、`BrowserWindow`、fd3 流、`protocol.handle`、pnpm 转发——一律归实机验证。
+硬凑自动化只会得到一堆脆弱的桩。
+
+## 实机验证怎么做
+
+起一次，看两处：宿主的 stderr（挂载逐条结果）和渲染层的 console（主进程把它转到终端了）。
+
+装机那一刀的验收必须**在真 registry 上做**。本机 Verdaccio 在 `http://127.0.0.1:4873/`，
+用户级 `~/.npmrc` 把 `@godcreator02` 这个 scope 指向它。
+
+有个具体例子说明为什么实机不可省：首启建 home 那段曾经有个 bug——推荐列表是空表时，装机
+会提前返回，`ensureHomeManifest` 轮不到，于是 `package.json` 建不出来，「装过了」永远判不
+成立，每次启动都当新 home。**单测抓不着这个**，因为它是两个正确函数的组合顺序错了。实机
+起一次，`home` 目录空着，一眼就看见。
+
+## 一个会话一个干净 home
+
+验「从零装机」这类事，把 `%APPDATA%/gwb-kernel/home` 整个删掉再起。别复用上一次留下的
+——里头是若干个不同时刻手工放进去的件，验什么都不算数。

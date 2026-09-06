@@ -74,6 +74,22 @@ god 工作台的最小内核。母仓 `god-workbench`（`D:\unitfolders\26090412
 路径、包名、命令的部分都要按这个仓翻译一遍**，别照抄。坐在本仓时它们不进上下文，按上面
 的路径直接 Read。
 
+## 文档
+
+正本在 `docs-site/content/docs/`,fumadocs 站,`pnpm --filter gwb-kernel-docs-site dev`
+起在 4314。
+
+**仓根 `README.md` 是生成物,别手改**——正本是 `content/docs/readme.mdx`,改完在
+`docs-site` 跑 `pnpm livedoc render --target ai` 重摆,跟源一起提交。`pnpm livedoc check`
+判生成物跟源一致。
+
+**livedoc 的引用（钉源码）一条都没写,这是有意的**:文档还没到「对代码说具体的话」那一步,
+钉了只会把没定型的结构冻起来。等某一页开始讲某个文件里的某几行,那一页再写
+`@@livedoc ref` 记号。接线已经在位——`livedoc.config.mjs`、`source.config.ts`、
+`mdx.tsx` 里那个会画状态点的 `pre` 都配好了,写第一条引用时不用再动配置。
+
+文档站有自己的依赖树与构建,**不进根 `pnpm check`**。
+
 ## 蹲住这条线
 
 这个仓最容易死的方式不是写不出来，是**慢慢长回母仓的样子**——每一条「顺手加上」的
