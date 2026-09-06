@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { Context } from 'cordis'
 import { parseCommandLine, type HostMessage } from '../shared/protocol'
 import { parseEntries, pluginDir, pluginMeta, resolvePlugin, type Entry } from '../shared/entries'
+import { ensureHomeManifest, homeInstalled, installPackages, RECOMMENDED } from './install'
 
 /**
  * 宿主子进程入口（纯 node，由主进程以 ELECTRON_RUN_AS_NODE 拉起）。
@@ -89,8 +90,26 @@ function kernelInfo(): unknown {
   }
 }
 
+const installEnv = {
+  homeDir: dataDir,
+  pnpm: process.env.GWB_PNPM ?? '',
+  log: (line: string) => console.error(`[install] ${line}`),
+}
+
+/** 装机口。装完不重挂:换模块是另一件事,重启就好——真嫌烦了再说 */
+async function kernelInstall(args: unknown): Promise<unknown> {
+  const specs = (args as { specs?: unknown })?.specs
+  if (!Array.isArray(specs) || specs.some((s) => typeof s !== 'string')) {
+    return { ok: false, error: 'kernel.install 要 { specs: string[] }' }
+  }
+  if (installEnv.pnpm === '') return { ok: false, error: '没有可用的 pnpm（GWB_PNPM 没传下来）' }
+  const result = await installPackages(installEnv, specs as string[])
+  return result.ok ? { ok: true, data: { installed: specs, note: '重启后生效' } } : result
+}
+
 async function dispatch(payload: { command: string; args?: unknown }): Promise<unknown> {
   if (payload.command === 'kernel.info') return kernelInfo()
+  if (payload.command === 'kernel.install') return kernelInstall(payload.args)
   const cli = ctx.cli
   if (!cli) return { ok: false, error: `没有命令服务，认不出 ${payload.command}` }
   return cli.run(payload.command, payload.args)
@@ -111,7 +130,21 @@ rl.on('line', (line) => {
   )
 })
 
-void mountAll().then(() => {
-  console.error(`[host] up，dataDir=${dataDir}，挂上 ${mounted.filter((m) => m.ok).length}/${mounted.length}`)
-  send({ t: 'ready' })
-})
+/**
+ * 首启:home 还不是个包就建出来,按推荐列表装一遍。装过了一概不碰——不自动升级。
+ * 建 package.json 排在装之前而且不由装机代劳:推荐列表空的时候也得建出来,
+ * 不然「装过了」永远判不成立,每次启动都当新 home。
+ */
+async function firstRun(): Promise<void> {
+  if (homeInstalled(dataDir)) return
+  console.error(`[install] 新 home:${dataDir}`)
+  ensureHomeManifest(dataDir)
+  await installPackages(installEnv, [...RECOMMENDED])
+}
+
+void firstRun()
+  .then(mountAll)
+  .then(() => {
+    console.error(`[host] up，dataDir=${dataDir}，挂上 ${mounted.filter((m) => m.ok).length}/${mounted.length}`)
+    send({ t: 'ready' })
+  })

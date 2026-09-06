@@ -36,6 +36,8 @@ export function startHost(env: HostEnv): Promise<Host> {
         ELECTRON_RUN_AS_NODE: '1',
         GWB_DATA_DIR: env.dataDir,
         GWB_VERSION: env.version,
+        // 装机转发的 pnpm 随应用自带,不看 PATH 上有没有
+        GWB_PNPM: path.resolve(here, '../../node_modules/pnpm/bin/pnpm.cjs'),
       },
       stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
       windowsHide: true,
