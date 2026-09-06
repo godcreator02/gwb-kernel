@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit -p ../../tsconfig.json"
   },
   "dependencies": {
-    "cordis": "4.0.0-rc.9"
+    "cordis": "4.0.0-rc.9",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

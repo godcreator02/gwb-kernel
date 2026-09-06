@@ -46,12 +46,12 @@ button.onclick = () => {
 
 root.append(title, note, button, box)
 
-// 第一刀的自检:开页就走一遍全程,结果进 console（主进程转终端）。
+// 自检:开页走两条——内核自省口一条，插件注册的命令一条（后者证明挂上的件真活着）。
 // 第三刀接上外壳之后这段删掉——那时「通没通」由界面本身证明
-void window.gwb.command('kernel.info').then(
-  (res) => {
-    box.textContent = JSON.stringify(res, null, 2)
-    console.log(`SELFCHECK ${JSON.stringify(res)}`)
+void Promise.all([window.gwb.command('kernel.info'), window.gwb.command('probe.hello', { n: 1 })]).then(
+  ([info, viaPlugin]) => {
+    box.textContent = JSON.stringify({ info, viaPlugin }, null, 2)
+    console.log(`SELFCHECK ${JSON.stringify({ info, viaPlugin })}`)
   },
   (err: unknown) => console.log(`SELFCHECK FAILED ${String(err)}`),
 )
