@@ -37,6 +37,17 @@ god 工作台的最小内核。母仓 `god-workbench`（`D:\unitfolders\26090412
 
 哪天某一条真的被用的时候撞上了，那时再补——**补的时候要连着「它拦住了什么」一起记下来**。
 
+## 别让打包器的形状渗进源码
+
+源码的 `import` 写法不许被打包产物的形状绑架。母仓 `main/index.ts` 顶上那条注释是反面
+教材——「裸名 import：alias 钉到 packages 源码内联进本束，因为 asar 里没有 node_modules」，
+源码的写法被 asar 的行为反向决定了。
+
+这里主进程走正常的包解析，不依赖「平台包被内联进束」。构建用 electron-vite、打包**到期
+再选**（第四刀之后，那时手上会有一个确定的问题:pnpm 怎么进产物）。Electron Forge 的
+`plugin-vite` 至今仍是 experimental，且 electron-vite 是它的上游——现在换是从上游退到
+下游，而前三刀根本不碰打包层。把门开着就行，别提前决定。
+
 ## 插件契约：起步沿用，跑通再收
 
 新内核实现的是母仓同一套 `gwb-plugin-api` 面（条目形状、命令通道、`gwbKernel` 服务、

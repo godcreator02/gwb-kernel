@@ -1,0 +1,25 @@
+{
+  "name": "@godcreator02/gwb-kernel-desktop",
+  "private": true,
+  "productName": "gwb-kernel",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "out/main/index.mjs",
+  "scripts": {
+    "//postinstall": "electron 这个包不带 postinstall（scripts 为 null），二进制得显式跑 install.js 才落到 dist/。不跑的症状是装完起不来，且 pnpm 一声不吭。install.js 自己判 dist 在不在，重复跑不花钱",
+    "postinstall": "node node_modules/electron/install.js",
+    "start": "electron-vite build && electron .",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json"
+  },
+  "dependencies": {
+    "cordis": "4.0.0-rc.9"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "electron": "44.1.1",
+    "electron-vite": "^5.0.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "gwb-kernel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "pnpm --filter @godcreator02/gwb-kernel-desktop start",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
