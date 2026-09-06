@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { entryFile, parseEntries, resolvePlugin } from '../src/host/entries'
+import { entryFile, parseEntries, resolvePlugin } from '../src/shared/entries'
 
 describe('parseEntries', () => {
   it('读出条目', () => {
@@ -66,6 +66,17 @@ describe('entryFile', () => {
 
   it('读不到清单给 undefined', () => {
     expect(entryFile(path.join(tmp, 'node_modules', 'nope'))).toBeUndefined()
+  })
+
+  it('认子路径', () => {
+    const dir = makePkg('@a/sub', { exports: { '.': './i.js', './client': './c.js' } }, ['i.js', 'c.js'])
+    expect(entryFile(dir, './client')).toBe('./c.js')
+    expect(entryFile(dir, './nope')).toBeUndefined()
+  })
+
+  it('子路径不落 main/index——那两样只说主入口是谁', () => {
+    expect(entryFile(makePkg('@a/sub2', { main: './m.js' }, ['m.js']), './client')).toBeUndefined()
+    expect(entryFile(makePkg('@a/sub3', {}, ['index.js']), './client')).toBeUndefined()
   })
 })
 

@@ -2,14 +2,23 @@ import electron from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { hostCommand, killHost, startHost, type Host } from './host-process'
+import { handleAsset } from './asset'
 
 /**
  * GUI 主进程：开一扇窗、起一个宿主、把两头接上。
- * 内核的「载体」与「桥」就在这个文件加 host-process.ts 里，别的都不该往这儿长。
+ * 内核的「载体」与「桥」就在这个文件加 host-process.ts / asset.ts 里，别的都不该往这儿长。
  */
 
-const { app, BrowserWindow, ipcMain } = electron
+const { app, BrowserWindow, ipcMain, protocol } = electron
 const here = path.dirname(fileURLToPath(import.meta.url))
+
+// 必须在 app ready 之前、模块顶层声明:晚了这个 scheme 当不成模块脚本的源,而且静默失效
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'gwb',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
+])
 
 let host: Host | null = null
 let win: electron.BrowserWindow | null = null
@@ -41,8 +50,11 @@ async function createWindow(): Promise<void> {
 void app
   .whenReady()
   .then(async () => {
+    const dataDir = path.join(app.getPath('userData'), 'home')
+    // 处理器随进程存亡,不像监听端口要管生命周期
+    protocol.handle('gwb', (request) => handleAsset(path.join(dataDir, 'node_modules'), request))
     host = await startHost({
-      dataDir: path.join(app.getPath('userData'), 'home'),
+      dataDir,
       version: app.getVersion(),
       onEvent: (payload) => win?.webContents.send('gwb:event', payload),
     })

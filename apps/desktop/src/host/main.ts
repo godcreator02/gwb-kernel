@@ -4,7 +4,7 @@ import readline from 'node:readline'
 import { pathToFileURL } from 'node:url'
 import { Context } from 'cordis'
 import { parseCommandLine, type HostMessage } from '../shared/protocol'
-import { parseEntries, resolvePlugin, type Entry } from './entries'
+import { parseEntries, pluginDir, pluginMeta, resolvePlugin, type Entry } from '../shared/entries'
 
 /**
  * 宿主子进程入口（纯 node，由主进程以 ELECTRON_RUN_AS_NODE 拉起）。
@@ -37,11 +37,13 @@ declare module 'cordis' {
   }
 }
 
-/** 挂载结果:每条一句话，说得出为什么没挂上 */
+/** 挂载结果:每条一句话，说得出为什么没挂上。pkg 与 shell 给渲染层挑外壳用 */
 interface Mounted {
   id: string
   ok: boolean
   why?: string
+  pkg?: string
+  shell?: boolean
 }
 
 const mounted: Mounted[] = []
@@ -50,13 +52,15 @@ async function mountEntry(entry: Entry): Promise<Mounted> {
   if (entry.disabled === true) return { id: entry.id, ok: false, why: '条目被禁用' }
   const file = resolvePlugin(entry.name, siteDir)
   if (file === undefined) return { id: entry.id, ok: false, why: `位里没有 ${entry.name}（或入口文件不在）` }
+  const shell = pluginMeta(pluginDir(entry.name, siteDir))?.shell === true
   try {
     const mod: unknown = await import(pathToFileURL(file).href)
-    ctx.plugin(mod as never, entry.config ?? {})
-    return { id: entry.id, ok: true }
+    // 模块的形状运行时才知道,类型上没什么可说的——照 cordis 的约定原样转发
+    ;(ctx.plugin as (plugin: unknown, config: unknown) => void)(mod, entry.config ?? {})
+    return { id: entry.id, ok: true, pkg: entry.name, shell }
   } catch (err) {
     // 一个坏件不拖垮别的:记下原因，接着挂下一条
-    return { id: entry.id, ok: false, why: String(err) }
+    return { id: entry.id, ok: false, why: String(err), pkg: entry.name, shell }
   }
 }
 

@@ -1,59 +1,56 @@
+import { clientUrl } from '../../shared/asset-url'
+
 /**
- * 第一刀的渲染层:一张写死的页,只为证明桥是通的。
- * 第三刀接上 gwb:// 与外壳之后,这里会退成「找外壳、把 #root 交出去」。
+ * 渲染层本体:找到外壳件、把 #root 交给它,再没别的。
+ * 一切 UI 在外壳与各件的 client 束里。没有外壳就留白——按仓规不在图形界面上
+ * 解释失败,原因进 console（主进程转终端）,出路走命令行。
  */
+
+interface EntryView {
+  id: string
+  ok: boolean
+  why?: string
+  pkg?: string
+  shell?: boolean
+}
+
+interface ShellModule {
+  mountShell?: (args: { host: { call: (command: string, args?: unknown) => Promise<unknown> } }, root: HTMLElement) => void
+}
 
 declare global {
   interface Window {
     gwb: {
-      command(command: string, args?: unknown): Promise<unknown>
+      command<T = unknown>(command: string, args?: unknown): Promise<T>
       onEvent(cb: (payload: unknown) => void): () => void
     }
   }
 }
 
-const root = document.getElementById('root')!
-root.style.cssText = 'font:14px ui-monospace,Consolas,monospace;padding:24px;line-height:1.7;'
-
-const title = document.createElement('h1')
-title.textContent = 'gwb-kernel · 第一刀'
-title.style.cssText = 'font-size:16px;margin:0 0 4px;'
-
-const note = document.createElement('p')
-note.textContent = '按钮打通:渲染层 → IPC → 主进程 → fd3 → 宿主子进程(cordis) → 原路回来'
-note.style.cssText = 'margin:0 0 16px;color:#666;'
-
-const button = document.createElement('button')
-button.textContent = '调 kernel.info'
-button.style.cssText = 'padding:6px 16px;cursor:pointer;'
-
-const box = document.createElement('pre')
-box.style.cssText = 'margin-top:16px;padding:12px;background:#f4f4f5;border-radius:8px;white-space:pre-wrap;'
-
-button.onclick = () => {
-  button.disabled = true
-  void window.gwb.command('kernel.info').then(
-    (res) => {
-      box.textContent = JSON.stringify(res, null, 2)
-      button.disabled = false
-    },
-    (err: unknown) => {
-      box.textContent = `失败:${String(err)}`
-      button.disabled = false
-    },
+async function boot(): Promise<void> {
+  const info = await window.gwb.command<{ ok?: boolean; data?: { entries?: EntryView[] } }>('kernel.info')
+  const entries = info.data?.entries ?? []
+  const shells = entries.filter((e) => e.ok && e.shell === true && e.pkg !== undefined)
+  if (shells.length === 0) {
+    console.error('[renderer] 没有外壳件挂上,界面到此为止。装一个 gwb.shell 为 true 的件,或看宿主日志')
+    return
+  }
+  // 一扇窗只交得出一个界面根,挑谁都是碰运气——所以不挑
+  if (shells.length > 1) {
+    console.error(`[renderer] 多条外壳同时挂上,不挑:${shells.map((s) => s.id).join('、')}`)
+    return
+  }
+  const pkg = shells[0]!.pkg!
+  const mod = (await import(/* @vite-ignore */ clientUrl(pkg))) as ShellModule
+  if (typeof mod.mountShell !== 'function') {
+    console.error(`[renderer] ${pkg} 的 client 没有 mountShell 导出`)
+    return
+  }
+  mod.mountShell(
+    { host: { call: (command, args) => window.gwb.command(command, args) } },
+    document.getElementById('root')!,
   )
+  console.log(`SHELL ${pkg}`)
 }
 
-root.append(title, note, button, box)
-
-// 自检:开页走两条——内核自省口一条，插件注册的命令一条（后者证明挂上的件真活着）。
-// 第三刀接上外壳之后这段删掉——那时「通没通」由界面本身证明
-void Promise.all([window.gwb.command('kernel.info'), window.gwb.command('probe.hello', { n: 1 })]).then(
-  ([info, viaPlugin]) => {
-    box.textContent = JSON.stringify({ info, viaPlugin }, null, 2)
-    console.log(`SELFCHECK ${JSON.stringify({ info, viaPlugin })}`)
-  },
-  (err: unknown) => console.log(`SELFCHECK FAILED ${String(err)}`),
-)
-
-export {}
+void boot().catch((err: unknown) => console.error(`[renderer] 起不来:${String(err)}`))
