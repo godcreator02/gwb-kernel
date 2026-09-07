@@ -1,6 +1,6 @@
 {
   "name": "@godcreator02/gwb-plugin-api",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "gwb-kernel 的词汇表：插件说话用的那几个名词，只命名不做事",
   "type": "module",
   "main": "dist/index.js",
