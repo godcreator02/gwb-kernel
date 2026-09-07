@@ -25,6 +25,16 @@ livedoc: none
 关窗语义都交出去，`BrowserWindow` 这个动作本身仍留在内核，因为在插件挂上之前就得有一扇窗
 让页面加载。
 
+**几个进程的输出也归载体接住**。主进程自己的、宿主 pipe 过来的、渲染层 `console-message`
+转来的，三处最后都汇在 `process.stderr` 上——劫持这一处就全在，这条流进 `<home>/logs/`
+（2 MB 切一段、留 20 份）。
+
+而**界面要的是另一回事**：日志窗格得按级别与来源筛，文本行给不了这个。所以四路日志各自在
+**源头**结构化成条目，进主进程的一圈环形缓冲，窗格从 preload 上取历史段、订阅实时。
+
+**缓冲与汇总在主进程**，不在宿主、也不在任何件：够得着四路的只有它，而且宿主崩了之后它还在
+——那正是最需要翻历史的时刻。判据见[定过的事](/docs/decisions)。
+
 ## 二、取址
 
 **内核自己不做这件事**，它只挂两样，其余全归它们：
@@ -61,19 +71,26 @@ livedoc: none
 | `@cordisjs/plugin-loader` | 应用依赖树，内核挂 | 条目树与模块加载。热挂卸是白得的 |
 | `@cordisjs/plugin-include` | 应用依赖树，内核挂 | 读 yml 成条目。有了它内核连 yml 都不必认识 |
 | `@cordisjs/plugin-timer` | home，走 yml 条目 | `ctx.setTimeout` 随件卸载自动收——原生的会在插件已卸载后触发 |
-| `@cordisjs/plugin-logger-console` | home，走 yml 条目 | cordis 本体自带 `LoggerService` 但没出口，它就是出口，接上内核已有的落盘线 |
 
-**不开的六个，各有理由**：
+**不开的七个，各有理由**：
+
+- `plugin-logger-console` —— **出口归内核自己那个全量 exporter**。做日志窗格时内核为了汇四路
+  必须挂一个全量出口，它跟这个件直接冲突：两个都在，同一句 cordis 日志打两遍。而且
+  「件的日志有没有出口」不该取决于某个件装没装——它曾经开着，也曾经**只是文档里开着**
+  （`RECOMMENDED` 一直是空表）
 
 - `plugin-hmr` —— **在这个架构下不起作用**：跑的是 home 里那份产物，盯仓内源码盯到变化
   也没有对应模块可换。除非哪天做「源码映射进 home」的开发模式
 - `plugin-http` / `plugin-server` —— **内核**没有外部访问需求。MCP 那条线后来真长出来了，
   但它是**件**（`@godcreator02/gwb-mcp`），而那个件自己起 `node:http`、这两个官方件也没装。
   顺带记一处订正：`plugin-http` 其实是 **HTTP 客户端**（`ctx.http`），本来就收不了请求
-- `plugin-config` / `plugin-webui` —— Koishi 生态的（"Manage your bots"、"UI for Koishi"）
+- `plugin-config` / `plugin-webui` —— **不是 Koishi 的**（那句判错了，见 decisions）。
+  `plugin-config` 已改名 `plugin-loader-webui`、版本上装得进来，但它硬 peer 一个 webui，
+  而 webui 要 `server`——为一个条目编辑器拖进 HTTP＋WebSocket
 - `plugin-database` —— 没有超出「件自己写文件」的需求
 - `@cordisjs/logger` —— 旧版，cordis 4.x 本体已自带
-- `@cordisjs/schema` —— 配置校验现在不需要
+- `@cordisjs/schema` —— cordis 3 遗物、已从官方仓删除；**配置校验 cordis 4 本体自带**
+  （`plugin.Config` 走 Standard Schema）
 
 **内核留下的那半**：`resolvePlugin` / `entryFile` 还在，但不管挂载了。它们是**主进程**的
 `gwb://` 在用——把插件的 `client.js` 交给页面时要知道包在哪，而 loader 跑在宿主子进程里，
@@ -107,6 +124,10 @@ livedoc: none
 **传消息**：渲染层经 IPC 到主进程，主进程经 fd3 到宿主，宿主分发给插件，原路回。协议是
 一行一条 JSON：命令下行走 stdin，宿主上行走 fd3（fd1 留给宿主自己的日志，混在一起就没法读）。
 
+**日志不走这条通道**：缓冲住在主进程，preload 上另有两条口直接拿（历史段与实时）。走命令
+的话请求要从缓冲旁边路过、绕到宿主再原路背回来，而**宿主一挂命令全废**——那恰恰是最需要看
+日志的时候。日志上行倒是走 fd3（宿主那一路的条目），跟命令回执共用一条管子。
+
 **传代码**：插件的浏览器那半住在 node 那边的 `node_modules` 里，页面得有一条取货通道。
 约定只一条 URL：
 
@@ -135,7 +156,7 @@ gwb://asset/plugins/<包名>/client.js
 | --- | --- | --- |
 | 一 | 两个世界通上了 | 页面调一条命令，穿过 IPC → fd3 → cordis 宿主再原路回；宿主 pid 独立、`node` 版本对得上 |
 | 二 | 能挂插件 | 三条条目分别是「挂上」「位里没有」「被禁用」，逐条对上；界面调到了那个件注册的服务 |
-| 三 | 看得见 | 外壳件的 `client.js` 经 `gwb://` 到了页面，`mountShell` 被调，外壳自己经 bridge 调命令走通 |
+| 三 | 看得见 | 外壳件的 `client.js` 经 `gwb://` 到了页面，`bootShell` 被调，外壳自己经 bridge 调命令走通 |
 | 四 | 能从零装出一套 | 删净 home 起一次建出 home；外壳调 `kernel.install` 从本机 registry 装下一个真包；重启后取址找到它、cordis 接受、挂上 |
 | 五 | **热挂载生效**、内核给得出信息 | 取址换成 loader + include；一个测试件在运行中 `create` 一条条目——那个件当场挂上，`remove` 之后当场卸载、清理 effect 真跑了，yml 自动写回；`ctx.gwbKernel` 四样对上；`emit` 的事件穿过 fd3 到了外壳 |
 

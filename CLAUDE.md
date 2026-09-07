@@ -32,8 +32,9 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 外加一份**词汇表**（`packages/gwb-plugin-api`）——它不做事，只命名。
 
 **取址内核自己不做**：只挂 `@cordisjs/plugin-loader` 加一条 `cordis:include` 条目，
-内核连 yml 都不认识。**开着的官方件**还有 `plugin-timer` 与 `plugin-logger-console`
-（装进 home 走 yml 条目）；`plugin-hmr` 等六个明确不开。
+内核连 yml 都不认识。**开着的官方件**还有 `plugin-timer`（装进 home 走 yml 条目）；
+`plugin-logger-console`（日志出口收归内核自己那个全量 exporter）与 `plugin-hmr`
+等七个明确不开。
 
 各自的判据、引导链、热挂载的形态见文档站。
 
