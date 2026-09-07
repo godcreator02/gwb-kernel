@@ -28,11 +28,24 @@ pnpm start
 ## 门禁
 
 ```powershell
-pnpm check   # typecheck 全仓 + vitest
+pnpm check   # typecheck 全仓 + oxlint + vitest
 ```
 
-提交前跑它。它**不依赖构建产物**：typecheck 和 vitest 吃的都是源码，所以「没 build」和
-「门禁全绿」不冲突。
+提交前跑它。它**不依赖构建产物**：typecheck、lint 和 vitest 吃的都是源码，所以「没 build」和
+「门禁全绿」不冲突。整条约 3 秒，其中 lint 不到 0.3 秒。
+
+`pnpm lint` 那段是 `oxlint . --type-aware --deny-warnings`，扫 **17 个 `.ts`**：`apps/desktop/src`
+11 个、`tests` 3 个、`electron.vite.config.ts`、`vitest.config.ts`、词汇表包 1 个。
+
+**这个数是靠人记的**——将来加了新包、新目录，忘了它在不在某份 tsconfig 里，它会静默留在 lint 面
+外，没有任何东西会说话。数不上就该去看一眼。
+
+**文档站不在里面**：它钉 `typescript ^6.0.3`，而 type-aware 要 TS 7+，tsgolint 给它建不出 program。
+它本来也不进根 build/test，自己有 `livedoc check` 与 `next build` 两道。
+
+两个 flag 都不是装饰：**不带 `--deny-warnings`，有诊断也照样 `exit 0`**（屏幕上有红字而门禁放行）；
+`--type-aware` 配置里已经开着，CLI 上再写一次是为了让「它没生效」变成看得见的错误，而不是静默
+降级成非类型模式——那是这条门禁最危险的失败形态，因为一切看起来都绿。
 
 ## 写代码先写测试，但只测该测的
 

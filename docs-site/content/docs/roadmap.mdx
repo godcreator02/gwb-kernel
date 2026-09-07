@@ -23,6 +23,7 @@ livedoc: none
 | 词汇表包 | 契约面只有五个名字 | 产物 729 字节，零运行时依赖 |
 | 文档三层分流 | 文档撒谎会被抓 | `walls.mdx` 钉住 14 处代码，`pnpm doc` 全绿 |
 | **运行时环境** | **React 件跑得起来** | 验收件的 shadcn 按钮在页面上样式正确（`oklch(0.21 …)` 精确等于令牌值）；亮暗切换当场变色、没有任何件重新构建 |
+| 门禁加一道 lint | **type-aware 真在跑，不是假装绿** | 双探针都报（`no-unused-vars` + `typescript/no-floating-promises`）；反向探针去掉 type-aware 后只剩前者；探针在时 `pnpm check` `exit 1`。基线 17 文件 / 111 规则 / 零诊断 |
 
 内核现在约 **795 行**（`apps/desktop/src` 757 + 词汇表包 38），对照母仓 5100。
 

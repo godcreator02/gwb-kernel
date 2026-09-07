@@ -30,7 +30,7 @@ god 工作台的正线：**最小的、能正常运行插件的那个版本**。
 ```powershell
 pnpm install
 pnpm start     # electron-vite build && electron .
-pnpm check     # typecheck + vitest,提交前跑
+pnpm check     # typecheck + oxlint + vitest,提交前跑
 ```
 
 home 落在 `%APPDATA%/gwb-kernel/home`。第一次启动它是空的——要看到界面，往里装一个
@@ -52,7 +52,9 @@ pnpm --filter gwb-kernel-docs-site dev     # http://localhost:4314
 
 **代码注释只写现状**——为什么这么写、撞过什么、症状是什么，全在文档站的「撞过的墙」
 那一页，并且用 livedoc 钉在对应代码上：代码一改文档就报黄，得有人复核。
-`livedoc check` 已进 `pnpm check`。
+
+`livedoc check` **不在 `pnpm check` 里**——它要起文档站的解析链，太慢，每次跑测试都带上
+不值。单独两条 `pnpm doc` / `pnpm doc:confirm`，改了被钉住的代码就跑一次。
 
 这份 README 是生成物，正本是 `docs-site/content/docs/readme.mdx`，改完在 `docs-site` 跑
 `pnpm livedoc render --target ai` 重摆，一起提交。
