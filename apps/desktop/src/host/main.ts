@@ -51,8 +51,8 @@ declare module 'cordis' {
   interface Context {
     /** 内核的服务,根上下文 provide、永不撤销。件用契约包的 requireKernel 取 */
     gwbKernel: GwbKernelApi
-    /** 命令总线,由某个件提供;没装那个件就是 undefined */
-    cli?: { run(command: string, args?: unknown): Promise<unknown> }
+    /** 命令总线,由某个件提供;没装那个件就是 undefined。服务名一律 gwb 开头,见仓根 CLAUDE.md */
+    gwbCli?: { run(command: string, args?: unknown): Promise<unknown> }
   }
 }
 
@@ -95,7 +95,7 @@ function walkEntries(): EntryView[] {
   return out
 }
 
-/** 内核自省口。除它与 kernel.install 之外一律走 ctx.cli——本体不认识任何插件的命令名 */
+/** 内核自省口。除它与 kernel.install 之外一律走 ctx.gwbCli——本体不认识任何插件的命令名 */
 function kernelInfo(): unknown {
   const entries = walkEntries()
   return {
@@ -140,8 +140,8 @@ const kernelApi: GwbKernelApi = {
 async function dispatch(payload: { command: string; args?: unknown }): Promise<unknown> {
   if (payload.command === 'kernel.info') return kernelInfo()
   if (payload.command === 'kernel.install') return kernelInstall(payload.args)
-  const cli = ctx.cli
-  if (!cli) return { ok: false, error: `没有命令服务，认不出 ${payload.command}` }
+  const cli = ctx.gwbCli
+  if (!cli) return { ok: false, error: `没有命令服务（ctx.gwbCli），认不出 ${payload.command}` }
   return cli.run(payload.command, payload.args)
 }
 
