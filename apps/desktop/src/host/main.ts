@@ -141,12 +141,17 @@ function bootstrapLogExporter(): void {
  * exporter 还没接管时打出的日志绕回默认出口（那才是真回环）。
  */
 function adoptConsole(): void {
-  const log = ctx.logger('console')
-  console.debug = (...args: unknown[]) => log.debug(...args)
-  console.info = (...args: unknown[]) => log.info(...args)
-  console.log = (...args: unknown[]) => log.info(...args)
-  console.warn = (...args: unknown[]) => log.warn(...args)
-  console.error = (...args: unknown[]) => log.error(...args)
+  // 收窄成 rest 参数的形状:cordis logger 的方法签名不收数组展开,而 console.* 的
+  // 语义正好就是「参数列表原样递给渲染」
+  const log = ctx.logger('console') as unknown as Record<
+    'debug' | 'info' | 'warn' | 'error',
+    (...args: unknown[]) => void
+  >
+  console.debug = (...args) => log.debug(...args)
+  console.info = (...args) => log.info(...args)
+  console.log = (...args) => log.info(...args)
+  console.warn = (...args) => log.warn(...args)
+  console.error = (...args) => log.error(...args)
 }
 
 bootstrapLogExporter()

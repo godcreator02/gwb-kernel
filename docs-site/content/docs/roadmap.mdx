@@ -68,7 +68,7 @@ livedoc: none
 
 | 要做的 | 等什么 | 说明 |
 | --- | --- | --- |
-| **收编件的裸 `console.log`** | **真有件在裸 console 打日志** | 这是「一切」目前唯一的缺口：件裸 console 的话进得了文件、进不了窗格。到期时约 8 行（宿主里劫持 `console.*` 转 `ctx.logger`）。**那条死纪律这一轮已经先写对了**：exporter 投 stderr 用 `process.stderr.write`、不用 `console.error`，否则劫持之后就是自食其尾的无限循环 |
+| ~~**收编件的裸 `console.log`**~~ | ~~真有件在裸 console 打日志~~ | **到期了，做了**（约 8 行，宿主里 `adoptConsole()` 把 `console.debug/info/warn/error` 转 `ctx.logger('console')`，走 plugin 路）。同轮把主进程侧几处静默失败也接上了日志：`gwb://` 取件失败、命令超时、宿主没起来/已杀、`GWB_HOME` 不合规——过去这些只回给调用方或者干脆无声 |
 | **日志历史段跨启动** | **真要看上次那趟运行** | 眼下重启就清空，上次的去 `<home>/logs/` 翻文件。要跨启动得再写一份结构化 JSONL，那是净新增的第二份日志文件，两份不一致时没人说得清信哪份——到期时重新过第一关 |
 | **打包（出安装包）** | 真要分发的时候 | 那时才拿 electron-builder 与 Forge 各试一次，手上会有一个确定的问题：pnpm 怎么进产物 |
 | ~~**MCP / 外部访问**~~ | ~~真有 agent 要连进来~~ | **前提到了，做成件了**：`@godcreator02/gwb-mcp`（件仓 `26090709qzp`）。原来这条写着「那时装官方的 `plugin-http`/`plugin-server`」——**那句是错的**，见下 |
