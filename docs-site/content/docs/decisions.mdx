@@ -117,10 +117,13 @@ home 里那份产物，盯仓内源码盯到变化也没有对应模块可换）
 
 - **design token 共享一份**，独立成 `@godcreator02/gwb-tokens` 包，跟件平级装进 home，
   由外壳件注 `<link>` 引进页面
-- **组件源码每个件复制一份**。同源先靠手工，撞疼了再建 registry
+- **组件每个件自己从 shadcn 官方拉**（件里放一份 `components.json`，`shadcn add <名>`）。
+  **仓里没有任何「组件源」，也不建 registry**
 - **React 共享**，机制上内核零 UI 知识
 
-**代价**：组件改一处要改 N 个件，靠纪律；CSS scope 围栏与 Portal 逃逸这两件事躲不掉。
+**代价**：各件的组件版本会漂移（A 件三月拉的，B 件九月拉的）。**而这正是要的** ——
+件独立发版，各自决定什么时候跟进；统一风格由令牌保证，不由组件源码一致保证。
+CSS scope 围栏与 Portal 逃逸这两件事仍然躲不掉。
 
 **日期**：2026-09-07（同日落地，形状有三处细化：`gwb.shared` 由**提供方**声明「我提供
 这几个裸名」而不是消费方声明要什么；内核扫 home 清单的 `dependencies` 收集，不扫条目表；
@@ -204,19 +207,61 @@ peer**；只在实现内部用、不出现在导出面 → dev。
 落成先例：**两道关的第一关对工具链不适用**——它问的是「进内核还是做插件」，lint 两者都不是；
 第二关适用，而且要照常回答「现场是什么」。）
 
-排除②的理由是实测：母仓写 `categories.correctness = "off"` 再留 18 条白名单，**把 oxlint 唯一
-默认开启的那一类整个关掉**。那在母仓可能有理由（5100 行、9 个包，一次开全得先止血），这里没有
-这个前提——**基线跑出来是 17 个文件、111 条规则、零诊断**，那份白名单一分收益都换不到，却会把
-correctness 的盲区一起继承。判据是那条**代价不对称**：漏一条的代价是一个真 bug 溜进内核，开着
-的代价是几条误报要处置，而跑一次就知道有几条。
+排除②要先把一件事看清楚：**oxlint 默认开的那批本来就已经是筛过的**。规则总数 870，
+`default: true` 的只有 114 条（本仓实际生效 111），按类别是 correctness 112、style 1、
+suspicious 1——**style / pedantic / restriction 这些噪音类别默认一条都不开**。实际名单是
+`no-const-assign`、`no-dupe-keys`、`no-unreachable`、`use-isnan`、`missing-throw`、`erasing-op`
+这种，按 scope 分：eslint 58、typescript 28、oxc 14、unicorn 13，其中 16 条 type-aware。
+**「111 条」不是「111 条噪音」，是 oxlint 自己从 870 条里挑出来的「几乎肯定是错的」那批。**
+
+而母仓那 18 条**不是这 111 条的子集**——这一点最容易看错：18 条里 10 条本来就在默认集里，另外
+8 条是从 pedantic / suspicious 里额外捞出来的 `no-unsafe-*` 一族（`no-misused-promises`、
+`no-unsafe-argument` / `-assignment` / `-call` / `-member-access` / `-return` / `-enum-comparison` /
+`-function-type`）。**所以那份配置的净效果是「砍掉 101 条 correctness，换来 8 条 `no-unsafe-*`」**，
+而那 8 条是为母仓 `GwbContext` 的 `[key: string]: any` 索引签名服务的——盯 any 扩散。
+
+三个口径在同一份代码上实测：
+
+| 口径 | 规则数 | 诊断 |
+| --- | --- | --- |
+| 只开默认 | 111 | **0** |
+| 母仓 18 条白名单 | 18 | **1** |
+| 两者并集 | 119 | 1 |
+
+那 1 条是 `apps/desktop/src/host/main.ts` 的 `typescript(no-unsafe-argument)`：
+`Unsafe spread of an any[] array type.`，出在保底日志出口的 `...message.args`——**是 cordis 自己
+把 `logger` 的 `args` 声明成 `any[]`**，不是本仓的 any。
+
+**判据**：正线仓没有 any 索引签名（cordis 的 `Context` 干净、词汇表包只加一个具名成员），
+`no-unsafe-*` 那族在这里唯一的收获就是这条第三方类型带进来的、实际无害的报警。而白名单的真代价
+不是「盲区」这么含糊——是**新规则永远进不来**：oxlint 升级新增的 correctness 规则，白名单口径下
+永远吃不到，得有人手工去追。
+
+**这条结论是有前提的**：将来代码里真出现 any 扩散（比如某个件的契约面漏了 any），那 8 条的价值
+就回来了，那时该回头看这一条。
 
 母仓文档站那张工具链表里，**oxlint 是唯一一件没写选型理由的工具**——这一条正好补上那处空白。
 
 **定了**：`oxlint 1.81.0` + `oxlint-tsgolint 7.0.2001`，两个都**精确钉版**，`pnpm lint` 串进
-`pnpm check`（typecheck → lint → test）。四件实测撞出来的细节：
+`pnpm check`（typecheck → lint → test）。
 
-- **`plugins` 是覆盖不是追加**——只写 `["typescript"]` 时规则数从 111 掉到 84。要写就写全默认
-  那三个（`unicorn` / `typescript` / `oxc`）
+**配置文件只做三件事：指 schema、开 type-aware、排掉不该扫的目录。规则集完全交给默认。**
+两段一度写进去、后来删掉的东西，删的理由都不是审美：
+
+- **`plugins` 不写**。这个字段是**覆盖不是追加**——只写 `["typescript"]` 时规则数从 111 掉到 84。
+  那写全默认那三个（`unicorn` / `typescript` / `oxc`）行不行？行，但那等于没写（实测规则数一样
+  是 111），却多出一份**将来会跟默认漂移的手工名单**
+- **`no-unused-vars` 的 ignorePattern 不写**。oxlint 的这条规则**默认就把 `^_` 当豁免**
+  （`argsIgnorePattern` 默认忽略 `_` 开头、`varsIgnorePattern` 默认 `^_`），文档还特意注明这跟
+  ESLint 与 typescript-eslint 不同——那两个从不提供默认 pattern。**母仓那三行是 ESLint 时代的
+  遗产**，抄进 oxlint 就是冗余。`caughtErrorsIgnorePattern` 文档没说默认值，等真撞到
+  `catch (_err)` 被报再加
+
+这两处正好是这条决定的主题在小尺度上的重演：**抄母仓时最容易顺手带进来的，是那些在新工具下
+已经不需要的东西。**
+
+其余实测撞出来的细节：
+
 - **`--deny-warnings` 不能省**：不带它，4 条诊断照样 `exit 0`——屏幕上有红字而门禁放行
 - **`ignorePatterns` 相对配置文件所在目录解析**（拿临时配置做反向探针时，`docs-site/**` 因此没
   匹配上，文件数从 17 变 28）

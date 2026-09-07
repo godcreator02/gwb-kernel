@@ -1,16 +1,5 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "options": { "typeAware": true },
-  "plugins": ["unicorn", "typescript", "oxc"],
-  "ignorePatterns": ["**/node_modules", "**/out", "**/dist", "**/lib", "docs-site/**"],
-  "rules": {
-    "no-unused-vars": [
-      "error",
-      {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_",
-        "caughtErrorsIgnorePattern": "^_"
-      }
-    ]
-  }
+  "ignorePatterns": ["**/node_modules", "**/out", "**/dist", "**/lib", "docs-site/**"]
 }
