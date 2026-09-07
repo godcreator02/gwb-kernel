@@ -19,7 +19,7 @@ livedoc: none
 
 内核在挂 loader 之前注册一个 exporter，只管 error：
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="206-215" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="210-219" */}
 
 **loader 没有吞错误**，它老老实实写着 `.catch(error => this.ctx.logger.error(error))`。问题
 在下游：cordis 的 `LoggerService` 把消息存进 `buffer`，**没有 exporter 就没有出口**。而
@@ -41,13 +41,13 @@ livedoc: none
 
 ### `ctx.plugin` 是 thenable，不 await 服务就还没就位
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="217-224" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="221-228" */}
 
 **症状**：`ctx.loader` 是 `undefined`，报 `Cannot read properties of undefined (reading 'await')`。
 
 ### `baseUrl` 要设在根上下文
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="41-42" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="39-40" */}
 
 `Loader` 只把 `config.baseUrl` 设在**它自己 `extend` 出来的 ctx** 上（`this.ctx = ctx.extend({ baseUrl })`），
 而 `Include` 是挂在根上的。设在根上，两个都从那儿继承。
@@ -67,7 +67,7 @@ file URL。指向 home 之后 loader 自己就解析得到。
 
 ### `include` 走 loader 的 `builtins`，而且做成条目
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="220-223" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="224-227" */}
 
 `include` 住应用依赖树，而 baseUrl 指着 home——按裸名找不到它。loader 的 `import()` 对
 `cordis:` 前缀的名字直接从 `builtins` 表取、不经模块解析，所以挂 `builtins.include` 再用
@@ -79,7 +79,7 @@ file URL。指向 home 之后 loader 自己就解析得到。
 
 ### 承载 yml 那条条目的 id 写死为 `home`
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="26-27" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="24-25" */}
 
 条目 id 有层级（`<父>:<子>`）。不写死的话父 id 是随机的（`d9509601`），所有件的 id 跟着
 变成 `d9509601:shell`，**每次启动都不一样**——外壳按 panel id 存的布局就全对不上。
@@ -89,7 +89,7 @@ file URL。指向 home 之后 loader 自己就解析得到。
 
 ### `gwbKernel` 要在挂 loader 之前 provide
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="217-219" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="221-223" */}
 
 件一挂上就要取得到。晚一步的症状是第一批件全都读到 `undefined`。
 
@@ -119,7 +119,7 @@ Error: config file not found: …\homes\boot-2609070610\cordis.yml
 
 ### 建 home 的 `package.json` 不由装机代劳
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="198-203" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="196-207" */}
 
 推荐列表是空表时装机会提前返回（`specs.length === 0`），`ensureHomeManifest` 轮不到，
 于是 `package.json` 建不出来，「装过了」永远判不成立——**每次启动都当新 home**。
