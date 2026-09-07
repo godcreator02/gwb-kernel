@@ -88,8 +88,9 @@ pnpm 怎么进产物。
 **定了**：开 `plugin-loader`、`plugin-include`（内核挂）、`plugin-timer`、
 `plugin-logger-console`（装进 home）。不开 `plugin-hmr`（**在这个架构下不起作用**：跑的是
 home 里那份产物，盯仓内源码盯到变化也没有对应模块可换）、`plugin-http`/`plugin-server`
-（没有外部访问需求）、`plugin-config`/`plugin-webui`（Koishi 生态的）、`plugin-database`、
-`@cordisjs/schema`。
+（**内核**没有外部访问需求；另订正一处措辞：`plugin-http` 其实是 HTTP **客户端**
+`ctx.http`，本来就不是这一侧的候选，当时把两个写在一起是没查过）、
+`plugin-config`/`plugin-webui`（Koishi 生态的）、`plugin-database`、`@cordisjs/schema`。
 
 **代价**：没有 hmr，改件要重新构建发版装进 home。timer 与 logger-console 是普通件，
 **可以被停掉**——停掉 logger-console，件的日志就静默消失（内核自己的日志不受影响，

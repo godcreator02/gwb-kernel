@@ -67,7 +67,9 @@ livedoc: none
 
 - `plugin-hmr` —— **在这个架构下不起作用**：跑的是 home 里那份产物，盯仓内源码盯到变化
   也没有对应模块可换。除非哪天做「源码映射进 home」的开发模式
-- `plugin-http` / `plugin-server` —— 没有外部访问需求（MCP 那条线还不存在）
+- `plugin-http` / `plugin-server` —— **内核**没有外部访问需求。MCP 那条线后来真长出来了，
+  但它是**件**（`@godcreator02/gwb-mcp`），而那个件自己起 `node:http`、这两个官方件也没装。
+  顺带记一处订正：`plugin-http` 其实是 **HTTP 客户端**（`ctx.http`），本来就收不了请求
 - `plugin-config` / `plugin-webui` —— Koishi 生态的（"Manage your bots"、"UI for Koishi"）
 - `plugin-database` —— 没有超出「件自己写文件」的需求
 - `@cordisjs/logger` —— 旧版，cordis 4.x 本体已自带
