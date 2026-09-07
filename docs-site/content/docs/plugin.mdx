@@ -129,6 +129,35 @@ gwb://asset/plugins/<完整包名>/<exports 子路径>
 所以**换主题＝换那一份值，所有件当场跟着变，一个都不用重新构建**。件的表整张 scope 在
 `[data-gwb-plugin="<完整包名>"]` 之下，容器上不挂这个属性，一个类名都不生效。
 
+## 组件怎么来
+
+**每个件自己从 shadcn 官方拉**。件里放一份 `components.json`，然后就是一行命令：
+
+```
+pnpm dlx shadcn@latest add button
+```
+
+**没有「工作台的组件库」这种东西，也不建 registry。** 件之间的组件不需要一致 —— shadcn 的
+组件源码本来就是给你改的，A 件的 button 跟 B 件的不一样完全没关系。**统一风格由令牌保证，
+不由组件源码一致保证**，这两层是正交的。
+
+各件的组件版本会随着各自拉取的时间漂移，那正是想要的：件独立发版，各自决定什么时候跟进。
+
+配置上有三处要对齐，`@/` 一律指向 `src/client`：
+
+| 在哪 | 配什么 |
+| --- | --- |
+| `components.json` 的 `aliases` | `@/components`、`@/components/ui`、`@/lib`、`@/lib/utils` |
+| 两份 `tsconfig.json`（件根一份给 CLI 读、`src/client` 一份给 typecheck） | `paths: { "@/*": [...] }` |
+| 打包器 | esbuild 的 `alias`，指同一个目录 |
+
+两个容易撞的点：
+
+- **别写 `baseUrl`** —— TS 7 把它移除了（`TS5102`），而 shadcn 文档给的还是 `baseUrl + paths`
+  的老写法。TS 7 里 `paths` 直接相对 tsconfig 所在目录解析
+- `components.json` 的 **`tailwind.css` 必须指一个真实存在的文件**（`tailwind` 那个对象整个是
+  必填的）。件因此有一个 `src/client/styles.css` —— 它同时也是件写自己 CSS 规则的地方
+
 ## 外壳
 
 窗口里的那个界面根只交给一个件，叫**外壳**。件在包清单里这样声明自己是外壳：
