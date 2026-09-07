@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { Context } from 'cordis'
 import Loader from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
+import type { GwbKernelApi } from '@godcreator02/gwb-plugin-api'
 import { parseCommandLine, type HostMessage } from '../shared/protocol'
 import { pluginDir, pluginMeta } from '../shared/entries'
 import { ensureHomeManifest, homeInstalled, installPackages, RECOMMENDED } from './install'
@@ -48,6 +49,9 @@ ctx.baseUrl = pathToFileURL(dataDir + path.sep).href
 
 declare module 'cordis' {
   interface Context {
+    /** 内核的服务,根上下文 provide、永不撤销。件用契约包的 requireKernel 取 */
+    gwbKernel: GwbKernelApi
+    /** 命令总线,由某个件提供;没装那个件就是 undefined */
     cli?: { run(command: string, args?: unknown): Promise<unknown> }
   }
 }
@@ -106,15 +110,31 @@ const installEnv = {
   log: (line: string) => console.error(`[install] ${line}`),
 }
 
-/** 装机口。装完的件要生效,改 yml 让 include 重挂——装机本身不碰条目树 */
+/** 装机。装完的件要生效,由调用方去改条目树（loader 那边热挂),装机本身不碰树 */
+async function install(specs: string[]): Promise<{ ok: boolean; data?: { installed: string[] }; error?: string }> {
+  if (installEnv.pnpm === '') return { ok: false, error: '没有可用的 pnpm（GWB_PNPM 没传下来）' }
+  const result = await installPackages(installEnv, specs)
+  return result.ok ? { ok: true, data: { installed: specs } } : result
+}
+
+/** 装机的命令口。参数形状在这儿收窄一次,服务那条不必再判 */
 async function kernelInstall(args: unknown): Promise<unknown> {
   const specs = (args as { specs?: unknown })?.specs
   if (!Array.isArray(specs) || specs.some((s) => typeof s !== 'string')) {
     return { ok: false, error: 'kernel.install 要 { specs: string[] }' }
   }
-  if (installEnv.pnpm === '') return { ok: false, error: '没有可用的 pnpm（GWB_PNPM 没传下来）' }
-  const result = await installPackages(installEnv, specs as string[])
-  return result.ok ? { ok: true, data: { installed: specs } } : result
+  return install(specs as string[])
+}
+
+/**
+ * 内核给插件的那个服务。**在挂 loader 之前 provide**——件一挂上就要取得到,
+ * 晚一步的症状是第一批件全都读到 undefined。
+ */
+const kernelApi: GwbKernelApi = {
+  dataDir,
+  appVersion,
+  install,
+  emit: (payload) => send({ t: 'event', payload }),
 }
 
 async function dispatch(payload: { command: string; args?: unknown }): Promise<unknown> {
@@ -161,6 +181,7 @@ async function firstRun(): Promise<void> {
  * 条目表、fiber 状态、热挂卸全在一棵树里,外面只认 ctx.loader 一个入口。
  */
 async function bootLoader(): Promise<void> {
+  ctx.provide('gwbKernel', kernelApi)
   // ctx.plugin 是 thenable,不 await 服务就还没就位（ctx.loader 会是 undefined）
   await ctx.plugin(Loader, {})
   ctx.loader.builtins.include = Include

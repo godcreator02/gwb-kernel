@@ -1,0 +1,25 @@
+{
+  "name": "@godcreator02/gwb-plugin-api",
+  "version": "0.0.1",
+  "description": "gwb-kernel 的词汇表：插件说话用的那几个名词，只命名不做事",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["lib", "src"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json"
+  },
+  "//dependencies": "一条都不能有。cordis 只 import type，所以是 devDependency 不是 peer——运行时真 import 了才写 peer",
+  "devDependencies": {
+    "cordis": "4.0.0-rc.9",
+    "typescript": "^7.0.2"
+  }
+}

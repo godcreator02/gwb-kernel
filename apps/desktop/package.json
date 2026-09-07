@@ -15,7 +15,8 @@
   "dependencies": {
     "cordis": "4.0.0-rc.9",
     "@cordisjs/plugin-loader": "1.0.0-rc.6",
-    "@cordisjs/plugin-include": "1.0.5"
+    "@cordisjs/plugin-include": "1.0.5",
+    "@godcreator02/gwb-plugin-api": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

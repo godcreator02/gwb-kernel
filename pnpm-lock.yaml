@@ -20,16 +20,19 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@cordisjs/plugin-include':
+        specifier: 1.0.5
+        version: 1.0.5(@cordisjs/plugin-loader@1.0.0-rc.6)(cordis@4.0.0-rc.9)
+      '@cordisjs/plugin-loader':
+        specifier: 1.0.0-rc.6
+        version: 1.0.0-rc.6(cordis@4.0.0-rc.9)
+      '@godcreator02/gwb-plugin-api':
+        specifier: workspace:*
+        version: link:../../packages/gwb-plugin-api
       cordis:
         specifier: 4.0.0-rc.9
-        version: 4.0.0-rc.9
-      js-yaml:
-        specifier: ^4.1.0
-        version: 4.3.2
+        version: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
     devDependencies:
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.3
@@ -103,6 +106,15 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+
+  packages/gwb-plugin-api:
+    devDependencies:
+      cordis:
+        specifier: 4.0.0-rc.9
+        version: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
 
 packages:
 
@@ -216,6 +228,21 @@ packages:
       react-dom: ^17 || ^18 || ^19
     peerDependenciesMeta:
       '@types/react':
+        optional: true
+
+  '@cordisjs/plugin-include@1.0.5':
+    resolution: {integrity: sha512-s4qNgQhHQpOL90sKppxSZBkJIjkzL9Ul/pp/vzAdapOoV6laVvC8INren6gHkJIJzVopgLSpFdUChyqQYgptAw==}
+    peerDependencies:
+      '@cordisjs/plugin-loader': ^1.0.0-rc.6
+      cordis: ^4.0.0-rc.9
+
+  '@cordisjs/plugin-loader@1.0.0-rc.6':
+    resolution: {integrity: sha512-WVdhzzoHr7YsotBZobhYsohSkviE/y2gHsC18gNGjv0amdwSCjGEdEsQrUcyjKc0CusAdsxjp2U3sprjb5xFDw==}
+    peerDependencies:
+      cordis: ^4.0.0-rc.9
+      node-addon-require-builtin: ^0.1.0
+    peerDependenciesMeta:
+      node-addon-require-builtin:
         optional: true
 
   '@electron-internal/extract-zip@1.0.5':
@@ -1108,9 +1135,6 @@ packages:
 
   '@types/hast@3.0.5':
     resolution: {integrity: sha512-rp/ezSWaD1m44dPKICGhiskI13nVr7qTloFwDa/IYkhhf5nzwP+zIQcIJh3WIFSBOy/H1PzB40jPjMDksN4F+g==}
-
-  '@types/js-yaml@4.0.9':
-    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
 
   '@types/mdast@4.0.4':
     resolution: {integrity: sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==}
@@ -2776,6 +2800,18 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.18
 
+  '@cordisjs/plugin-include@1.0.5(@cordisjs/plugin-loader@1.0.0-rc.6)(cordis@4.0.0-rc.9)':
+    dependencies:
+      '@cordisjs/plugin-loader': 1.0.0-rc.6(cordis@4.0.0-rc.9)
+      cordis: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
+      cosmokit: 1.8.1
+      js-yaml: 4.3.2
+
+  '@cordisjs/plugin-loader@1.0.0-rc.6(cordis@4.0.0-rc.9)':
+    dependencies:
+      cordis: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
+      cosmokit: 1.8.1
+
   '@electron-internal/extract-zip@1.0.5': {}
 
   '@electron/get@5.1.0':
@@ -3403,8 +3439,6 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
 
-  '@types/js-yaml@4.0.9': {}
-
   '@types/mdast@4.0.4':
     dependencies:
       '@types/unist': 3.0.3
@@ -3636,10 +3670,13 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  cordis@4.0.0-rc.9:
+  cordis@4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6):
     dependencies:
       '@standard-schema/spec': 1.1.0
       cosmokit: 1.8.1
+    optionalDependencies:
+      '@cordisjs/plugin-include': 1.0.5(@cordisjs/plugin-loader@1.0.0-rc.6)(cordis@4.0.0-rc.9)
+      '@cordisjs/plugin-loader': 1.0.0-rc.6(cordis@4.0.0-rc.9)
 
   cosmokit@1.8.1: {}
 
