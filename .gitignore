@@ -7,3 +7,6 @@ dist/
 .claude/hooks/.venv/
 .claude/hooks/__pycache__/
 .claude/settings.local.json
+
+# ZCode 与 .claude/skills 共享用的 junction（本机重建：cmd /c mklink /J .agents\skills <仓根>\.claude\skills）
+.agents/
