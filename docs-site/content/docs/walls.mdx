@@ -19,7 +19,7 @@ livedoc: none
 
 内核在挂 loader 之前注册一个 exporter，只管 error：
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="210-219" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="260-269" */}
 
 **loader 没有吞错误**，它老老实实写着 `.catch(error => this.ctx.logger.error(error))`。问题
 在下游：cordis 的 `LoggerService` 把消息存进 `buffer`，**没有 exporter 就没有出口**。而
@@ -41,13 +41,13 @@ livedoc: none
 
 ### `ctx.plugin` 是 thenable，不 await 服务就还没就位
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="221-228" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="271-278" */}
 
 **症状**：`ctx.loader` 是 `undefined`，报 `Cannot read properties of undefined (reading 'await')`。
 
 ### `baseUrl` 要设在根上下文
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="39-40" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="47-48" */}
 
 `Loader` 只把 `config.baseUrl` 设在**它自己 `extend` 出来的 ctx** 上（`this.ctx = ctx.extend({ baseUrl })`），
 而 `Include` 是挂在根上的。设在根上，两个都从那儿继承。
@@ -67,7 +67,7 @@ file URL。指向 home 之后 loader 自己就解析得到。
 
 ### `include` 走 loader 的 `builtins`，而且做成条目
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="224-227" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="274-277" */}
 
 `include` 住应用依赖树，而 baseUrl 指着 home——按裸名找不到它。loader 的 `import()` 对
 `cordis:` 前缀的名字直接从 `builtins` 表取、不经模块解析，所以挂 `builtins.include` 再用
@@ -89,7 +89,7 @@ file URL。指向 home 之后 loader 自己就解析得到。
 
 ### `gwbKernel` 要在挂 loader 之前 provide
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="221-223" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="271-273" */}
 
 件一挂上就要取得到。晚一步的症状是第一批件全都读到 `undefined`。
 
@@ -119,7 +119,7 @@ Error: config file not found: …\homes\boot-2609070610\cordis.yml
 
 ### 建 home 的 `package.json` 不由装机代劳
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="196-207" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="246-257" */}
 
 推荐列表是空表时装机会提前返回（`specs.length === 0`），`ensureHomeManifest` 轮不到，
 于是 `package.json` 建不出来，「装过了」永远判不成立——**每次启动都当新 home**。
@@ -153,11 +153,37 @@ Error: config file not found: …\homes\boot-2609070610\cordis.yml
 
 ---
 
+## 条目表
+
+### 「fiber 在不在」不是「挂上了没有」
+
+条目表的 `ok` 一开始判的是 `entry.fiber !== undefined`。看着天经地义，**是错的**：
+cordis 的 `registry.plugin()` **同步就把 fiber 建出来并返回**，跟 `inject` 满不满足
+完全无关。只有 `import` 那一步抛错才会让 `fiber` 留在 undefined。
+
+所以一个 `inject` 永远等不到的件也报 `ok: true`——而那正是最该被看见的一种没挂上。
+
+**这条不是推出来的，是撞出来的**：`gwb-shell` 硬 `inject: ['gwbCli']`，而
+`gwb-cli` 没装进 home 时，它的 fiber 停在 `PENDING`、`ok` 仍报 true，于是渲染层照样把
+`#root` 交给它、`import` 了它的 `client.js`、调了 `bootShell`——然后 `shell.panes` 这条
+命令根本不存在。**井是空的，而 console 里只有一句「调不通」**，谁也看不出根因是另一个
+件没装。
+
+判据得是 `fiber?.state === FiberState.ACTIVE`。**那是个 `const enum`**，`isolatedModules`
+下 import 不进来，只能照抄字面量 `2` 并在注释里说明。
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="59-79" */}
+
+修完之后启动日志会诚实一些：以前永远是 `条目 5/5`，现在有件在等依赖时会显示 `2/4`，
+而且每条后面写着「挂上」还是「没挂」。
+
+---
+
 ## 取址
 
 ### 入口指到包目录外一律不认
 
-{/* ref file="../apps/desktop/src/shared/entries.ts" lines="80-88" */}
+{/* ref file="../apps/desktop/src/shared/entries.ts" lines="87-95" */}
 
 认了它，**一个包就能让内核读任意文件**。这是这一层唯一的一条判断——其余的候选名补全、
 位表、完整 exports 条件语义、realpath 实体化，母仓都有，这里都没有。
