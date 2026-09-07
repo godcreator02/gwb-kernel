@@ -169,14 +169,15 @@ pnpm dlx shadcn@latest add button
 }
 ```
 
-外壳的 `client.js` 要导出 `mountShell`：
+外壳的 `client.js` 要导出 **`bootShell`**：
 
 ```js
-export function mountShell(args, root) {
+export function bootShell(args, root) {
   root.textContent = '我拿到整页了'
   args.host.call('kernel.info').then((res) => {
     // args.host.call 是命令通道:走到宿主,分发给插件,原路回
   })
+  return { dispose() { /* 这个件被卸载时,把这棵树拆干净 */ } }
 }
 ```
 
@@ -189,6 +190,21 @@ export function mountShell(args, root) {
 | `entries` | 条目表，每条 `{ id, ok, pkg, shell, disabled }` |
 
 加东西往 `args` 里加，签名不动。
+
+**回一个 `{ dispose }`**：件被卸载时页面上那棵树得有人拆。眼下渲染层还不会调它（它不感知
+条目变化），但契约先立着——将来要热换外壳时不必回头改所有外壳件。
+
+### 为什么不叫 `mount`
+
+因为**「占整页的根」和「占井里的一格」是两种件**，args 形状本来就不同：外壳拿 `entries`
+（它要据此排出可开窗格表）、拿不到 `shell` 与 `pane`；窗格反过来。
+
+共用一个动词会让人以为它俩是同一件事的两个变体，而形状对不上**只有运行时才发现**——
+误读 `args.pane` 得到 `undefined`，不报错、只是行为不对。所以两个角色各用各的动词：
+外壳 `bootShell`、窗格 **`mountPane`**。**你导出哪个名字，就声明了自己是哪种件。**
+
+窗格那半的完整形状（`args` 里的 `shell` 与 `pane` 各是什么）等外壳件做出来再定——
+现在还没有窗格。
 
 渲染层启动时问内核要条目表，挑出「挂上了 且 `gwb.shell` 为 true」的那一条。
 

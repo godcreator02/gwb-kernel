@@ -26,15 +26,20 @@ interface KernelInfo {
   }
 }
 
+/**
+ * 外壳件的浏览器那半。导出名叫 `bootShell` 而不是 `mount`——它占的是**整页那个根**，
+ * 跟「井里的一格」是两种东西：外壳拿条目表去排窗格，窗格拿 shell 与 pane。
+ * 两个角色各用各的动词，单看导出名就知道自己是哪种件。
+ */
 interface ShellModule {
-  mountShell?: (
+  bootShell?: (
     args: {
       host: { call: (command: string, args?: unknown) => Promise<unknown> }
       home: string
       entries: EntryView[]
     },
     root: HTMLElement,
-  ) => void
+  ) => { dispose(): void }
 }
 
 declare global {
@@ -84,11 +89,11 @@ async function boot(): Promise<void> {
   }
   const pkg = shells[0]!.pkg
   const mod = (await import(/* @vite-ignore */ clientUrl(pkg))) as ShellModule
-  if (typeof mod.mountShell !== 'function') {
-    console.error(`[renderer] ${pkg} 的 client 没有 mountShell 导出`)
+  if (typeof mod.bootShell !== 'function') {
+    console.error(`[renderer] ${pkg} 的 client 没有 bootShell 导出`)
     return
   }
-  mod.mountShell(
+  const handle = mod.bootShell(
     {
       host: { call: (command, args) => window.gwb.command(command, args) },
       home: data.dataDir ?? '',
@@ -96,6 +101,9 @@ async function boot(): Promise<void> {
     },
     document.getElementById('root')!,
   )
+  // 句柄先接住，**眼下没有人调 dispose**：渲染层不感知条目变化，热换外壳那条路还不存在。
+  // 口留在这儿，将来真要拆这棵树时不必回头改契约
+  void handle
   console.log(`SHELL ${pkg}`)
 }
 
