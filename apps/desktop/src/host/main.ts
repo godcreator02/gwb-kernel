@@ -180,8 +180,28 @@ async function firstRun(): Promise<void> {
  * 做成条目而不是 `ctx.plugin(Include)`,是为了让它的子树挂在 loader 的树上:
  * 条目表、fiber 状态、热挂卸全在一棵树里,外面只认 ctx.loader 一个入口。
  */
+/**
+ * 保底日志出口,**只管 error**。
+ *
+ * cordis 的 LoggerService 把消息存进 buffer,没有 exporter 就没有出口。而 loader 挂不上
+ * 一个件时,错误正是走 `ctx.logger.error`——那时 logger-console 还是 yml 里一条并发挂载的
+ * 普通件,来不及接。症状是件静默挂不上、日志一个字都没有,连「哪个件、为什么」都问不出来。
+ *
+ * 所以这一条得在内核里、在 loader 之前。只管 error:info/warn 归 logger-console,
+ * 那个件装了就有好格式,没装也不影响这条保底线。error 因此可能出两遍——值得。
+ */
+function bootstrapErrorExporter(): void {
+  ctx.logger.exporter({
+    export: (message) => {
+      if (message.type !== 'error') return
+      console.error(`[loader] ${message.name}:`, ...message.args)
+    },
+  })
+}
+
 async function bootLoader(): Promise<void> {
   ctx.provide('gwbKernel', kernelApi)
+  bootstrapErrorExporter()
   // ctx.plugin 是 thenable,不 await 服务就还没就位（ctx.loader 会是 undefined）
   await ctx.plugin(Loader, {})
   ctx.loader.builtins.include = Include

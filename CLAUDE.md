@@ -50,6 +50,33 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 变化也没有对应模块可换。也不开 `plugin-http`/`plugin-server`(没有外部访问需求)、
 `plugin-config`/`plugin-webui`(Koishi 生态的)、`plugin-database`、`@cordisjs/schema`。
 
+## 内核保底一条 error 日志出口
+
+cordis 的 `LoggerService` 把消息存进 buffer,**没有 exporter 就没有出口**。而 loader 挂不上
+一个件时,错误正是走 `ctx.logger.error`——那时 `logger-console` 还是 yml 里一条并发挂载的
+普通件,来不及接。症状:件静默挂不上,日志一个字都没有,连「哪个件、为什么」都问不出来。
+
+所以内核在挂 loader 之前注册一个 exporter,**只管 error**(`bootstrapErrorExporter`)。
+info / warn 归 `logger-console`——那个件装了就有好格式,没装也不影响这条保底线。
+error 因此可能出两遍,值得。
+
+这一条是撞出来的:第一个件因为相对 import 少了 `.js` 静默挂不上,查了几分钟;有了这条,
+同样的错当场就是一行 `ERR_MODULE_NOT_FOUND` 带路径。
+
+## 依赖写 peer 还是 dev:三档
+
+母仓那条「运行时真 import 了才写 peer,只 import type 写 dev」不够用,**中间还有一档**:
+
+| 情形 | 写哪 |
+| --- | --- |
+| 运行时真 import 了它 | `peer`(或 `dependencies`) |
+| **只 import type,但它出现在导出的类型里** | **`peer`**——消费方必须解析得到 |
+| 只在实现内部用类型、不出现在导出面 | `dev` |
+
+中间那档是撞出来的两次:词汇表包的 `GwbContext extends Context` 把 cordis 写成 dev,
+消费方那边 `ctx.logger` / `effect` / `provide` 全报「不存在」——**发布出去的包不带
+devDependencies**;`gwb-cli` 的 `GwbCli.run` 回 `GwbResult` 也是同一回事。
+
 ## 服务命名:一律 `gwb` 开头
 
 cordis 的 `ctx` 是一个共享命名空间,所有件的服务都挂在上面。规则:
