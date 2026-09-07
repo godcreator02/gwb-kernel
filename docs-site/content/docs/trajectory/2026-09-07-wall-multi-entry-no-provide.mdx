@@ -5,7 +5,6 @@ type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: 多条不 provide
 domain: 条目表
-livedoc: none
 ---
 
 `registry.plugin()` 每次都 `new Fiber`，只有 `runtime`（按 callback 去重）共享。两条条目 = 一个 Runtime ＋ 两个独立 fiber，`config` 与 `ctx` 各是各的。**实机验过三条**（同一个探针包挂 writer / reader / commands 三种角色，各跑各的）。

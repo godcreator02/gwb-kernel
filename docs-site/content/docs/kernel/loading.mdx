@@ -1,0 +1,82 @@
+---
+title: 取址：loader、include 与热挂载
+description: 内核连 yml 都不认识——挂载归两个官方件，热挂载是条目树的 API
+---
+
+# 取址：loader、include 与热挂载
+
+读完这页你能回答：内核自己认识 yml 吗；引导链那四步为什么是这个顺序；热挂载到底由什么触发；「fiber 建出来了」和「挂上了」差在哪。
+
+**为什么不能是插件**：取址必须在第一个业务件之前发生。内核把它交给官方件，不等于这件事不存在——只是实现从「自己写」变成「挂一个官方件」。
+
+## 内核挂两样，其余全归它们
+
+- `@cordisjs/plugin-loader` —— 条目树与模块加载
+- 一条 `cordis:include` 条目 —— 读 `<home>/cordis.yml`
+
+**内核连 yml 都不认识。**
+
+## baseUrl 指向 home，而且设在根上下文
+
+`ctx.baseUrl` = home 目录的 file URL，loader 的模块解析从这儿起步，`<home>/node_modules` 里的件因此按裸名就找得到。母仓把 baseUrl 设成应用目录，所以它必须自己把每个条目名算成绝对 file URL——那句「裸名包只在 home 位时 loader 会静默挂不上」的血泪注释，根因就在这里。
+
+「设在根上下文」是硬的：loader 只把 `config.baseUrl` 应用到自己那个扩展 ctx 上，而 include 挂在根、拿**根的** `baseUrl` 解析 `cordis.yml` 的路径。设错位置，include 拿到 undefined，报 `Invalid URL`（见[那面墙](/docs/trajectory/2026-09-07-wall-baseurl-on-root-ctx)）。
+
+## 引导链：四步，顺序全是判据
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="376-382" */}
+
+1. **先 provide `gwbKernel`，再挂 loader**。这个服务挂在根 fiber 上（根 fiber 生来 ACTIVE）、永不撤销；晚一步，第一批件读到 `undefined`（见[那面墙](/docs/trajectory/2026-09-07-wall-gwbkernel-provide-early)）。
+2. **`await ctx.plugin(Loader)`**。`ctx.plugin()` 返回的是 thenable（包着 fiber 的就位等待），不 await，下一行 `ctx.loader` 就是 `undefined`（见[那面墙](/docs/trajectory/2026-09-07-wall-ctx-plugin-thenable)）。
+3. **include 走 loader 的 builtins**。include 住在应用依赖树里，而 baseUrl 指着 home，按裸名找不到它；`cordis:` 前缀的名字直接从内建表取、不经模块解析。
+4. **做成条目而不是 `ctx.plugin(Include)`，id 写死 `home`**。做成条目，它的子树就挂在 loader 树上：条目表、fiber 状态、热挂卸全在一棵树里，外面只认 `ctx.loader` 一个入口。id 有层级（`<父>:<子>`），父 id 一变，所有件的 id 跟着变，外壳按 panel id 存的布局就全对不上。
+
+之后 `ctx.loader.await()` 等整棵树收敛，宿主才发 `ready`、主进程才开窗。
+
+## 热挂载：条目树的 API，不是文件监听
+
+**include 没有文件监听。** 它读 `cordis.yml` 只有两处：挂载时，和 `refresh()`——而 `refresh()` 在这个仓里没有任何人调。所以不是「改文件自动生效」，而是：
+
+- 挂一条：`await ctx.loader.create({ id, name, config }, 'home')`
+- 改配置：`ctx.loader.update(id, options)` —— **整卸整重挂**，所有 effect 逆序跑完再重新 `apply`，不是原地补丁
+- 卸一条：`ctx.loader.remove(id)`
+
+树一变，yml 自动写回：include 把变更去抖后写临时文件再改名，原子落盘。设置件将来走这条——**调条目树的 API，盘上的表自己跟上**，比「编辑文件等监听」合理。
+
+**remove 的收尾顺序**：先 `fiber.dispose()`——所有 disposables 按注册的逆序跑，`provide` 的服务就地撤销、依赖它的件被通知重估；然后才把条目从树里摘掉、写回 yml。**件的清理函数是真的会跑的**，这是实机验收过的一条。
+
+还有一条白得的行为：**自己把自己拆掉的件会被写 `disabled`**。fiber 死了而条目还在时，loader 把那条标成禁用再写回——「人禁的」和「自己灭的」在盘上有区别。
+
+## 「挂上了」是 fiber ACTIVE，不是 fiber 存在
+
+cordis 建 fiber 是**同步**的、与 inject 满不满足无关——一个 `inject` 永远等不到的件也有 fiber，只是到不了 `ACTIVE`（状态 2）。所以条目表的 `ok` 判的是 `fiber.state === ACTIVE`（见[那面墙](/docs/trajectory/2026-09-07-wall-fiber-not-active)），外壳挑件同样只认 ACTIVE 的提供者，不然渲染层会去 boot 一个跑不起来的外壳。
+
+**一个包挂多条条目**是支持的：同一个模块一个 runtime，多条 fiber 各有各的配置。但 **provide 服务的件挂不了第二条**——服务撞名当场抛，而且那个 rejection 落在挂载链上。宿主对这类 rejection 的处理是：记日志、活着、不回滚——条目表是真相，哪条挂上了哪条没挂它说了算。
+
+## 失败模式
+
+- **`cordis.yml` 不存在 = 宿主整个退出**，不是「一个件都没装」。所以 `ensureHome` 每次启动幂等地铺一份空表 `[]`（见[安家](/docs/kernel/home)与[那面墙](/docs/trajectory/2026-09-07-wall-fresh-home-no-yml)）
+- **挂载错误要有人听才看得见**：loader 挂不上件时只 `logger.error`，而 cordis 的日志在没有 exporter 时只缓冲不输出。内核的全量 exporter 在挂 loader **之前**注册，坏件才报得出 `ERR_MODULE_NOT_FOUND` 带完整路径（见[日志](/docs/kernel/logs)）
+- **不写 `id` 就发随机串，而且首次加载不写回 yml**——它会一直漂到某次写回才固化，在那之前每次启动都是新的。所以 id 一律手写（见[一件的解剖](/docs/plugins/anatomy)）
+
+## 官方件：开着的与不开的
+
+| 包 | 住哪 | 为什么 |
+| --- | --- | --- |
+| `@cordisjs/plugin-loader` | 应用依赖树，内核挂 | 条目树与模块加载。热挂卸是白得的 |
+| `@cordisjs/plugin-include` | 应用依赖树，内核挂 | 读 yml 成条目。有了它内核连 yml 都不必认识 |
+| `@cordisjs/plugin-timer` | home，走 yml 条目 | `ctx.setTimeout` 随件卸载自动收——原生的会在件已卸载后触发 |
+
+**不开的，各有理由**：
+
+- `plugin-logger-console` —— **出口归内核自己那个全量 exporter**。它跟全量出口直接冲突：两个都在，同一句 cordis 日志打两遍。而且「件的日志有没有出口」不该取决于某个件装没装
+- `plugin-hmr` —— **在这个架构下不起作用**：跑的是 home 里那份产物，盯仓内源码盯到变化也没有对应模块可换
+- `plugin-http` / `plugin-server` —— **内核**没有外部访问需求。MCP 那条线真长出来了，但它是**件**（`@godcreator02/gwb-mcp`），自己起 `node:http`。顺带一处订正：`plugin-http` 是 **HTTP 客户端**（`ctx.http`），本来就收不了请求
+- `plugin-config` / `plugin-webui` —— 硬 peer 一个 webui，而 webui 要 `server`——为一个条目编辑器拖进 HTTP＋WebSocket
+- `plugin-database` —— 没有超出「件自己写文件」的需求
+- `@cordisjs/logger` —— 旧版，cordis 4.x 本体已自带
+- `@cordisjs/schema` —— cordis 3 遗物、已从官方仓删除；配置校验 cordis 4 本体自带（`plugin.Config` 走 Standard Schema）
+
+## 内核留下的那半
+
+`resolvePlugin` / `entryFile` 还在 `shared/` 里，但不管挂载——它们是**主进程**的 `gwb://` 在用：把件的浏览器那半交给页面时要知道包在哪，而 loader 跑在宿主子进程里，主进程够不着。细节见[桥](/docs/kernel/bridge)。

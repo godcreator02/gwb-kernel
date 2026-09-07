@@ -5,7 +5,6 @@ type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: fiber 不是挂上
 domain: 条目表
-livedoc: none
 ---
 
 条目表的 `ok` 一开始判的是 `entry.fiber !== undefined`。看着天经地义，**是错的**：cordis 的 `registry.plugin()` **同步就把 fiber 建出来并返回**，跟 `inject` 满不满足完全无关。只有 `import` 那一步抛错才会让 `fiber` 留在 undefined。
@@ -16,6 +15,6 @@ livedoc: none
 
 判据得是 `fiber?.state === FiberState.ACTIVE`。**那是个 `const enum`**，`isolatedModules` 下 import 不进来，只能照抄字面量 `2` 并在注释里说明。
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="145-165" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="192-196" */}
 
 修完之后启动日志会诚实一些：以前永远是 `条目 5/5`，现在有件在等依赖时会显示 `2/4`，而且每条后面写着「挂上」还是「没挂」。

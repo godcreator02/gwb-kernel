@@ -20,16 +20,19 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 
 两道关一旦松动这个仓就没有存在理由了。拿不准就按「不进」处理——加回来永远比拿掉容易。
 
-## 内核只做四件事
+## 内核只做三件事
 
 | | 是什么 |
 | --- | --- |
 | **载体** | 起一个 node 进程挂 cordis；开一扇窗 |
 | **取址** | 挂 cordis 官方 loader，baseUrl 指着 home，它自己解析 `<home>/node_modules` |
-| **装机** | `pnpm add <名>` 进 home，附一份推荐列表 |
 | **桥** | fd3 命令 + 事件；`gwb://` 交出件的浏览器那半 |
 
 外加一份**词汇表**（`packages/gwb-plugin-api`）——它不做事，只命名。
+
+曾经的第四件事**装机**于 2026-09-08 整口移除：**内核不碰 pnpm**，装包是进 home 手动
+`pnpm add` 的手工活，界面那半归件（件仓的 `gwb-plugins` 件）。内核对「装」只剩安家：
+每次启动幂等铺 home 三件套（`package.json` / 空 `cordis.yml` / README）。
 
 **取址内核自己不做**：只挂 `@cordisjs/plugin-loader` 加一条 `cordis:include` 条目，
 内核连 yml 都不认识。**开着的官方件**还有 `plugin-timer`（装进 home 走 yml 条目）；
@@ -76,8 +79,8 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 | `26090412vav\god-workbench` | 母仓，**准备废弃** | 只作参考：某处当初为什么那么做、踩过什么坑。结构、分层、包划分一概不抄 |
 | `26090623hyz\gwb-plugins` | 旧的 11 件，**准备废弃** | 同上。件重做一份，不在那个仓里改 |
 | `26090709qzp\gwb-base-plugins` | **正线的件仓** | 第一批四件：`gwb-commands`（已发 0.0.3）、`gwb-shell`、`gwb-logger`、`gwb-settings` |
-| `26090702tpu\gwb-catalog` | 推荐清单 | 装机那份推荐列表将来的来源 |
-| `26090520zzv\registry` | 本机 Verdaccio | 装机的包源，`@godcreator02` scope 指的就是它 |
+| `26090702tpu\gwb-catalog` | 推荐清单 | 装什么件由人挑，推荐将来从这儿来 |
+| `26090520zzv\registry` | 本机 Verdaccio | 件的包源：件仓 publish 到这儿，home 从这儿装。`@godcreator02` scope 指的就是它 |
 
 **件的包名：`@godcreator02/gwb-<件名>`**。加 `gwb-` 前缀跟废弃那批错开（`@godcreator02/shell`
 那些已被占着）。scope 不换。
@@ -99,7 +102,7 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 
 ## 现在到哪了
 
-路线、在等什么前提、定过的事，都在文档站（`roadmap` 与 `decisions` 两页）。
+路线、在等什么前提、定过的事与撞过的墙，都在文档站（`roadmap` 与 `trajectory`）。
 **「等什么」那一栏是重点**——它记着为什么现在不做，正好接住准入判据第二关。
 
 ## 注释与文档：三层分流

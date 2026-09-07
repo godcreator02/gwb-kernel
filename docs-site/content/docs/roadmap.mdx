@@ -1,7 +1,6 @@
 ---
 title: 路线
 description: 内核到哪了、下一步是什么、哪些在等前提——「等什么」那一栏是重点
-livedoc: none
 ---
 
 # 路线
@@ -16,17 +15,18 @@ livedoc: none
 | **一刀** 载体与桥 | 两个世界通上了 | 页面调一条命令穿过 IPC → fd3 → cordis 宿主再原路回；宿主 pid 独立、`node` 版本对得上 |
 | **二刀** 取址 | 能挂插件 | 三条条目「挂上 / 位里没有 / 被禁用」逐条对上 |
 | **三刀** 桥的另一半 | 看得见 | `client.js` 经 `gwb://` 到页面、`bootShell` 被调、外壳自己经 bridge 调命令 |
-| **四刀** 装机 | 能从零装出一套 | 删净 home 起一次建出 home；外壳调 `kernel.install` 从本机 registry 装真包；重启后被挂上 |
+| **四刀** 装机（口后来整拆，见末行） | 能从零装出一套 | 删净 home 起一次建出 home；外壳调 `kernel.install` 从本机 registry 装真包；重启后被挂上 |
 | **五刀** loader 与服务 | **热挂载生效**、内核给得出信息 | 运行中 `create` 一条条目那个件当场挂上，`remove` 当场卸载、yml 自动写回；`ctx.gwbKernel` 四样对上；`emit` 的事件穿过 fd3 到了外壳 |
-| 日志落盘 | 脱离终端也查得到 | 三处输出汇进 `<home>/gwb-kernel.log` |
+| 日志落盘 | 脱离终端也查得到 | 三处输出汇进一个文件（后随四路汇总迁 `<home>/logs/gwb.log`） |
 | 保底 error 出口 | 挂载失败说得出原因 | 坏件报 `ERR_MODULE_NOT_FOUND` 带完整路径 |
 | 词汇表包 | 契约面只有五个名字 | 产物 729 字节，零运行时依赖 |
 | 文档三层分流 | 文档撒谎会被抓 | 轨迹的墙卡钉住 14 处代码，`pnpm doc` 全绿 |
 | **运行时环境** | **React 件跑得起来** | 验收件的 shadcn 按钮在页面上样式正确（`oklch(0.21 …)` 精确等于令牌值）；亮暗切换当场变色、没有任何件重新构建 |
 | **home 分格** | **验收有干净场子了** | `homes/<名>`，`GWB_HOME` 选、不给就是 `default`；实测开一个测试 home 之后日常那份文件数 164→164 一个字节没动。顺带把「全新 home 从零起」这条**从没被走过**的路径第一次验通（撞出一个宿主整个退出的 bug，见[那面墙](/docs/trajectory/2026-09-07-wall-fresh-home-no-yml)） |
 | 门禁加一道 lint | **type-aware 真在跑，不是假装绿** | 双探针都报（`no-unused-vars` + `typescript/no-floating-promises`）；反向探针去掉 type-aware 后只剩前者；探针在时 `pnpm check` `exit 1`。基线 17 文件 / 111 规则 / 零诊断 |
+| **装机口移除** | **内核不碰 pnpm** | `install.ts` 删除、`GwbKernelApi.install` 删（词汇表 0.0.4）；装件＝进 home 手动 `pnpm add`，判据见[装机口移除](/docs/trajectory/2026-09-08-no-install-port) |
 
-内核现在 **1374 行**（`apps/desktop/src` 1330 + 词汇表包 44），对照母仓 5100。
+内核现在 **1365 行**（`apps/desktop/src` 1319 + 词汇表包 46），对照母仓 5100。
 
 口径是**连空行与注释一起数**（`Get-Content | .Count`），这个仓注释密度高，正文远少于这个数。
 **上一版这儿写着 795，那是个早就过时的数**——中间加了外壳反查、运行时环境收集等好几笔没跟着更新。
@@ -38,7 +38,7 @@ livedoc: none
 历史段」。要做 `gwb-logger` 了，于是重新过了一遍判据，形状也一并定死（六条都在
 [轨迹](/docs/trajectory)）。
 
-四路：件与 loader 的 cordis 日志、宿主自己的话（`host`/`install`/`stdin`）、主进程自己的话、
+四路：件与 loader 的 cordis 日志、宿主自己的话（`host`/`stdin`/`loader`）、主进程自己的话、
 渲染层的 console。**窗格件那半在件仓**（`gwb-logger`），内核这边出的是通道与缓冲。
 
 | | 做什么 | 状态 |
@@ -91,7 +91,7 @@ livedoc: none
 件的路线、每个件的状态与版本号，全在**件仓的文档站**（`26090709qzp/gwb-base-plugins`）。
 
 **这儿不再抄一份** ——两处各记一份必然漂移，而且已经漂过：这一节的版本号一度停在好几轮
-之前（`gwb-cli` 还写着 0.0.3、共享包写着 0.0.1），而 roadmap 是 `livedoc: none`、没有守卫。
+之前（`gwb-cli` 还写着 0.0.3、共享包写着 0.0.1），而这页没有钉码守卫，漂了没人报。
 
 形势一句话：底座那几件与两个共享包都验通了，外壳已经开得出窗格；**下一个是 `gwb-logger`**，
 而它等的是内核这一轮（上面「在做」那节），件那边没有别的缺口。再往后是 `gwb-settings`。

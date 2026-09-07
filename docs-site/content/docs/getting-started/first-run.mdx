@@ -1,0 +1,55 @@
+---
+title: 跑起来
+description: 从 pnpm start 到窗口里有东西——home、装件、日志各在哪
+---
+
+# 跑起来
+
+读完这页你能回答：第一次跑要做哪几步；件怎么装进 home；四路日志各自去哪看。
+
+## 起一次
+
+```powershell
+pnpm install
+pnpm start
+```
+
+`pnpm install` 会顺带把 Electron 的二进制取下来。这一步有个坑值得知道：**electron 这个包本身不带 `postinstall`**，二进制得显式跑一次 `install.js` 才会落盘，不跑的症状是装完起不来而 pnpm 一声不吭。`apps/desktop` 挂了一条自己的 `postinstall` 补上（见[那面墙](/docs/trajectory/2026-09-07-wall-electron-postinstall)）。
+
+`pnpm start` 先出词汇表包的 `dist/`（毫秒级），再 `electron-vite build && electron .`。
+
+## home：你的件住的地方
+
+`%APPDATA%\gwb-kernel\homes\<名字>`，`GWB_HOME` 选格，不给就是 `default`。内核每次启动幂等地铺三件套（包清单、空的 `cordis.yml`、一份写给人看的 README——见[安家](/docs/kernel/home)）。
+
+**装件、配件、看设置，都在这个目录**——它就是个普通的 npm 项目，pnpm 认得它。
+
+## 装一个件：两步，缺一不挂
+
+**一、装包**。在这个目录下跑 `pnpm add <包名>`。`@godcreator02` 这个 scope 指向本机 Verdaccio（`127.0.0.1:4873`），路标是用户级 `~/.npmrc` 里那行 `@godcreator02:registry=...`；刚发的包装不进去，查 pnpm 的 `minimumReleaseAgeExclude` 有没有放行这个 scope。
+
+**二、写条目**。`cordis.yml` 里加一条，`id` 手写短名：
+
+```yaml
+- id: commands
+  name: '@godcreator02/gwb-commands'
+- id: shell
+  name: '@godcreator02/gwb-shell'
+```
+
+重启应用。哪步没做，宿主日志会说——条目逐条报「挂上/没挂」。共享包（`gwb-shared-react` 这类）装了就行，**不进 `cordis.yml`**：它们不是件，是件的浏览器那半在运行时要解析到的东西。
+
+从零写一个包出来，见[写第一个件](/docs/getting-started/first-plugin)。home 里那份 `README.md` 是同样的内容、住在 home 里。
+
+## 哪里看什么
+
+| 看什么 | 去哪 |
+| --- | --- |
+| 宿主起步、条目逐条的挂载结果 | 终端——主进程把宿主的输出原样转出来 |
+| 界面的日志窗格 | 页面里（preload 两口：历史段 + 实时订阅） |
+| 全量字节流、崩溃第一现场 | `<home>/logs/gwb.log`（2 MB 切一段、留 20 份） |
+| 件的浏览器那半报的错 | 页面 console（主进程转到终端） |
+
+## 一个会话一个干净 home
+
+验「从零」这类事，把 home 整个删掉再起。别复用上一次留下的——里头是若干个不同时刻手工放进去的件，验什么都不算数。home 分格就是为这个：`GWB_HOME=test-xxx` 开一个，日常那份一个字节不动。

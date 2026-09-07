@@ -11,6 +11,11 @@ const config = {
   redirects: async () => [
     { source: '/', destination: '/docs/overview', permanent: true },
     { source: '/docs', destination: '/docs/overview', permanent: true },
+    // 旧页挪了位置：四件事解体成 kernel/ 各章，写一个件拆成 plugins/ 各页
+    { source: '/docs/four-things', destination: '/docs/kernel/processes', permanent: true },
+    { source: '/docs/plugin', destination: '/docs/plugins/anatomy', permanent: true },
+    { source: '/docs/decisions', destination: '/docs/trajectory', permanent: true },
+    { source: '/docs/walls', destination: '/docs/trajectory', permanent: true },
   ],
 }
 

@@ -5,10 +5,11 @@ type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: 建清单排队
 domain: 宿主
-livedoc: none
 ---
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="332-343" */}
+**（2026-09-08 订正）**：装机口整口移除（见[装机口移除](/docs/trajectory/2026-09-08-no-install-port)），这条钉住的代码（`main.ts` 的 `ensureHomeManifest` 与装机先后的组合）已经不存在了，引用随之取下。墙留在这儿，是因为「**两个各自正确的函数，组合顺序错了**」这个教训仍然成立——现在的组合换成了 `ensureHome` 与 loader 的先后，而那条的现场记在[全新 home 起不来](/docs/trajectory/2026-09-07-wall-fresh-home-no-yml)。
+
+---
 
 推荐列表是空表时装机会提前返回（`specs.length === 0`），`ensureHomeManifest` 轮不到，于是 `package.json` 建不出来，「装过了」永远判不成立——**每次启动都当新 home**。
 

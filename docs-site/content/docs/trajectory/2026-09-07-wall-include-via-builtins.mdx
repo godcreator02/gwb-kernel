@@ -5,10 +5,9 @@ type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: builtins 条目
 domain: 宿主
-livedoc: none
 ---
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="349-352" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="379-381" */}
 
 `include` 住应用依赖树，而 baseUrl 指着 home——按裸名找不到它。loader 的 `import()` 对 `cordis:` 前缀的名字直接从 `builtins` 表取、不经模块解析，所以挂 `builtins.include` 再用 `cordis:include` 引它。
 

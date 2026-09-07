@@ -1,3 +1,16 @@
 {
-  "pages": ["overview", "four-things", "roadmap", "not-doing", "plugin", "dev-loop", "readme", "trajectory"]
+  "pages": [
+    "overview",
+    "glossary",
+    "system-map",
+    "getting-started",
+    "kernel",
+    "plugins",
+    "dev-loop",
+    "livedoc",
+    "roadmap",
+    "not-doing",
+    "trajectory",
+    "readme"
+  ]
 }

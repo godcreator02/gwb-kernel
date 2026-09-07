@@ -1,0 +1,56 @@
+---
+title: 术语表
+description: 这条线造的词都在这儿——每个词一句定义，指到详解页
+---
+
+# 术语表
+
+读完这页你能回答：文档里那个词到底指什么。造词是负债——每个词都得有人养，所以这张表收的是**这条线自己造的、或在这个仓里有特定含义的**词；通用术语不收。
+
+## 这条线
+
+| 词 | 是什么 |
+| --- | --- |
+| **正线** | gwb-kernel 自己。母仓 `god-workbench` 与旧件仓准备废弃，这条线是接班的那个 |
+| **内核** | `apps/desktop/src`——一个 Electron 应用，只做三件事，其余一切皆件 |
+| **件** | 插件。一个普通 npm 包，装在 home 的 `node_modules` 下，由 cordis 挂载（旧文档里的「插件」） |
+| **词汇表** | `@godcreator02/gwb-plugin-api`。零运行时依赖，五个名字，只命名不做事 |
+| **home** | `%APPDATA%\gwb-kernel\homes\<名>`。件住的地方，一个普通的 npm 项目根 |
+| **安家** | 内核保证 home 起得来：每次启动幂等铺三件套。**不是装机**——内核不碰 pnpm |
+| **准入判据** | 两道关：第一个件之前必须发生的事才进内核；真遇到需求才加 |
+
+## 内核三件事
+
+| 词 | 是什么 |
+| --- | --- |
+| **载体** | 起一个 node 进程挂 cordis，开一扇窗。详解见[载体](/docs/kernel/processes) |
+| **取址** | 挂官方 loader + include 条目，把件挂上。内核连 yml 都不认识。见[取址](/docs/kernel/loading) |
+| **桥** | 命令与事件双向、`gwb://` 交出件的浏览器那半。见[桥](/docs/kernel/bridge) |
+| **条目** | `cordis.yml` 数组里的一条：`{ id, name, config?, disabled? }`。`id` 是身份，手写 |
+| **fiber / ACTIVE** | cordis 的执行单元与其「挂上了」的状态（2）。条目表的 `ok` 判它，不是判 fiber 存在 |
+| **热挂载** | 运行中调条目树 API（`create`/`update`/`remove`）挂卸件，yml 自动写回。**不是文件监听**——改 yml 要重启 |
+
+## 桥与协议
+
+| 词 | 是什么 |
+| --- | --- |
+| **宿主** | 纯 node 子进程，cordis 住这儿。electron 二进制加 `ELECTRON_RUN_AS_NODE` 当 node 使 |
+| **fd3** | 宿主的第四条 stdio 管道：命令回执、事件、结构化日志的上行专线。fd1 留给人 |
+| **`gwb://`** | 把件的浏览器那半交给页面的协议。只认包的 `exports` 表 |
+| **importmap** | 裸名 → `gwb://` URL 的映射表。内核拼、内核注，赶在第一句动态 import 之前 |
+| **`gwb.shared`** | 包清单里唯一被内核读的字段：「我给页面提供这几个裸名」。**先声明先得**，撞名只报不改 |
+| **命令总线** | `ctx.gwbCommands`，某个件提供的服务。内核只原生命中 `kernel.info`，其余全转发给它 |
+| **`GwbResult`** | 命令回执形状 `{ ok, data?, error? }` |
+| **外壳** | provide 了 `gwbShell` 服务且 fiber ACTIVE 的那个件。它拿整页 `#root`，导出 `bootShell` |
+| **窗格** | 外壳井里的一格。窗格件导出 `mountPane`，契约正本住件仓 |
+
+## 文档与账本
+
+| 词 | 是什么 |
+| --- | --- |
+| **livedoc** | 文档钉代码的那套机制：引用记号 + git 记忆 + 账本。见[账本与钉码](/docs/livedoc/how-it-works) |
+| **钉码** | 文档里指向某段代码的正式引用。代码一改就报黄，得人复核 |
+| **账本** | `docs-site/.ledger.json`：每条钉码的 blob、commit、行段、内容段哈希 |
+| **轨迹** | `content/docs/trajectory/`：决策卡与墙卡，一卡一文件，只追加 |
+| **决策卡 / 墙卡** | 事前的选择（五段）/ 事后的教训（四段，症状最值钱）。规矩见[页怎么写](/docs/livedoc/writing) |
+| **三层分流** | CLAUDE.md 只装硬约束；文档站装「为什么」；注释只装现状 |

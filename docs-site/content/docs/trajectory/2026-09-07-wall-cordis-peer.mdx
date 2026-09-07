@@ -5,7 +5,6 @@ type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: cordis 走 peer
 domain: 词汇表包
-livedoc: none
 ---
 
 判据「运行时真 import 了才写 peer」漏了中间一档：**只 import type、但它出现在导出的类型里，也得 peer**——`GwbContext extends Context`，消费方必须解析得到，而**发布出去的包不带 devDependencies**。

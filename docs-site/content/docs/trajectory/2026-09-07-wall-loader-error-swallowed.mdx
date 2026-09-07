@@ -5,12 +5,11 @@ type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: 出口不在场
 domain: 宿主
-livedoc: none
 ---
 
 内核在**任何件之前**就注册好日志出口——注册点紧挨着 `ctx` 造出来的地方：
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="94-102" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="95-102" */}
 
 **loader 没有吞错误**，它老老实实写着 `.catch(error => this.ctx.logger.error(error))`。问题在下游：cordis 的 `LoggerService` 把消息存进 `buffer`，**没有 exporter 就没有出口**。而 `logger-console` 是 `cordis.yml` 里一条**并发挂载**的普通件——件挂载失败的那一刻，它可能还没注册 exporter。
 

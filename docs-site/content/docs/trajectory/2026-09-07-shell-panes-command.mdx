@@ -5,7 +5,6 @@ type: choice
 parent: [2026-09-07-gwb-kernel]
 label: 窗格表过桥
 domain: 外壳
-livedoc: none
 ---
 
 ## 背景
@@ -23,7 +22,7 @@ livedoc: none
 
 ## 依据
 
-①在这条线上其实是唯一的路：内核的 `dispatch` 除 `kernel.info` 与 `kernel.install` 两条自省命令外**全部走 `ctx.gwbCommands`**，任何件的任何命令都从那儿派发。
+①在这条线上其实是唯一的路：内核的 `dispatch` 只有 `kernel.info` 一条自省命令（2026-09-08 订正：曾是两条，`kernel.install` 随装机口移除），其余**全部走 `ctx.gwbCommands`**，任何件的任何命令都从那儿派发。
 
 那么外壳依赖命令总线该多硬？**代价不对称**：写成可选的话，cli 缺席时外壳照挂、界面照画，用户看到的是个什么都开不出来的空井，症状「点哪儿都没反应」得自己去翻 console；写成硬的话 cordis 在日志里明说「gwb-shell 在等 gwbCommands」，而且 cli 后来挂上时外壳自动跟着起来——那是 `inject` 白得的。
 

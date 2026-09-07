@@ -1,0 +1,59 @@
+---
+title: 一件的解剖
+description: 从发布到条目——包的每个部位分别是谁在消费
+---
+
+# 一件的解剖
+
+读完这页你能回答：一件的哪份文件归谁读；为什么清单里几乎没有 `gwb` 字段；从发布到挂上要走哪几步。
+
+## 全流程：发布 → 装包 → 写条目
+
+```
+pnpm publish --registry http://127.0.0.1:4873/     # 件仓发布到本机 Verdaccio
+cd %APPDATA%\gwb-kernel\homes\<名>
+pnpm add @godcreator02/gwb-thing                   # 装进 home
+# cordis.yml 里加一条条目，重启
+```
+
+三步缺一不可：**没装包**，loader 按裸名找不到；**没条目**，装了也没人挂它；**没重启**，include 不监听文件，改 yml 不热生效——热挂载走条目树 API（见[取址](/docs/kernel/loading)），那是给设置件用的，不是给人手编 yml 用的。
+
+`@godcreator02` 这个 scope 指向本机 Verdaccio，路标在用户级 `~/.npmrc` 里。刚发的包装不进去，查 pnpm 的 `minimumReleaseAgeExclude` 有没有放行这个 scope。
+
+## 包清单：每个部位谁在读
+
+| 部位 | 谁读 | 干什么 |
+| --- | --- | --- |
+| `name` | pnpm、loader、`gwb://` 定址 | `@godcreator02/gwb-<件名>`，加前缀跟废弃那批错开 |
+| `type: "module"` | node | 件是 ESM |
+| `exports` | loader（节点半）、`gwb://`（浏览器半） | **唯一的取址依据**。不在表里的文件一概解析不到 |
+| `gwb.shared` | 内核的 `collectShared` | 内核唯一会读的 `gwb` 字段 |
+| `peerDependencies` | pnpm（装进 home 时） | 版本的唯一检查点——cordis 对服务**零**版本检查 |
+| `files` / `prepublishOnly` | pnpm publish | 发什么、发包前必 build（`pnpm check` 不构建） |
+
+**给人看的东西别往清单里放。** 曾经有个 `gwb.title`，四个包都写着，从来没有过读者；这种字段死掉的时候没有任何机制会发现，因为「没人读」跟「读了没用上」在盘上长得一模一样。件的其余声明全走运行时：我是外壳（provide `gwbShell`）、我叫什么（`describeSelf`）、我有哪几格窗格（`registerPane`）——运行时那条路上，少一个消费方是当场看得见的。
+
+`shared` 留在清单里是**硬的，不是还没搬**：共享包**不是件**——它在 home 的 `dependencies` 里但不在 `cordis.yml` 里，没有 `apply`、没有 fiber、没有 ctx，压根没有运行时可言。而且 importmap 必须赶在第一句动态 import 之前注入，比任何运行时都早。
+
+{/* ref file="../apps/desktop/src/shared/entries.ts" lines="70-79" */}
+
+## 依赖怎么写：三档，加一个范围前缀
+
+| 情形 | 写哪 |
+| --- | --- |
+| 运行时真 import 了它 | `dependencies` 或 `peer` |
+| **只 import type，但它出现在导出的类型里** | **`peer`**——消费方必须解析得到 |
+| 只在实现内部用类型、不出现在导出面 | `dev` |
+
+版本范围用 `>=` 别用 `^`：0.0.x 上插入符会把补丁位锁死。中间那档（type 上了导出面）最容易漏——漏了，消费方解析不到类型，构建期才炸。
+
+## 产物纪律
+
+- 产物归 `dist/`，发布包里不带裸跑的源码
+- **dist 里零裸导入**：loader 不打包，件是独立加载的。要共享的运行时走 importmap（声明 `gwb.shared` 的那个包），其余依赖打进自己这份束
+- 相对导入带 `.js` 后缀——ESM 原样跑，没有补后缀的余地
+- 件仓拿**产物守卫测试**锁这两条：dist 里出现裸名、或相对导入不带 `.js`，门禁红
+
+## 一条边界：多条目
+
+同一个包可以挂多条条目，各有各的配置、设置、数据（`id` 是身份，`name` 只是装哪个包）。但 **provide 服务的件只能挂一条**——服务名在整个工作台里唯一，第二条当场抛（宿主活着，日志说话）。能安全挂多份的是「只登记命令与窗格、不交出服务」的件。

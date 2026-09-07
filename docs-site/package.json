@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "gwb-kernel 的文档站：livedoc 已接上，眼下只用它摆 README，引用（钉源码）还没写",
+  "description": "gwb-kernel 的文档站：livedoc 钉码 + 账本，README 与 .ai.md 由 render 摆出",
   "scripts": {
     "dev": "next dev -p 4314",
     "build": "next build",

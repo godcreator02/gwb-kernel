@@ -1,7 +1,6 @@
 ---
 title: 轨迹
 description: 定过的事与撞过的墙——一卡一文件，只追加
-livedoc: none
 ---
 
 # 轨迹
@@ -10,7 +9,7 @@ livedoc: none
 
 卡的规矩：`born-at` 取自引入它的那次提交，**永不改**；正文只追加，订正写进原卡、不删旧话；一条推翻另一条的，卡里写着 `supersedes::`。决策卡分五段（背景 / 结论与边界 / 否掉的候选 / 依据 / 代价与遗留），墙卡是四段式（现状 / 为什么 / 症状 / 钉住的那段代码）——「代价」与「症状」分别是两边最要紧的那段。
 
-## 定过的事（28）
+## 定过的事（29）
 
 | 卡 | 定了什么 |
 | --- | --- |
@@ -40,8 +39,9 @@ livedoc: none
 | [出口归内核](/docs/trajectory/2026-09-07-kernel-owns-log-export) | `logger-console` 不再开；正文渲染一次投两处 |
 | [日志走 preload](/docs/trajectory/2026-09-07-logs-preload-api) | `logs.backlog()` ＋ `on()`；宿主死了历史还在 |
 | [日志按字节切](/docs/trajectory/2026-09-07-log-byte-rotation) | 2 MB 切、留 20 份；按字节不按行 |
-| [条目不进词汇表](/docs/trajectory/2026-09-07-log-shape-not-in-vocab) | 日志条目形状不进词汇表包；正本住「写一个件」 |
+| [条目不进词汇表](/docs/trajectory/2026-09-07-log-shape-not-in-vocab) | 日志条目形状不进词汇表包；正本住「日志」 |
 | [设置分两份](/docs/trajectory/2026-09-07-gwb-settings-two-files) | `gwb-settings` 一包全部；home 级 ＋ machine 级两份落盘 |
+| [装机口移除](/docs/trajectory/2026-09-08-no-install-port) | 内核不碰 pnpm；对「装」只剩安家——保证 home 起得来 |
 
 ## 撞过的墙（24）
 

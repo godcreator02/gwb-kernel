@@ -5,7 +5,6 @@ type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: 随机 id
 domain: 条目表
-livedoc: none
 ---
 
 `EntryGroup.create` 走 `ensureId`，不写 `id` 就 `Math.random().toString(16).slice(2, 10)`——**8 位随机十六进制，每次启动都不一样**。文档一度写着「`id` 不写就用 `name`」，那是错的，两个包里没有任何一处拿 `name` 当 id。
@@ -14,4 +13,4 @@ livedoc: none
 
 **症状**：按条目身份存东西的件——外壳的窗格布局、设置件的 home 级设置——每次启动都对不上，东西像是没存过。**没有报错**。
 
-实机的 `cordis.yml` 一直是手写短名 id（`gwb-plugin-dev` 的规程就这么要求），所以这个坑一次都没撞上；写下来是因为查 `gwb-settings` 该按什么做键时翻出来的。规程见[写一个件](/docs/plugin)。
+实机的 `cordis.yml` 一直是手写短名 id（`gwb-plugin-dev` 的规程就这么要求），所以这个坑一次都没撞上；写下来是因为查 `gwb-settings` 该按什么做键时翻出来的。规程见[一件的解剖](/docs/plugins/anatomy)。

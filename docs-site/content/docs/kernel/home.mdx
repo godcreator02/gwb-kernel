@@ -1,0 +1,38 @@
+---
+title: 安家：home 三件套
+description: 内核不碰 pnpm——它只保证 home 起得来
+---
+
+# 安家：home 三件套
+
+读完这页你能回答：home 在哪、里面有什么；为什么每次启动都要铺一遍；装机去哪了。
+
+## home 在哪
+
+{/* ref file="../apps/desktop/src/host/home.ts" lines="12-37" */}
+
+`userData/homes/<名字>`。`GWB_HOME` 环境变量选格，不给就是 `default`。名字**严格 kebab-case**——它要拼进路径，放行 `../../x` 等于把 home 的边界交出去。
+
+`dataDir` 是单源：日志目录、`gwb://` 的取货根、宿主的 `GWB_DATA_DIR`，全从它推出来。件要路径走 `kernel.info` 拿，**别自己拼**——目录名哪天换了，自己拼的不报错，只会静默显示一条错路径。
+
+## 每次启动铺三件套
+
+`ensureHome` 每次启动都跑，幂等，差什么补什么：
+
+| 文件 | 是什么 |
+| --- | --- |
+| `package.json` | `{"name":"gwb-home","private":true}`——件的 dependencies 住这儿 |
+| `cordis.yml` | 空表 `[]`。那是「一个件都没装」的正当表达，也是 home 起得来的最小形态——读不到它宿主整个退出（见[那面墙](/docs/trajectory/2026-09-07-wall-fresh-home-no-yml)） |
+| `README.md` | 写给坐在 home 面前的人：怎么装件、`id` 为什么手写、哪些件能挂多份 |
+
+**为什么不是只在首启**：有人手工删掉 `cordis.yml` 之后，只在首启补的话就再也起不来了，而那个失败同样是宿主整个退出。
+
+铺家是安家，不是装机——它只保证 home **起得来**，不保证里面有什么。
+
+## 装机去哪了
+
+曾经有第四件事叫装机：`kernel.install` 命令转发 pnpm、首启装一份推荐列表。2026-09-08 **整口拿掉**，词汇表包里的 `install()` 一并删了。**内核不碰 pnpm。**
+
+判据收在[装机口移除](/docs/trajectory/2026-09-08-no-install-port)那张卡里，一句话版：「用户可以装插件」不再要求内核是那台机器——home 是个**普通的 npm 项目根**，装包就是进 home、`pnpm add`、`cordis.yml` 写条目的手工活（home 里那份 README 写着全流程，上手见[跑起来](/docs/getting-started/first-run)）；图形界面的装件面归件——件仓的 `gwb-plugins` 件，`plugins.install` 命令干这个。
+
+内核为「装」保持的就一样：**home 的形状 pnpm 认得**。这就够了。
