@@ -18,8 +18,9 @@ pnpm start
 落到 `dist/`。不跑的症状是装完起不来，而 pnpm 一声不吭。这里在 `apps/desktop` 挂了一条
 自己的 `postinstall` 补上，`.npmrc` 里配了 npmmirror 镜像（GitHub 直连拉不动）。
 
-`pnpm start` 等于 `electron-vite build && electron .`：构建三个 target（主进程、preload、
-渲染层）再直接跑。**开发期不必全量构建别的东西**——这个仓眼下就一个应用包。
+`pnpm start` 先出词汇表包的 `lib/`（产物不进 git，这步串在 `start` 与 `check` 里，
+毫秒级），再 `electron-vite build && electron .`：构建三个 target（主进程、preload、
+渲染层）直接跑。
 
 跑起来之后 home 在 `%APPDATA%/gwb-kernel/home`。第一次启动它是空的，只有一个
 `package.json`；要看到界面，得往里装一个声明了 `gwb.shell` 的件，并在 `cordis.yml` 里
