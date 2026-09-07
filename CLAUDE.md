@@ -81,12 +81,24 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 **件的包名：`@godcreator02/gwb-<件名>`**。加 `gwb-` 前缀跟废弃那批错开（`@godcreator02/shell`
 那些已被占着）。scope 不换。
 
-## 干活之前
+## 干活之前：判断层住 skill
 
-总控台 `D:\unitfolders\26090520ntn\console\.claude\skills\` 那四份 skill
-（`gwb-tdd` / `gwb-test` / `gwb-release` / `gwb-update`）**对象仓写的是 god-workbench**。
-判断层在这个仓一样适用，**但凡提到具体路径、包名、命令的部分都要按这个仓翻译一遍**。
-坐在本仓时它们不进上下文，按上面的路径直接 Read。
+**本仓的两份**（坐在这儿自动可见，`.claude/skills/`）：
+
+| skill | 什么时候用 |
+| --- | --- |
+| `gwb-doc` | 写或改文档、往这份 `CLAUDE.md` 加东西、写注释、加一条「撞过的墙」、动 livedoc 引用之前 |
+| `gwb-decide` | **遇到技术选型之前**——引入依赖、选工具、定契约面、判「进内核还是做成插件」。核心纪律是推完交给用户拍板，**不自己定** |
+
+**总控台那四份**（`D:\unitfolders\26090520ntn\console\.claude\skills\`：`gwb-tdd` /
+`gwb-test` / `gwb-release` / `gwb-update`）**对象仓写的是 god-workbench**。判断层在这个仓
+一样适用，**但凡提到具体路径、包名、命令的部分都要按这个仓翻译一遍**。坐在本仓时它们不进
+上下文，按上面的路径直接 Read。
+
+## 现在到哪了
+
+路线、在等什么前提、定过的事，都在文档站（`roadmap` 与 `decisions` 两页）。
+**「等什么」那一栏是重点**——它记着为什么现在不做，正好接住准入判据第二关。
 
 ## 注释与文档：三层分流
 
@@ -103,8 +115,15 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 **仓根 `README.md` 是生成物，别手改**——正本是 `content/docs/readme.mdx`，改完在 `docs-site`
 跑 `pnpm livedoc render --target ai` 重摆。
 
-**`livedoc check` 已进 `pnpm check`**：钉住的代码一改，门禁就报黄，得看一眼再
-`pnpm --filter gwb-kernel-docs-site exec livedoc confirm`。指向空气了报红。
+**文档检查不在 `pnpm check` 里**——它要起文档站的解析链，太慢，每次跑测试都带上不值。
+单独两条：
+
+```powershell
+pnpm doc          # livedoc check：钉住的代码变了报黄，指向空气报红
+pnpm doc:confirm  # 看过之后确认，草稿记号也在这一步转正
+```
+
+改了被钉住的代码就跑一次；多次改动攒着一起跑也行。**提交前跑一次**是个好习惯。
 
 **文档站的组件随便加**——它不是内核，准入判据管不着它；只记得在 `livedoc.config.mjs`
 的名册里给它一条压平规则。
