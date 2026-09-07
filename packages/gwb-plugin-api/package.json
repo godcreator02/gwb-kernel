@@ -1,6 +1,6 @@
 {
   "name": "@godcreator02/gwb-plugin-api",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "gwb-kernel 的词汇表：插件说话用的那几个名词，只命名不做事",
   "type": "module",
   "main": "lib/index.js",
@@ -12,12 +12,18 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["lib", "src"],
+  "files": [
+    "lib",
+    "src"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.build.json"
   },
-  "//dependencies": "一条都不能有。cordis 只 import type，所以是 devDependency 不是 peer——运行时真 import 了才写 peer",
+  "//dependencies": "运行时依赖一条都不能有。cordis 走 peer 不是 dev：虽然只 import type、产物里一行 import 都不留，但 GwbContext extends Context——它出现在**导出的类型**里，消费方必须解析得到。写成 dev 的症状是消费方那边 ctx.logger/effect/provide 全部报「不存在」，因为发布出去的包不带 devDependencies",
+  "peerDependencies": {
+    "cordis": "^4.0.0-rc.9"
+  },
   "devDependencies": {
     "cordis": "4.0.0-rc.9",
     "typescript": "^7.0.2"
