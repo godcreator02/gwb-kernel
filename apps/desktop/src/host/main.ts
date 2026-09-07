@@ -12,19 +12,18 @@ import { ensureHomeManifest, homeInstalled, installPackages, RECOMMENDED } from 
 
 /**
  * 宿主子进程入口（纯 node，由主进程以 ELECTRON_RUN_AS_NODE 拉起）。
- * 内核只挂两个官方件就退场:loader 管条目树与模块加载,include 读 yml。
- * 取址因此归 loader——baseUrl 指向 home,它自己解析 <home>/node_modules。
+ * 挂 loader 与 include，provide gwbKernel，守住 fd3 那条命令通道。
+ * 取舍与踩过的坑见文档站。
  */
 
-// cordis 的 logger 走 console.log——先改道 stderr，别污染 fd1
 console.log = console.error
 
 const dataDir = process.env.GWB_DATA_DIR ?? path.resolve(process.cwd(), 'gwb-home')
 const appVersion = process.env.GWB_VERSION ?? null
 const siteDir = path.join(dataDir, 'node_modules')
-/** 相对 baseUrl 的 URL,不是文件系统路径——include 拿它走 `new URL(path, baseUrl)`，Windows 盘符会被当成 scheme */
+/** cordis.yml 的位置，相对 baseUrl 的 URL——不是文件系统路径 */
 const CONFIG_NAME = 'cordis.yml'
-/** 承载 cordis.yml 那条条目的 id;件的 id 都挂在它下面（`home:<件>`）*/
+/** 承载 cordis.yml 那条条目的 id；件的 id 挂在它下面（`home:<件>`） */
 const ENTRY_ROOT = 'home'
 
 fs.mkdirSync(dataDir, { recursive: true })
@@ -39,24 +38,19 @@ function send(message: HostMessage): void {
 
 const ctx = new Context()
 
-/**
- * 模块解析的起点,设在根上下文:loader 与 include 都从这儿继承。
- * 指向 home 那个目录,<home>/node_modules 里的件因此按裸名就找得到——母仓设的是应用目录,
- * 所以它必须自己把条目名算成绝对 file URL。
- * 设在根而不是只传给 Loader:Loader 只把它设在自己 extend 出的 ctx 上,而 Include 挂在根上。
- */
+/** 模块解析的起点，指向 home 目录。设在根上下文，loader 与 include 都从这儿继承 */
 ctx.baseUrl = pathToFileURL(dataDir + path.sep).href
 
 declare module 'cordis' {
   interface Context {
-    /** 内核的服务,根上下文 provide、永不撤销。件用契约包的 requireKernel 取 */
+    /** 内核的服务，根上下文 provide、永不撤销 */
     gwbKernel: GwbKernelApi
-    /** 命令总线,由某个件提供;没装那个件就是 undefined。服务名一律 gwb 开头,见仓根 CLAUDE.md */
+    /** 命令总线，由某个件提供；没装那个件就是 undefined */
     gwbCli?: { run(command: string, args?: unknown): Promise<unknown> }
   }
 }
 
-/** 一条条目在界面上的样子。ok 看 fiber:挂上了才有,这是 loader 唯一的成败凭据 */
+/** 一条条目在界面上的样子。`ok` 看 fiber——挂上了才有 */
 interface EntryView {
   id: string
   ok: boolean
@@ -65,7 +59,7 @@ interface EntryView {
   disabled: boolean
 }
 
-/** 走遍 loader 的条目树（include 是挂在它下面的子树,条目在子树里）*/
+/** 走遍 loader 的条目树；include 是挂在它下面的子树，件的条目在子树里 */
 function walkEntries(): EntryView[] {
   const out: EntryView[] = []
   const seen = new Set<unknown>()
@@ -95,7 +89,7 @@ function walkEntries(): EntryView[] {
   return out
 }
 
-/** 内核自省口。除它与 kernel.install 之外一律走 ctx.gwbCli——本体不认识任何插件的命令名 */
+/** 内核自省口 */
 function kernelInfo(): unknown {
   const entries = walkEntries()
   return {
@@ -110,14 +104,14 @@ const installEnv = {
   log: (line: string) => console.error(`[install] ${line}`),
 }
 
-/** 装机。装完的件要生效,由调用方去改条目树（loader 那边热挂),装机本身不碰树 */
+/** 把包装进 home。装完不碰条目树——要生效由调用方去改树 */
 async function install(specs: string[]): Promise<{ ok: boolean; data?: { installed: string[] }; error?: string }> {
   if (installEnv.pnpm === '') return { ok: false, error: '没有可用的 pnpm（GWB_PNPM 没传下来）' }
   const result = await installPackages(installEnv, specs)
   return result.ok ? { ok: true, data: { installed: specs } } : result
 }
 
-/** 装机的命令口。参数形状在这儿收窄一次,服务那条不必再判 */
+/** 装机的命令口，参数形状在这儿收窄 */
 async function kernelInstall(args: unknown): Promise<unknown> {
   const specs = (args as { specs?: unknown })?.specs
   if (!Array.isArray(specs) || specs.some((s) => typeof s !== 'string')) {
@@ -126,10 +120,7 @@ async function kernelInstall(args: unknown): Promise<unknown> {
   return install(specs as string[])
 }
 
-/**
- * 内核给插件的那个服务。**在挂 loader 之前 provide**——件一挂上就要取得到,
- * 晚一步的症状是第一批件全都读到 undefined。
- */
+/** 内核给件的那个服务 */
 const kernelApi: GwbKernelApi = {
   dataDir,
   appVersion,
@@ -137,6 +128,7 @@ const kernelApi: GwbKernelApi = {
   emit: (payload) => send({ t: 'event', payload }),
 }
 
+/** 除两条自省命令外一律走 ctx.gwbCli——本体不认识任何件的命令名 */
 async function dispatch(payload: { command: string; args?: unknown }): Promise<unknown> {
   if (payload.command === 'kernel.info') return kernelInfo()
   if (payload.command === 'kernel.install') return kernelInstall(payload.args)
@@ -149,7 +141,6 @@ const rl = readline.createInterface({ input: process.stdin })
 rl.on('line', (line) => {
   if (!line.trim()) return
   const msg = parseCommandLine(line)
-  // 协议两头都是自家写的，不成话的行就是有一边有 bug，丢掉等于藏 bug
   if (msg === undefined) {
     console.error(`[stdin] 不合协议的行，已丢弃：${line.slice(0, 200)}`)
     return
@@ -160,11 +151,7 @@ rl.on('line', (line) => {
   )
 })
 
-/**
- * 首启:home 还不是个包就建出来,按推荐列表装一遍。装过了一概不碰——不自动升级。
- * 建 package.json 排在装之前而且不由装机代劳:推荐列表空的时候也得建出来,
- * 不然「装过了」永远判不成立,每次启动都当新 home。
- */
+/** 首启：home 还不是个包就建出来，按推荐列表装一遍。装过了一概不碰 */
 async function firstRun(): Promise<void> {
   if (homeInstalled(dataDir)) return
   console.error(`[install] 新 home:${dataDir}`)
@@ -172,24 +159,7 @@ async function firstRun(): Promise<void> {
   await installPackages(installEnv, [...RECOMMENDED])
 }
 
-/**
- * 内核只挂 loader,再往它的树上放一条 include,其余全归这两个。
- *
- * include 走 `cordis:` 前缀的内建表:那个前缀的名字 loader 直接从 builtins 里取,
- * 不经模块解析——它住应用依赖树而 baseUrl 指着 home,按裸名是找不到的。
- * 做成条目而不是 `ctx.plugin(Include)`,是为了让它的子树挂在 loader 的树上:
- * 条目表、fiber 状态、热挂卸全在一棵树里,外面只认 ctx.loader 一个入口。
- */
-/**
- * 保底日志出口,**只管 error**。
- *
- * cordis 的 LoggerService 把消息存进 buffer,没有 exporter 就没有出口。而 loader 挂不上
- * 一个件时,错误正是走 `ctx.logger.error`——那时 logger-console 还是 yml 里一条并发挂载的
- * 普通件,来不及接。症状是件静默挂不上、日志一个字都没有,连「哪个件、为什么」都问不出来。
- *
- * 所以这一条得在内核里、在 loader 之前。只管 error:info/warn 归 logger-console,
- * 那个件装了就有好格式,没装也不影响这条保底线。error 因此可能出两遍——值得。
- */
+/** 保底日志出口，只管 error。info / warn 归 logger-console 那个件 */
 function bootstrapErrorExporter(): void {
   ctx.logger.exporter({
     export: (message) => {
@@ -199,14 +169,12 @@ function bootstrapErrorExporter(): void {
   })
 }
 
+/** 内核只挂 loader，再往它的树上放一条 include，其余全归这两个 */
 async function bootLoader(): Promise<void> {
   ctx.provide('gwbKernel', kernelApi)
   bootstrapErrorExporter()
-  // ctx.plugin 是 thenable,不 await 服务就还没就位（ctx.loader 会是 undefined）
   await ctx.plugin(Loader, {})
   ctx.loader.builtins.include = Include
-  // id 写死:条目 id 是有层级的（`<父>:<子>`），父的 id 一变，所有件的 id 跟着变——
-  // 外壳的布局按 panel id 存,那样每次启动都对不上
   await ctx.loader.root.update([{ id: ENTRY_ROOT, name: 'cordis:include', config: { path: CONFIG_NAME } }])
   await ctx.loader.await()
 }

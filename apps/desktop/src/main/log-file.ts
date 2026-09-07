@@ -2,11 +2,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 /**
- * 把终端上那条流同时落到文件。三处输出——主进程自己、宿主 pipe 过来的、渲染层
- * console 转来的——最后都汇在 process.stderr 上,劫持这一处就全在里头了。
- *
- * 这不是「日志功能」:不分级、不缓冲、不进界面、不轮转。它只保证一件事——脱离终端
- * 起的时候（打包后双击,stderr 没人接),出了事还有个地方查得到。
+ * 把终端那条流同时落到文件。三处输出（主进程自己、宿主 pipe 过来的、渲染层 console
+ * 转来的）都汇在 process.stderr 上，劫持这一处就全在。
+ * 不分级、不缓冲、不进界面、不轮转。取舍见文档站。
  */
 export function teeToFile(file: string): void {
   let fd: number
@@ -18,11 +16,10 @@ export function teeToFile(file: string): void {
     return
   }
 
-  // 一次启动一段:文件是 append 的,没有这条线就分不清哪几行是这次跑出来的
+  // 文件是 append 的，一次启动写一条分隔线
   fs.writeSync(fd, Buffer.from(`\n=== 启动 ${new Date().toISOString()} ===\n`))
 
-  // 写失败只说一次、此后不再试:静默停更会让人读到一段什么都没发生的时间,
-  // 每行重试则把每行输出变成一次失败的系统调用
+  // 写失败只说一次，此后不再试
   let dead = false
   for (const stream of [process.stdout, process.stderr]) {
     const orig = stream.write.bind(stream) as (chunk: string | Uint8Array, ...rest: unknown[]) => boolean

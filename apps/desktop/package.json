@@ -6,7 +6,7 @@
   "type": "module",
   "main": "out/main/index.mjs",
   "scripts": {
-    "//postinstall": "electron 这个包不带 postinstall（scripts 为 null），二进制得显式跑 install.js 才落到 dist/。不跑的症状是装完起不来，且 pnpm 一声不吭。install.js 自己判 dist 在不在，重复跑不花钱",
+    "//postinstall": "electron 这个包不带 postinstall，二进制得显式跑 install.js。见文档站",
     "postinstall": "node node_modules/electron/install.js",
     "start": "electron-vite build && electron .",
     "build": "electron-vite build",

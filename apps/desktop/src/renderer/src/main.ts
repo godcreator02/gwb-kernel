@@ -1,9 +1,8 @@
 import { clientUrl } from '../../shared/asset-url'
 
 /**
- * 渲染层本体:找到外壳件、把 #root 交给它,再没别的。
- * 一切 UI 在外壳与各件的 client 束里。没有外壳就留白——按仓规不在图形界面上
- * 解释失败,原因进 console（主进程转终端）,出路走命令行。
+ * 渲染层本体：找到外壳件、把 #root 交给它，再没别的。
+ * 没有外壳就留白，原因进 console。取舍见文档站。
  */
 
 interface EntryView {
@@ -35,7 +34,7 @@ async function boot(): Promise<void> {
     console.error('[renderer] 没有外壳件挂上,界面到此为止。装一个 gwb.shell 为 true 的件,或看宿主日志')
     return
   }
-  // 一扇窗只交得出一个界面根,挑谁都是碰运气——所以不挑
+  // 一扇窗只交得出一个界面根，多条时不挑
   if (shells.length > 1) {
     console.error(`[renderer] 多条外壳同时挂上,不挑:${shells.map((s) => s.id).join('、')}`)
     return

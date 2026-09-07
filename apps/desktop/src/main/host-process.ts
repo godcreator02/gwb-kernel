@@ -7,8 +7,7 @@ import { parseHostLine } from '../shared/protocol'
 
 /**
  * 起宿主子进程、守住那条命令通道。
- * 拉起要 --expose-internals（cordis loader 用得上），而主进程的 NODE_OPTIONS
- * 白名单拒它，所以只能走 ELECTRON_RUN_AS_NODE 把 electron 当 node 使。
+ * 拉起走 ELECTRON_RUN_AS_NODE + --expose-internals。取舍见文档站。
  */
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -24,7 +23,7 @@ export interface HostEnv {
   onEvent: (payload: unknown) => void
 }
 
-/** 在飞的命令等多久算超时。宿主卡死时不给上限，界面会永远转圈 */
+/** 在飞的命令的超时上限 */
 const COMMAND_TIMEOUT = 120_000
 
 export function startHost(env: HostEnv): Promise<Host> {
@@ -36,7 +35,7 @@ export function startHost(env: HostEnv): Promise<Host> {
         ELECTRON_RUN_AS_NODE: '1',
         GWB_DATA_DIR: env.dataDir,
         GWB_VERSION: env.version,
-        // 装机转发的 pnpm 随应用自带,不看 PATH 上有没有
+        // 装机转发的 pnpm 随应用自带，不看 PATH
         GWB_PNPM: path.resolve(here, '../../node_modules/pnpm/bin/pnpm.cjs'),
       },
       stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
@@ -49,7 +48,7 @@ export function startHost(env: HostEnv): Promise<Host> {
 
     proc.on('exit', (code) => {
       console.error(`[gwb] 宿主退出（code=${code}）`)
-      // 在飞的命令不能永远悬着——立刻给失败回执
+      // 在飞的命令立刻给失败回执
       for (const done of host.pending.values()) done({ ok: false, error: '宿主已退出' })
       host.pending.clear()
       reject(new Error(`宿主退出（code=${code}）`))

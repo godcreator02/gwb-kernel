@@ -7,13 +7,13 @@ import { teeToFile } from './log-file'
 
 /**
  * GUI 主进程：开一扇窗、起一个宿主、把两头接上。
- * 内核的「载体」与「桥」就在这个文件加 host-process.ts / asset.ts 里，别的都不该往这儿长。
+ * 内核的「载体」与「桥」就在这个文件加 host-process.ts / asset.ts 里。
  */
 
 const { app, BrowserWindow, ipcMain, protocol } = electron
 const here = path.dirname(fileURLToPath(import.meta.url))
 
-// 必须在 app ready 之前、模块顶层声明:晚了这个 scheme 当不成模块脚本的源,而且静默失效
+// 必须在 app ready 之前、模块顶层声明
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'gwb',
@@ -21,7 +21,7 @@ protocol.registerSchemesAsPrivileged([
   },
 ])
 
-// getPath 在 ready 之前就能用。落盘要趁早——起步头几步出的错最值钱
+// getPath 在 ready 之前就能用；落盘要趁早
 const dataDir = path.join(app.getPath('userData'), 'home')
 teeToFile(path.join(dataDir, 'gwb-kernel.log'))
 
@@ -41,12 +41,11 @@ async function createWindow(): Promise<void> {
     webPreferences: {
       preload: path.join(here, '../preload/index.mjs'),
       contextIsolation: true,
-      // ESM preload 需要；隔离仍开着，渲染层只摸得到桥暴露的那两条
+      // ESM preload 需要；contextIsolation 仍开着
       sandbox: false,
     },
   })
-  // 渲染层的 console 转终端。没有它，页面里发生的一切都是黑盒——这是调试的底线，
-  // 不是日志功能:不缓冲、不分级、不进界面
+  // 渲染层的 console 转终端
   win.webContents.on('console-message', (e) => console.error(`[renderer] ${e.message}`))
   if (process.env.ELECTRON_RENDERER_URL !== undefined) await win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else await win.loadFile(path.join(here, '../renderer/index.html'))
@@ -55,7 +54,7 @@ async function createWindow(): Promise<void> {
 void app
   .whenReady()
   .then(async () => {
-    // 处理器随进程存亡,不像监听端口要管生命周期
+    // 处理器随进程存亡，不必管生命周期
     protocol.handle('gwb', (request) => handleAsset(path.join(dataDir, 'node_modules'), request))
     host = await startHost({
       dataDir,
@@ -65,7 +64,7 @@ void app
     await createWindow()
   })
   .catch((err: unknown) => {
-    // 失败即失败:没有兜底页，原因留在终端里，出路走命令行
+    // 失败即失败：没有兜底页
     console.error(`[gwb] 起不来：${String(err)}`)
     app.exit(1)
   })

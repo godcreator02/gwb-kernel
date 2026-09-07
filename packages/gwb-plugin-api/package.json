@@ -20,7 +20,7 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.build.json"
   },
-  "//dependencies": "运行时依赖一条都不能有。cordis 走 peer 不是 dev：虽然只 import type、产物里一行 import 都不留，但 GwbContext extends Context——它出现在**导出的类型**里，消费方必须解析得到。写成 dev 的症状是消费方那边 ctx.logger/effect/provide 全部报「不存在」，因为发布出去的包不带 devDependencies",
+  "//dependencies": "运行时依赖一条都不能有。cordis 走 peer——它出现在导出的类型里。判据见文档站",
   "peerDependencies": {
     "cordis": "^4.0.0-rc.9"
   },
