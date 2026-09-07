@@ -89,12 +89,56 @@ function walkEntries(): EntryView[] {
   return out
 }
 
+/** home 清单里直接装着的包名。共享包不是件、不在条目树上，只能从这儿看见 */
+function homeDependencies(): string[] {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(dataDir, 'package.json'), 'utf8')) as {
+      dependencies?: Record<string, unknown>
+    }
+    return Object.keys(manifest.dependencies ?? {})
+  } catch {
+    return []
+  }
+}
+
+/**
+ * 收齐 home 里各包声明的运行时环境：裸名 → 哪个包的哪个子路径。
+ * 一个裸名只许一个提供方——撞了的报出来，不静默让谁赢（浏览器那边后来的本来也覆盖不掉，
+ * 静默的下场是页面上跑的是哪一份说不清）。内核全程不认识 react 这类名字，只搬运声明。
+ */
+function collectShared(): { shared: Record<string, { pkg: string; sub: string }>; conflicts: string[] } {
+  const shared: Record<string, { pkg: string; sub: string }> = {}
+  const conflicts: string[] = []
+  for (const pkg of homeDependencies()) {
+    const declared = pluginMeta(pluginDir(pkg, siteDir))?.shared
+    if (declared === undefined) continue
+    for (const [bare, sub] of Object.entries(declared)) {
+      const prev = shared[bare]
+      if (prev !== undefined) {
+        conflicts.push(`${bare}：${prev.pkg} 与 ${pkg} 都声明了，只认前者`)
+        continue
+      }
+      shared[bare] = { pkg, sub }
+    }
+  }
+  return { shared, conflicts }
+}
+
 /** 内核自省口 */
 function kernelInfo(): unknown {
   const entries = walkEntries()
+  const { shared, conflicts } = collectShared()
   return {
     ok: true,
-    data: { pid: process.pid, node: process.versions.node, dataDir, appVersion, entries },
+    data: {
+      pid: process.pid,
+      node: process.versions.node,
+      dataDir,
+      appVersion,
+      entries,
+      shared,
+      sharedConflicts: conflicts,
+    },
   }
 }
 

@@ -137,6 +137,36 @@ file URL。指向 home 之后 loader 自己就解析得到。
 顺带说明这半为什么还留着：挂载归 loader 了，但**主进程**的 `gwb://` 要把件的 `client.js`
 交给页面，得知道包在哪，而 loader 跑在宿主子进程里，主进程够不着。
 
+### URL 里的点段轮不到自己判——`new URL` 已经吃掉了
+
+{/* ref file="../apps/desktop/src/shared/asset-url.ts" lines="39-41" */}
+
+子路径通用化之后第一反应是加一道「`.` 与 `..` 一律不认」。**那是死代码**：WHATWG 的
+路径状态机会先百分号解码再判点段，`new URL` 出来的 `pathname` 里根本不会剩下它们。实测：
+
+```
+gwb://asset/plugins/@a/b/../escape.js    → pathname = /plugins/@a/escape.js
+gwb://asset/plugins/@a/b/%2e%2e/escape.js → pathname = /plugins/@a/escape.js
+```
+
+两条都被规范化成了同一个东西，落到解析函数手上时形状是「只剩包名、没说要什么」，
+自然不认。**留着那道检查比不写更糟**——读代码的人会以为这里挡住了越界，于是不再去问
+真正的防线在哪。真正挡越界的只有 `resolvePlugin` 那句包目录前缀检查。
+
+### 交样式表卡住的是 content-type，不是协议特权
+
+{/* ref file="../apps/desktop/src/main/asset.ts" lines="8-17" */}
+
+`registerSchemesAsPrivileged` 那四个特权（`standard` / `secure` / `supportFetchAPI` /
+`corsEnabled`）早就配齐了，`gwb://` 加载模块脚本一直是好的。但 `<link rel=stylesheet>`
+拿不到样式——**Chromium 对样式表做严格 MIME 检查，不是 `text/css` 一律拒**，而执行端把
+content-type 写死成了 `text/javascript`。
+
+**症状**：请求 200、内容也对，页面上就是没样式，控制台一句话都没有。
+
+分派按**解析出的真实文件**判扩展名，不按 URL 判：`exports` 的 `./client` 落到的是
+`lib/client.js`，URL 那一段压根没有扩展名。
+
 ---
 
 ## 构建

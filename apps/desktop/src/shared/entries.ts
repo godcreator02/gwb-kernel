@@ -45,13 +45,27 @@ export function entryFile(pkgDir: string, subpath = '.'): string | undefined {
   return pickEntry(manifest, subpath)
 }
 
+/**
+ * 包声明的 `gwb.shared`：裸名 → 本包的 exports 子路径，「我给页面提供这几个裸名」。
+ * 盘上的清单谁都能手改，逐条宽容：站不住的那条剔掉，别让一条坏声明废掉整包。
+ */
+function readShared(raw: unknown): Record<string, string> | undefined {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined
+  const out: Record<string, string> = {}
+  for (const [bare, sub] of Object.entries(raw as Record<string, unknown>)) {
+    if (bare === '' || typeof sub !== 'string' || sub === '') continue
+    out[bare] = sub
+  }
+  return Object.keys(out).length === 0 ? undefined : out
+}
+
 /** 包清单里的 gwb 段：件自己声明的元信息 */
-export function pluginMeta(pkgDir: string): { shell?: boolean } | undefined {
+export function pluginMeta(pkgDir: string): { shell?: boolean; shared?: Record<string, string> } | undefined {
   try {
     const manifest = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8')) as {
-      gwb?: { shell?: unknown }
+      gwb?: { shell?: unknown; shared?: unknown }
     }
-    return { shell: manifest.gwb?.shell === true }
+    return { shell: manifest.gwb?.shell === true, shared: readShared(manifest.gwb?.shared) }
   } catch {
     return undefined
   }

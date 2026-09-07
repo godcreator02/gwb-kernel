@@ -64,12 +64,70 @@ export function apply(ctx) {
 }
 ```
 
-`client.js` 由浏览器**直接加载**，不经过打包器，所以它不能有裸名 `import`——写成自包含的
-一个文件。页面通过这条 URL 拿到它：
+页面按这条 URL 取它：
 
 ```
-gwb://asset/plugins/@you/thing/client.js
+gwb://asset/plugins/<完整包名>/<exports 子路径>
 ```
+
+末尾那段就是 `exports` 表里的键去掉开头那两个字符（`./client` → `client`）。包名带 scope
+是两段，所以规则是「`@` 开头吃两段、否则吃一段，剩下的全是子路径」。
+
+**不在 `exports` 里的文件一概取不到**——那张表是内核唯一的取址依据。想把样式表交出去，
+就得把它也列进 `exports`。
+
+`client.js` 由浏览器直接加载、不经过打包器。裸名 `import` 只有一种情况能用：**那个名字在
+页面的 importmap 里**（见下一节）。其余依赖一律打进自己这一份束——外置成裸名而 importmap
+里没有它，就是运行期一句 `Failed to resolve module specifier`。
+
+## 运行时环境：`gwb.shared`
+
+浏览器里 `import 'react'` 这种裸名，只有 importmap 说得出它在哪。这张表由**内核**在页面
+起步时拼好注入——内核不认识 `react` 这个词，它只搬运声明。
+
+**提供方**在包清单里说「我给页面提供这几个裸名」，值是自己的 `exports` 子路径：
+
+```json
+{
+  "gwb": {
+    "shared": {
+      "react": "./react",
+      "react-dom/client": "./react-dom-client"
+    }
+  }
+}
+```
+
+内核扫 `<home>/package.json` 的 `dependencies`，把所有这类声明收齐拼成一张 importmap。
+**扫的是 home 清单不是条目表**——提供运行时的包通常不是件，它不在 `cordis.yml` 上。
+
+三条要记住的：
+
+- **一个裸名只许一个提供方**。撞了内核报出来、只认先来的那个；浏览器那边后注的表本来
+  也覆盖不掉已经解析过的名字，静默让谁赢的结果是「页面上跑的是哪一份说不清」
+- **提供运行时的包必须装在 home 顶层**（`pnpm add` 进去）。内核按包名直接拼路径找它，
+  不走 node 的解析算法，只在 `.pnpm` 里躺着的包它够不着
+- npm 上的 `react` **不能直接用**——它至今没有 ESM 出口。要有人把它打成 ESM 再发一个包出来
+
+## 样式
+
+件的样式表跟 `client.js` 走同一条路：列进 `exports`，件自己注 `<link>`。
+
+```json
+{
+  "exports": {
+    "./client": "./client.js",
+    "./style.css": "./lib/style.css"
+  }
+}
+```
+
+**注了不等于到位**：`<link>` 是异步取的，束里第一帧 DOM 完全可能落在表到位之前，那一瞬间
+是一堆没有样式的裸元素。等 `link.onload` 再渲染。
+
+设计令牌（颜色、圆角那些 CSS 变量）共享一份，件的表里只有 `var(--background)` 这样的引用。
+所以**换主题＝换那一份值，所有件当场跟着变，一个都不用重新构建**。件的表整张 scope 在
+`[data-gwb-plugin="<完整包名>"]` 之下，容器上不挂这个属性，一个类名都不生效。
 
 ## 外壳
 
@@ -91,6 +149,16 @@ export function mountShell(args, root) {
   })
 }
 ```
+
+`args` 里有三样：
+
+| | 是什么 |
+| --- | --- |
+| `host.call(command, args?)` | 命令通道，走到宿主分发再原路回 |
+| `home` | home 目录的绝对路径 |
+| `entries` | 条目表，每条 `{ id, ok, pkg, shell, disabled }` |
+
+加东西往 `args` 里加，签名不动。
 
 渲染层启动时问内核要条目表，挑出「挂上了 且 `gwb.shell` 为 true」的那一条。
 
@@ -137,7 +205,9 @@ import 一份内核代码，拿到的是代码不是那次运行的结果。
 内核的 `src/` 也不该整个发成包给插件用——插件用不着主进程与宿主入口，而发出去就成了
 要维护的契约。
 
-**这两样眼下都还没有**：`ctx.provide` 一次都没调过，词汇表包也还没建。这是下一刀要做的。
+两样都在了：宿主在挂 loader 之前 `provide('gwbKernel', …)`，词汇表包是
+`@godcreator02/gwb-plugin-api`。取内核服务用它的 `requireKernel(ctx)`，**别写进 `inject`**
+——那个服务在根上下文 provide、永不撤销，写进 `inject` 只会多一处挂不上的可能。
 
 ## 契约按最小重定
 
