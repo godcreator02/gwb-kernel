@@ -24,6 +24,14 @@ const siteDir = path.join(dataDir, 'node_modules')
 /** 承载 cordis.yml 那条条目的 id；件的 id 挂在它下面（`home:<件>`） */
 const ENTRY_ROOT = 'home'
 
+/**
+ * 外壳这个角色的服务名。**谁 provide 了它谁就是外壳**——这是内核认识的唯一一个件的
+ * 名字，它总得挑一个件把 `#root` 交出去。
+ *
+ * 不绑包名：另一个外壳件叫什么都行，provide 这个名字就是。
+ */
+const SHELL_SERVICE = 'gwbShell'
+
 fs.mkdirSync(dataDir, { recursive: true })
 
 // 显式给 fd 时 path 被忽略
@@ -48,12 +56,24 @@ declare module 'cordis' {
   }
 }
 
-/** 一条条目在界面上的样子。`ok` 看 fiber——挂上了才有 */
+/**
+ * cordis 的 `FiberState.ACTIVE`。**那是个 `const enum`**，`isolatedModules` 下 import
+ * 不进来，所以照抄字面量。
+ */
+const FIBER_ACTIVE = 2
+
+/** 一条条目在界面上的样子 */
 interface EntryView {
   id: string
+  /**
+   * 真的跑起来了没有。
+   *
+   * **判的是 fiber 的状态，不是 fiber 在不在**：`registry.plugin()` 是**同步**建 fiber 的，
+   * 跟 inject 满不满足无关。按「fiber 在不在」判的话，一个 inject 永远等不到的件也报
+   * `ok: true`——而那正是最该被看见的一种没挂上。
+   */
   ok: boolean
   pkg: string
-  shell: boolean
   disabled: boolean
 }
 
@@ -67,17 +87,15 @@ function walkEntries(): EntryView[] {
     for (const raw of Object.values(tree.store ?? {})) {
       const entry = raw as {
         id?: string
-        fiber?: unknown
+        fiber?: { state?: number }
         disabled?: boolean
         options?: { name?: string }
         subtree?: { store?: Record<string, unknown> }
       }
-      const pkg = entry.options?.name ?? ''
       out.push({
         id: entry.id ?? '',
-        ok: entry.fiber !== undefined,
-        pkg,
-        shell: pkg === '' ? false : pluginMeta(pluginDir(pkg, siteDir))?.shell === true,
+        ok: entry.fiber?.state === FIBER_ACTIVE,
+        pkg: entry.options?.name ?? '',
         disabled: entry.disabled === true,
       })
       walk(entry.subtree)
@@ -85,6 +103,36 @@ function walkEntries(): EntryView[] {
   }
   walk(ctx.loader as unknown as { store?: Record<string, unknown> })
   return out
+}
+
+/**
+ * 哪个包是外壳：**看谁 provide 了 `gwbShell` 服务**，不看包清单。
+ *
+ * 内核仍然认识一个名字（以前是 `gwb.shell` 这个字段名，现在是这个服务名）——那是免不了的，
+ * 它总得挑一个件把 `#root` 交出去。换成服务名之后白得三样：
+ *
+ * - **「多于一条」那种局面不存在了**：cordis 的 `provide` 撞名直接抛，第二个 provide
+ *   `gwbShell` 的件根本挂不上，而且日志里明说撞的是谁
+ * - **半死的外壳挑不出来**：这儿只认 `ACTIVE` 的 fiber。inject 没满足的外壳（比如它等的
+ *   命令总线没装）从此报不出来，而不是让渲染层去 boot 一个跑不起来的
+ * - **不用每次都重扫盘**：以前每条条目都要读一次它的 `package.json`
+ *
+ * 全扫再匹配、不用 `ctx.reflect._getImpl()`：那个带下划线、是内部面；而且它按
+ * `ctx[symbols.isolate][name]` 取，将来条目配了 isolate realm 就漏。
+ * 表的键是 **symbol**，`Object.values` 一个都拿不到，只能 `Reflect.ownKeys`。
+ */
+function shellPackage(): string | null {
+  const store = ctx.reflect.store as unknown as Record<symbol, { name?: string; fiber?: unknown }>
+  for (const key of Reflect.ownKeys(store)) {
+    if (typeof key !== 'symbol') continue
+    const impl = store[key]
+    if (impl?.name !== SHELL_SERVICE) continue
+    const fiber = impl.fiber as { state?: number; entry?: { options?: { name?: unknown } } } | undefined
+    if (fiber?.state !== FIBER_ACTIVE) continue
+    const pkg = fiber.entry?.options?.name
+    if (typeof pkg === 'string' && pkg !== '') return pkg
+  }
+  return null
 }
 
 /** home 清单里直接装着的包名。共享包不是件、不在条目树上，只能从这儿看见 */
@@ -134,6 +182,8 @@ function kernelInfo(): unknown {
       dataDir,
       appVersion,
       entries,
+      /** 界面根交给哪个包。没有外壳就是 null，渲染层据此留白 */
+      shellPkg: shellPackage(),
       shared,
       sharedConflicts: conflicts,
     },
@@ -233,6 +283,8 @@ void firstRun()
     const entries = walkEntries()
     console.error(`[host] up，dataDir=${dataDir}，条目 ${entries.filter((e) => e.ok).length}/${entries.length}`)
     for (const e of entries) console.error(`[host]   ${e.ok ? '挂上' : '没挂'} ${e.id}（${e.pkg}）`)
+    const shell = shellPackage()
+    console.error(`[host] 外壳：${shell ?? '（没有件 provide gwbShell，界面会留白）'}`)
     send({ t: 'ready' })
   })
   .catch((err: unknown) => {

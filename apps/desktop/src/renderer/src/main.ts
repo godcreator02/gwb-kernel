@@ -9,7 +9,6 @@ interface EntryView {
   id: string
   ok: boolean
   pkg: string
-  shell: boolean
   disabled: boolean
 }
 
@@ -21,6 +20,8 @@ interface KernelInfo {
   data?: {
     dataDir?: string
     entries?: EntryView[]
+    /** 界面根交给哪个包。内核看「谁 provide 了 gwbShell」，没有就是 null */
+    shellPkg?: string | null
     shared?: SharedView
     sharedConflicts?: string[]
   }
@@ -77,17 +78,20 @@ async function boot(): Promise<void> {
   const names = injectImportmap(data.shared ?? {})
   console.log(`SHARED ${names.length === 0 ? '（空）' : names.join('、')}`)
 
-  const shells = entries.filter((e) => e.ok && e.shell)
-  if (shells.length === 0) {
-    console.error('[renderer] 没有外壳件挂上,界面到此为止。装一个 gwb.shell 为 true 的件,或看宿主日志')
+  // 挑外壳的活全在内核那边：它看「谁 provide 了 gwbShell 服务」，而且只认真的挂起来了的。
+  // **「多条外壳」这种局面不用在这儿处理**——cordis 的 provide 撞名直接抛，第二个件根本
+  // 挂不上，宿主日志里会明说撞的是谁
+  const pkg = data.shellPkg
+  if (typeof pkg !== 'string' || pkg === '') {
+    // 话要能分开三种成因，别像以前那样一句「没有外壳件挂上」把「装了但在等依赖」也盖进去
+    const waiting = entries.filter((e) => !e.ok && !e.disabled)
+    const why =
+      waiting.length === 0
+        ? '一个件都没 provide 它——home 里装外壳件了吗'
+        : `这几条还没挂上,外壳可能在等它们:${waiting.map((e) => e.id).join('、')}`
+    console.error(`[renderer] 没有件提供 gwbShell 服务,界面到此为止。${why}。细节看宿主日志`)
     return
   }
-  // 一扇窗只交得出一个界面根，多条时不挑
-  if (shells.length > 1) {
-    console.error(`[renderer] 多条外壳同时挂上,不挑:${shells.map((s) => s.id).join('、')}`)
-    return
-  }
-  const pkg = shells[0]!.pkg
   const mod = (await import(/* @vite-ignore */ clientUrl(pkg))) as ShellModule
   if (typeof mod.bootShell !== 'function') {
     console.error(`[renderer] ${pkg} 的 client 没有 bootShell 导出`)

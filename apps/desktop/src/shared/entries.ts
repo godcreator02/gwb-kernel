@@ -59,13 +59,20 @@ function readShared(raw: unknown): Record<string, string> | undefined {
   return Object.keys(out).length === 0 ? undefined : out
 }
 
-/** 包清单里的 gwb 段：件自己声明的元信息 */
-export function pluginMeta(pkgDir: string): { shell?: boolean; shared?: Record<string, string> } | undefined {
+/**
+ * 包清单里的 gwb 段。**只剩 `shared` 一样**——件的其余声明（我是外壳、我叫什么、
+ * 我有哪几格窗格）全走运行时。
+ *
+ * `shared` 留在清单里是硬的，不是还没搬：共享包**不是件**，不在条目树上、没有 `apply`、
+ * 没有 ctx，压根没有运行时可言；而且 importmap 必须赶在第一句动态 import 之前注入，
+ * 比任何运行时都早。取舍见文档站。
+ */
+export function pluginMeta(pkgDir: string): { shared?: Record<string, string> } | undefined {
   try {
     const manifest = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8')) as {
-      gwb?: { shell?: unknown; shared?: unknown }
+      gwb?: { shared?: unknown }
     }
-    return { shell: manifest.gwb?.shell === true, shared: readShared(manifest.gwb?.shared) }
+    return { shared: readShared(manifest.gwb?.shared) }
   } catch {
     return undefined
   }
