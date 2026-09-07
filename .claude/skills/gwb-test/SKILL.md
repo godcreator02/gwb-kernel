@@ -52,8 +52,22 @@ cd $env:APPDATA\gwb-kernel\homes\<名>
 pnpm add <包名>@<版本>
 ```
 
-新版本要在**那个 home** 的 `pnpm-workspace.yaml` 里加一条 `minimumReleaseAgeExclude`，
-否则 pnpm 会拦下刚发的包。
+**刚发的包为什么装得进去**：pnpm 11 起 `minimumReleaseAge` 默认 1440 分钟——包发布后
+要放够一天才准装。刚 publish 的包年龄是 0 分钟，本该每次都被拦。这台机器上已经在
+**用户级配置**里放行了整个 scope，所以不用管：
+
+```yaml
+# C:\Users\<你>\AppData\Local\pnpm\config\config.yaml
+minimumReleaseAgeExclude:
+  - '@godcreator02/*'
+```
+
+这个文件**不在任何仓里**，换机器或重装会丢。症状是「在新机器上突然装不上刚发的包」，
+报错只说版本太新，不会提醒你少了这份配置。`pnpm config get globalconfig` 报的就是它的位置。
+
+**坑：home 里的 `pnpm-workspace.yaml` 会整份盖掉全局，不合并。** 那批老 home 里留着的
+逐版本 `minimumReleaseAgeExclude` 清单，正好把全局那条通配挡在门外——在那种 home 里
+装新版本仍会被拦，还得手动补一条。开新 home 时**别建这个文件**，让它吃全局的。
 
 **不许走「直接读仓内源码」的近路。** 近路绕开了安装这个动作，于是开发时跑通的和装出来的
 不是同一条路：`exports` 漏一个子路径、`files` 少带一个目录，在近路上都不显形，装出来才炸。

@@ -2,3 +2,8 @@ node_modules/
 out/
 dist/
 *.log
+
+# hook 解释器（uv 建，重建跑 .claude/hooks/bootstrap.ps1）与本机私有的 settings
+.claude/hooks/.venv/
+.claude/hooks/__pycache__/
+.claude/settings.local.json

@@ -20,6 +20,8 @@ export interface Host {
 
 export interface HostEnv {
   dataDir: string
+  /** 日志目录。宿主自己不写日志文件，它只是把这个路径经 `kernel.info` 转交给件 */
+  logDir: string
   version: string
   onEvent: (payload: unknown) => void
 }
@@ -35,9 +37,8 @@ export function startHost(env: HostEnv): Promise<Host> {
         ...process.env,
         ELECTRON_RUN_AS_NODE: '1',
         GWB_DATA_DIR: env.dataDir,
+        GWB_LOG_DIR: env.logDir,
         GWB_VERSION: env.version,
-        // 装机转发的 pnpm 随应用自带，不看 PATH
-        GWB_PNPM: path.resolve(here, '../../node_modules/pnpm/bin/pnpm.cjs'),
       },
       stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
       windowsHide: true,
@@ -72,7 +73,10 @@ export function startHost(env: HostEnv): Promise<Host> {
 }
 
 export function hostCommand(host: Host, payload: { command: string; args?: unknown }): Promise<unknown> {
-  if (host.proc.killed) return Promise.resolve({ ok: false, error: '宿主没在跑' })
+  if (host.proc.killed) {
+    mainLog('warn', 'gwb', `命令 ${payload.command} 没送出去：宿主进程已经杀了`)
+    return Promise.resolve({ ok: false, error: '宿主没在跑' })
+  }
   const id = randomUUID()
   return new Promise((resolve) => {
     const done = (result: unknown): void => {
@@ -80,10 +84,16 @@ export function hostCommand(host: Host, payload: { command: string; args?: unkno
     }
     host.pending.set(id, done)
     host.proc.stdin!.write(JSON.stringify({ t: 'command', id, payload }) + '\n')
-    setTimeout(() => done({ ok: false, error: '命令超时' }), COMMAND_TIMEOUT)
+    // 回执只是收尾,日志先说一句:超时的命令过去只在调用方那里落一句「命令超时」,
+    // 日志里对不上是哪条、卡了多久
+    setTimeout(() => {
+      mainLog('warn', 'gwb', `命令 ${payload.command} 超时（${COMMAND_TIMEOUT}ms 没回），回执按失败收`)
+      done({ ok: false, error: '命令超时' })
+    }, COMMAND_TIMEOUT)
   })
 }
 
 export function killHost(host: Host): void {
+  mainLog('info', 'gwb', '退出，关宿主')
   host.proc.kill()
 }

@@ -5,21 +5,23 @@ import type { Context } from 'cordis'
  * 零运行时依赖。收进来的判据与它为什么这么小，见文档站。
  */
 
-/** 命令与装机的回执形状 */
+/** 命令的回执形状 */
 export interface GwbResult<T = unknown> {
   ok: boolean
   data?: T
   error?: string
 }
 
-/** 内核挂在根上下文的服务，只有内核提供、永不撤销 */
+/**
+ * 内核挂在根上下文的服务，只有内核提供、永不撤销。
+ *
+ * **没有装机口**：包怎么进 home 是件的事，内核不碰 pnpm。
+ */
 export interface GwbKernelApi {
   /** 这个 home 的目录 */
   dataDir: string
   /** 应用版本；没传下来时是 null */
   appVersion: string | null
-  /** 把包装进这个 home */
-  install(specs: string[]): Promise<GwbResult<{ installed: string[] }>>
   /** 往界面推一条事件；渲染层经 window.gwb.onEvent 收 */
   emit(payload: unknown): void
 }

@@ -9,7 +9,7 @@ import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator02/gwb-plugin-api'
 import { asLogLevel, formatLogLine, parseCommandLine, type HostMessage, type LogLine } from '../shared/protocol'
 import { pluginDir, pluginMeta } from '../shared/entries'
-import { CONFIG_NAME, ensureHome, homeInstalled, installPackages, RECOMMENDED } from './install'
+import { CONFIG_NAME, ensureHome, homeExists, README_NAME } from './home'
 
 /**
  * 宿主子进程入口（纯 node，由主进程以 ELECTRON_RUN_AS_NODE 拉起）。
@@ -17,9 +17,9 @@ import { CONFIG_NAME, ensureHome, homeInstalled, installPackages, RECOMMENDED } 
  * 取舍与踩过的坑见文档站。
  */
 
-console.log = console.error
-
 const dataDir = process.env.GWB_DATA_DIR ?? path.resolve(process.cwd(), 'gwb-home')
+/** 日志目录。宿主自己不往那儿写，只是经 `kernel.info` 把路径转交给件——件别自己拼 */
+const logDir = process.env.GWB_LOG_DIR ?? ''
 const appVersion = process.env.GWB_VERSION ?? null
 const siteDir = path.join(dataDir, 'node_modules')
 /** 承载 cordis.yml 那条条目的 id；件的 id 挂在它下面（`home:<件>`） */
@@ -57,7 +57,7 @@ ctx.baseUrl = pathToFileURL(dataDir + path.sep).href
  * 说话，其余一律是件。`loader` 也算内核的：它报的是引导链的事（哪个件挂不上），不是某个
  * 件自己在说话。
  */
-const KERNEL_LOGGERS = new Set(['host', 'install', 'stdin', 'loader'])
+const KERNEL_LOGGERS = new Set(['host', 'stdin', 'loader'])
 
 /** cordis 递给 exporter 的那条消息，只取用得上的几样 */
 interface LogMessage {
@@ -131,14 +131,55 @@ function bootstrapLogExporter(): void {
   factory.exporter(exporter)
 }
 
+/**
+ * 收编裸 `console.*`。件里有人写 `console.log` 的话,那阵子它只进得了文件（经 stderr
+ * 劫持落盘）、进不了窗格——四路里没有它的座位。全转 `ctx.logger('console')` 之后,
+ * 它就是正经的 plugin 路一条。
+ *
+ * **回环已挡**:出口投 stderr 用的是 `process.stderr.write`（见 bootstrapLogExporter）,
+ * 不吃这次劫持的亏。`console.log` 归 info 是惯例。放在 exporter 注册**之后**,免得
+ * exporter 还没接管时打出的日志绕回默认出口（那才是真回环）。
+ */
+function adoptConsole(): void {
+  const log = ctx.logger('console')
+  console.debug = (...args: unknown[]) => log.debug(...args)
+  console.info = (...args: unknown[]) => log.info(...args)
+  console.log = (...args: unknown[]) => log.info(...args)
+  console.warn = (...args: unknown[]) => log.warn(...args)
+  console.error = (...args: unknown[]) => log.error(...args)
+}
+
 bootstrapLogExporter()
+
+adoptConsole()
+/**
+ * 没人接的 promise rejection **只报不退**。
+ *
+ * cordis 的 fiber 在 `Fiber.execute` 里抛出的错它自己会 log 一遍，但那条 rejection 同时
+ * 是没人接的——node 默认拿它当未捕获异常处理，**整个宿主当场退出**。于是「装了一个会抛
+ * 的件」等于「工作台没了」，而件是随时能装进来的。
+ *
+ * 撞过的现场：给一个 provide 服务的件挂第二条条目，cordis 抛 `service "gwbData" has been
+ * registered`，宿主 `code=1` 死掉；那条错**挂在 create 的 promise 之外**，调用方自己
+ * `.catch()` 拦不住。
+ *
+ * 只打一条日志，**不退出、不重挂、不回滚**——盘上对账与失败还原是这个仓明确不做的。
+ * 件挂没挂上，看条目表。
+ *
+ * 只接 `unhandledRejection`，**不接 `uncaughtException`**：后者意味着同步栈已经断了，
+ * 那时进程状态可能已经坏了，接住它只会把一个能看见的崩溃变成一个说不清的僵局。
+ */
+process.on('unhandledRejection', (reason: unknown) => {
+  const detail = reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)
+  ctx.logger('host').error(`没人接的 rejection（件挂载失败多半落这儿），宿主继续跑：\n${detail}`)
+})
 
 declare module 'cordis' {
   interface Context {
     /** 内核的服务，根上下文 provide、永不撤销 */
     gwbKernel: GwbKernelApi
     /** 命令总线，由某个件提供；没装那个件就是 undefined */
-    gwbCli?: { run(command: string, args?: unknown): Promise<unknown> }
+    gwbCommands?: { run(command: string, args?: unknown): Promise<unknown> }
   }
 }
 
@@ -266,6 +307,7 @@ function kernelInfo(): unknown {
       pid: process.pid,
       node: process.versions.node,
       dataDir,
+      logDir,
       appVersion,
       entries,
       /** 界面根交给哪个包。没有外壳就是 null，渲染层据此留白 */
@@ -276,43 +318,23 @@ function kernelInfo(): unknown {
   }
 }
 
-const installEnv = {
-  homeDir: dataDir,
-  pnpm: process.env.GWB_PNPM ?? '',
-  log: (line: string) => ctx.logger('install').info(line),
-}
-
-/** 把包装进 home。装完不碰条目树——要生效由调用方去改树 */
-async function install(specs: string[]): Promise<{ ok: boolean; data?: { installed: string[] }; error?: string }> {
-  if (installEnv.pnpm === '') return { ok: false, error: '没有可用的 pnpm（GWB_PNPM 没传下来）' }
-  const result = await installPackages(installEnv, specs)
-  return result.ok ? { ok: true, data: { installed: specs } } : result
-}
-
-/** 装机的命令口，参数形状在这儿收窄 */
-async function kernelInstall(args: unknown): Promise<unknown> {
-  const specs = (args as { specs?: unknown })?.specs
-  if (!Array.isArray(specs) || specs.some((s) => typeof s !== 'string')) {
-    return { ok: false, error: 'kernel.install 要 { specs: string[] }' }
-  }
-  return install(specs as string[])
-}
-
 /** 内核给件的那个服务 */
 const kernelApi: GwbKernelApi = {
   dataDir,
   appVersion,
-  install,
   emit: (payload) => send({ t: 'event', payload }),
 }
 
-/** 除两条自省命令外一律走 ctx.gwbCli——本体不认识任何件的命令名 */
+/** 除那条自省命令外一律走 ctx.gwbCommands——本体不认识任何件的命令名 */
 async function dispatch(payload: { command: string; args?: unknown }): Promise<unknown> {
   if (payload.command === 'kernel.info') return kernelInfo()
-  if (payload.command === 'kernel.install') return kernelInstall(payload.args)
-  const cli = ctx.gwbCli
-  if (!cli) return { ok: false, error: `没有命令服务（ctx.gwbCli），认不出 ${payload.command}` }
-  return cli.run(payload.command, payload.args)
+  const bus = ctx.gwbCommands
+  if (!bus) {
+    // 过去只回给调用方,日志里对不上「宿主在、命令却全废」是因为总线没挂
+    ctx.logger('host').warn(`命令 ${payload.command} 没处送：没有命令服务（ctx.gwbCommands），装命令总线件才有`)
+    return { ok: false, error: `没有命令服务（ctx.gwbCommands），认不出 ${payload.command}` }
+  }
+  return bus.run(payload.command, payload.args)
 }
 
 const rl = readline.createInterface({ input: process.stdin })
@@ -325,22 +347,24 @@ rl.on('line', (line) => {
   }
   void dispatch(msg.payload).then(
     (result) => send({ t: 'reply', id: msg.id, result }),
-    (err: unknown) => send({ t: 'reply', id: msg.id, result: { ok: false, error: String(err) } }),
+    (err: unknown) => {
+      ctx.logger('host').warn(`命令 ${msg.payload.command} 派发异常：${String(err)}`)
+      send({ t: 'reply', id: msg.id, result: { ok: false, error: String(err) } })
+    },
   )
 })
 
 /**
- * 首启：按推荐列表装一遍。
+ * 把 home 铺出来。**装机不在这儿**——第一个件怎么进来是件与命令行的事，内核只保证
+ * 目录起得来，纸条上写着往下怎么走。
  *
  * `ensureHome` **每次启动都跑**、不只首启：它是幂等的，缺哪样补哪样。只在首启补的话，
  * 有人手工删掉 `cordis.yml` 之后就再也起不来了——而那个失败是宿主整个退出。
  */
-async function firstRun(): Promise<void> {
-  const fresh = !homeInstalled(dataDir)
+function prepareHome(): void {
+  const fresh = !homeExists(dataDir)
   ensureHome(dataDir)
-  if (!fresh) return
-  ctx.logger('install').info(`新 home:${dataDir}`)
-  await installPackages(installEnv, [...RECOMMENDED])
+  if (fresh) ctx.logger('host').info(`新 home:${dataDir}`)
 }
 
 /** 内核只挂 loader，再往它的树上放一条 include，其余全归这两个 */
@@ -352,13 +376,23 @@ async function bootLoader(): Promise<void> {
   await ctx.loader.await()
 }
 
-void firstRun()
-  .then(bootLoader)
+prepareHome()
+
+void bootLoader()
   .then(() => {
     const log = ctx.logger('host')
     const entries = walkEntries()
     log.info(`up，dataDir=${dataDir}，条目 ${entries.filter((e) => e.ok).length}/${entries.length}`)
     for (const e of entries) log.info(`  ${e.ok ? '挂上' : '没挂'} ${e.id}（${e.pkg}）`)
+    /**
+     * 一个件都没装的那一刻——窗口是全白的，而那时还没有任何件能在界面上说话，
+     * **这句日志与 home 里那张纸条是仅有的两条出路**。
+     *
+     * 剔掉内核自己那条 include 条目才是「装了几个件」：`walkEntries` 数得进它。
+     */
+    if (entries.every((e) => e.id === ENTRY_ROOT)) {
+      log.warn(`${CONFIG_NAME} 里一条条目都没有，一个件都没装。怎么装见 ${path.join(dataDir, README_NAME)}`)
+    }
     const shell = shellPackage()
     log.info(`外壳：${shell ?? '（没有件 provide gwbShell，界面会留白）'}`)
     send({ t: 'ready' })

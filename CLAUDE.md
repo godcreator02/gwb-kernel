@@ -53,9 +53,9 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 ## 服务命名：一律 `gwb` 开头
 
 - **内核提供**：`gwbKernel`（永不撤销，用词汇表包的 `requireKernel` 取，**不写进 `inject`**）
-- **件提供**：默认跟件名对应（`gwb-cli` 件 → `ctx.gwbCli`）
+- **件提供**：默认跟件名对应（`gwb-commands` 件 → `ctx.gwbCommands`）
 - **例外：cordis 官方件的服务照它自己的**（`timer`、`loader`）——那不是我们的东西
-- 消费方一律 `inject: ['gwbCli']` 这样写
+- 消费方一律 `inject: ['gwbCommands']` 这样写
 
 为什么全加而不是「通用名才加」，见文档站。
 
@@ -75,7 +75,7 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 | --- | --- | --- |
 | `26090412vav\god-workbench` | 母仓，**准备废弃** | 只作参考：某处当初为什么那么做、踩过什么坑。结构、分层、包划分一概不抄 |
 | `26090623hyz\gwb-plugins` | 旧的 11 件，**准备废弃** | 同上。件重做一份，不在那个仓里改 |
-| `26090709qzp\gwb-base-plugins` | **正线的件仓** | 第一批四件：`gwb-cli`（已发 0.0.3）、`gwb-shell`、`gwb-logger`、`gwb-settings` |
+| `26090709qzp\gwb-base-plugins` | **正线的件仓** | 第一批四件：`gwb-commands`（已发 0.0.3）、`gwb-shell`、`gwb-logger`、`gwb-settings` |
 | `26090702tpu\gwb-catalog` | 推荐清单 | 装机那份推荐列表将来的来源 |
 | `26090520zzv\registry` | 本机 Verdaccio | 装机的包源，`@godcreator02` scope 指的就是它 |
 
