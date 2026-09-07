@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { hostCommand, killHost, startHost, type Host } from './host-process'
 import { handleAsset } from './asset'
+import { teeToFile } from './log-file'
 
 /**
  * GUI 主进程：开一扇窗、起一个宿主、把两头接上。
@@ -19,6 +20,10 @@ protocol.registerSchemesAsPrivileged([
     privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
   },
 ])
+
+// getPath 在 ready 之前就能用。落盘要趁早——起步头几步出的错最值钱
+const dataDir = path.join(app.getPath('userData'), 'home')
+teeToFile(path.join(dataDir, 'gwb-kernel.log'))
 
 let host: Host | null = null
 let win: electron.BrowserWindow | null = null
@@ -50,7 +55,6 @@ async function createWindow(): Promise<void> {
 void app
   .whenReady()
   .then(async () => {
-    const dataDir = path.join(app.getPath('userData'), 'home')
     // 处理器随进程存亡,不像监听端口要管生命周期
     protocol.handle('gwb', (request) => handleAsset(path.join(dataDir, 'node_modules'), request))
     host = await startHost({
