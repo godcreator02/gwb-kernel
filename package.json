@@ -6,7 +6,7 @@
     "start": "pnpm --filter @godcreator02/gwb-kernel-desktop start",
     "typecheck": "tsc --noEmit -p tsconfig.json && pnpm -r --no-bail typecheck",
     "test": "vitest run",
-    "check": "pnpm typecheck && pnpm test"
+    "check": "pnpm typecheck && pnpm test && pnpm --filter gwb-kernel-docs-site exec livedoc check"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

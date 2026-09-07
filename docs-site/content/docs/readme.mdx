@@ -56,7 +56,9 @@ home 落在 `%APPDATA%/gwb-kernel/home`。第一次启动它是空的——要�
 pnpm --filter gwb-kernel-docs-site dev     # http://localhost:4314
 ```
 
-livedoc 已经接上，但**眼下一条引用都没写**——文档还没到「对代码说具体的话」那一步，
-钉了只会把没定型的结构冻起来。这份 README 是生成物，正本是
-`docs-site/content/docs/readme.mdx`，改完在 `docs-site` 跑 `pnpm livedoc render --target ai`
-重摆，一起提交。
+**代码注释只写现状**——为什么这么写、撞过什么、症状是什么，全在文档站的「撞过的墙」
+那一页，并且用 livedoc 钉在对应代码上：代码一改文档就报黄，得有人复核。
+`livedoc check` 已进 `pnpm check`。
+
+这份 README 是生成物，正本是 `docs-site/content/docs/readme.mdx`，改完在 `docs-site` 跑
+`pnpm livedoc render --target ai` 重摆，一起提交。

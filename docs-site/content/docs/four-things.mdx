@@ -54,6 +54,25 @@ livedoc: none
 **为什么它仍然是内核的一件事**：取址必须在第一个业务插件之前发生。内核把它交给一个官方
 引导插件，不等于这件事不存在——只是实现从「自己写」变成「挂一个官方件」。
 
+### 开着的 cordis 官方件
+
+| 包 | 住哪 | 为什么 |
+| --- | --- | --- |
+| `@cordisjs/plugin-loader` | 应用依赖树，内核挂 | 条目树与模块加载。热挂卸是白得的 |
+| `@cordisjs/plugin-include` | 应用依赖树，内核挂 | 读 yml 成条目。有了它内核连 yml 都不必认识 |
+| `@cordisjs/plugin-timer` | home，走 yml 条目 | `ctx.setTimeout` 随件卸载自动收——原生的会在插件已卸载后触发 |
+| `@cordisjs/plugin-logger-console` | home，走 yml 条目 | cordis 本体自带 `LoggerService` 但没出口，它就是出口，接上内核已有的落盘线 |
+
+**不开的六个，各有理由**：
+
+- `plugin-hmr` —— **在这个架构下不起作用**：跑的是 home 里那份产物，盯仓内源码盯到变化
+  也没有对应模块可换。除非哪天做「源码映射进 home」的开发模式
+- `plugin-http` / `plugin-server` —— 没有外部访问需求（MCP 那条线还不存在）
+- `plugin-config` / `plugin-webui` —— Koishi 生态的（"Manage your bots"、"UI for Koishi"）
+- `plugin-database` —— 没有超出「件自己写文件」的需求
+- `@cordisjs/logger` —— 旧版，cordis 4.x 本体已自带
+- `@cordisjs/schema` —— 配置校验现在不需要
+
 **内核留下的那半**：`resolvePlugin` / `entryFile` 还在，但不管挂载了。它们是**主进程**的
 `gwb://` 在用——把插件的 `client.js` 交给页面时要知道包在哪，而 loader 跑在宿主子进程里，
 主进程够不着。入口只认四档写法（`exports` 对应子路径 → 条件对象的 `import`/`module`/`default`

@@ -1,0 +1,192 @@
+---
+title: 撞过的墙
+description: 代码为什么写成这样——每条连着它钉住的那段代码，代码一变这页就报黄
+livedoc: none
+---
+
+# 撞过的墙
+
+代码注释只写现状，**为什么、症状、当时怎么查的，全在这一页**。
+
+每条都钉在具体代码上。代码改了这页报黄，得有人来复核——文档撒谎会被当场抓住，这是
+这一页存在的全部意义。
+
+---
+
+## 宿主
+
+### loader 挂不上一个件时，错误在启动期没有出口
+
+内核在挂 loader 之前注册一个 exporter，只管 error：
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="162-171" */}
+
+**loader 没有吞错误**，它老老实实写着 `.catch(error => this.ctx.logger.error(error))`。问题
+在下游：cordis 的 `LoggerService` 把消息存进 `buffer`，**没有 exporter 就没有出口**。而
+`logger-console` 是 `cordis.yml` 里一条**并发挂载**的普通件——件挂载失败的那一刻，它可能
+还没注册 exporter。
+
+**症状**：件静默挂不上，日志一个字都没有，连「哪个件、为什么」都问不出来。第一个件
+（`gwb-cli`）因为相对 import 少了 `.js` 撞上这个，查了几分钟。
+
+补上之后同样的错当场是一行：
+
+```
+[loader] include: Error [ERR_MODULE_NOT_FOUND]: Cannot find module
+  '...\@test\broken\does-not-exist.js' imported from '...\@test\broken\index.js'
+```
+
+只管 error 是有意的：`info`/`warn` 归 `logger-console`，那个件装了就有好格式、没装也不
+影响这条保底线。代价是 error 可能出两遍，值得。
+
+### `ctx.plugin` 是 thenable，不 await 服务就还没就位
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="173-180" */}
+
+**症状**：`ctx.loader` 是 `undefined`，报 `Cannot read properties of undefined (reading 'await')`。
+
+### `baseUrl` 要设在根上下文
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="41-42" */}
+
+`Loader` 只把 `config.baseUrl` 设在**它自己 `extend` 出来的 ctx** 上（`this.ctx = ctx.extend({ baseUrl })`），
+而 `Include` 是挂在根上的。设在根上，两个都从那儿继承。
+
+**症状**：`Invalid URL`——`include` 拿 `new URL(path, ctx.baseUrl)` 时 baseUrl 是 undefined。
+
+顺带：这也是**母仓那句血泪的根因**。它那句注释说「裸名包只在 home 位时 loader 会静默
+挂不上」，实际是因为它把 baseUrl 设成了应用目录，所以必须自己把每个条目名算成绝对
+file URL。指向 home 之后 loader 自己就解析得到。
+
+### `include` 的 `config.path` 是相对 baseUrl 的 URL，不是文件系统路径
+
+它内部走的是 `fileURLToPath(new URL(config.path, ctx.baseUrl))`。
+
+**症状**：传绝对路径时报 `ERR_INVALID_URL_SCHEME: The URL must be of scheme file`——Windows
+的盘符 `C:` 被当成了 URL scheme。
+
+### `include` 走 loader 的 `builtins`，而且做成条目
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="176-179" */}
+
+`include` 住应用依赖树，而 baseUrl 指着 home——按裸名找不到它。loader 的 `import()` 对
+`cordis:` 前缀的名字直接从 `builtins` 表取、不经模块解析，所以挂 `builtins.include` 再用
+`cordis:include` 引它。
+
+**做成条目而不是 `ctx.plugin(Include)`**：这样它的子树挂在 loader 树上，条目表、fiber 状态、
+热挂卸全在一棵树里，外面只认 `ctx.loader` 一个入口。直接 `ctx.plugin` 的话它是根上的一个
+普通插件，`walkEntries` 走不到它读出来的条目。
+
+### 承载 yml 那条条目的 id 写死为 `home`
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="26-27" */}
+
+条目 id 有层级（`<父>:<子>`）。不写死的话父 id 是随机的（`d9509601`），所有件的 id 跟着
+变成 `d9509601:shell`，**每次启动都不一样**——外壳按 panel id 存的布局就全对不上。
+
+另一条 API 细节：`create()` 回的是**全路径 id**，而 `remove()` / `resolve()` 只认树内的
+**局部 id**。拿全路径去 remove 会报 `cannot resolve entry`。
+
+### `gwbKernel` 要在挂 loader 之前 provide
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="173-175" */}
+
+件一挂上就要取得到。晚一步的症状是第一批件全都读到 `undefined`。
+
+### 建 home 的 `package.json` 不由装机代劳
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="154-159" */}
+
+推荐列表是空表时装机会提前返回（`specs.length === 0`），`ensureHomeManifest` 轮不到，
+于是 `package.json` 建不出来，「装过了」永远判不成立——**每次启动都当新 home**。
+
+这个 bug 是实机验收抓到的：删净 home 起一次，日志说了「新 home」，但目录是空的。
+**单测抓不着**，因为它是两个各自正确的函数组合顺序错了。
+
+---
+
+## 主进程
+
+### 三处输出汇在一处，劫持那一处就全在
+
+{/* ref file="../apps/desktop/src/main/log-file.ts" lines="9-13" */}
+
+主进程自己的、宿主 pipe 过来的、渲染层 `console-message` 转来的，最后都走
+`process.stderr`。比母仓那份（只含宿主）更全，代码还少一半。
+
+它只保证一件事：**脱离终端起的时候**（打包后双击，stderr 没人接），出了事还有地方查。
+眼下每次都从终端起，所以这条现在用不上；等打包到期，它立刻从锦上添花变成不补就没法查。
+
+### 日志写失败只说一次，此后不再试
+
+{/* ref file="../apps/desktop/src/main/log-file.ts" lines="22-33" */}
+
+静默停更会让人读到一段什么都没发生的时间；每行重试则把每行输出变成一次失败的系统调用。
+
+---
+
+## 取址
+
+### 入口指到包目录外一律不认
+
+{/* ref file="../apps/desktop/src/shared/entries.ts" lines="66-74" */}
+
+认了它，**一个包就能让内核读任意文件**。这是这一层唯一的一条判断——其余的候选名补全、
+位表、完整 exports 条件语义、realpath 实体化，母仓都有，这里都没有。
+
+顺带说明这半为什么还留着：挂载归 loader 了，但**主进程**的 `gwb://` 要把件的 `client.js`
+交给页面，得知道包在哪，而 loader 跑在宿主子进程里，主进程够不着。
+
+---
+
+## 构建
+
+### 显式给 `rollupOptions` 会把 `externalizeDepsPlugin` 注入的 external 盖掉
+
+{/* ref file="../apps/desktop/electron.vite.config.ts" lines="11-21" */}
+
+而两个入口非得显式给 `input` 不可。所以不用那个插件，改成从 `package.json` 现读依赖表
+自己判——加依赖不必回来改这里，也就不会漏。
+
+**症状**：cordis 被整个内联进宿主束，`host.mjs` 从 2KB 涨到 51.6KB，而构建一声不吭。
+
+### electron 这个包不带 postinstall
+
+{/* has file="../apps/desktop/package.json" text="node node_modules/electron/install.js" */}
+
+electron 44.1.1 的 `scripts` 字段是 `null`，二进制得显式跑一次 `install.js` 才落到 `dist/`。
+
+**症状**：装完起不来，而 pnpm 一声不吭（`allowBuilds` 配对了也没用——它压根没有脚本可批准）。
+母仓的 `dist/` 是历史遗留，新克隆同样会缺。
+
+`.npmrc` 里那行 npmmirror 镜像是配套的：GitHub 直连拉不动。
+
+---
+
+## 词汇表包
+
+### 它就这么大
+
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" */}
+
+收进来的判据是「多数件都要，而且它说的是内核与件之间的事」。实测母仓 11 件从平台包一共
+只取了 12 个名字，其中 11 件全用 / 7 件 / 6 件的就是 `GwbContext` / `requireKernel` /
+`isRecord` 这三样；其余 9 个里 4 个其实是**件之间**的契约（该住提供方自己的包里），
+5 个是各 1 件在用的实现细节漏出。
+
+母仓那个包 600 行，这个 38 行。
+
+### cordis 走 peer 不是 dev
+
+判据「运行时真 import 了才写 peer」漏了中间一档：**只 import type、但它出现在导出的类型
+里，也得 peer**——`GwbContext extends Context`，消费方必须解析得到，而**发布出去的包不带
+devDependencies**。
+
+**症状**：消费方那边 `ctx.logger` / `effect` / `provide` 全报「不存在」。第一个件撞上了，
+`gwb-cli` 的 `GwbCli.run` 回 `GwbResult` 是同一回事。
+
+---
+
+## 内核源码全貌
+
+{/* tree dir="../apps/desktop/src" depth="1" */}

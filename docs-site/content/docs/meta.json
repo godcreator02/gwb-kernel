@@ -1,3 +1,11 @@
 {
-  "pages": ["overview", "four-things", "not-doing", "plugin", "dev-loop", "readme"]
+  "pages": [
+    "overview",
+    "four-things",
+    "not-doing",
+    "plugin",
+    "dev-loop",
+    "walls",
+    "readme"
+  ]
 }
