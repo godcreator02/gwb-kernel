@@ -4,6 +4,7 @@ import path from 'node:path'
 import readline from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { parseHostLine } from '../shared/protocol'
+import { mainLog, pushLog } from './logs'
 
 /**
  * 起宿主子进程、守住那条命令通道。
@@ -47,7 +48,8 @@ export function startHost(env: HostEnv): Promise<Host> {
     proc.stderr!.pipe(process.stderr)
 
     proc.on('exit', (code) => {
-      console.error(`[gwb] 宿主退出（code=${code}）`)
+      // 这句只有主进程说得出来——宿主已经没了，它自己记不到自己的死
+      mainLog('error', 'gwb', `宿主退出（code=${code}）`)
       // 在飞的命令立刻给失败回执
       for (const done of host.pending.values()) done({ ok: false, error: '宿主已退出' })
       host.pending.clear()
@@ -58,11 +60,12 @@ export function startHost(env: HostEnv): Promise<Host> {
       if (!line.trim()) return
       const msg = parseHostLine(line)
       if (msg === undefined) {
-        console.error(`[gwb] 宿主发来不合协议的行，已丢弃：${line.slice(0, 200)}`)
+        mainLog('warn', 'gwb', `宿主发来不合协议的行，已丢弃：${line.slice(0, 200)}`)
         return
       }
       if (msg.t === 'ready') resolve(host)
       else if (msg.t === 'event') env.onEvent(msg.payload)
+      else if (msg.t === 'log') pushLog(msg.line)
       else host.pending.get(msg.id)?.(msg.result)
     })
   })

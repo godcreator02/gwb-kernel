@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { hostCommand, killHost, startHost, type Host } from './host-process'
 import { handleAsset } from './asset'
 import { teeToFile } from './log-file'
+import { logBacklog, mainLog, rendererLog, setLogSink } from './logs'
 
 /**
  * GUI 主进程：开一扇窗、起一个宿主、把两头接上。
@@ -36,7 +37,7 @@ function homeName(): string {
 // getPath 在 ready 之前就能用；落盘要趁早。
 // 这一行是 home 路径的**唯一真源**：日志、gwb:// 的位、传给宿主的 GWB_DATA_DIR 全从它派生
 const dataDir = path.join(app.getPath('userData'), 'homes', homeName())
-teeToFile(path.join(dataDir, 'gwb-kernel.log'))
+teeToFile(path.join(dataDir, 'logs'))
 
 let host: Host | null = null
 let win: electron.BrowserWindow | null = null
@@ -45,6 +46,12 @@ ipcMain.handle('gwb:command', (_event, payload: { command: string; args?: unknow
   if (host === null) return Promise.resolve({ ok: false, error: '宿主没起来' })
   return hostCommand(host, payload)
 })
+
+/**
+ * 日志的历史段。**不走命令通道**：缓冲就在这个进程里，而命令要绕到宿主再原路背回来
+ * ——宿主一挂命令全废，那恰恰是最需要翻历史的时候。
+ */
+ipcMain.handle('gwb:log-backlog', () => logBacklog())
 
 async function createWindow(): Promise<void> {
   win = new BrowserWindow({
@@ -58,8 +65,12 @@ async function createWindow(): Promise<void> {
       sandbox: false,
     },
   })
-  // 渲染层的 console 转终端
-  win.webContents.on('console-message', (e) => console.error(`[renderer] ${e.message}`))
+  // 渲染层的 console 转终端，顺带进缓冲——它是四路日志里的一路
+  win.webContents.on('console-message', (e) => rendererLog(e.level, e.message))
+  // 窗有了才推得动。在这之前的条目一条没丢，都在缓冲里等着 backlog 取
+  const target = win.webContents
+  setLogSink((batch) => target.send('gwb:log', batch))
+  win.on('closed', () => setLogSink(null))
   if (process.env.ELECTRON_RENDERER_URL !== undefined) await win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else await win.loadFile(path.join(here, '../renderer/index.html'))
 }
@@ -78,7 +89,7 @@ void app
   })
   .catch((err: unknown) => {
     // 失败即失败：没有兜底页
-    console.error(`[gwb] 起不来：${String(err)}`)
+    mainLog('error', 'gwb', `起不来：${String(err)}`)
     app.exit(1)
   })
 

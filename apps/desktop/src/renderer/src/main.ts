@@ -1,4 +1,5 @@
 import { assetUrl, clientUrl } from '../../shared/asset-url'
+import type { LogEntry } from '../../shared/protocol'
 
 /**
  * 渲染层本体：把运行时环境注进页面、找到外壳件、把 #root 交给它，再没别的。
@@ -48,6 +49,14 @@ declare global {
     gwb: {
       command<T = unknown>(command: string, args?: unknown): Promise<T>
       onEvent(cb: (payload: unknown) => void): () => void
+      /**
+       * 日志。**页面的公共面，谁在这页上跑都够得着**——件不必经外壳转发。
+       * 条目形状是 `{ seq, ts, source, level, name, msg }`，正本在文档站。
+       */
+      logs: {
+        backlog(): Promise<LogEntry[]>
+        on(cb: (batch: LogEntry[]) => void): () => void
+      }
     }
   }
 }
@@ -74,7 +83,8 @@ async function boot(): Promise<void> {
   const data = info.data ?? {}
   const entries = data.entries ?? []
   // 撞名不静默：页面上跑的是哪一份，得说得出来
-  for (const line of data.sharedConflicts ?? []) console.error(`[renderer] 运行时环境撞名——${line}`)
+  // 前缀不用自己写：主进程收 console-message 时会带上来源，写了就是 `[renderer] [renderer] …`
+  for (const line of data.sharedConflicts ?? []) console.error(`运行时环境撞名——${line}`)
   const names = injectImportmap(data.shared ?? {})
   console.log(`SHARED ${names.length === 0 ? '（空）' : names.join('、')}`)
 
@@ -89,12 +99,12 @@ async function boot(): Promise<void> {
       waiting.length === 0
         ? '一个件都没 provide 它——home 里装外壳件了吗'
         : `这几条还没挂上,外壳可能在等它们:${waiting.map((e) => e.id).join('、')}`
-    console.error(`[renderer] 没有件提供 gwbShell 服务,界面到此为止。${why}。细节看宿主日志`)
+    console.error(`没有件提供 gwbShell 服务,界面到此为止。${why}。细节看宿主日志`)
     return
   }
   const mod = (await import(/* @vite-ignore */ clientUrl(pkg))) as ShellModule
   if (typeof mod.bootShell !== 'function') {
-    console.error(`[renderer] ${pkg} 的 client 没有 bootShell 导出`)
+    console.error(`${pkg} 的 client 没有 bootShell 导出`)
     return
   }
   const handle = mod.bootShell(
@@ -111,4 +121,4 @@ async function boot(): Promise<void> {
   console.log(`SHELL ${pkg}`)
 }
 
-void boot().catch((err: unknown) => console.error(`[renderer] 起不来:${String(err)}`))
+void boot().catch((err: unknown) => console.error(`起不来:${String(err)}`))

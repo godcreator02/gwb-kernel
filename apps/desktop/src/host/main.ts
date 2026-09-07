@@ -2,11 +2,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline'
 import { pathToFileURL } from 'node:url'
+import { inspect } from 'node:util'
 import { Context } from 'cordis'
 import Loader from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator02/gwb-plugin-api'
-import { parseCommandLine, type HostMessage } from '../shared/protocol'
+import { asLogLevel, formatLogLine, parseCommandLine, type HostMessage, type LogLine } from '../shared/protocol'
 import { pluginDir, pluginMeta } from '../shared/entries'
 import { CONFIG_NAME, ensureHome, homeInstalled, installPackages, RECOMMENDED } from './install'
 
@@ -36,7 +37,11 @@ fs.mkdirSync(dataDir, { recursive: true })
 
 // 显式给 fd 时 path 被忽略
 const out = fs.createWriteStream('', { fd: 3, encoding: 'utf8' })
-out.on('error', (e) => console.error(`[fd3] ${e.message}`))
+/**
+ * 这一处**故意不走 `ctx.logger`**：日志出口自己要往 fd3 投一份，fd3 坏了再经它报错就是
+ * 写失败 → 报错 → 再写 → 再失败的死循环。裸写 stderr 是这条线上唯一没有回环的出路。
+ */
+out.on('error', (e) => process.stderr.write(`[fd3] ${e.message}\n`))
 
 function send(message: HostMessage): void {
   out.write(JSON.stringify(message) + '\n')
@@ -46,6 +51,87 @@ const ctx = new Context()
 
 /** 模块解析的起点，指向 home 目录。设在根上下文，loader 与 include 都从这儿继承 */
 ctx.baseUrl = pathToFileURL(dataDir + path.sep).href
+
+/**
+ * 内核自己用的 logger 名。**这张表决定一条日志算 `host` 还是 `plugin`**——表里的是内核在
+ * 说话，其余一律是件。`loader` 也算内核的：它报的是引导链的事（哪个件挂不上），不是某个
+ * 件自己在说话。
+ */
+const KERNEL_LOGGERS = new Set(['host', 'install', 'stdin', 'loader'])
+
+/** cordis 递给 exporter 的那条消息，只取用得上的几样 */
+interface LogMessage {
+  ts?: number
+  name?: string
+  type?: string
+  args?: unknown[]
+}
+
+interface CordisExporter {
+  colors: number
+  levels: { default: number }
+  formatters: Record<string, (value: unknown) => string>
+  export(message: LogMessage): void
+}
+
+/**
+ * cordis 的 `Logger` 类，从一个实例的 `constructor` 上取——**这样就不必 `import` cordis 的
+ * 内部**。`format` 是静态方法，整个渲染都在它里面。
+ */
+interface LoggerCtor {
+  format(exporter: CordisExporter, message: LogMessage): string
+}
+
+/**
+ * `%o` / `%O` 的渲染。cordis 默认拿 `JSON.stringify` 干这活，**撞上循环引用会抛，而且抛在
+ * 调用 `logger.info()` 的那一行**——打个日志把业务代码炸了。换成 `inspect` 顺带把
+ * `[object Object]` 变成真的对象转储。
+ */
+function inspectArg(value: unknown): string {
+  return inspect(value, { depth: 2, colors: false })
+}
+
+/**
+ * **内核唯一的日志出口**，一处两投：stderr（→ 终端，劫持之后顺带进文件）与 fd3（→ 主进程的
+ * 缓冲 → 窗格）。两处的**正文是同一个字符串**，终端那份只多一段前缀。
+ *
+ * 它必须在**任何件之前**就位——第一个件挂不上的那一刻，负责好格式的件本身可能还没挂上。
+ * 所以注册点在这儿，紧挨着 `ctx` 造出来的地方；这样 cordis 自带的那圈 buffer 里根本攒不下
+ * 东西，也就不必回头去补发。取舍见文档站。
+ */
+function bootstrapLogExporter(): void {
+  const factory = ctx.logger as unknown as {
+    (name: string): { constructor: LoggerCtor }
+    exporter(exp: unknown): void
+  }
+  // 整个拿着这个类、不把 format 摘下来：静态方法摘下来就丢了 this
+  const Logger = factory('gwb').constructor
+  const exporter: CordisExporter = {
+    // 0 而不是带色：这个正文同时投给窗格，ANSI 码到了那边就是一串乱码
+    colors: 0,
+    // 不设的话 cordis 默认只到 info，**debug 一条都收不到，而且不报错不报警**
+    levels: { default: 3 },
+    formatters: { o: inspectArg, O: inspectArg },
+    export: (message) => {
+      const level = asLogLevel(String(message.type ?? 'info'))
+      const name = String(message.name ?? 'gwb')
+      const ts = typeof message.ts === 'number' ? message.ts : Date.now()
+      let msg: string
+      try {
+        msg = Logger.format(exporter, message)
+      } catch {
+        // 渲染不出来也得把话说出去
+        msg = (message.args ?? []).map((a) => (a instanceof Error ? a.message : String(a))).join(' ')
+      }
+      const line: LogLine = { ts, source: KERNEL_LOGGERS.has(name) ? 'host' : 'plugin', level, name, msg }
+      process.stderr.write(formatLogLine(line) + '\n')
+      send({ t: 'log', line })
+    },
+  }
+  factory.exporter(exporter)
+}
+
+bootstrapLogExporter()
 
 declare module 'cordis' {
   interface Context {
@@ -193,7 +279,7 @@ function kernelInfo(): unknown {
 const installEnv = {
   homeDir: dataDir,
   pnpm: process.env.GWB_PNPM ?? '',
-  log: (line: string) => console.error(`[install] ${line}`),
+  log: (line: string) => ctx.logger('install').info(line),
 }
 
 /** 把包装进 home。装完不碰条目树——要生效由调用方去改树 */
@@ -234,7 +320,7 @@ rl.on('line', (line) => {
   if (!line.trim()) return
   const msg = parseCommandLine(line)
   if (msg === undefined) {
-    console.error(`[stdin] 不合协议的行，已丢弃：${line.slice(0, 200)}`)
+    ctx.logger('stdin').warn(`不合协议的行，已丢弃：${line.slice(0, 200)}`)
     return
   }
   void dispatch(msg.payload).then(
@@ -253,24 +339,13 @@ async function firstRun(): Promise<void> {
   const fresh = !homeInstalled(dataDir)
   ensureHome(dataDir)
   if (!fresh) return
-  console.error(`[install] 新 home:${dataDir}`)
+  ctx.logger('install').info(`新 home:${dataDir}`)
   await installPackages(installEnv, [...RECOMMENDED])
-}
-
-/** 保底日志出口，只管 error。info / warn 归 logger-console 那个件 */
-function bootstrapErrorExporter(): void {
-  ctx.logger.exporter({
-    export: (message) => {
-      if (message.type !== 'error') return
-      console.error(`[loader] ${message.name}:`, ...message.args)
-    },
-  })
 }
 
 /** 内核只挂 loader，再往它的树上放一条 include，其余全归这两个 */
 async function bootLoader(): Promise<void> {
   ctx.provide('gwbKernel', kernelApi)
-  bootstrapErrorExporter()
   await ctx.plugin(Loader, {})
   ctx.loader.builtins.include = Include
   await ctx.loader.root.update([{ id: ENTRY_ROOT, name: 'cordis:include', config: { path: CONFIG_NAME } }])
@@ -280,14 +355,20 @@ async function bootLoader(): Promise<void> {
 void firstRun()
   .then(bootLoader)
   .then(() => {
+    const log = ctx.logger('host')
     const entries = walkEntries()
-    console.error(`[host] up，dataDir=${dataDir}，条目 ${entries.filter((e) => e.ok).length}/${entries.length}`)
-    for (const e of entries) console.error(`[host]   ${e.ok ? '挂上' : '没挂'} ${e.id}（${e.pkg}）`)
+    log.info(`up，dataDir=${dataDir}，条目 ${entries.filter((e) => e.ok).length}/${entries.length}`)
+    for (const e of entries) log.info(`  ${e.ok ? '挂上' : '没挂'} ${e.id}（${e.pkg}）`)
     const shell = shellPackage()
-    console.error(`[host] 外壳：${shell ?? '（没有件 provide gwbShell，界面会留白）'}`)
+    log.info(`外壳：${shell ?? '（没有件 provide gwbShell，界面会留白）'}`)
     send({ t: 'ready' })
   })
   .catch((err: unknown) => {
-    console.error(`[host] 起不来：${String(err)}`)
+    /**
+     * 这一句**故意不走 `ctx.logger`**：下一行就 `process.exit`，而 fd3 那条流是异步的，
+     * 还没冲出去的字节会被截断——最要紧的一条错反而到不了窗格。裸写 stderr 是同步的，
+     * 终端与日志文件里一定有。窗格那边看到的是主进程侧那句「宿主退出」。
+     */
+    process.stderr.write(`[host] 起不来：${String(err)}\n`)
     process.exit(1)
   })
