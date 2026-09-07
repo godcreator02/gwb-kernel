@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "cordis": "4.0.0-rc.9",
-    "js-yaml": "^4.1.0"
+    "@cordisjs/plugin-loader": "1.0.0-rc.6",
+    "@cordisjs/plugin-include": "1.0.5"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
@@ -22,7 +23,6 @@
     "electron-vite": "^5.0.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
-    "@types/js-yaml": "^4.0.9",
     "pnpm": "11.21.0"
   }
 }

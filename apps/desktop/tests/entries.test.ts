@@ -2,32 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { entryFile, parseEntries, resolvePlugin } from '../src/shared/entries'
-
-describe('parseEntries', () => {
-  it('读出条目', () => {
-    expect(parseEntries('- name: "@a/one"\n- name: "@a/two"\n  disabled: true\n')).toEqual([
-      { id: '@a/one', name: '@a/one' },
-      { id: '@a/two', name: '@a/two', disabled: true },
-    ])
-  })
-
-  it('id 没写就用 name;config 原样带上', () => {
-    expect(parseEntries('- id: x\n  name: "@a/one"\n  config:\n    port: 1\n')).toEqual([
-      { id: 'x', name: '@a/one', config: { port: 1 } },
-    ])
-  })
-
-  it('空文件给空表', () => {
-    expect(parseEntries('')).toEqual([])
-    expect(parseEntries('[]')).toEqual([])
-  })
-
-  it('顶层不是数组、条目没有 name,都要响亮地失败', () => {
-    expect(() => parseEntries('a: 1')).toThrow()
-    expect(() => parseEntries('- config: {}')).toThrow()
-  })
-})
+import { entryFile, resolvePlugin } from '../src/shared/entries'
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gwbk-'))
 afterAll(() => fs.rmSync(tmp, { recursive: true, force: true }))

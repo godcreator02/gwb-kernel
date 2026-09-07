@@ -1,32 +1,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { load as parseYaml } from 'js-yaml'
 
 /**
- * 取址:从「装了哪些」到「一个能被 import 的地址」。
- * 装了哪些 = cordis.yml 的条目表;地址 = 位目录拼包名、清单里读入口。
- * 只认一个位（home 的 node_modules）、只认最直白的入口写法——不够用了再加。
+ * 包名 → 盘上的文件。**挂载不走这儿**——那归 loader（baseUrl 指着 home，它自己解析）。
+ * 这里留给主进程:`gwb://` 要把插件的 client.js 交给页面，得知道包在哪，
+ * 而 loader 跑在宿主子进程里，主进程够不着。
  */
-
-export interface Entry {
-  id: string
-  name: string
-  config?: Record<string, unknown>
-  disabled?: boolean
-}
-
-export function parseEntries(text: string): Entry[] {
-  const doc = parseYaml(text) ?? []
-  if (!Array.isArray(doc)) throw new Error(`cordis.yml 顶层应是条目数组,实得 ${typeof doc}`)
-  return doc.map((raw: unknown, i) => {
-    const e = raw as Partial<Entry>
-    if (typeof e?.name !== 'string' || e.name === '') throw new Error(`cordis.yml 第 ${i + 1} 条没有 name`)
-    const entry: Entry = { id: e.id ?? e.name, name: e.name }
-    if (e.config !== undefined) entry.config = e.config
-    if (e.disabled === true) entry.disabled = true
-    return entry
-  })
-}
 
 /** 一条 exports 值 → 相对写法:字符串就是它,条件对象按 import/module/default 往下取 */
 function pickCondition(value: unknown): string | undefined {

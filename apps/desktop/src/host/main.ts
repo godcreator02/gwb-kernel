@@ -3,13 +3,16 @@ import path from 'node:path'
 import readline from 'node:readline'
 import { pathToFileURL } from 'node:url'
 import { Context } from 'cordis'
+import Loader from '@cordisjs/plugin-loader'
+import Include from '@cordisjs/plugin-include'
 import { parseCommandLine, type HostMessage } from '../shared/protocol'
-import { parseEntries, pluginDir, pluginMeta, resolvePlugin, type Entry } from '../shared/entries'
+import { pluginDir, pluginMeta } from '../shared/entries'
 import { ensureHomeManifest, homeInstalled, installPackages, RECOMMENDED } from './install'
 
 /**
  * 宿主子进程入口（纯 node，由主进程以 ELECTRON_RUN_AS_NODE 拉起）。
- * 载体（起 cordis）+ 取址（读 yml、找到位、挂上）+ 桥的宿主那半。
+ * 内核只挂两个官方件就退场:loader 管条目树与模块加载,include 读 yml。
+ * 取址因此归 loader——baseUrl 指向 home,它自己解析 <home>/node_modules。
  */
 
 // cordis 的 logger 走 console.log——先改道 stderr，别污染 fd1
@@ -18,7 +21,10 @@ console.log = console.error
 const dataDir = process.env.GWB_DATA_DIR ?? path.resolve(process.cwd(), 'gwb-home')
 const appVersion = process.env.GWB_VERSION ?? null
 const siteDir = path.join(dataDir, 'node_modules')
-const configFile = path.join(dataDir, 'cordis.yml')
+/** 相对 baseUrl 的 URL,不是文件系统路径——include 拿它走 `new URL(path, baseUrl)`，Windows 盘符会被当成 scheme */
+const CONFIG_NAME = 'cordis.yml'
+/** 承载 cordis.yml 那条条目的 id;件的 id 都挂在它下面（`home:<件>`）*/
+const ENTRY_ROOT = 'home'
 
 fs.mkdirSync(dataDir, { recursive: true })
 
@@ -32,61 +38,65 @@ function send(message: HostMessage): void {
 
 const ctx = new Context()
 
+/**
+ * 模块解析的起点,设在根上下文:loader 与 include 都从这儿继承。
+ * 指向 home 那个目录,<home>/node_modules 里的件因此按裸名就找得到——母仓设的是应用目录,
+ * 所以它必须自己把条目名算成绝对 file URL。
+ * 设在根而不是只传给 Loader:Loader 只把它设在自己 extend 出的 ctx 上,而 Include 挂在根上。
+ */
+ctx.baseUrl = pathToFileURL(dataDir + path.sep).href
+
 declare module 'cordis' {
   interface Context {
     cli?: { run(command: string, args?: unknown): Promise<unknown> }
   }
 }
 
-/** 挂载结果:每条一句话，说得出为什么没挂上。pkg 与 shell 给渲染层挑外壳用 */
-interface Mounted {
+/** 一条条目在界面上的样子。ok 看 fiber:挂上了才有,这是 loader 唯一的成败凭据 */
+interface EntryView {
   id: string
   ok: boolean
-  why?: string
-  pkg?: string
-  shell?: boolean
+  pkg: string
+  shell: boolean
+  disabled: boolean
 }
 
-const mounted: Mounted[] = []
-
-async function mountEntry(entry: Entry): Promise<Mounted> {
-  if (entry.disabled === true) return { id: entry.id, ok: false, why: '条目被禁用' }
-  const file = resolvePlugin(entry.name, siteDir)
-  if (file === undefined) return { id: entry.id, ok: false, why: `位里没有 ${entry.name}（或入口文件不在）` }
-  const shell = pluginMeta(pluginDir(entry.name, siteDir))?.shell === true
-  try {
-    const mod: unknown = await import(pathToFileURL(file).href)
-    // 模块的形状运行时才知道,类型上没什么可说的——照 cordis 的约定原样转发
-    ;(ctx.plugin as (plugin: unknown, config: unknown) => void)(mod, entry.config ?? {})
-    return { id: entry.id, ok: true, pkg: entry.name, shell }
-  } catch (err) {
-    // 一个坏件不拖垮别的:记下原因，接着挂下一条
-    return { id: entry.id, ok: false, why: String(err), pkg: entry.name, shell }
+/** 走遍 loader 的条目树（include 是挂在它下面的子树,条目在子树里）*/
+function walkEntries(): EntryView[] {
+  const out: EntryView[] = []
+  const seen = new Set<unknown>()
+  const walk = (tree: { store?: Record<string, unknown> } | undefined): void => {
+    if (tree === undefined || seen.has(tree)) return
+    seen.add(tree)
+    for (const raw of Object.values(tree.store ?? {})) {
+      const entry = raw as {
+        id?: string
+        fiber?: unknown
+        disabled?: boolean
+        options?: { name?: string }
+        subtree?: { store?: Record<string, unknown> }
+      }
+      const pkg = entry.options?.name ?? ''
+      out.push({
+        id: entry.id ?? '',
+        ok: entry.fiber !== undefined,
+        pkg,
+        shell: pkg === '' ? false : pluginMeta(pluginDir(pkg, siteDir))?.shell === true,
+        disabled: entry.disabled === true,
+      })
+      walk(entry.subtree)
+    }
   }
+  walk(ctx.loader as unknown as { store?: Record<string, unknown> })
+  return out
 }
 
-async function mountAll(): Promise<void> {
-  let entries: Entry[]
-  try {
-    entries = parseEntries(fs.readFileSync(configFile, 'utf8'))
-  } catch (err) {
-    // 文件不在就是「一个件都没装」,不写模板——那个文件归用户
-    const why = (err as NodeJS.ErrnoException).code === 'ENOENT' ? '还没有这个文件' : String(err)
-    console.error(`[host] 插件树读不出（${why}）：${configFile}`)
-    return
-  }
-  for (const entry of entries) {
-    const result = await mountEntry(entry)
-    mounted.push(result)
-    console.error(result.ok ? `[host] 挂上 ${result.id}` : `[host] 没挂 ${result.id}：${result.why}`)
-  }
-}
-
-/** 内核自省口。除它之外一律走 ctx.cli——本体不认识任何插件的命令名 */
+/** 内核自省口。除它与 kernel.install 之外一律走 ctx.cli——本体不认识任何插件的命令名 */
 function kernelInfo(): unknown {
+  const entries = walkEntries()
   return {
     ok: true,
-    data: { pid: process.pid, node: process.versions.node, dataDir, appVersion, entries: mounted },
+    data: { pid: process.pid, node: process.versions.node, dataDir, appVersion, entries },
   }
 }
 
@@ -96,7 +106,7 @@ const installEnv = {
   log: (line: string) => console.error(`[install] ${line}`),
 }
 
-/** 装机口。装完不重挂:换模块是另一件事,重启就好——真嫌烦了再说 */
+/** 装机口。装完的件要生效,改 yml 让 include 重挂——装机本身不碰条目树 */
 async function kernelInstall(args: unknown): Promise<unknown> {
   const specs = (args as { specs?: unknown })?.specs
   if (!Array.isArray(specs) || specs.some((s) => typeof s !== 'string')) {
@@ -104,7 +114,7 @@ async function kernelInstall(args: unknown): Promise<unknown> {
   }
   if (installEnv.pnpm === '') return { ok: false, error: '没有可用的 pnpm（GWB_PNPM 没传下来）' }
   const result = await installPackages(installEnv, specs as string[])
-  return result.ok ? { ok: true, data: { installed: specs, note: '重启后生效' } } : result
+  return result.ok ? { ok: true, data: { installed: specs } } : result
 }
 
 async function dispatch(payload: { command: string; args?: unknown }): Promise<unknown> {
@@ -142,9 +152,33 @@ async function firstRun(): Promise<void> {
   await installPackages(installEnv, [...RECOMMENDED])
 }
 
+/**
+ * 内核只挂 loader,再往它的树上放一条 include,其余全归这两个。
+ *
+ * include 走 `cordis:` 前缀的内建表:那个前缀的名字 loader 直接从 builtins 里取,
+ * 不经模块解析——它住应用依赖树而 baseUrl 指着 home,按裸名是找不到的。
+ * 做成条目而不是 `ctx.plugin(Include)`,是为了让它的子树挂在 loader 的树上:
+ * 条目表、fiber 状态、热挂卸全在一棵树里,外面只认 ctx.loader 一个入口。
+ */
+async function bootLoader(): Promise<void> {
+  // ctx.plugin 是 thenable,不 await 服务就还没就位（ctx.loader 会是 undefined）
+  await ctx.plugin(Loader, {})
+  ctx.loader.builtins.include = Include
+  // id 写死:条目 id 是有层级的（`<父>:<子>`），父的 id 一变，所有件的 id 跟着变——
+  // 外壳的布局按 panel id 存,那样每次启动都对不上
+  await ctx.loader.root.update([{ id: ENTRY_ROOT, name: 'cordis:include', config: { path: CONFIG_NAME } }])
+  await ctx.loader.await()
+}
+
 void firstRun()
-  .then(mountAll)
+  .then(bootLoader)
   .then(() => {
-    console.error(`[host] up，dataDir=${dataDir}，挂上 ${mounted.filter((m) => m.ok).length}/${mounted.length}`)
+    const entries = walkEntries()
+    console.error(`[host] up，dataDir=${dataDir}，条目 ${entries.filter((e) => e.ok).length}/${entries.length}`)
+    for (const e of entries) console.error(`[host]   ${e.ok ? '挂上' : '没挂'} ${e.id}（${e.pkg}）`)
     send({ t: 'ready' })
+  })
+  .catch((err: unknown) => {
+    console.error(`[host] 起不来：${String(err)}`)
+    process.exit(1)
   })
