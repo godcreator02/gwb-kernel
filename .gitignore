@@ -2,5 +2,3 @@ node_modules/
 out/
 dist/
 *.log
-# 锚定根——裸写 lib/ 会罩住 docs-site/src/lib/ 里的源码
-/packages/gwb-plugin-api/lib/

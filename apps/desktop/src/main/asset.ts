@@ -7,7 +7,7 @@ import { resolvePlugin } from '../shared/entries'
 
 /**
  * 扩展名 → content-type，认不出的不交。
- * 按解析出的**真实文件**判，不按 URL——exports 的 `./client` 落到的是 `lib/client.js`。
+ * 按解析出的**真实文件**判，不按 URL——exports 的 `./client` 落到的是 `dist/client.js`。
  * 样式表这条不能少：Chromium 对 `<link rel=stylesheet>` 严查 MIME，不是 text/css 就拒。
  */
 const TYPES: Record<string, string> = {

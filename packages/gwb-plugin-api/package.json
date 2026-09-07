@@ -3,17 +3,17 @@
   "version": "0.0.2",
   "description": "gwb-kernel 的词汇表：插件说话用的那几个名词，只命名不做事",
   "type": "module",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./lib/index.d.ts",
-      "default": "./lib/index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },
   "files": [
-    "lib",
+    "dist",
     "src"
   ],
   "scripts": {

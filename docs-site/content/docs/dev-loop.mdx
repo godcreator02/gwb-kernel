@@ -18,7 +18,7 @@ pnpm start
 落到 `dist/`。不跑的症状是装完起不来，而 pnpm 一声不吭。这里在 `apps/desktop` 挂了一条
 自己的 `postinstall` 补上，`.npmrc` 里配了 npmmirror 镜像（GitHub 直连拉不动）。
 
-`pnpm start` 先出词汇表包的 `lib/`（产物不进 git，这步串在 `start` 与 `check` 里，
+`pnpm start` 先出词汇表包的 `dist/`（产物不进 git，这步串在 `start` 与 `check` 里，
 毫秒级），再 `electron-vite build && electron .`：构建三个 target（主进程、preload、
 渲染层）直接跑。
 
