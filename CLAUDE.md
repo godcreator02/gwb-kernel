@@ -16,13 +16,39 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 
 | | 是什么 | 为什么不可消去 |
 | --- | --- | --- |
-| **载体** | 起一个 node 进程挂 cordis + loader；开一扇窗 | 插件是 JS 模块，要被 import 才会运行；界面得有地方待着 |
-| **取址** | 读 yml → 知道装了哪些 → 找到文件在哪 → 挂上 | 没有取址，`import` 这个词都写不出来 |
+| **载体** | 起一个 node 进程挂 cordis；开一扇窗 | 插件是 JS 模块，要被 import 才会运行；界面得有地方待着 |
+| **取址** | **挂 cordis 官方 loader**,baseUrl 指着 home,它自己解析 `<home>/node_modules` | 没有取址，`import` 这个词都写不出来 |
 | **装机** | `pnpm add <名>` 进 home，附一份推荐列表 | 「用户可以装插件」是工作台的定义；插件不能自己把自己带来 |
 | **桥** | fd3 命令 + 事件；`gwb://` 交出插件的浏览器那半 | node 与浏览器是两个执行世界，插件的两半必须能对话 |
 
-外加一份**词汇表**（`gwb-plugin-api`）——它不做事，只命名。取址要说得出「条目」，
-桥要说得出「命令」「事件」，这些名词的定义就是它。
+外加一份**词汇表**（`packages/gwb-plugin-api`,产物 729 字节）——它不做事，只命名。
+
+### 取址这件事内核自己不做
+
+内核只挂两样,其余全归它们:`@cordisjs/plugin-loader`（条目树与模块加载)加一条
+`cordis:include` 条目（读 `<home>/cordis.yml`)。**内核连 yml 都不认识。**
+
+- 两者都住**应用依赖树**:要在读 yml 之前就位,写进 yml 是鸡生蛋
+- include 走 loader 的 `builtins`——`cordis:` 前缀的名字直接从内建表取,不经模块解析
+  （baseUrl 指着 home,按裸名找不到它)
+- 承载 yml 那条条目的 id **写死为 `home`**:条目 id 有层级（`<父>:<子>`),父 id 一变
+  所有件的 id 跟着变,外壳按 panel id 存的布局就全对不上
+- `shared/entries.ts` 里的 `resolvePlugin` 那几个**留着但不管挂载**——它们是主进程的
+  `gwb://` 在用(要知道包在哪),而 loader 跑在宿主子进程里,主进程够不着
+
+**热挂载的形态**:include 没有文件监听,`refresh()` 要外部调。所以不是「改文件自动生效」,
+是**「调条目树的 API,树自己写回 yml」**。设置件将来走这条。
+（API 细节:`create` 回的是全路径 id,而 `remove`/`resolve` 只认树内局部 id。)
+
+### 开着的 cordis 官方件
+
+`plugin-loader` 与 `plugin-include` 住应用依赖树(内核挂);`plugin-timer`(`ctx.setTimeout`,
+随件卸载自动收)与 `plugin-logger-console`(cordis logger 的出口,接上内核已有的落盘线)
+装进 home 走 yml 条目。
+
+**不开** `plugin-hmr`——它在这个架构下不起作用:跑的是 home 里那份产物,盯仓内源码盯到
+变化也没有对应模块可换。也不开 `plugin-http`/`plugin-server`(没有外部访问需求)、
+`plugin-config`/`plugin-webui`(Koishi 生态的)、`plugin-database`、`@cordisjs/schema`。
 
 ## 准入判据：两道关，都得过
 
@@ -89,8 +115,12 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 | `26090702tpu\gwb-catalog` | 推荐清单 | 装机那份「推荐列表」将来的来源 |
 | `26090520zzv\registry` | 本机 Verdaccio | 装机的包源,`@godcreator02` scope 指的就是它 |
 
-**重做的件放哪、包名怎么跟废弃的那批错开,还没定**——发同名包到同一个 registry 会跟母仓
-那批打架。定了写回这里。
+**重做的件的包名:`@godcreator02/gwb-<件名>`**。加 `gwb-` 前缀跟废弃那批错开——
+`@godcreator02/shell`、`/logger`、`/settings`、`/cli` 已被那批占着,`gwb-shell` 这些空着。
+scope 不换:npm 上注册的就是 `godcreator02`,本机 Verdaccio 上 scope 本来也随便定。
+
+**第一批四个件住一个新的件仓单元**(还没建):`gwb-cli`(命令总线,约 55 行)、
+`gwb-shell`(dockview 外壳)、`gwb-logger`(日志窗格)、`gwb-settings`(设置)。
 
 ## 干活之前
 
@@ -115,6 +145,10 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 `mdx.tsx` 里那个会画状态点的 `pre` 都配好了,写第一条引用时不用再动配置。
 
 文档站有自己的依赖树与构建,**不进根 `pnpm check`**。
+
+**文档站的组件随便加**——它不是内核,准入判据管不着它。要 `<Callout>`、要图表、要什么加什么,
+只记得在 `livedoc.config.mjs` 的名册里给它一条压平规则（不然 `livedoc check` 当场报红,
+护栏是活的)。
 
 ## 蹲住这条线
 
