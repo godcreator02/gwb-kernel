@@ -19,7 +19,7 @@ livedoc: none
 
 内核在挂 loader 之前注册一个 exporter，只管 error：
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="162-171" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="206-215" */}
 
 **loader 没有吞错误**，它老老实实写着 `.catch(error => this.ctx.logger.error(error))`。问题
 在下游：cordis 的 `LoggerService` 把消息存进 `buffer`，**没有 exporter 就没有出口**。而
@@ -41,7 +41,7 @@ livedoc: none
 
 ### `ctx.plugin` 是 thenable，不 await 服务就还没就位
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="173-180" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="217-224" */}
 
 **症状**：`ctx.loader` 是 `undefined`，报 `Cannot read properties of undefined (reading 'await')`。
 
@@ -67,7 +67,7 @@ file URL。指向 home 之后 loader 自己就解析得到。
 
 ### `include` 走 loader 的 `builtins`，而且做成条目
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="176-179" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="220-223" */}
 
 `include` 住应用依赖树，而 baseUrl 指着 home——按裸名找不到它。loader 的 `import()` 对
 `cordis:` 前缀的名字直接从 `builtins` 表取、不经模块解析，所以挂 `builtins.include` 再用
@@ -89,13 +89,13 @@ file URL。指向 home 之后 loader 自己就解析得到。
 
 ### `gwbKernel` 要在挂 loader 之前 provide
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="173-175" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="217-219" */}
 
 件一挂上就要取得到。晚一步的症状是第一批件全都读到 `undefined`。
 
 ### 建 home 的 `package.json` 不由装机代劳
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="154-159" */}
+{/* ref file="../apps/desktop/src/host/main.ts" lines="198-203" */}
 
 推荐列表是空表时装机会提前返回（`specs.length === 0`），`ensureHomeManifest` 轮不到，
 于是 `package.json` 建不出来，「装过了」永远判不成立——**每次启动都当新 home**。
@@ -129,7 +129,7 @@ file URL。指向 home 之后 loader 自己就解析得到。
 
 ### 入口指到包目录外一律不认
 
-{/* ref file="../apps/desktop/src/shared/entries.ts" lines="66-74" */}
+{/* ref file="../apps/desktop/src/shared/entries.ts" lines="80-88" */}
 
 认了它，**一个包就能让内核读任意文件**。这是这一层唯一的一条判断——其余的候选名补全、
 位表、完整 exports 条件语义、realpath 实体化，母仓都有，这里都没有。
