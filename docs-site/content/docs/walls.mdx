@@ -93,6 +93,30 @@ file URL。指向 home 之后 loader 自己就解析得到。
 
 件一挂上就要取得到。晚一步的症状是第一批件全都读到 `undefined`。
 
+### 全新 home 起不来——`include` 读不到 `cordis.yml` 会把宿主整个搞挂
+
+{/* ref file="../apps/desktop/src/host/install.ts" lines="13-30" */}
+
+**症状**：一个全新的 home 首启，宿主 `exit 1`，日志里是一条未捕获的 promise rejection：
+
+```
+Error: config file not found: …\homes\boot-2609070610\cordis.yml
+    at [cordis.init] (…/@cordisjs/plugin-include/lib/index.js:146:15)
+[gwb] 宿主退出（code=1）
+```
+
+那个错落在 loader 的挂载链上，**不是「一个件都没装」，是整个进程没了**。
+
+**为什么拖到现在才发现**：日常那个 home 早就有 `cordis.yml` 了，这条路径从来没人走过。
+`homes/<名>` 一做出来、第一次开测试 home 就撞上了——**这正是「验从零装机要开新 home」
+那条纪律要抓的东西**。而文档当时还写着「文件不存在就是一个件都没装」，跟实际行为对不上。
+
+**修**：`ensureHome` 把 home 建成**起得来**的最小形态——包清单 + 一份空条目表 `[]`。
+空表才是「一个件都没装」的正当表达。
+
+**它每次启动都跑，不只首启**：两样各自判在不在、幂等。只在首启补的话，有人手工删掉
+`cordis.yml` 之后就再也起不来了，而那个失败同样是宿主整个退出。
+
 ### 建 home 的 `package.json` 不由装机代劳
 
 {/* ref file="../apps/desktop/src/host/main.ts" lines="198-203" */}
@@ -102,6 +126,10 @@ file URL。指向 home 之后 loader 自己就解析得到。
 
 这个 bug 是实机验收抓到的：删净 home 起一次，日志说了「新 home」，但目录是空的。
 **单测抓不着**，因为它是两个各自正确的函数组合顺序错了。
+
+**后来从根上拆掉了这个组合**：`ensureHome` 挪到 `firstRun` 的第一行、无条件跑，跟装机再无
+先后关系（见上一条）。当时那个修法是「建 home 不走装机那条路」，现在是「建 home 根本不跟
+装机排队」。
 
 ---
 

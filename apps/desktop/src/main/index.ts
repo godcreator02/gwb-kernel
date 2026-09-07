@@ -21,8 +21,21 @@ protocol.registerSchemesAsPrivileged([
   },
 ])
 
-// getPath 在 ready 之前就能用；落盘要趁早
-const dataDir = path.join(app.getPath('userData'), 'home')
+/**
+ * 用哪个 home，`GWB_HOME` 说了算，不给就是 `default`。
+ * 名字要能当目录名——不卡住的话 `GWB_HOME=../../x` 就跳出 homes/ 了。
+ */
+function homeName(): string {
+  const raw = process.env.GWB_HOME ?? 'default'
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(raw)) {
+    throw new Error(`GWB_HOME ${JSON.stringify(raw)} 不合规。一律 kebab-case（小写字母、数字、单连字符分段）。`)
+  }
+  return raw
+}
+
+// getPath 在 ready 之前就能用；落盘要趁早。
+// 这一行是 home 路径的**唯一真源**：日志、gwb:// 的位、传给宿主的 GWB_DATA_DIR 全从它派生
+const dataDir = path.join(app.getPath('userData'), 'homes', homeName())
 teeToFile(path.join(dataDir, 'gwb-kernel.log'))
 
 let host: Host | null = null

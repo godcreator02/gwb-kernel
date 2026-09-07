@@ -10,12 +10,24 @@ import path from 'node:path'
 /** 首启装什么。空表就只把 home 建出来 */
 export const RECOMMENDED: readonly string[] = []
 
-/** home 得先是个包才装得进东西。已存在就不动 */
-export function ensureHomeManifest(homeDir: string): void {
-  const file = path.join(homeDir, 'package.json')
-  if (fs.existsSync(file)) return
+/** 条目表的文件名。这是它的唯一定义，宿主入口从这儿取——两处各写一份必然漂移 */
+export const CONFIG_NAME = 'cordis.yml'
+
+/**
+ * 把 home 建成**起得来**的最小形态：一份包清单 + 一份空条目表。两样各自判在不在，幂等。
+ *
+ * `cordis.yml` 不能少：include 件读不到它会抛，而那个错落在 loader 的挂载链上、
+ * 是一条未捕获的 promise rejection——**宿主整个退出**，不是「一个件都没装」。
+ * 空表 `[]` 才是「一个件都没装」的正当表达。
+ */
+export function ensureHome(homeDir: string): void {
   fs.mkdirSync(homeDir, { recursive: true })
-  fs.writeFileSync(file, `${JSON.stringify({ name: 'gwb-home', private: true }, null, 2)}\n`, 'utf8')
+  const manifest = path.join(homeDir, 'package.json')
+  if (!fs.existsSync(manifest)) {
+    fs.writeFileSync(manifest, `${JSON.stringify({ name: 'gwb-home', private: true }, null, 2)}\n`, 'utf8')
+  }
+  const config = path.join(homeDir, CONFIG_NAME)
+  if (!fs.existsSync(config)) fs.writeFileSync(config, '[]\n', 'utf8')
 }
 
 export function homeInstalled(homeDir: string): boolean {
@@ -32,7 +44,7 @@ export interface InstallEnv {
 /** 跑一趟 pnpm add。子进程是 electron 当 node 使，所以要 ELECTRON_RUN_AS_NODE */
 export function installPackages(env: InstallEnv, specs: string[]): Promise<{ ok: boolean; error?: string }> {
   if (specs.length === 0) return Promise.resolve({ ok: true })
-  ensureHomeManifest(env.homeDir)
+  ensureHome(env.homeDir)
   env.log(`装 ${specs.join('、')}`)
   return new Promise((resolve) => {
     const proc = spawn(process.execPath, [env.pnpm, 'add', ...specs], {

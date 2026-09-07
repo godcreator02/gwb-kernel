@@ -8,7 +8,7 @@ import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator02/gwb-plugin-api'
 import { parseCommandLine, type HostMessage } from '../shared/protocol'
 import { pluginDir, pluginMeta } from '../shared/entries'
-import { ensureHomeManifest, homeInstalled, installPackages, RECOMMENDED } from './install'
+import { CONFIG_NAME, ensureHome, homeInstalled, installPackages, RECOMMENDED } from './install'
 
 /**
  * 宿主子进程入口（纯 node，由主进程以 ELECTRON_RUN_AS_NODE 拉起）。
@@ -21,8 +21,6 @@ console.log = console.error
 const dataDir = process.env.GWB_DATA_DIR ?? path.resolve(process.cwd(), 'gwb-home')
 const appVersion = process.env.GWB_VERSION ?? null
 const siteDir = path.join(dataDir, 'node_modules')
-/** cordis.yml 的位置，相对 baseUrl 的 URL——不是文件系统路径 */
-const CONFIG_NAME = 'cordis.yml'
 /** 承载 cordis.yml 那条条目的 id；件的 id 挂在它下面（`home:<件>`） */
 const ENTRY_ROOT = 'home'
 
@@ -195,11 +193,17 @@ rl.on('line', (line) => {
   )
 })
 
-/** 首启：home 还不是个包就建出来，按推荐列表装一遍。装过了一概不碰 */
+/**
+ * 首启：按推荐列表装一遍。
+ *
+ * `ensureHome` **每次启动都跑**、不只首启：它是幂等的，缺哪样补哪样。只在首启补的话，
+ * 有人手工删掉 `cordis.yml` 之后就再也起不来了——而那个失败是宿主整个退出。
+ */
 async function firstRun(): Promise<void> {
-  if (homeInstalled(dataDir)) return
+  const fresh = !homeInstalled(dataDir)
+  ensureHome(dataDir)
+  if (!fresh) return
   console.error(`[install] 新 home:${dataDir}`)
-  ensureHomeManifest(dataDir)
   await installPackages(installEnv, [...RECOMMENDED])
 }
 
