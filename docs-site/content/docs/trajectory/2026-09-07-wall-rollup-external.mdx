@@ -1,0 +1,15 @@
+---
+title: 显式给 `rollupOptions` 会把 `externalizeDepsPlugin` 注入的 external 盖掉
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: external 被盖
+domain: 构建
+livedoc: none
+---
+
+{/* ref file="../apps/desktop/electron.vite.config.ts" lines="11-21" */}
+
+而两个入口非得显式给 `input` 不可。所以不用那个插件，改成从 `package.json` 现读依赖表自己判——加依赖不必回来改这里，也就不会漏。
+
+**症状**：cordis 被整个内联进宿主束，`host.mjs` 从 2KB 涨到 51.6KB，而构建一声不吭。

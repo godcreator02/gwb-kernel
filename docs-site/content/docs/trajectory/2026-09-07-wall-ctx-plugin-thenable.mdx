@@ -1,0 +1,13 @@
+---
+title: '`ctx.plugin` 是 thenable，不 await 服务就还没就位'
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: thenable 陷阱
+domain: 宿主
+livedoc: none
+---
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="347-353" */}
+
+**症状**：`ctx.loader` 是 `undefined`，报 `Cannot read properties of undefined (reading 'await')`。

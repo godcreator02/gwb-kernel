@@ -1,0 +1,13 @@
+---
+title: '`gwbKernel` 要在挂 loader 之前 provide'
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 早 provide
+domain: 宿主
+livedoc: none
+---
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="347-348" */}
+
+件一挂上就要取得到。晚一步的症状是第一批件全都读到 `undefined`。

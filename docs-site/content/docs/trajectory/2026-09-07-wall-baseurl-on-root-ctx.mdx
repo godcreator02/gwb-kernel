@@ -1,0 +1,17 @@
+---
+title: '`baseUrl` 要设在根上下文'
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: baseUrl 设根
+domain: 宿主
+livedoc: none
+---
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="52-53" */}
+
+`Loader` 只把 `config.baseUrl` 设在**它自己 `extend` 出来的 ctx** 上（`this.ctx = ctx.extend({ baseUrl })`），而 `Include` 是挂在根上的。设在根上，两个都从那儿继承。
+
+**症状**：`Invalid URL`——`include` 拿 `new URL(path, ctx.baseUrl)` 时 baseUrl 是 undefined。
+
+顺带：这也是**母仓那句血泪的根因**。它那句注释说「裸名包只在 home 位时 loader 会静默挂不上」，实际是因为它把 baseUrl 设成了应用目录，所以必须自己把每个条目名算成绝对 file URL。指向 home 之后 loader 自己就解析得到。

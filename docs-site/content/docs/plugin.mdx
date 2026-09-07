@@ -260,7 +260,7 @@ export function mountPane({ host, shell, pane }, container) {
 ```
 
 窗格清单也归外壳：件在 `apply` 里调 `ctx.gwbShell.registerPane(…)` 注册，**不写进包清单**
-（判据见[定过的事](/docs/decisions)）。
+（判据见[窗格清单动态注册](/docs/trajectory/2026-09-07-panes-runtime-registry)）。
 
 渲染层启动时问内核要 `kernel.info`，里头的 `shellPkg` 就是答案——挑的活全在宿主那边，
 它扫服务表找「谁 provide 了 `gwbShell` 且真的挂起来了」。
@@ -289,7 +289,7 @@ preload 在页面上挂了一个 `window.gwb`，**谁在这页上跑都够得着
 ### 日志那两条为什么不走命令通道
 
 缓冲住在主进程，而命令要从缓冲旁边路过、绕到宿主再原路背回来。更要命的是**宿主一挂命令全废**
-——那恰恰是最需要看日志的时候。判据全文见[定过的事](/docs/decisions)。
+——那恰恰是最需要看日志的时候。判据全文见[日志走 preload](/docs/trajectory/2026-09-07-logs-preload-api)。
 
 ### 条目的形状
 
@@ -303,7 +303,7 @@ preload 在页面上挂了一个 `window.gwb`，**谁在这页上跑都够得着
 - **`level`** 是 `error`/`warn`/`info`/`debug`，四路给的都是真级别，没有猜出来的
 
 **没有类型包**——按形状收，写个判形函数当运行期守卫，认不出的条目丢掉、不崩。为什么不进
-词汇表包，见[定过的事](/docs/decisions)。
+词汇表包，见[条目不进词汇表](/docs/trajectory/2026-09-07-log-shape-not-in-vocab)。
 
 ### 取日志的那段舞蹈：先订阅，后取历史
 
@@ -329,8 +329,8 @@ const history = await window.gwb.logs.backlog()
 
 cordis 的 `ctx` 是一个共享命名空间，所有件的服务都挂在上面。规则很短：
 
-- 件提供的服务一律 `gwb` 开头的小驼峰，默认跟件名对应（`gwb-cli` 件 → `ctx.gwbCli`）
-- 消费方 `inject: ['gwbCli']`
+- 件提供的服务一律 `gwb` 开头的小驼峰，默认跟件名对应（`gwb-commands` 件 → `ctx.gwbCommands`）
+- 消费方 `inject: ['gwbCommands']`
 - **例外：cordis 官方件的服务照它自己的**（`timer`、`loader`）——那不是这个生态的东西
 
 为什么全加而不是「通用名才加」：代价不对称。该加没加、将来撞了要改名，所有消费方的
@@ -341,12 +341,15 @@ cordis 的 `ctx` 是一个共享命名空间，所有件的服务都挂在上面
 
 ## 内核自己的两条命令
 
-除这两条外，内核不认识任何命令名——其余一律交给 `ctx.gwbCli`（由某个件提供的服务）。
+除这两条外，内核不认识任何命令名——其余一律交给 `ctx.gwbCommands`（由某个件提供的服务）。
 
 | 命令 | 干什么 |
 | --- | --- |
-| `kernel.info` | 自省口：pid、node 版本、home 路径、条目表与每条的挂载结果 |
+| `kernel.info` | 自省口：pid、node 版本、home 路径、**日志目录**、条目表与每条的挂载结果 |
 | `kernel.install` | 装机口：`{ specs: string[] }`，转发 pnpm 装进 home |
+
+**路径一律从这儿取，别自己拼。** `logDir` 就是个例子：它是 `<home>/logs`，件照着拼也拼得对
+——但那样目录名就有了第二处真源，哪天内核换个名字，件不会报错，只会**静默显示一条错路径**。
 
 「本体不认识任何插件的命令名」是有意的纪律。内核要用某个件的能力时，正确的做法是让那个
 件把能力送上来，而不是内核去点名调它。

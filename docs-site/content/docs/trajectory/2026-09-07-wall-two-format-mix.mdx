@@ -1,0 +1,25 @@
+---
+title: 一处两投之后，终端里出现了两种格式
+born-at: 2026-09-07T18:50
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 两种格式
+domain: 主进程
+livedoc: none
+---
+
+日志出口改成「四路各自结构化、正文投两处」之后，**第一次实机起来看日志文件就撞见了**：
+
+```
+18:36:32.897 I host up，dataDir=…，条目 1/1
+[renderer] SHARED （空）
+[renderer] [renderer] 没有件提供 gwbShell 服务,界面到此为止。…
+```
+
+**症状**：同一份文件里两种格式混着——宿主那路带时间与级别（它走 cordis 的 exporter，那儿拼了前缀），主进程与渲染层那路只有个方括号名字（它们各自 `process.stderr.write` 时手拼的）。外加**双前缀**：渲染层代码里本来就自己写着 `[renderer] `，而主进程收 `console-message` 时又按来源加了一个。
+
+**为什么**：「一行长什么样」被写在了三个地方。四路合流这件事天然会引出这个问题——每加一路，就多一个人决定这一行怎么拼。
+
+**修**：抽一个 `formatLogLine` 放进两头共用的协议文件，四路都走它；渲染层里那几处手写的 `[renderer] ` 前缀删掉——有了结构化的 `name` 字段之后，那是重复信息。
+
+{/* ref file="../apps/desktop/src/shared/protocol.ts" lines="84-92" */}

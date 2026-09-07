@@ -1,0 +1,27 @@
+---
+title: 全新 home 起不来——`include` 读不到 `cordis.yml` 会把宿主整个搞挂
+born-at: 2026-09-07T14:27
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 新 home 起不来
+domain: 宿主
+livedoc: none
+---
+
+{/* ref file="../apps/desktop/src/host/home.ts" lines="22-37" */}
+
+**症状**：一个全新的 home 首启，宿主 `exit 1`，日志里是一条未捕获的 promise rejection：
+
+```
+Error: config file not found: …\homes\boot-2609070610\cordis.yml
+    at [cordis.init] (…/@cordisjs/plugin-include/lib/index.js:146:15)
+[gwb] 宿主退出（code=1）
+```
+
+那个错落在 loader 的挂载链上，**不是「一个件都没装」，是整个进程没了**。
+
+**为什么拖到现在才发现**：日常那个 home 早就有 `cordis.yml` 了，这条路径从来没人走过。`homes/<名>` 一做出来、第一次开测试 home 就撞上了——**这正是「验从零装机要开新 home」那条纪律要抓的东西**。而文档当时还写着「文件不存在就是一个件都没装」，跟实际行为对不上。
+
+**修**：`ensureHome` 把 home 建成**起得来**的最小形态——包清单 + 一份空条目表 `[]`。空表才是「一个件都没装」的正当表达。
+
+**它每次启动都跑，不只首启**：两样各自判在不在、幂等。只在首启补的话，有人手工删掉 `cordis.yml` 之后就再也起不来了，而那个失败同样是宿主整个退出。

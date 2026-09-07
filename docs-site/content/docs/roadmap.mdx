@@ -21,9 +21,9 @@ livedoc: none
 | 日志落盘 | 脱离终端也查得到 | 三处输出汇进 `<home>/gwb-kernel.log` |
 | 保底 error 出口 | 挂载失败说得出原因 | 坏件报 `ERR_MODULE_NOT_FOUND` 带完整路径 |
 | 词汇表包 | 契约面只有五个名字 | 产物 729 字节，零运行时依赖 |
-| 文档三层分流 | 文档撒谎会被抓 | `walls.mdx` 钉住 14 处代码，`pnpm doc` 全绿 |
+| 文档三层分流 | 文档撒谎会被抓 | 轨迹的墙卡钉住 14 处代码，`pnpm doc` 全绿 |
 | **运行时环境** | **React 件跑得起来** | 验收件的 shadcn 按钮在页面上样式正确（`oklch(0.21 …)` 精确等于令牌值）；亮暗切换当场变色、没有任何件重新构建 |
-| **home 分格** | **验收有干净场子了** | `homes/<名>`，`GWB_HOME` 选、不给就是 `default`；实测开一个测试 home 之后日常那份文件数 164→164 一个字节没动。顺带把「全新 home 从零起」这条**从没被走过**的路径第一次验通（撞出一个宿主整个退出的 bug，见 walls） |
+| **home 分格** | **验收有干净场子了** | `homes/<名>`，`GWB_HOME` 选、不给就是 `default`；实测开一个测试 home 之后日常那份文件数 164→164 一个字节没动。顺带把「全新 home 从零起」这条**从没被走过**的路径第一次验通（撞出一个宿主整个退出的 bug，见[那面墙](/docs/trajectory/2026-09-07-wall-fresh-home-no-yml)） |
 | 门禁加一道 lint | **type-aware 真在跑，不是假装绿** | 双探针都报（`no-unused-vars` + `typescript/no-floating-promises`）；反向探针去掉 type-aware 后只剩前者；探针在时 `pnpm check` `exit 1`。基线 17 文件 / 111 规则 / 零诊断 |
 
 内核现在 **1374 行**（`apps/desktop/src` 1330 + 词汇表包 44），对照母仓 5100。
@@ -36,7 +36,7 @@ livedoc: none
 
 **前提到期了**——「主进程日志环形缓冲 + `logBacklog`」原先挂在下面那栏，等的是「日志件真要看
 历史段」。要做 `gwb-logger` 了，于是重新过了一遍判据，形状也一并定死（六条都在
-[定过的事](/docs/decisions)）。
+[轨迹](/docs/trajectory)）。
 
 四路：件与 loader 的 cordis 日志、宿主自己的话（`host`/`install`/`stdin`）、主进程自己的话、
 渲染层的 console。**窗格件那半在件仓**（`gwb-logger`），内核这边出的是通道与缓冲。
@@ -106,4 +106,4 @@ livedoc: none
 
 **数据落盘**也归到这里了：它一度挂在「在等前提」那栏（等第一个真要落盘的件），而 shell
 让那条前提到期时，重新过了一遍准入判据——第一关就否掉了，于是做成
-[`gwb-data` 件](/docs/decisions)。内核只出 `dataDir`，其余归件。
+[`gwb-data` 件](/docs/trajectory/2026-09-07-gwb-data-plugin)。内核只出 `dataDir`，其余归件。

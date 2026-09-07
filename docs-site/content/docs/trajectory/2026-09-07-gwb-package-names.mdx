@@ -1,0 +1,29 @@
+---
+title: 件的包名加 `gwb-` 前缀，scope 不换
+born-at: 2026-09-07T11:01
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 包名错开
+domain: 契约
+livedoc: none
+---
+
+## 背景
+
+新做的件要跟废弃那批错开，而 `@godcreator02/cli`、`/shell` 等已被占着。
+
+## 结论与边界
+
+`@godcreator02/gwb-<件名>`。人拍板（2026-09-07）。
+
+## 否掉的候选
+
+- 换 scope（另建 npm organization）——scope 绑定 npm 账号，换要另建 org；本机 Verdaccio 上 scope 本来就随便定。
+
+## 依据
+
+scope 绑定 npm 账号（注册的就是 `godcreator02`），换要另建 org；而本机 Verdaccio 上 scope 本来就随便定。加前缀成本为零，且实测 `gwb-shell` 这些名字全空着。
+
+## 代价与遗留
+
+包名比原来长；两批件在同一个 registry 上并存一段时间。

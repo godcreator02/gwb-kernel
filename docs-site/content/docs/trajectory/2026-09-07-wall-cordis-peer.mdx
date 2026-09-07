@@ -1,0 +1,13 @@
+---
+title: cordis 走 peer 不是 dev
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: cordis 走 peer
+domain: 词汇表包
+livedoc: none
+---
+
+判据「运行时真 import 了才写 peer」漏了中间一档：**只 import type、但它出现在导出的类型里，也得 peer**——`GwbContext extends Context`，消费方必须解析得到，而**发布出去的包不带 devDependencies**。
+
+**症状**：消费方那边 `ctx.logger` / `effect` / `provide` 全报「不存在」。第一个件撞上了，`gwb-commands` 的 `gwbCommands.run` 回 `GwbResult` 是同一回事。

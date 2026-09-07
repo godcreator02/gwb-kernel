@@ -1,0 +1,17 @@
+---
+title: 交样式表卡住的是 content-type，不是协议特权
+born-at: 2026-09-07T12:25
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 样表 MIME
+domain: 取址
+livedoc: none
+---
+
+{/* ref file="../apps/desktop/src/main/asset.ts" lines="8-17" */}
+
+`registerSchemesAsPrivileged` 那四个特权（`standard` / `secure` / `supportFetchAPI` / `corsEnabled`）早就配齐了，`gwb://` 加载模块脚本一直是好的。但 `<link rel=stylesheet>` 拿不到样式——**Chromium 对样式表做严格 MIME 检查，不是 `text/css` 一律拒**，而执行端把 content-type 写死成了 `text/javascript`。
+
+**症状**：请求 200、内容也对，页面上就是没样式，控制台一句话都没有。
+
+分派按**解析出的真实文件**判扩展名，不按 URL 判：`exports` 的 `./client` 落到的是 `dist/client.js`，URL 那一段压根没有扩展名。

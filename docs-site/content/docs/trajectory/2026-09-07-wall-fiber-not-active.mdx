@@ -1,0 +1,21 @@
+---
+title: 「fiber 在不在」不是「挂上了没有」
+born-at: 2026-09-07T17:49
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: fiber 不是挂上
+domain: 条目表
+livedoc: none
+---
+
+条目表的 `ok` 一开始判的是 `entry.fiber !== undefined`。看着天经地义，**是错的**：cordis 的 `registry.plugin()` **同步就把 fiber 建出来并返回**，跟 `inject` 满不满足完全无关。只有 `import` 那一步抛错才会让 `fiber` 留在 undefined。
+
+所以一个 `inject` 永远等不到的件也报 `ok: true`——而那正是最该被看见的一种没挂上。
+
+**这条不是推出来的，是撞出来的**：`gwb-shell` 硬 `inject: ['gwbCommands']`，而 `gwb-commands` 没装进 home 时，它的 fiber 停在 `PENDING`、`ok` 仍报 true，于是渲染层照样把 `#root` 交给它、`import` 了它的 `client.js`、调了 `bootShell`——然后 `shell.panes` 这条命令根本不存在。**井是空的，而 console 里只有一句「调不通」**，谁也看不出根因是另一个件没装。
+
+判据得是 `fiber?.state === FiberState.ACTIVE`。**那是个 `const enum`**，`isolatedModules` 下 import 不进来，只能照抄字面量 `2` 并在注释里说明。
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="145-165" */}
+
+修完之后启动日志会诚实一些：以前永远是 `条目 5/5`，现在有件在等依赖时会显示 `2/4`，而且每条后面写着「挂上」还是「没挂」。

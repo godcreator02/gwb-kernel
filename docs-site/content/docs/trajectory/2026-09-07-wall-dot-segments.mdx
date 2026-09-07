@@ -1,0 +1,20 @@
+---
+title: URL 里的点段轮不到自己判——`new URL` 已经吃掉了
+born-at: 2026-09-07T12:25
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 点段被吃
+domain: 取址
+livedoc: none
+---
+
+{/* ref file="../apps/desktop/src/shared/asset-url.ts" lines="39-41" */}
+
+子路径通用化之后第一反应是加一道「`.` 与 `..` 一律不认」。**那是死代码**：WHATWG 的路径状态机会先百分号解码再判点段，`new URL` 出来的 `pathname` 里根本不会剩下它们。实测：
+
+```
+gwb://asset/plugins/@a/b/../escape.js    → pathname = /plugins/@a/escape.js
+gwb://asset/plugins/@a/b/%2e%2e/escape.js → pathname = /plugins/@a/escape.js
+```
+
+两条都被规范化成了同一个东西，落到解析函数手上时形状是「只剩包名、没说要什么」，自然不认。**留着那道检查比不写更糟**——读代码的人会以为这里挡住了越界，于是不再去问真正的防线在哪。真正挡越界的只有 `resolvePlugin` 那句包目录前缀检查。

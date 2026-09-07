@@ -1,0 +1,15 @@
+---
+title: 它就这么大
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 它就这么大
+domain: 词汇表包
+livedoc: none
+---
+
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" */}
+
+收进来的判据是「多数件都要，而且它说的是内核与件之间的事」。实测母仓 11 件从平台包一共只取了 12 个名字，其中 11 件全用 / 7 件 / 6 件的就是 `GwbContext` / `requireKernel` / `isRecord` 这三样；其余 9 个里 4 个其实是**件之间**的契约（该住提供方自己的包里），5 个是各 1 件在用的实现细节漏出。
+
+母仓那个包 600 行，这个 38 行。

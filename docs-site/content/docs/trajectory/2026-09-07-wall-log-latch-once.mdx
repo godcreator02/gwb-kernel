@@ -1,0 +1,17 @@
+---
+title: 日志写失败只说一次，此后不再试
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 只说一次
+domain: 主进程
+livedoc: none
+---
+
+{/* ref file="../apps/desktop/src/main/log-file.ts" lines="98-104" */}
+
+静默停更会让人读到一段什么都没发生的时间；每行重试则把每行输出变成一次失败的系统调用。
+
+**切段失败不共用这个 latch，也不该共用。** 上面那条理由（每行重试＝每行一次失败的系统调用）在轮转上不成立：切不动只是文件长一点，照常写没有任何额外成本。共用一个 latch 的话，一次被占用的 `rename`（Windows 上拿编辑器开着归档文件就够）会把整条落盘线判死——**把一个小故障放大成「此后再也不落盘」**。所以是两个 latch：`dead` 管写、`rotateDead` 管切。
+
+同一处还有一条更隐蔽的：`rotate` 里已经 `closeSync` 过了，**rename 抛出去的话就丢下一个关掉的 fd**，下一次写是 `EBADF`，照样把整条线判死。所以它无论成没成都要交回一个开着的 fd。这条有单测钉着（`rename` 打桩抛 EPERM，然后断言交回的 fd 还写得进去）。

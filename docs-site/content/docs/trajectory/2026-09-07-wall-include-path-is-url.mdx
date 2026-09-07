@@ -1,0 +1,13 @@
+---
+title: '`include` 的 `config.path` 是相对 baseUrl 的 URL，不是文件系统路径'
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: path 是 URL
+domain: 宿主
+livedoc: none
+---
+
+它内部走的是 `fileURLToPath(new URL(config.path, ctx.baseUrl))`。
+
+**症状**：传绝对路径时报 `ERR_INVALID_URL_SCHEME: The URL must be of scheme file`——Windows 的盘符 `C:` 被当成了 URL scheme。

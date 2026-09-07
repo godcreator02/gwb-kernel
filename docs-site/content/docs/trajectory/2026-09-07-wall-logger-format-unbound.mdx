@@ -1,0 +1,19 @@
+---
+title: cordis 的 `Logger.format` 是静态方法，摘下来就丢了 `this`
+born-at: 2026-09-07T18:50
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 摘方法丢 this
+domain: 主进程
+livedoc: none
+---
+
+取 `ctx.logger('x').constructor` 拿到 `Logger` 类是为了**不 import cordis 的内部**（母仓那个日志件就是这么干的）。但
+
+```ts
+const format = factory('gwb').constructor.format   // ← 摘下来了
+```
+
+**症状**：不是运行时报错——是 `pnpm check` 里 oxlint 的 `typescript(unbound-method)` 拦下来的。那份实现眼下确实没用 `this`（`format` 里全是参数与模块级的 `defaultFormatters`），所以**跑起来一点事都没有**；等哪天 cordis 在里面加一句 `this.xxx`，才会炸在一个跟日志毫无关系的地方。
+
+**修**：整个拿着那个类、调 `Logger.format(exporter, message)`，别把方法摘下来。

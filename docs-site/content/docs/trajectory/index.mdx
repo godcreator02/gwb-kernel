@@ -1,0 +1,77 @@
+---
+title: 轨迹
+description: 定过的事与撞过的墙——一卡一文件，只追加
+livedoc: none
+---
+
+# 轨迹
+
+**定过的事**（事前的选择）与**撞过的墙**（事后的教训）都住这儿，一卡一文件，全挂在[根卡](/docs/trajectory/2026-09-07-gwb-kernel)下面。一个选择后来撞了墙，两边各记各的。
+
+卡的规矩：`born-at` 取自引入它的那次提交，**永不改**；正文只追加，订正写进原卡、不删旧话；一条推翻另一条的，卡里写着 `supersedes::`。决策卡分五段（背景 / 结论与边界 / 否掉的候选 / 依据 / 代价与遗留），墙卡是四段式（现状 / 为什么 / 症状 / 钉住的那段代码）——「代价」与「症状」分别是两边最要紧的那段。
+
+## 定过的事（28）
+
+| 卡 | 定了什么 |
+| --- | --- |
+| [另起一条线](/docs/trajectory/2026-09-07-fresh-line-over-subtraction) | 不在母仓做减法；母仓与件仓废弃，插件全部重做 |
+| [打包器到期再选](/docs/trajectory/2026-09-07-bundler-deferred) | 不换 Forge；到期再各试一次 |
+| [取址归 loader](/docs/trajectory/2026-09-07-cordis-loader-addressing) | 只挂官方 loader ＋ `cordis:include`，内核连 yml 都不认识 |
+| [官方件开四个](/docs/trajectory/2026-09-07-cordis-official-plugins-four) | loader / include / timer / logger-console；后来 logger-console 撤掉变三个 |
+| [组件复用三层](/docs/trajectory/2026-09-07-components-three-layers) | 样式共享、组件各拉各的、React 共享；不建 registry |
+| [服务名加前缀](/docs/trajectory/2026-09-07-gwb-service-prefix) | 一律 `gwb` 开头小驼峰；官方件照它自己的 |
+| [包名错开](/docs/trajectory/2026-09-07-gwb-package-names) | `@godcreator02/gwb-<件名>`，scope 不换 |
+| [依赖三档](/docs/trajectory/2026-09-07-deps-three-tiers) | import type 出现在导出面也要 peer |
+| [文档三层](/docs/trajectory/2026-09-07-docs-three-layers) | CLAUDE.md 只装硬约束；文档站钉代码；注释只写现状 |
+| [窗格动态注册](/docs/trajectory/2026-09-07-panes-runtime-registry) | 运行时注册，不做静态 `gwb.panes`，内核一行不加 |
+| [内核拼环境](/docs/trajectory/2026-09-07-kernel-builds-importmap) | importmap 内核拼内核注；件只声明 `gwb.shared` |
+| [引 oxlint](/docs/trajectory/2026-09-07-oxlint-fresh-rules) | 精确钉版 ＋ type-aware；规则集全新，不抄母仓白名单 |
+| [词汇表独立包](/docs/trajectory/2026-09-07-vocab-package-standalone) | `gwb-plugin-api` 与内核同仓；不是件，不走服务 |
+| [产物归 dist](/docs/trajectory/2026-09-07-dist-output-dir) | 产物一律 `dist`，把 `lib` 让给源码 |
+| [落盘做成件](/docs/trajectory/2026-09-07-gwb-data-plugin) | `gwb-data` 件三样面；内核只出 `dataDir` |
+| [窗格表过桥](/docs/trajectory/2026-09-07-shell-panes-command) | `shell.panes` 命令；外壳硬依赖 `gwbCommands` |
+| [图标收 lucide](/docs/trajectory/2026-09-07-lucide-icon-names) | `icon?: string` 收 lucide 名，不建花名册 |
+| [默认单份](/docs/trajectory/2026-09-07-duplicable-default-single) | `duplicable?: boolean`，不写就是一份 |
+| [args 归外壳](/docs/trajectory/2026-09-07-pane-args-shell-owned) | 窗格 args 正本住件仓；内核只写「导出 mountPane 即声明」 |
+| [名字运行时报](/docs/trajectory/2026-09-07-describe-self) | `describeSelf` 注册；`gwb.title` 删掉 |
+| [外壳身份运行时](/docs/trajectory/2026-09-07-shell-identity-service) | 谁 provide `gwbShell` 谁是外壳 |
+| [日志汇主进程](/docs/trajectory/2026-09-07-logs-converge-main-process) | 四路汇主进程；宿主挂全量 exporter；件不挂 |
+| [缓冲存条目](/docs/trajectory/2026-09-07-structured-log-entries) | `{ seq, ts, source, level, name, msg }`，2000 条 |
+| [出口归内核](/docs/trajectory/2026-09-07-kernel-owns-log-export) | `logger-console` 不再开；正文渲染一次投两处 |
+| [日志走 preload](/docs/trajectory/2026-09-07-logs-preload-api) | `logs.backlog()` ＋ `on()`；宿主死了历史还在 |
+| [日志按字节切](/docs/trajectory/2026-09-07-log-byte-rotation) | 2 MB 切、留 20 份；按字节不按行 |
+| [条目不进词汇表](/docs/trajectory/2026-09-07-log-shape-not-in-vocab) | 日志条目形状不进词汇表包；正本住「写一个件」 |
+| [设置分两份](/docs/trajectory/2026-09-07-gwb-settings-two-files) | `gwb-settings` 一包全部；home 级 ＋ machine 级两份落盘 |
+
+## 撞过的墙（24）
+
+| 卡 | 在哪儿 | 症状 |
+| --- | --- | --- |
+| [loader 挂不上件错误无出口](/docs/trajectory/2026-09-07-wall-loader-error-swallowed) | 宿主 | 件静默挂不上，一个字都问不出；exporter 必须在挂 loader 前注册 |
+| [`ctx.plugin` 是 thenable](/docs/trajectory/2026-09-07-wall-ctx-plugin-thenable) | 宿主 | 不 await 就没就位：`ctx.loader` 是 `undefined` |
+| [`baseUrl` 设在根上下文](/docs/trajectory/2026-09-07-wall-baseurl-on-root-ctx) | 宿主 | 设错位置 `include` 拿到 undefined，报 `Invalid URL` |
+| [include 的 path 是 URL](/docs/trajectory/2026-09-07-wall-include-path-is-url) | 宿主 | 传盘符路径报 `ERR_INVALID_URL_SCHEME` |
+| [include 走 builtins](/docs/trajectory/2026-09-07-wall-include-via-builtins) | 宿主 | 裸名找不到 include；做成条目不做 `ctx.plugin` |
+| [id 写死 home](/docs/trajectory/2026-09-07-wall-home-entry-id-fixed) | 宿主 | 父 id 随机则所有件 id 每次启动都变，布局对不上 |
+| [`gwbKernel` 早 provide](/docs/trajectory/2026-09-07-wall-gwbkernel-provide-early) | 宿主 | 晚一步，第一批件全读到 `undefined` |
+| [新 home 起不来](/docs/trajectory/2026-09-07-wall-fresh-home-no-yml) | 宿主 | 无 `cordis.yml` 时宿主整个退出；`ensureHome` 建最小形态 |
+| [建 home 清单不排队](/docs/trajectory/2026-09-07-wall-home-manifest-order) | 宿主 | 装机空表提前返回，`package.json` 建不出，每次启动当新 home |
+| [劫持 stderr](/docs/trajectory/2026-09-07-wall-stderr-hijack) | 主进程 | 三处输出汇一处；查崩溃第一现场是文件不是窗格 |
+| [写失败只说一次](/docs/trajectory/2026-09-07-wall-log-latch-once) | 主进程 | `dead` 与 `rotateDead` 两个 latch，不共用 |
+| [两种格式](/docs/trajectory/2026-09-07-wall-two-format-mix) | 主进程 | 一处两投后格式混了；`formatLogLine` 收拢一处 |
+| [Logger.format 静态方法](/docs/trajectory/2026-09-07-wall-logger-format-unbound) | 主进程 | 摘方法丢 `this`，oxlint 拦下 |
+| [fiber 不是挂上](/docs/trajectory/2026-09-07-wall-fiber-not-active) | 条目表 | `ok` 要判 `ACTIVE`；等依赖的件曾被报成挂上 |
+| [随机 id](/docs/trajectory/2026-09-07-wall-entry-id-random) | 条目表 | 不写 id 每次启动都变；初次加载不写回 yml |
+| [多条不 provide](/docs/trajectory/2026-09-07-wall-multi-entry-no-provide) | 条目表 | 挂多条支持；provide 撞名当场抛 |
+| [读源码五条](/docs/trajectory/2026-09-07-wall-read-only-findings) | 条目表 | update 重挂 / 写回丢注释 / 无监听 / remove 可能空转 / create 要 parent |
+| [越界不认](/docs/trajectory/2026-09-07-wall-entry-outside-pkg) | 取址 | 包目录外入口一律不认，防任意文件读 |
+| [点段被吃](/docs/trajectory/2026-09-07-wall-dot-segments) | 取址 | `new URL` 已规范化点段，多写的检查是死代码 |
+| [样表 MIME](/docs/trajectory/2026-09-07-wall-css-content-type) | 取址 | 样式表卡在 content-type，按真实文件判扩展名 |
+| [external 被盖](/docs/trajectory/2026-09-07-wall-rollup-external) | 构建 | 显式 rollupOptions 盖掉注入的 external；自己读依赖表 |
+| [electron 装脚本](/docs/trajectory/2026-09-07-wall-electron-postinstall) | 构建 | 无 postinstall，得显式跑一次 `install.js` |
+| [它就这么大](/docs/trajectory/2026-09-07-wall-vocab-just-size) | 词汇表包 | 38 行五个名字；母仓 11 件实测只取 12 个名字 |
+| [cordis 走 peer](/docs/trajectory/2026-09-07-wall-cordis-peer) | 词汇表包 | import type 上了导出面也得 peer；发包不带 devDependencies |
+
+## 内核源码全貌
+
+{/* tree dir="../apps/desktop/src" depth="1" */}

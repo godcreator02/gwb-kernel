@@ -1,0 +1,28 @@
+---
+title: loader 挂不上一个件时，错误在启动期没有出口
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 出口不在场
+domain: 宿主
+livedoc: none
+---
+
+内核在**任何件之前**就注册好日志出口——注册点紧挨着 `ctx` 造出来的地方：
+
+{/* ref file="../apps/desktop/src/host/main.ts" lines="94-102" */}
+
+**loader 没有吞错误**，它老老实实写着 `.catch(error => this.ctx.logger.error(error))`。问题在下游：cordis 的 `LoggerService` 把消息存进 `buffer`，**没有 exporter 就没有出口**。而 `logger-console` 是 `cordis.yml` 里一条**并发挂载**的普通件——件挂载失败的那一刻，它可能还没注册 exporter。
+
+**症状**：件静默挂不上，日志一个字都没有，连「哪个件、为什么」都问不出来。第一个件（`gwb-commands`）因为相对 import 少了 `.js` 撞上这个，查了几分钟。
+
+补上之后同样的错当场是一行：
+
+```
+[loader] include: Error [ERR_MODULE_NOT_FOUND]: Cannot find module
+  '...\@test\broken\does-not-exist.js' imported from '...\@test\broken\index.js'
+```
+
+**后来这条保底线转正了**：做日志窗格时出口从「只管 error」扩成了全量，`logger-console` 也跟着撤掉——两个都在的话同一句话会打两遍。判据见[出口收归内核](/docs/trajectory/2026-09-07-kernel-owns-log-export)。
+
+当初「只管 error、`info`/`warn` 归 `logger-console`」那个取舍留在这儿，是因为**它解释了这个 exporter 为什么必须在挂 loader 之前注册**：那一刻还没有任何件，包括原来负责好格式的那个。扩成全量之后这条要求只会更强——注册点还要再往前挪到 `ctx` 造出来的下一句，那样 cordis 自带的那圈 buffer 里根本不会攒下东西，**用「提早注册」换掉了「事后补发」**。

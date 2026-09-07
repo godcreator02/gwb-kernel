@@ -1,0 +1,15 @@
+---
+title: 入口指到包目录外一律不认
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 越界不认
+domain: 取址
+livedoc: none
+---
+
+{/* ref file="../apps/desktop/src/shared/entries.ts" lines="87-95" */}
+
+认了它，**一个包就能让内核读任意文件**。这是这一层唯一的一条判断——其余的候选名补全、位表、完整 exports 条件语义、realpath 实体化，母仓都有，这里都没有。
+
+顺带说明这半为什么还留着：挂载归 loader 了，但**主进程**的 `gwb://` 要把件的 `client.js` 交给页面，得知道包在哪，而 loader 跑在宿主子进程里，主进程够不着。

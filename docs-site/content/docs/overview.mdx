@@ -91,7 +91,7 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 | 档 | 名字 | 判断 |
 | --- | --- | --- |
 | 11 件全用 / 7 件 / 6 件 | `GwbContext`、`requireKernel`、`isRecord` | **真属于内核词汇表** |
-| 各 2 件（一个提供、一个消费） | `GwbHttpApi`、`GwbSkill`、`GwbSkillsApi`、`GwbCli` | **插件之间的契约，不是内核契约**——该住提供方那个件自己的包里。内核根本不知道 http 是什么 |
+| 各 2 件（一个提供、一个消费） | `GwbHttpApi`、`GwbSkill`、`GwbSkillsApi`、`gwbCommands` | **插件之间的契约，不是内核契约**——该住提供方那个件自己的包里。内核根本不知道 http 是什么 |
 | 各 1 件 | `nodeChildEnv`、`readYamlDoc`、`PLATFORM_RUNTIME_VERSIONS`、`noHandlerError`、`PluginStore` | 实现细节漏出来的（devkit 一家占 3 个）。**包里放了实现，就一定会有人引到实现** |
 
 所以内核的词汇表应该只有个位数个名字，而不是母仓那 600 行。

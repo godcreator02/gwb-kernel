@@ -1,0 +1,13 @@
+---
+title: 同一个包挂多条是支持的，但 provide 服务的件挂不了两条
+born-at: 2026-09-07T18:50
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 多条不 provide
+domain: 条目表
+livedoc: none
+---
+
+`registry.plugin()` 每次都 `new Fiber`，只有 `runtime`（按 callback 去重）共享。两条条目 = 一个 Runtime ＋ 两个独立 fiber，`config` 与 `ctx` 各是各的。**实机验过三条**（同一个探针包挂 writer / reader / commands 三种角色，各跑各的）。
+
+但 `reflect.provide` 撞名当场抛：没有 `isolate` 时同一个域里第二条 provide 同名服务直接 `service "x" has been registered`。所以能挂多条的只有不 provide 服务的件。
