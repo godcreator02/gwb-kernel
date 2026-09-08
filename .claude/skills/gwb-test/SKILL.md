@@ -21,8 +21,7 @@ $env:GWB_HOME = 'data-2609070700'              # <被测件短名>-<yyMMddHHmm>
 ```
 
 `GWB_HOME` 给**名字**就落在 `%APPDATA%\gwb-kernel\homes\<名>\`（不用先创建）；给**路径**
-（含 `\` 或 `/`）就用那个目录本身——探针那两个 `probes\homes\probeN` 就是这么起的。不给就是
-`default`，那是日常那份，**别拿它验东西**。
+（含 `\` 或 `/`）就用那个目录本身。不给就是 `default`，那是日常那份，**别拿它验东西**。
 
 **命名 `<被测件短名>-<yyMMddHHmm>`**：`data-2609070700`、`shell-2609071130`。不冲着某个件的验证
 前缀用一个说清这次验什么的短词：`boot-2609070700`、`reg-2609091200`。
@@ -83,21 +82,42 @@ Get-ChildItem $env:APPDATA\gwb-kernel\homes -Directory   # 先看积了多少
 Remove-Item $env:APPDATA\gwb-kernel\homes\<旧的> -Recurse -Force
 ```
 
-仓里只有 `apps\desktop\probes\homes\` 那两个探针 home，它们是入库的试验件，不是验场，别往里装东西。
+仓里不放验场，也不入库任何临时 home。
 
 ## 六、拿证据
 
 起的时候带 `--remote-debugging-port=<端口>`（Chromium 开关在命令行上就生效，内核不管它；
-9222 是别的实例常用的，换一个），再用仓里现成的小工具连 CDP 求值：
+9222 是别的实例常用的，换一个），再用本 skill 目录里的小工具连 CDP 求值：
 
 ```powershell
 cd <内核仓>\apps\desktop
 .\run.cmd --remote-debugging-port=9334
-node probes\cdp-eval.mjs 9334 probes\<表达式文件>.expr.js   # 从仓根跑就是 apps\desktop\probes\...
+node <内核仓>\.claude\skills\gwb-test\cdp-eval.mjs 9334 <表达式文件>
 ```
 
-**表达式放文件不放命令行**，PowerShell 的引号会截断它。`apps\desktop\probes\real1-*.expr.js` 是现成的样子：
-调 `window.gwb.command` 取表与跑命令、查 DOM、量计算样式、往 console 打一句看它回不回日志格。
+**表达式放文件不放命令行**，PowerShell 的引号会截断它。文件里就是一个 async IIFE，返回值
+即读数，放在临时目录（scratchpad）里，用完不入库。一个够用的样子：
+
+```js
+(async () => {
+  const panes = await window.gwb.command('shell.panes')
+  const node = await window.gwb.command('hello.node')
+  // dockview 只渲染激活的格，先点标签再查 DOM
+  const tab = [...document.querySelectorAll('.dv-tab')].find((t) => t.textContent.trim() === '日志')
+  tab?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+  await new Promise((r) => setTimeout(r, 600))
+  console.log('probe-live-line')
+  await new Promise((r) => setTimeout(r, 800))
+  const pane = document.querySelector('[data-gwb-plugin="@godcreator02/gwb-logger"]')
+  return {
+    hasDockview: !!document.querySelector('.dv-groupview'),
+    panes: (panes.data ?? []).map((p) => `${p.pkg}#${p.id} client=${p.client ? 'yes' : 'no'}`),
+    nodeExit: node.exitCode,
+    liveHit: pane ? [...pane.querySelectorAll('.font-mono')].some((el) => el.textContent.includes('probe-live-line')) : null,
+    bodyBg: getComputedStyle(document.body).backgroundColor,
+  }
+})()
+```
 
 **日志在 `<home>\gwb.log`**——内核自己的话、件的、渲染层 console 转来的，全在这一份里，
 一行一条 `时间 级别 名字 正文`。窗格那半归日志件，内核不管。
