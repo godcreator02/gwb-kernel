@@ -1,11 +1,12 @@
 ---
 title: 服务与命令
-description: provide/inject 的规矩、命令总线的契约、内核信息怎么拿
+description: provide/inject 的规矩、命令总线的契约、gwbKernel 三样
 ---
 
 # 服务与命令
 
-读完这页你能回答：服务怎么起名、怎么提供、怎么等；页面调一条命令怎么到你的函数；内核的运行时状态从哪拿。
+读完这页你能回答：服务怎么起名、怎么提供、怎么等；页面调一条命令怎么到你的函数；内核
+给件的面有哪些、从哪拿。
 
 ## 命名：一律 `gwb` 开头
 
@@ -13,7 +14,9 @@ description: provide/inject 的规矩、命令总线的契约、内核信息怎�
 - 消费方 `inject: ['gwbCommands']` 这样写
 - **例外：cordis 官方件的服务照它自己的**（`timer`、`loader`）——那不是这个生态的东西
 
-为什么全加而不是「通用名才加」：代价不对称。该加没加、将来撞了要改名，所有消费方的 `inject` 与 `ctx.xxx` 跟着改，那是破坏性变更；不该加而加了，只是名字长几个字符。顺带白得一条反向信息：**看到 `ctx.foo` 没前缀，就知道它不是这个生态的**。
+为什么全加而不是「通用名才加」：代价不对称。该加没加、将来撞了要改名，所有消费方的
+`inject` 与 `ctx.xxx` 跟着改，那是破坏性变更；不该加而加了，只是名字长几个字符。顺带白得
+一条反向信息：**看到 `ctx.foo` 没前缀，就知道它不是这个生态的**。
 
 ## 提供：provide 包在 effect 里
 
@@ -26,46 +29,51 @@ export function apply(ctx: GwbContext) {
 }
 ```
 
-`ctx.effect` 包一层，件卸载时服务自动撤销——不包的话 provide 挂在别处，件卸了服务还占着名字。类服务用 `Service` 基类，`super(ctx, 'gwbThing')` 一句就是 provide。
+`ctx.effect` 包一层，件卸载时服务自动撤销——不包的话 provide 挂在别处，件卸了服务还占着
+名字。类服务用 `Service` 基类，`super(ctx, 'gwbThing')` 一句就是 provide。
 
-**撞名是硬错误**：第二个 provide 同名服务的件挂不上，日志里明说撞的是谁。这不是要防的坑，是「一个名字一个提供方」的保证——外壳身份就是靠它成立的。
+**撞名是硬错误**：第二个 provide 同名服务的件挂不上，日志里明说撞的是谁。这不是要防的坑，
+是「一个名字一个提供方」的保证。
 
 ## 消费：inject 是等待，不是建议
 
-`static inject = ['gwbCommands']` ——没有这个服务，你的件**不挂**，cordis 替你等。这不是「最好有」，是硬等待：外壳件就是这么硬依赖命令总线的，命令总线不在，外壳宁可不挂。
+`static inject = ['gwbCommands']` ——没有这个服务，你的件**不挂**，cordis 替你等。这不是
+「最好有」，是硬等待：外壳件就是这么硬依赖命令总线的，命令总线不在，外壳宁可不挂。
 
-可选依赖不走 `inject`，走 `ctx.inject` 的子 fiber：缺的服务让子 fiber 悬着，本体照常挂。`peerDependenciesMeta.optional` 标同一批，声明与行为对得上。
+可选依赖不走 `inject`，走 `ctx.inject` 的子 fiber：缺的服务让子 fiber 悬着，本体照常挂。
+`peerDependenciesMeta.optional` 标同一批，声明与行为对得上。
 
-**`requireKernel` 别写进 `inject`**：`gwbKernel` 在根上下文 provide、永不撤销，写进 `inject` 只会多一处挂不上的可能。用的时候 `requireKernel(ctx)` 取。
+**`requireKernel` 别写进 `inject`**：`gwbKernel` 在根上下文 provide、永不撤销，写进
+`inject` 只会多一处挂不上的可能。用的时候 `requireKernel(ctx)` 取。
+
+## 内核给件的面：就三样
+
+{/* ref file="../apps/desktop/src/main.ts" lines="143-156" */}
+
+- **`dataDir`**——home 的绝对路径。落盘、找包都用它，**别自己拼**
+- **`emit(payload)`**——把一条消息推给页面（页面的 `window.gwb.on` 收）。日志件推日志行、
+  任何件推自己的通知，都走这一条
+- **`setShell(url)`**——把页面根交出来：页面的 `#root` 从此归 `url` 那个模块的默认导出。
+  返回撤销函数，包在 `ctx.effect` 里就是「卸载即归还」
+
+就这三样——没有自省命令、没有版本号、没有装机。旧线 `gwbKernel` 上的 `appVersion` 与
+`install()` 删了：版本号读件自己包里的 `package.json`，装包归 `gwb-plugins` 件的
+`plugins.install`。变化全表见件仓的[决策记录](/docs/trajectory)。
+
+**内核信息怎么给件：两条路，不能混。** 这次运行的状态（home 在哪）走 **cordis 服务**——
+`dataDir` 是内核启动时算出来的运行时值，import 一份内核代码拿到的是代码不是那次运行的
+结果；说这些话用的词（类型）走**词汇表包**，import 进来（见[词汇表](/docs/plugins/vocab)）。
 
 ## 命令总线：页面调你的那条路
 
-内核只原生命中 `kernel.info`，其余命令全转发给 `ctx.gwbCommands`。这个服务的契约（件仓 `gwb-commands` 是正本，这里记内核侧认得到的形状）：
+**内核一条原生命令都没有**——`gwb:command` 收到什么原样派给 `ctx.gwbCommands`，没人提供
+总线就回一句带命令名的错（见[桥](/docs/kernel/bridge)）。这个服务的契约（件仓
+`gwb-commands` 是正本，这里记内核侧认得到的形状）：
 
 - `run(name, args?)` → `Promise<GwbResult>`
 - 未知命令**不 throw**：回 `{ ok: false, error: '没有这条命令：…' }`
 - handler 返回值带 `ok` 字段的当 `GwbResult` 原样走，其余包成 `{ ok: true, data }`
-- handler 抛了，接成 `{ ok: false, error }`——不会把宿主带崩
+- handler 抛了，接成 `{ ok: false, error }`——不会把主进程带崩
 - 命令名撞了是**后者赢 + 警告**（跟服务不同：服务撞名直接抛）
 
-**`GwbResult` 是收据**：`{ ok, data?, error? }`，定义在词汇表包（见[词汇表](/docs/plugins/vocab)）。页面上 `await` 到的就是它。
-
-## 内核信息：两条路，不能混
-
-- **这次运行的状态**（home 在哪、版本是多少）→ **cordis 服务**：宿主起步时往 `ctx` 上挂 `gwbKernel`，件从 ctx 读
-- **说这些话用的词**（类型）→ **词汇表包**，import 进来
-
-第一样不可能靠 import 拿到：`dataDir` 是宿主启动时算出来的运行时值，import 一份内核代码拿到的是代码不是那次运行的结果。
-
-`kernel.info` 的返回，一字段一行：
-
-{/* ref file="../apps/desktop/src/host/main.ts" lines="315-336" */}
-
-| 字段 | 是什么 |
-| --- | --- |
-| `pid` / `node` | 宿主进程号与 node 版本——顺带证明它是独立进程 |
-| `dataDir` / `logDir` | home 与日志目录。**路径从这儿取，别自己拼** |
-| `appVersion` | 应用版本，没有就是 `null` |
-| `entries` | 条目表 `{ id, ok, pkg, disabled }`，`ok` 判的是 fiber 真的 ACTIVE |
-| `shellPkg` | 谁 provide 了 ACTIVE 的 `gwbShell` |
-| `shared` / `sharedConflicts` | importmap 的映射与撞名报告（撞了只报不改） |
+**`GwbResult` 是收据**：`{ ok, data?, error? }`，定义在词汇表包。页面上 `await` 到的就是它。

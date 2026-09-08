@@ -11,39 +11,59 @@ description: 这条线造的词都在这儿——每个词一句定义，指到�
 
 | 词 | 是什么 |
 | --- | --- |
-| **正线** | gwb-kernel 自己。母仓 `god-workbench` 与旧件仓准备废弃，这条线是接班的那个 |
-| **内核** | `apps/desktop/src`——一个 Electron 应用，只做三件事，其余一切皆件 |
-| **件** | 插件。一个普通 npm 包，装在 home 的 `node_modules` 下，由 cordis 挂载（旧文档里的「插件」） |
-| **词汇表** | `@godcreator02/gwb-plugin-api`。零运行时依赖，五个名字，只命名不做事 |
-| **home** | `%APPDATA%\gwb-kernel\homes\<名>`。件住的地方，一个普通的 npm 项目根 |
-| **安家** | 内核保证 home 起得来：每次启动幂等铺三件套。**不是装机**——内核不碰 pnpm |
+| **正线** | gwb-kernel 自己。母仓与旧件仓已退役，这条线是接班的那个 |
+| **内核** | `apps/desktop/src` 三个文件，274 行——一个 Electron 应用，只做六件事，其余一切皆件 |
+| **件** | 插件。一个普通 npm 包，装在 home 的 `node_modules` 下，由 cordis 挂载。单进程后件跑在 Electron 主进程里，`import('electron')` 就够得着 |
+| **词汇表** | `@godcreator02/gwb-plugin-api`。零运行时依赖，七个名字加一个形状，62 行，只命名不做事 |
+| **home** | `%APPDATA%\gwb-kernel\homes\<名>`（`GWB_HOME` 也可给绝对路径）。件住的地方，一个普通的 npm 项目根 |
+| **安家** | 内核保证 home 起得来：每次启动幂等补两件套（`package.json`＋空 `cordis.yml`），不覆盖。**不是装机**——内核不碰 pnpm |
 | **准入判据** | 两道关：第一个件之前必须发生的事才进内核；真遇到需求才加 |
-| **cordis** | 底座元框架（服务容器＋插件生命周期＋事件），件的运行时。见[底座：cordis](/docs/kernel/cordis) |
+| **cordis** | 底座元框架（服务容器＋件生命周期＋事件），件的运行时。见[底座：cordis](/docs/kernel/cordis) |
 
-## 内核三件事
+## 内核六件事
 
 | 词 | 是什么 |
 | --- | --- |
-| **载体** | 起一个 node 进程挂 cordis，开一扇窗。详解见[载体](/docs/kernel/processes) |
-| **取址** | 挂官方 loader + include 条目，把件挂上。内核连 yml 都不认识。见[取址](/docs/kernel/loading) |
-| **桥** | 命令与事件双向、`gwb://` 交出件的浏览器那半。见[桥](/docs/kernel/bridge) |
-| **条目** | `cordis.yml` 数组里的一条：`{ id, name, config?, disabled? }`。`id` 是身份，手写 |
-| **fiber / ACTIVE** | cordis 的执行单元与其「挂上了」的状态（2）。条目表的 `ok` 判它，不是判 fiber 存在 |
+| **铺 home** | 启动第一件事：目录在、两件套在。见[安家](/docs/kernel/home) |
+| **起 cordis** | 根上下文 `baseUrl` 指向 home，挂官方 loader 与 include。见[取址](/docs/kernel/loading) |
+| **解析裸名（node 半）** | 给 `loader.internal` 塞五行，裸包名按 home 的 `node_modules` 解析。见[取址](/docs/kernel/loading) |
+| **解析裸名（浏览器半）** | 扫 home 清单里各包声明的 `gwb.shared`，拼成 `file://` importmap 随外壳地址推给页面。内核不认识 react，只搬运提供方的声明 |
+| **开窗与桥** | 一扇窗＋三条 IPC。见[桥](/docs/kernel/bridge) |
+| **页面根与错误出口** | 页面听 `onShell` 加载外壳模块；cordis 日志全量进 stderr 加 `<home>/gwb.log`，出错只记不退。见[日志](/docs/kernel/logs) |
+
+| 词 | 是什么 |
+| --- | --- |
+| **条目** | `cordis.yml` 数组里的一条：`{ id, name, config?, disabled? }`。`id` 是身份，手写；不写 loader 发随机 id 且不写回 |
+| **fiber / ACTIVE** | cordis 的执行单元与其「挂上了」的状态 |
 | **热挂载** | 运行中调条目树 API（`create`/`update`/`remove`）挂卸件，yml 自动写回。**不是文件监听**——改 yml 要重启 |
 
-## 桥与协议
+## 桥与取址
 
 | 词 | 是什么 |
 | --- | --- |
-| **宿主** | 纯 node 子进程，cordis 住这儿。electron 二进制加 `ELECTRON_RUN_AS_NODE` 当 node 使 |
-| **fd3** | 宿主的第四条 stdio 管道：命令回执、事件、结构化日志的上行专线。fd1 留给人 |
-| **`gwb://`** | 把件的浏览器那半交给页面的协议。只认包的 `exports` 表 |
-| **importmap** | 裸名 → `gwb://` URL 的映射表。内核拼、内核注，赶在第一句动态 import 之前 |
+| **三条 IPC** | `gwb:command`（页面 → 命令总线）、`gwb:event`（件 → 页面单向推）、`gwb:shell`（内核 → 页面推外壳地址与 importmap）。见[桥](/docs/kernel/bridge) |
+| **`window.gwb`** | 页面公共面，只有三个函数：`command` / `on` / `onShell`，由 `preload.cjs` 经 contextBridge 暴露 |
+| **importmap** | 裸名 → `file://` URL 的映射表。内核扫 `gwb.shared` 拼、随 `gwb:shell` 推，页面注完表才 import 外壳——赶在第一句裸名 import 之前 |
 | **`gwb.shared`** | 包清单里唯一被内核读的字段：「我给页面提供这几个裸名」。**先声明先得**，撞名只报不改 |
-| **命令总线** | `ctx.gwbCommands`，某个件提供的服务。内核只原生命中 `kernel.info`，其余全转发给它 |
+| **命令总线** | `ctx.gwbCommands`，某个件提供的服务。**内核一条原生命令都没有**——`gwb:command` 收到什么原样派给它，没人提供总线就报错 |
 | **`GwbResult`** | 命令回执形状 `{ ok, data?, error? }` |
-| **外壳** | provide 了 `gwbShell` 服务且 fiber ACTIVE 的那个件。它拿整页 `#root`，导出 `bootShell` |
-| **窗格** | 外壳井里的一格。窗格件导出 `mountPane`，契约正本住件仓 |
+| **外壳** | 调了 `gwbKernel.setShell(url)` 的那个件。内核不挑外壳：谁调用、谁是，后调的顶掉先调的。页面 `import` 那个 URL，调它的默认导出 |
+| **`setShell` / `onShell`** | 件的 node 半交出外壳 `file://` 地址（撤销函数返回时收回）／页面订外壳地址（订上先收当前值） |
+| **窗格** | 外壳井里的一格。窗格件导出 `mountPane`，注册时报 `client`（与可选 `style`）的 `file://` 地址——从件自己的 `import.meta.url` 算。契约正本住件仓 |
+| **三路日志** | 件（`plugin`）、内核（`kernel`）、渲染层 console（`renderer`）三路都走 `ctx.logger`；任何件挂一个 exporter 就收齐。内核铺的出口只有 stderr 加 `<home>/gwb.log` |
+| **`loader.internal`** | cordis loader 解析裸名的内部通道。Electron 主进程没有 `--expose-internals`，它是 `undefined`，内核塞五行补上——塞晚了件**静默**挂不上 |
+
+## 退役的词
+
+这些词在两进程线上是真机制，2026-09-09 随单进程重构退役。文档站旧链接或旧会话里见到，指的都是不存在的东西；了断与现场见[轨迹区](/docs/trajectory/2026-09-09-single-process)。
+
+| 词 | 曾经是什么 | 现在 |
+| --- | --- | --- |
+| **宿主** | 纯 node 子进程，cordis 与件住这儿 | 没有——cordis 住 Electron 主进程 |
+| **fd3** | 宿主的第四条 stdio 管道，回执/事件/日志的上行专线 | 没有了——三条 IPC 直达 |
+| **`gwb://`** | 把件的浏览器那半交给页面的自定义协议 | 没有了——页面直接吃 `file://` |
+| **`kernel.info`** | 内核唯一的原生命令，报 pid/dataDir/条目/外壳/共享包 | 没有了——内核一条原生命令都没有 |
+| **阶段页 / 崩溃页** | 外壳没上来时摆已装清单；宿主崩了整页换讣告 | 没有了——页面只有「没有外壳件」一句话；件的错落主进程、只记不退 |
 
 ## 文档与账本
 
@@ -52,6 +72,6 @@ description: 这条线造的词都在这儿——每个词一句定义，指到�
 | **livedoc** | 文档钉代码的那套机制：引用记号 + git 记忆 + 账本。见[账本与钉码](/docs/livedoc/how-it-works) |
 | **钉码** | 文档里指向某段代码的正式引用。代码一改就报黄，得人复核 |
 | **账本** | `docs-site/.ledger.json`：每条钉码的 blob、commit、行段、内容段哈希 |
-| **轨迹** | `content/docs/trajectory/`：决策卡与墙卡，一卡一文件，只追加 |
+| **轨迹** | `content/docs/trajectory/`：决策卡与墙卡，一卡一文件，只追加，**不钉码**——纯历史 |
 | **决策卡 / 墙卡** | 事前的选择（五段）/ 事后的教训（四段，症状最值钱）。规矩见[页怎么写](/docs/livedoc/writing) |
-| **三层分流** | CLAUDE.md 只装硬约束；文档站装「为什么」；注释只装现状 |
+| **三层分流** | AGENTS.md 只装硬约束；文档站装「为什么」；注释只装现状 |

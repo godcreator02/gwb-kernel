@@ -1,73 +1,79 @@
 ---
-title: 桥：命令、事件与 gwb://
-description: 两个执行世界之间的三条通道——命令下行、事件上行、代码交出
+title: 桥：三条 IPC 与 file://
+description: 两个执行世界之间的三条通道——命令下行、事件上行、外壳地址推给页面
 ---
 
-# 桥：命令、事件与 gwb://
+# 桥：三条 IPC 与 file://
 
-读完这页你能回答：页面上一次点击到件的处理函数要经过几跳；importmap 是谁拼的、什么时候注入；`gwb://` 凭什么敢把 `node_modules` 里的文件交给页面。
+读完这页你能回答：页面上一次点击到件的处理函数要经过几跳；外壳地址与 importmap 是怎么
+到页面的；件的浏览器那半凭什么不用任何协议就能加载。
 
 **为什么不能是插件**：两个执行世界之间的通道，得在任何一边有件之前就存在。
 
-## 传消息：命令的一跳不省
+三条通道各管一个方向：
 
-全链是这样：
+| 通道 | 方向 | 走什么 |
+| --- | --- | --- |
+| `gwb:command` | 页面 → 件 | `ipcMain.handle`，原样派给命令总线，回 `GwbResult` |
+| `gwb:event` | 件 → 页面 | `webContents.send` 单向推，火过就灭 |
+| `gwb:shell`（＋`gwb:hello`） | 内核 → 页面 | 推 `{ url, imports }`：外壳的 `file://` 地址＋importmap |
+
+## 命令：内核不认识任何命令名
+
+全链是三跳：
 
 ```
 页面 window.gwb.command(name, args)
 → preload ipcRenderer.invoke('gwb:command')
-→ 主进程 hostCommand：发一个 randomUUID 当关联 id，一行 JSON 写进 stdin，上 120 秒定时
-→ 宿主 readline → dispatch
-→ ctx.gwbCommands.run(name, args)          # kernel.info 例外，见下
-→ 回执 { t:'reply', id, result } 走 fd3
-→ 主进程按 id 找回 pending 的 resolver → IPC promise 兑现 → 页面 await 到结果
+→ 主进程 ipcMain.handle：原样派给 ctx.gwbCommands.run → 兑现回页面
 ```
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="334-343" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="158-164" */}
 
-**内核只原生命中一条命令**：`kernel.info`。其余一律转发给 `ctx.gwbCommands`——由某个件提供的命令总线，内核不认识任何具体命令名。「本体不认识件的命令名」是有意的纪律：内核要用某个件的能力，正确的做法是让那个件把服务送上来，而不是内核去点名调它。
+**内核一条原生命令都没有。** 旧线那条 `kernel.info` 随两进程退役了——自省、装机、版本
+这些需求要么没有了，要么归了件。`handle` 里只做两件防呆：命令名不是字符串回一句错；
+`ctx.gwbCommands` 是 `undefined`（没装总线件）回一句带命令名的错。其余原样转发——由某个
+件提供的命令总线收。「内核不认识件的命令名」是有意的纪律：内核要用某个件的能力，正确的
+做法是让那个件把服务送上来，而不是内核去点名调它。
 
-超时与异常都有归属：
-
-- 120 秒没回，就是 `{ ok: false, error: '命令超时' }`；日志说得出是哪条命令超的时
-- 宿主死了，所有在途命令当场收到「宿主已退出」
-- 晚到的回执静默丢弃——pending 表里那个 id 已经删了
+没有超时计时器，也没有「宿主死了在途命令全废」——命令在**同一个进程**里直达，没有跨进程
+配对这回事；页面等不等得起、等多久，是页面与外壳的事。
 
 ## 事件：emit 的那一头是页面
 
-件调 `ctx.gwbKernel.emit(payload)`，宿主包成 `{ t:'event', payload }` 走 fd3，主进程转 `webContents.send('gwb:event')`，页面的 `onEvent(cb)` 收到。**事件是火过就灭的**，没有历史段——要历史的是日志，那是另一条通道（见[日志](/docs/kernel/logs)）。
+{/* ref file="../apps/desktop/src/main.ts" lines="143-155" */}
 
-## 传代码：gwb:// 只认 exports 表
+件调 `ctx.gwbKernel.emit(payload)`，主进程 `webContents.send('gwb:event', payload)`，页面的
+`gwb.on(cb)` 收到（见[浏览器那半](/docs/plugins/client)）。**事件是火过就灭的**，没有历史
+段——要历史的是日志，那是日志件自己张罗的事（见[日志](/docs/kernel/logs)）。
 
-件的浏览器那半住在 node 那边的 `node_modules` 里，页面得有一条取货通道。约定只一条 URL：
+## 外壳地址：setShell 说，onShell 听
 
-```
-gwb://asset/plugins/<包名>/<exports 子路径>
-```
+内核不挑外壳：`kernel` 对象里那个 `setShell(url)`，**谁调用、谁是外壳**，后调的顶掉先调的。
+返回的撤销函数把地址收回——件把 `setShell` 包在 `ctx.effect` 里，fiber 卸载时自动收回，
+这就是「外壳件被卸了页面要换」的全部机制。
 
-包名带 scope 自然是两段，所以规则是「`@` 开头吃两段、否则吃一段，剩下的全是子路径」。浏览器入口约定在 `./client`。
+推给页面的不是裸地址，是 `shellMessage()` 现算的一份 `{ url, imports }`（importmap 怎么拼
+的见[取址](/docs/kernel/loading)）。推的时机有三个：`setShell` 调用时、撤销函数收回时、
+页面订上时——`gwb:hello` 这条 `ipcMain.on` 专门应答最后那种：页面 `onShell` 订上的瞬间先
+问一次当前值，免得件在页面起来之前就 `setShell` 过了。
 
-从 URL 到文件，四道关卡各有理由：
+## 资产：没有协议，页面直接吃 file://
 
-1. **scheme 特权注册**（`standard`/`secure`/`supportFetchAPI`/`corsEnabled`），时机在 app ready 之前——要当真的 URL 解析、要能被页面 fetch
-2. **定址只认 exports 表**：入口四档写法（`exports` 对应子路径 → 条件对象的 `import`/`module`/`default` → `main` → `index.js`），外加一条越界检查：**入口指到包目录外一律不认**——认了它一个包就能让内核读任意文件
-3. **MIME 白名单按真实文件判**：`.js`/`.mjs`/`.css` 之外一律 404。判的是解析出来的真文件的扩展名，不是 URL（`./client` 落在 `dist/client.js` 上）；`.css` 单列是因为 Chromium 对样式表的 content-type 查得严（见[那面墙](/docs/trajectory/2026-09-07-wall-css-content-type)）
-4. **`no-store` + CORS `*`**：页面和 `gwb://asset` 是跨源的；文件随包更新，缓存只会撒谎
+件的浏览器那半住在 home 的 `node_modules` 里，页面要加载它。旧线为此注册了 `gwb://` 协议、
+维护 exports 定址表、管 MIME 白名单——单进程之后**整套退役**：Electron 的页面直接吃
+`file://`。动态 `import`、`<link>` 样式表、fetch、JSON 模块、importmap 指到 `file://` 后
+与直连是同一份实例——探针五项全过，读数见
+[单进程重构](/docs/trajectory/2026-09-09-single-process)。
 
-## importmap：内核拼，内核注
+地址由件**自己算、自己报**：`new URL('./client.js', import.meta.url).href`——dist 下的
+产物互为邻居，从自己的模块地址出发一步就到。注册窗格时报 `client`（与可选 `style`）两个
+字段，内核与外壳都不认识任何包的 exports 表。契约见[一件的解剖](/docs/plugins/anatomy)。
 
-浏览器里 `import 'react'` 这种裸名，只有 importmap 说得出它在哪。分工是三段：
+## preload：桥的浏览器那半
 
-- **件（或共享包）在清单里声明** `gwb.shared`：「我给页面提供这几个裸名」，值是自己的 exports 子路径
-- **宿主收齐**：扫 `<home>/package.json` 的 dependencies——**扫 home 清单不是条目表**，共享包不是件，不在 `cordis.yml` 上。**一个裸名只认先声明的那个**；撞名报进 `sharedConflicts`、不静默裁决——浏览器反正覆盖不了已解析的裸名，替它选一个赢家的结果是「页面上跑的到底是哪份说不清」
-- **渲染层注入**：把每条裸名映射成 `gwb://asset/plugins/<包>/<子路径>`，写成 `<script type="importmap">` 挂上 head——**必须赶在第一句动态 import 之前**，已解析过的裸名再也改不了
+{/* ref file="../apps/desktop/src/preload.cjs" lines="1-19" */}
 
-{/* ref file="../apps/desktop/src/renderer/src/main.ts" lines="69-79" */}
-
-npm 上的 `react` 至今没有 ESM 出口，直接用不了——要有人打成 ESM 再发一份（件仓的 `gwb-shared-react` 干的就是这个）。
-
-**为什么这件事归内核**：importmap 必须比一切件的代码都早，而「哪些裸名映射到哪」的真相只在 home 的清单里——时机与信息，只有内核同时够得着。件的声明格式见[一件的解剖](/docs/plugins/anatomy)。
-
-## preload 与窗的安全位
-
-`contextIsolation: true`、`sandbox: false`（preload 是 ESM）。页面上内核只放一个 `window.gwb`——四个函数，面见[浏览器那半](/docs/plugins/client)。
+19 行就完了：`contextBridge.exposeInMainWorld('gwb', …)`，三个函数各对一条通道。沙箱里
+跑不了 ESM，所以它是 CJS——安全位见[载体](/docs/kernel/processes#窗的安全位)。
+形状的正本钉在词汇表包的 `GwbWindowApi`（见[词汇表](/docs/plugins/vocab)）。

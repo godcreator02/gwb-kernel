@@ -1,32 +1,42 @@
 ---
 title: 跑起来
-description: 从 pnpm start 到窗口里有东西——home、装件、日志各在哪
+description: 从 pnpm install 到窗口里有东西——home、装件、日志各在哪
 ---
 
 # 跑起来
 
-读完这页你能回答：第一次跑要做哪几步；件怎么装进 home；四路日志各自去哪看。
+读完这页你能回答：第一次跑要做哪几步；件怎么装进 home；日志去哪看。
 
 ## 起一次
 
 ```powershell
 pnpm install
-pnpm start
+cd apps\desktop
+pnpm build        # tsc 直出到 dist/，没有打包器；index.html 与 preload.cjs 原样复制进去
+.\run.cmd
 ```
 
-`pnpm install` 会顺带把 Electron 的二进制取下来。这一步有个坑值得知道：**electron 这个包本身不带 `postinstall`**，二进制得显式跑一次 `install.js` 才会落盘，不跑的症状是装完起不来而 pnpm 一声不吭。`apps/desktop` 挂了一条自己的 `postinstall` 补上（见[那面墙](/docs/trajectory/2026-09-07-wall-electron-postinstall)）。
+`pnpm install` 会顺带把 Electron 的二进制取下来。这一步有个坑值得知道：**electron 这个包
+本身不带 `postinstall`**，二进制得显式跑一次 `install.js` 才会落盘，不跑的症状是装完起
+不来而 pnpm 一声不吭。`apps/desktop` 挂了一条自己的 `postinstall` 补上（见
+[那面墙](/docs/trajectory/2026-09-07-wall-electron-postinstall)）。
 
-`pnpm start` 先出词汇表包的 `dist/`（毫秒级），再 `electron-vite build && electron .`。
+`run.cmd` 直接跑 `dist/`，不重新构建——改了内核先 `pnpm build`。给它带 Chromium 开关
+（比如 `--remote-debugging-port=9222`）就原样生效，内核不管它。
 
 ## home：你的件住的地方
 
-`%APPDATA%\gwb-kernel\homes\<名字>`，`GWB_HOME` 选格，不给就是 `default`。内核每次启动幂等地铺三件套（包清单、空的 `cordis.yml`、一份写给人看的 README——见[安家](/docs/kernel/home)）。
+`%APPDATA%\gwb-kernel\homes\<名字>`，`GWB_HOME` 选格，不给就是 `default`；给含 `\` 或 `/`
+的路径就把那个目录当 home（验「从零」时指一个 scratchpad 目录最省事）。内核每次启动幂等
+地铺两件套（包清单、空的 `cordis.yml`——见[安家](/docs/kernel/home)）。
 
 **装件、配件、看设置，都在这个目录**——它就是个普通的 npm 项目，pnpm 认得它。
 
 ## 装一个件：两步，缺一不挂
 
-**一、装包**。在这个目录下跑 `pnpm add <包名>`。`@godcreator02` 这个 scope 指向本机 Verdaccio（`127.0.0.1:4873`），路标是用户级 `~/.npmrc` 里那行 `@godcreator02:registry=...`；刚发的包装不进去，查 pnpm 的 `minimumReleaseAgeExclude` 有没有放行这个 scope。
+**一、装包**。在这个目录下跑 `pnpm add <包名>`。`@godcreator02` 这个 scope 指向本机
+Verdaccio（`127.0.0.1:4873`），路标是用户级 `~/.npmrc` 里那行 `@godcreator02:registry=...`；
+刚发的包装不进去，查 pnpm 的 `minimumReleaseAgeExclude` 有没有放行这个 scope。
 
 **二、写条目**。`cordis.yml` 里加一条，`id` 手写短名：
 
@@ -35,21 +45,27 @@ pnpm start
   name: '@godcreator02/gwb-commands'
 - id: shell
   name: '@godcreator02/gwb-shell'
+- id: logger
+  name: '@godcreator02/gwb-logger'
 ```
 
-重启应用。哪步没做，宿主日志会说——条目逐条报「挂上/没挂」。共享包（`gwb-shared-react` 这类）装了就行，**不进 `cordis.yml`**：它们不是件，是件的浏览器那半在运行时要解析到的东西。
+重启应用。哪步没做，日志会说——挂载逐条报，挂不上的带错因（`ERR_MODULE_NOT_FOUND` 给
+完整路径）。共享包（`gwb-shared-react` 这类）装了就行，**不进 `cordis.yml`**：它们不是
+件，是件的浏览器那半在运行时要解析到的东西。
 
-从零写一个包出来，见[写第一个件](/docs/getting-started/first-plugin)。home 里那份 `README.md` 是同样的内容、住在 home 里。
+从零写一个包出来，见[写第一个件](/docs/getting-started/first-plugin)。
 
 ## 哪里看什么
 
 | 看什么 | 去哪 |
 | --- | --- |
-| 宿主起步、条目逐条的挂载结果 | 终端——主进程把宿主的输出原样转出来 |
-| 界面的日志窗格 | 页面里（preload 两口：历史段 + 实时订阅） |
-| 全量字节流、崩溃第一现场 | `<home>/logs/gwb.log`（2 MB 切一段、留 20 份） |
-| 件的浏览器那半报的错 | 页面 console（主进程转到终端） |
+| 起步、条目逐条的挂载结果、坏件错因 | 终端——`run.cmd` 那个窗口 |
+| 同样这些、外加渲染层 console | `<home>\gwb.log`——三路日志一份，只追加（见[日志](/docs/kernel/logs)） |
+| 页面上的日志窗格 | 装了 `gwb-logger` 件才有——日志管道归件，内核不铺 |
+| 件的浏览器那半报的错 | 页面 console（同时转进 `gwb.log`） |
 
 ## 一个会话一个干净 home
 
-验「从零」这类事，把 home 整个删掉再起。别复用上一次留下的——里头是若干个不同时刻手工放进去的件，验什么都不算数。home 分格就是为这个：`GWB_HOME=test-xxx` 开一个，日常那份一个字节不动。
+验「从零」这类事，把 home 整个删掉再起，或 `GWB_HOME=test-xxx` 开一个。别复用上一次留下
+的——里头是若干个不同时刻手工放进去的件，验什么都不算数。实机验证的完整纪律在
+[怎么跑、怎么验](/docs/dev-loop)。

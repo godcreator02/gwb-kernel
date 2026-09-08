@@ -1,6 +1,6 @@
 ---
 title: 词汇表：@godcreator02/gwb-plugin-api
-description: 五个名字，零运行时依赖——内核契约面的全部
+description: 六个名字加一个形状，零运行时依赖——内核契约面的全部
 ---
 
 # 词汇表：@godcreator02/gwb-plugin-api
@@ -9,15 +9,17 @@ description: 五个名字，零运行时依赖——内核契约面的全部
 
 {/* ref file="../packages/gwb-plugin-api/src/index.ts" */}
 
-它不做事，只命名——**五个名字就是内核契约面的全部**：
+它不做事，只命名——**六个名字加一个形状就是内核契约面的全部**：
 
 | 名字 | 什么时候用 |
 | --- | --- |
-| `GwbResult<T>` | 命令的回执形状。提供命令的件拿它包返回值，消费命令的件 `await` 到的就是它 |
-| `GwbKernelApi` | 内核服务的形状：`{ dataDir, appVersion, emit(payload) }`。**没有装机口**——内核不碰 pnpm |
+| `GwbResult<T>` | 命令的回执形状 `{ ok, data?, error? }`。提供命令的件拿它包返回值，消费命令的件 `await` 到的就是它 |
+| `GwbKernelApi` | 内核服务的形状：`{ dataDir, emit(payload), setShell(url) → 撤销函数 }`。**就这三样**——没有自省、没有版本号、没有装机口 |
 | `GwbContext` | `apply` 第一参数的类型：cordis `Context` + `gwbKernel` |
-| `requireKernel(ctx)` | 取内核服务；跑在不是 gwb-kernel 的 cordis 宿主里会当场抛。**别写进 `inject`** |
+| `requireKernel(ctx)` | 取内核服务；跑在不是 gwb 内核的 cordis 宿主里会当场抛。**别写进 `inject`** |
 | `isRecord(value)` | 把 `unknown` 收窄成 `Record` 的判形——写命令 handler 收参数时用 |
+| `GwbWindowApi` | 页面公共面 `window.gwb` 的形状：`command` / `on` / `onShell` 三个函数（`onShell` 的参数是 `{ url, imports }`） |
+| `ShellBoot`（形状） | 外壳默认导出的契约：`(root: HTMLElement) => { dispose?(): void } \| void`。内核那页 html 拿它校验外壳模块 |
 
 ## 两条立场
 
@@ -27,6 +29,6 @@ description: 五个名字，零运行时依赖——内核契约面的全部
 
 ## 类型住这儿，值走服务
 
-从这个包 import 到的是**类型**，拿不到 `dataDir`——那是宿主那次启动算出来的运行时值，只有 cordis 服务送得到（见[服务与命令](/docs/plugins/services)）。把内核的 `src/` 整个发成包给件用是错的：件用不着主进程与宿主入口，而发出去就成了要维护的契约。
+从这个包 import 到的是**类型**，拿不到 `dataDir`——那是内核那次启动算出来的运行时值，只有 cordis 服务送得到（见[服务与命令](/docs/plugins/services)）。把内核的 `src/` 整个发成包给件用是错的：件用不着内核入口，而发出去就成了要维护的契约。
 
-包里那份 `README.md` 只列五个名字、指回这页——两处各记一份必然漂移，参考的正本在这儿。
+包里那份 `README.md` 只列名字、指回这页——两处各记一份必然漂移，参考的正本在这儿。

@@ -7,7 +7,7 @@ description: 一个元框架——内核不写的那部分，全在它身上
 
 读完这页你能回答：cordis 是什么、文档和源码在哪；它给了哪些能力；本仓用了哪几样、刻意不碰哪几样。
 
-{/* ref file="../apps/desktop/package.json" lines="16-18" */}
+{/* ref file="../apps/desktop/package.json" lines="17-19" */}
 
 ## cordis 是什么
 
@@ -17,7 +17,7 @@ Applications」**——一个用来构建框架的框架：服务容器、插件
 [可逆的插件系统](https://koishi.chat/zh-CN/cookbook/design/disposable.html)把它的设计
 动机讲得最透）。
 
-本仓的「取址」和「件」两件事整个站在它上面：宿主里那个 `Context` 是 cordis 的，件就是
+本仓的「取址」和「件」两件事整个站在它上面：主进程里那个 `Context` 是 cordis 的，件就是
 cordis 插件，`cordis.yml` 这个文件名也来自它的官方约定。
 
 - 源码：[cordiverse/cordis](https://github.com/cordiverse/cordis)（MIT）
@@ -31,13 +31,13 @@ cordis 插件，`cordis.yml` 这个文件名也来自它的官方约定。
 
 | 能力 | 是什么 | 本仓怎么用 |
 | --- | --- | --- |
-| `Context` | 一切入口：依赖容器、插件挂载、事件总线三合一，可 extend 出子上下文 | 宿主 `new Context()` 一个根，provide 与挂 loader 全在它身上 |
-| 插件与 fiber | `apply(ctx, config)` 或 `Service` 子类；fiber 六个状态，挂载/卸载/重挂构成生命周期 | 件 = cordis 插件；条目表的 `ok` 判 fiber ACTIVE（见[取址](/docs/kernel/loading)） |
-| 服务系统 | `provide` / `inject` / `Service` 基类；服务撞名当场抛；`reflect.store` 可反查提供者 | `gwbKernel`、`gwbShell`、`gwbCommands` 全是 cordis 服务（见[服务与命令](/docs/plugins/services)） |
-| effect | `ctx.effect(() => 清理函数)`：注册即记档，卸载时逆序回收 | 件提供服务的标准包法；热挂载的清理靠它白得 |
-| 事件 | `ctx.on` / `emit`，事件即服务（`EventService` 也是可注入的） | 内核没直接用——件到页面走自己的 fd3 事件通道（见[桥](/docs/kernel/bridge)） |
+| `Context` | 一切入口：依赖容器、插件挂载、事件总线三合一，可 extend 出子上下文 | 主进程 `new Context()` 一个根，provide 与挂 loader 全在它身上 |
+| 插件与 fiber | `apply(ctx, config)` 或 `Service` 子类；fiber 六个状态，挂载/卸载/重挂构成生命周期 | 件 = cordis 插件；「挂上了」判 fiber ACTIVE（见[取址](/docs/kernel/loading)） |
+| 服务系统 | `provide` / `inject` / `Service` 基类；服务撞名当场抛；`reflect.store` 可反查提供者 | `gwbKernel`、`gwbCommands` 全是 cordis 服务（见[服务与命令](/docs/plugins/services)） |
+| effect | `ctx.effect(() => 清理函数)`：注册即记档，卸载时逆序回收 | 件提供服务的标准包法（外壳的 `setShell` 就包在这里面）；热挂载的清理靠它白得 |
+| 事件 | `ctx.on` / `emit`，事件即服务（`EventService` 也是可注入的） | 件与件之间照用。件到页面不走它——走 IPC（`gwbKernel.emit` → `gwb:event`，见[桥](/docs/kernel/bridge)） |
 | 配置校验 | `plugin.Config` 走 Standard Schema，同步校验，async schema 直接拒 | 条目 `config` 原样交给 `apply`，校验归 cordis 本体 |
-| 日志 | `ctx.logger(name)` + exporter 机制；没有 exporter 时只缓冲不输出 | 内核挂全量 exporter，四路日志的第一路（见[日志](/docs/kernel/logs)） |
+| 日志 | `ctx.logger(name)` + exporter 机制；没有 exporter 时只缓冲不输出 | 内核挂一个全量 exporter——这是三路日志唯一的内核侧出口（见[日志](/docs/kernel/logs)） |
 | 计时器 | 原生 `ctx.setTimeout` 不随件卸载回收 | 不用原生——挂 `plugin-timer` 替换，随件卸载自动收 |
 
 ## 官方件生态

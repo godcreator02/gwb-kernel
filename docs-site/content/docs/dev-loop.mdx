@@ -5,65 +5,62 @@ description: 门禁是哪几条、为什么这个仓的验收大半靠实机
 
 # 怎么跑、怎么验
 
-读完这页你能回答：提交前要过哪道门禁；这个仓为什么只测纯逻辑；实机验收怎么做。
+读完这页你能回答：提交前要过哪道门禁；为什么这个仓的验收大半靠实机；从改代码到说「验过了」的路。
 
 第一次跑、装件、home 在哪，见[跑起来](/docs/getting-started/first-run)——那页管「跑起来」，这页管「怎么验」。
 
 ## 门禁
 
 ```powershell
-pnpm check   # typecheck 全仓 + oxlint + vitest
+pnpm check   # build:api（词汇表直出 dist）+ typecheck 全仓 + oxlint + vitest
 ```
 
-提交前跑它。它**不依赖构建产物**：typecheck、lint 和 vitest 吃的都是源码，所以「没 build」和
-「门禁全绿」不冲突。整条约 3 秒，其中 lint 不到 0.3 秒。
+提交前跑它。构建这次**在场**：`build:api` 先把词汇表包编出来，typecheck 才有得吃——
+词汇表是全仓的类型契约，它坏了 typecheck 一定跟着坏。
 
-`pnpm lint` 那段是 `oxlint . --type-aware --deny-warnings`，扫 **21 个 `.ts`**：`apps/desktop/src`
-12 个（含 `env.d.ts`）、`tests` 6 个、两份配置（`electron.vite.config.ts`、`vitest.config.ts`）、
-词汇表包 1 个。
+`pnpm lint` 那段是 `oxlint . --type-aware --deny-warnings`。**规则集就是 oxlint 的默认**——
+配置里一条 `rules` 都没写。默认是 870 条里的 111 条，几乎全在 correctness 这一类
+（`no-const-assign`、`no-dupe-keys`、`no-unreachable`、`use-isnan`、`missing-throw`
+这种「几乎肯定是错的」），其中 16 条要类型信息。style / pedantic / restriction 那些
+噪音类别默认一条都不开。
 
-**规则集就是 oxlint 的默认**——配置里一条 `rules` 都没写。默认是 870 条里的 111 条，几乎全在
-correctness 这一类（`no-const-assign`、`no-dupe-keys`、`no-unreachable`、`use-isnan`、`missing-throw`
-这种「几乎肯定是错的」），其中 16 条要类型信息。**style / pedantic / restriction 那些噪音类别默认
-一条都不开**，所以「111 条」听着多，实际是 oxlint 自己筛过的结果，不是一堆风格意见。
+lint 面很小，但**它是靠人记的**——仓里眼下就五个 `.ts`：内核 `main.ts`、词汇表
+`index.ts`、`vitest.config.ts`、docs-site 的两个源码文件。将来加了新包、新目录，忘了它
+在不在某份 tsconfig 里，它会静默留在 lint 面外，没有任何东西会说话。数不上就该去看一眼。
 
-**这个数是靠人记的**——将来加了新包、新目录，忘了它在不在某份 tsconfig 里，它会静默留在 lint 面
-外，没有任何东西会说话。数不上就该去看一眼。
+**文档站不在里面**：它钉 `typescript ^6.0.3`，而 type-aware 要 TS 7+，tsgolint 给它建不出
+program。它本来也不进根 build/test，自己有 `livedoc check` 与 `next build` 两道，
+见[账本与钉码](/docs/livedoc/how-it-works)。
 
-**文档站不在里面**：它钉 `typescript ^6.0.3`，而 type-aware 要 TS 7+，tsgolint 给它建不出 program。
-它本来也不进根 build/test，自己有 `livedoc check` 与 `next build` 两道。
+两个 flag 都不是装饰：**不带 `--deny-warnings`，有诊断也照样 `exit 0`**（屏幕上有红字而
+门禁放行）；`--type-aware` 配置里已经开着，CLI 上再写一次是为了让「它没生效」变成看得见
+的错误，而不是静默降级成非类型模式——那是这条门禁最危险的失败形态，因为一切看起来都绿。
 
-两个 flag 都不是装饰：**不带 `--deny-warnings`，有诊断也照样 `exit 0`**（屏幕上有红字而门禁放行）；
-`--type-aware` 配置里已经开着，CLI 上再写一次是为了让「它没生效」变成看得见的错误，而不是静默
-降级成非类型模式——那是这条门禁最危险的失败形态，因为一切看起来都绿。
+## 测试：判据还在，眼下是空档
 
-## 写代码先写测试，但只测该测的
+这个仓写逻辑之前先写测试。TDD 在这里最大的用处不是保证正确，是**它自己会把代码逼成
+可测的形状**：写不出测试的那一刻，就知道该把纯逻辑从副作用里抠出来了。
 
-这个仓写逻辑之前先写测试。TDD 在这里最大的用处不是保证正确，是**它自己会把代码逼成可测的
-形状**：写不出测试的那一刻，就知道该把纯逻辑从副作用里抠出来了。
+判据是**「跑它要不要起一个 Electron」**，不是「这段重不重要」。两进程线上有六个纯逻辑
+文件各配单测（协议、条目、URL、日志缓冲、日志文件、宿主进程）——**它们随两进程线整个
+删了**。单进程内核 274 行里够得上这个判据的是 `collectImports`（扫 `gwb.shared` 拼
+importmap）那一块，等它稳定下来再补测；`vitest` 眼下报「no test files found」是如实
+话，**门禁绿不等于有测试覆盖**，别误读。
 
-但判据是**「跑它要不要起一个 Electron 或一个子进程」**，不是「这段重不重要」。眼下能测的：
-
-| 测什么 | 在哪 |
-| --- | --- |
-| 行协议的解析与路由 | `src/shared/protocol.ts` |
-| 条目解析、入口四档、位查找与越界 | `src/shared/entries.ts` |
-| `gwb://` 的 URL 解析 | `src/shared/asset-url.ts` |
-| 日志缓冲的发号、截断、攒批 | `src/main/logs.ts`（不打真 IPC） |
-| 日志文件的切段与归档清理 | `src/main/log-file.ts`（跑真文件、不打真进程） |
-| 命令通道的超时与死亡路径 | `src/main/host-process.ts`（假宿主，不真 spawn） |
-
-其余——`spawn`、`BrowserWindow`、fd3 流、`protocol.handle`——一律归实机验证。
-硬凑自动化只会得到一堆脆弱的桩。
+其余——`BrowserWindow`、IPC、loader、真件挂载——一律归实机验证。硬凑自动化只会得到
+一堆脆弱的桩。
 
 ## 实机验证怎么做
 
-起一次，看两处：宿主的 stderr（挂载逐条结果）和渲染层的 console（主进程把它转到终端了）。
-真 registry 的验收（发布、从 Verdaccio 装）走本机 Verdaccio，见[跑起来](/docs/getting-started/first-run)。
+实机的规矩正本在仓里 `.claude/skills/gwb-test/SKILL.md`：每次验开自己的隔离 home、开之前
+确认产物是新的（`dist/` 时间戳）、件进 home 只有「registry 发版 → home 里 `pnpm add` →
+`cordis.yml` 写条目」这一条路、哪几种「看着成了」其实什么都没验。页面取证用
+`cdp-eval.mjs`——`run.cmd --remote-debugging-port=9335` 开 CDP，表达式放文件不放命令行。
 
 有个具体例子说明为什么实机不可省：home 分格第一次开测试 home 时撞出「全新 home 起不来」——
-`cordis.yml` 不在，include 抛错落在挂载链上，宿主整个退出（见[那面墙](/docs/trajectory/2026-09-07-wall-fresh-home-no-yml)）。
-**单测抓不着这个**：每个函数单看都对，是「从没被走过的一条路径」上才显形的组合问题。实机
-起一次，宿主 exit 1，一眼就看见。
+`cordis.yml` 不在，include 抛错落在挂载链上，整趟起不来（见
+[那面墙](/docs/trajectory/2026-09-07-wall-fresh-home-no-yml)）。**单测抓不着这个**：每个
+函数单看都对，是「从没被走过的一条路径」上才显形的组合问题。实机起一次，一眼就看见。
 
-「验从零」要开干净 home——纪律见[跑起来](/docs/getting-started/first-run)末尾那节。
+单进程重构走的也是这条路：四个探针逐个验「墙拆了件活不活得成」，读数进了
+[轨迹](/docs/trajectory/2026-09-09-single-process)，探针本身验完即删、不进仓。

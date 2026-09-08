@@ -1,97 +1,152 @@
 ---
 title: 浏览器那半
-description: ./client、importmap、window.gwb、bootShell 与 mountPane——两种角色两个动词
+description: file:// 地址自报、window.gwb 三个函数、页面根的交接——两种角色两个动词
 ---
 
 # 浏览器那半
 
-读完这页你能回答：页面上能碰到什么；外壳和窗格两种角色差在哪；样式与组件从哪来。
+读完这页你能回答：件的浏览器那半怎么被加载；页面上能碰到什么；外壳和窗格两种角色差在哪；
+样式与组件从哪来。
 
-## `./client` 与打包纪律
+## 地址：自己算，自己报
 
-件要在窗口里画东西，多导出一个 `./client` 子路径。它由浏览器经 `gwb://` 直接加载、不经过打包器。裸名 `import` 只有一种情况能用：**那个名字在页面的 importmap 里**。所以打包纪律是一条：**只把 importmap 里有的裸名外置**（react 那几个），其余依赖全部打进自己这份束——外置错了不在构建期报，运行期一句 `Failed to resolve module specifier`。
+件的浏览器那半是一份普通的 ESM 产物，浏览器直接从 `file://` 加载——没有协议、没有定址表。
+地址的算法只有一句：
+
+```ts
+const CLIENT_URL = new URL('./client.js', import.meta.url).href
+```
+
+dist 下的产物互为邻居，从自己的模块地址出发一步就到。这个地址**件自己消费**：注册窗格时
+报 `client`（与可选 `style`）两个字段；外壳件则把 `./client.js` 交给 `setShell`（见
+[服务与命令](/docs/plugins/services)）。内核全程不认识你的包名、角色名、导出名。
+
+打包纪律一条：**只把 importmap 里有的裸名外置**（react 那几个），其余依赖全部打进自己这份
+束——外置错了不在构建期报，运行期一句 `Failed to resolve module specifier`。
 
 ## `window.gwb`：页面的公共面
 
-{/* ref file="../apps/desktop/src/preload/index.ts" lines="10-34" */}
+{/* ref file="../apps/desktop/src/preload.cjs" lines="4-19" */}
 
 | | 是什么 |
 | --- | --- |
-| `command(name, args?)` | 命令通道，走到宿主分发再原路回 |
-| `onEvent(cb)` | 件经 `gwbKernel.emit` 推上来的事件，回注销函数 |
-| `onHostExit(cb)` | 宿主退出的讣告（退出码），回注销函数——页面据此把整页换成[崩溃页](/docs/trajectory/2026-09-08-crash-page) |
-| `logs.backlog()` | 开机到此刻的日志条目（主进程那圈环形缓冲） |
-| `logs.on(cb)` | 之后的日志，**按批**推，回注销函数 |
+| `command(name, args?)` | 命令通道：`gwb:command` → 命令总线 → `GwbResult` |
+| `on(cb)` | 件经 `gwbKernel.emit` 推上来的消息，回注销函数 |
+| `onShell(cb)` | 外壳地址与 importmap，回注销函数；**订上先收当前值** |
 
-谁在这页上跑都够得着——外壳、窗格件、随手在控制台敲的一句，都一样。外壳给窗格的 `args.host.call` 是它替你绑好身份的一层便利，**不是唯一入口**；日志这类页面级的东西直接用 `window.gwb`——**外壳不该转发它**，它凭什么认识「日志」。
+只有这三个。旧线上还有 `onHostExit` 与 `logs.backlog`/`logs.on`——宿主没了、日志归
+`gwb-logger` 件走 `on` 推，那几个口随两进程线退役。
+
+谁在这页上跑都够得着——外壳、窗格件、随手在控制台敲的一句，都一样。外壳给窗格的便利层
+**不是唯一入口**；日志这类页面级的东西窗格直接订 `window.gwb.on`——**外壳不该转发它**，
+它凭什么认识「日志」。
+
+## 页面根：内核那页 html 的交接流程
+
+`index.html` 是内核的一部分，也是「页面根」这件事的另一半。它要做的全部事情：
+
+{/* ref file="../apps/desktop/src/index.html" lines="25-48" */}
+
+四步，每步都有理由：
+
+1. **先注 importmap，再 import 外壳**——注过就盖不掉已解析过的裸名，次序反了第一句裸名
+   import 就炸（见[取址](/docs/kernel/loading#浏览器半的取址-importmap-是内核拼的)）；
+   空表不注，注一张空表没有意义还占坑
+2. **拆旧外壳**——`dispose()` 失败只 `console.error`，不阻新的上
+3. **url 是 null 就说一句话**——「没有外壳件。装一个 provide 页面的件并在 cordis.yml 里加
+   条目」。没有阶段页、没有已装清单、没有轮询：单进程后不存在「外壳还没轮到」的中间态
+4. **校验默认导出是函数再调**——`mod.default(root)`，返回的 `dispose` 记下来给下一轮拆
+   （形状就是词汇表的 `ShellBoot`，见[词汇表](/docs/plugins/vocab)）；失败 `console.error`
+   加一句话，页面不替失败解释
 
 ## 两种角色，两个动词
 
-**「占整页的根」和「占井里的一格」是两种件**，args 形状本来就不同：外壳拿 `entries`（它要据此排出可开窗格表）、拿不到 `shell` 与 `pane`；窗格反过来。共用一个动词会让人以为它俩是同一件事的两个变体，而形状对不上**只有运行时才发现**。所以：外壳 **`bootShell`**，窗格 **`mountPane`**——**你导出哪个名字，就声明了自己是哪种件。**
+**「占整页的根」和「占井里的一格」是两种件**，导出的动词必须不同——**你导出哪个名字，
+就声明了自己是哪种件**：外壳导出 `mountShell`，窗格导出 `mountPane`。共用一个动词会让人
+以为它俩是同一件事的两个变体，而形状对不上**只有运行时才发现**。
 
-### 外壳：谁 provide `gwbShell`，谁就是外壳
+### 外壳：谁调 `setShell`，谁就是外壳
+
+内核不挑外壳、也不认识「外壳」这个词——**件的 node 半自己交页面根**：
 
 ```ts
-export default class MyShell extends Service {
-  constructor(ctx) {
-    super(ctx, 'gwbShell')   // ← 就这一句。内核看的是「谁 provide 了它」
-  }
+export function apply(ctx: GwbContext) {
+  const kernel = requireKernel(ctx)
+  ctx.effect(() => kernel.setShell(new URL('./client.js', import.meta.url).href))
 }
 ```
 
-**不绑包名**：外壳件叫什么都行，provide 这个名字的就是。内核认识 `gwbShell` 这一个名字——那免不了，它总得挑一个件把 `#root` 交出去。声明走运行时而不是清单，白得三样：「多于一条外壳」的局面不存在（provide 撞名直接抛）；半死的外壳挑不出来（内核只认 fiber ACTIVE 的提供者）；内核不用为这件事去读每个包的清单（判据见[外壳身份运行时](/docs/trajectory/2026-09-07-shell-identity-service)）。
+包在 `effect` 里：件卸载、撤销函数跑、页面收回那句话——外壳身份是运行时一通电话，不是
+清单声明（旧线「谁 provide `gwbShell` 谁是外壳」的判法随两进程退役了，
+了断见[轨迹](/docs/trajectory/2026-09-09-single-process)）。开机要的 home 与三张样式
+表地址，外壳的浏览器半开机问一次 `shell.env` 命令再起——命令契约正本在件仓。
 
-外壳的 client 导出 **`bootShell`**：
+默认导出的形状：
 
 ```js
-export function bootShell(args, root) {
-  // args.host.call(command, args?) —— 命令通道
-  // args.home —— home 目录绝对路径
-  // args.entries —— 条目表，每条 { id, ok, pkg, disabled }
+export default function mountShell(root) {
+  // 把界面装进 root
   return { dispose() { /* 件被卸载时，把这棵树拆干净 */ } }
 }
 ```
 
-**回一个 `{ dispose }`**：件被卸载时页面上那棵树得有人拆。眼下没有谁单拆外壳——阶段页顶掉它是整页换血，犯不着先拆树——但契约先立着，将来要单拆时不必回头改所有外壳件。
-
-渲染层启动时问内核要 `kernel.info`，里头的 `shellPkg` 就是答案；**一个都没有就摆阶段页**（已装清单，两秒一问，外壳上来就顶掉，见[阶段页](/docs/trajectory/2026-09-08-stage-page)），原因进 console 分开说两种成因（一个件都没 provide，还是有件在等它的依赖）。
+**回一个 `{ dispose }`**：件被卸载时页面上那棵树得有人拆——内核那页 html 会调它（见上面
+第 2 步）。
 
 ### 窗格：`mountPane` 的契约正本住件仓
 
-`mountPane` 的 `args` 里有什么，**是外壳件说了算的**——内核只定 `bootShell`，它连「窗格」这个概念都没有。大意是这样，细节以件仓 `gwb-shell` 那页为准：
+`mountPane` 的 `args` 里有什么，**是外壳件说了算的**——内核只定 `ShellBoot`，它连「窗格」
+这个概念都没有。窗格清单是运行时注册：件在 `apply` 里调 `ctx.gwbShell.registerPane(…)`，
+报 `client`/`style` 地址，不写进包清单（判据见
+[窗格动态注册](/docs/trajectory/2026-09-07-panes-runtime-registry)与
+[args 归外壳](/docs/trajectory/2026-09-07-pane-args-shell-owned)）。大意是这样，细节以
+件仓 `gwb-shell` 那页为准：
 
 ```js
-export function mountPane({ host, shell, pane }, container) {
-  // host 跟外壳拿到的是同一个命令通道
-  // shell 能开本件的另一格、能往格间总线发消息
-  // pane.id 说这是本件的哪一格，pane.instance 说这是那一格的第几份
+export function mountPane(args, container) {
+  // args 里有 pane.id（这是本件的哪一格）等；client/style 地址注册时报过了
   return { dispose() {} }
 }
 ```
 
-**必须同步返回一个 `{ dispose }` 对象**——async 函数、返回 Promise、返回别的，都会被外壳当契约违规报出来。窗格清单也是运行时注册：件在 `apply` 里调 `ctx.gwbShell.registerPane(…)`，不写进包清单（判据见[窗格动态注册](/docs/trajectory/2026-09-07-panes-runtime-registry)与[args 归外壳](/docs/trajectory/2026-09-07-pane-args-shell-owned)）。
+**必须同步返回一个 `{ dispose }` 对象**——async 函数、返回 Promise、返回别的，都会被外壳
+当契约违规报出来。
 
 ## 样式
 
-样式表跟 client 走同一条路：列进 `exports`（比如 `./style.css`），件自己注 `<link>`。
+样式表跟 client 一条路：地址自己算（`new URL('./style.css', import.meta.url)`）、注册时
+报 `style` 字段，外壳开格时注 `<link>`。
 
-**注了不等于到位**：`<link>` 是异步取的，束里第一帧 DOM 完全可能落在表到位之前，那一瞬间是一堆没有样式的裸元素。等 `link.onload` 再渲染。
+**注了不等于到位**：`<link>` 是异步取的，束里第一帧 DOM 完全可能落在表到位之前，那一瞬间
+是一堆没有样式的裸元素。等 `link.onload` 再渲染。
 
-件的样式整张 scope 在 `[data-gwb-plugin="<完整包名>"]` 之下，容器上不挂这个属性，一个类名都不生效。设计令牌（颜色、圆角那些 CSS 变量）全生态共享一份，件的表里只有 `var(--background)` 这样的引用——**换主题＝换那一份值，所有件当场跟着变，一个都不用重新构建**。
+件的样式整张 scope 在 `[data-gwb-plugin="<完整包名>"]` 之下，容器上不挂这个属性，一个类名
+都不生效。设计令牌（颜色、圆角那些 CSS 变量）全生态共享一份，件的表里只有
+`var(--background)` 这样的引用——**换主题＝换那一份值，所有件当场跟着变，一个都不用重新
+构建**。字体也是令牌：改全局字体＝覆盖 `--gwb-font-sans` / `--gwb-font-mono` 两个变量，
+一处值，全场生效。
 
-字体也是令牌：`--gwb-font-sans` / `--gwb-font-mono` 声明在 gwb-tokens 那份表里，`body` 的字体规则落在 base 层——dockview、件的裸 HTML 这些不经工具类的 DOM 靠继承吃到；`font-sans` / `font-mono` 两个工具类经映射面解析到同一对变量。**改全局字体＝覆盖这两个变量，一处值，全场生效**。
-
-用户侧的现成入口是 gwb-theme 件（件仓）：「外观」格里收两项字体加一段自定义 CSS，输入即预览、保存落盘；重启后外壳 boot 经 `theme.startupCss` 把整段取走、注在令牌表**之后**——同特异性下靠文档序取胜，所以用户写 `:root { --background: … }` 能直接换全套配色。这条命令是**软契约**：命令名两边各存一份字符串，theme 没装时总线回「没有这条命令」，外壳跳过，谁也不欠谁。
+用户侧的现成入口是 gwb-theme 件（件仓）：「外观」格里收两项字体加一段自定义 CSS，输入即
+预览、保存落盘；重启后外壳 boot 经 `theme.startupCss` 把整段取走、注在令牌表**之后**——
+同特异性下靠文档序取胜。这条命令是**软契约**：theme 没装时总线回「没有这条命令」，外壳
+跳过，谁也不欠谁。
 
 ## 组件
 
-**每个件自己从 shadcn 官方拉**（`pnpm dlx shadcn@latest add button`）。**没有「工作台的组件库」这种东西，也不建 registry**——shadcn 的组件源码本来就是给你改的，A 件的 button 跟 B 件的不一样完全没关系。**统一风格由令牌保证，不由组件源码一致保证**，这两层正交。
+**每个件自己从 shadcn 官方拉**（`pnpm dlx shadcn@latest add button`）。**没有「工作台的
+组件库」这种东西，也不建 registry**——shadcn 的组件源码本来就是给你改的，A 件的 button 跟
+B 件的不一样完全没关系。**统一风格由令牌保证，不由组件源码一致保证**，这两层正交。
 
-配置三处对齐，`@/` 一律指向 `src/client`：`components.json` 的 `aliases`、两份 `tsconfig` 的 `paths`、打包器的 esbuild `alias`。两个容易撞的点：
+配置三处对齐，`@/` 一律指向 `src/client`：`components.json` 的 `aliases`、两份 `tsconfig`
+的 `paths`、打包器的 esbuild `alias`。两个容易撞的点：
 
-- **别写 `baseUrl`**——TS 7 把它移除了（`TS5102`），shadcn 文档给的还是老写法；`paths` 直接相对 tsconfig 所在目录解析
-- `components.json` 的 **`tailwind.css` 必须指一个真实存在的文件**（`tailwind` 对象整个必填）。件因此有一个 `src/client/styles.css`——它同时也是件写自己 CSS 规则的地方
+- **别写 `baseUrl`**——TS 7 把它移除了（`TS5102`），shadcn 文档给的还是老写法；`paths`
+  直接相对 tsconfig 所在目录解析
+- `components.json` 的 **`tailwind.css` 必须指一个真实存在的文件**（`tailwind` 对象整个
+  必填）。件因此有一个 `src/client/styles.css`——它同时也是件写自己 CSS 规则的地方
 
 ## 两条纪律
 
-收日志的路径上一个 `console` 都不许打；件不自己挂 cordis exporter——理由与后果见[日志](/docs/kernel/logs)末尾。
+**收日志的路径上一个 `console` 都不许打**——页面窗格的 console 是日志三路之一，回环起来
+界面当场冻死（见[日志](/docs/kernel/logs)末尾）。**样式与令牌的细节正本在件仓**——这页
+只记内核侧认得到的形状，跨仓钉不了码。

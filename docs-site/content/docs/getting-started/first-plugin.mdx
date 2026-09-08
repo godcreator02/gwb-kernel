@@ -7,7 +7,8 @@ description: 从空目录到挂上运行，再到页面里有一格——每步�
 
 读完这页你能回答：一个件最少要哪几个文件；怎么让它挂上；怎么在窗口里占一格。
 
-每步做完就重启验一次——**实机是这仓的验收方式**，宿主日志会把条目逐条报出来。
+每步做完就重启验一次——**实机是这仓的验收方式**，日志把条目逐条报出来（终端与
+`<home>\gwb.log` 同一份）。
 
 ## 1. 建包
 
@@ -15,14 +16,15 @@ description: 从空目录到挂上运行，再到页面里有一格——每步�
 
 ```json
 {
-  "name": "@you/thing",
-  "version": "0.0.1",
+  "name": "@you/gwb-thing",
+  "version": "0.1.0",
   "type": "module",
-  "exports": { ".": "./index.js" }
+  "exports": { ".": "./dist/index.js" }
 }
 ```
 
-`exports` 是内核唯一的取址依据，写什么才能取到什么。
+node 半的入口靠 node 自己的解析认 `exports`。**浏览器那半不读它**——那半的地址由件自己从
+`import.meta.url` 算（第 7 步），清单里没有专门的「客户端入口」字段。
 
 ## 2. 写 apply
 
@@ -34,24 +36,24 @@ export function apply(ctx, config) {
 }
 ```
 
-`apply` 的签名与语义全归 cordis，不归内核——内核只负责把模块 import 进来交给 cordis。`config` 就是条目里写的那份。
+`apply` 的签名与语义全归 cordis，不归内核——内核只负责把模块 import 进来交给 cordis。
+`config` 就是条目里写的那份。
 
 ## 3. 挂上它
 
-装进 home（`pnpm add`，本地包用 `file:` 协议或发到 Verdaccio），然后在 `cordis.yml` 里写条目：
+装进 home（`pnpm add`，本地包用 `file:` 协议或发到 Verdaccio），然后在 `cordis.yml` 里写
+条目：
 
 ```yaml
 - id: thing
-  name: '@you/thing'
+  name: '@you/gwb-thing'
 ```
 
-`id` **必须手写**：不写的话 loader 当场发一个 8 位随机十六进制，而且首次加载不写回 yml——它会一直漂，按条目身份存的东西每次都对不上。重启，宿主日志里这条条目报「挂上」。
+`id` **必须手写**：不写的话 loader 当场发一个 8 位随机十六进制，而且首次加载不写回 yml——
+它会一直漂，按条目身份存的东西每次都对不上。重启，日志里这条条目报「挂上」；挂不上则带
+错因（`ERR_MODULE_NOT_FOUND` 给完整路径）。
 
-## 4. 验收：条目表说 ok
-
-页面 console 或终端调 `kernel.info`，看 `entries` 里那条的 `ok`。**`ok` 判的是 fiber 真的 ACTIVE 了**，不是「fiber 建出来了」——`inject` 永远等不到的件也有 fiber，但 `ok: false`。
-
-## 5. 提供一个服务
+## 4. 提供一个服务
 
 ```js
 export function apply(ctx) {
@@ -60,38 +62,64 @@ export function apply(ctx) {
 }
 ```
 
-服务名一律 `gwb` 开头；`ctx.effect` 包一层，件卸载时自动撤销。消费方写 `inject: ['gwbThing']`——那是硬等待：服务不在，件不挂。
+服务名一律 `gwb` 开头；`ctx.effect` 包一层，件卸载时自动撤销。消费方写
+`inject: ['gwbThing']`——那是硬等待：服务不在，件不挂。
 
-**想被页面调到**：注册进命令总线（`ctx.gwbCommands.register(...)`，如果装了 `gwb-commands`）。总线的收据形状是 `GwbResult`，未知命令不 throw——契约见[服务与命令](/docs/plugins/services)。
+**想被页面调到**：注册进命令总线（`ctx.gwbCommands.register(...)`，如果装了
+`gwb-commands`）。总线的收据形状是 `GwbResult`，未知命令不 throw——契约见
+[服务与命令](/docs/plugins/services)。
 
-## 6. 用内核的服务
+## 5. 用内核的服务
 
 ```js
 import { requireKernel } from '@godcreator02/gwb-plugin-api'
 
 export function apply(ctx) {
   const kernel = requireKernel(ctx)
-  kernel.emit({ type: 'thing.ready' })   // 页面 window.gwb.onEvent 收到
+  kernel.emit({ type: 'thing.ready' })   // 页面 window.gwb.on(cb) 收到
 }
 ```
 
-`dataDir`、`appVersion` 这些运行时值只走 cordis 服务；类型才走词汇表包。`requireKernel` **别写进 `inject`**——那个服务永不撤销，写进去只多一处挂不上的可能。
+内核就给三样：`dataDir`（落盘、找包用）、`emit`（推消息给页面）、`setShell`（把页面根交
+出来，见第 7 步）。这些运行时值只走 cordis 服务，类型才走词汇表包。`requireKernel`
+**别写进 `inject`**——那个服务永不撤销，写进去只多一处挂不上的可能。
 
-## 7. （选）浏览器那半
+## 6. 声明共享的裸名（要用 react 才需要）
 
-多导出一个 `./client`，页面就能经 `gwb://` 取到它：
+件的浏览器那半要用 `react`，别打包它——让共享包声明、内核搬运：
 
 ```json
-{ "exports": { ".": "./index.js", "./client": "./client.js" } }
+{ "gwb": { "shared": { "react": "./vendor/react.js" } } }
 ```
 
-打包时**只把 importmap 里有的裸名外置**（要用 `react`，得先有个共享包声明 `gwb.shared`），其余打进自己这份束。窗格件导出 `mountPane`，由外壳调：
+内核扫 home 清单里每个包的这段声明，拼成 `file://` importmap 推给页面。内核不认识 react
+这个词，只搬运提供方的声明；没有哪个包声明就用不了（见
+[取址](/docs/kernel/loading#浏览器半的取址-importmap-是内核拼的)）。
+
+## 7. 浏览器那半：算地址、报地址、导出动词
+
+产物里算出自己的地址，注册窗格时报出去：
 
 ```js
-export function mountPane({ host, shell, pane }, container) {
+const CLIENT_URL = new URL('./client.js', import.meta.url).href
+const STYLE_URL = new URL('./style.css', import.meta.url).href
+
+ctx.gwbShell?.registerPane({
+  id: 'main', title: 'thing', icon: 'Puzzle',
+  client: CLIENT_URL, style: STYLE_URL,
+})
+```
+
+窗格的浏览器半导出 `mountPane`，由外壳调：
+
+```js
+export function mountPane(args, container) {
   container.textContent = 'thing 的第一格'
   return { dispose() {} }
 }
 ```
 
-`mountPane` 的完整契约正本住件仓的 `gwb-shell` 那页；`window.gwb` 的面、样式与组件的规矩见[浏览器那半](/docs/plugins/client)。
+打包时**只把 importmap 里有的裸名外置**（第 6 步声明的那几个），其余打进自己这份束；相对
+导入带 `.js`。`mountPane` 的完整契约、`setShell` 当外壳、样式与组件的规矩：
+[浏览器那半](/docs/plugins/client)；一个真实件的全部现状在件仓 `gwb-hello`——**跨仓钉不了
+码**，那边的论断钉那边的代码。
