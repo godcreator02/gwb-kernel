@@ -1,6 +1,6 @@
 @echo off
-rem 日常启动：直接跑现成的 out/，不重新构建。改了内核才需要先
-rem `pnpm exec electron-vite build`（或根目录 pnpm start）。见文档站。
-rem 不设 GWB_HOME，落日常那份 default home；要开别的 home 在前面设环境变量。
+rem 直接跑现成的 dist/，不重新构建。改了内核先 pnpm build。
+rem 不设 GWB_HOME 落 default；GWB_HOME 给名字落 userData\homes\<名>，给路径就用那个目录。
+rem 要 CDP 取证在后面带 --remote-debugging-port=9222，Chromium 开关命令行上就生效，内核不管它。
 cd /d "%~dp0"
-node_modules\electron\dist\electron.exe .
+node_modules\electron\dist\electron.exe . %*

@@ -1,5 +1,12 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "options": { "typeAware": true },
-  "ignorePatterns": ["**/node_modules", "**/out", "**/dist", "docs-site/**"]
+  "ignorePatterns": [
+    "**/node_modules",
+    "**/out",
+    "**/dist",
+    "docs-site/**",
+    "apps/desktop/probes/*.expr.js",
+    "apps/desktop/probes/p2-file/**"
+  ]
 }

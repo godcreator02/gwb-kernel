@@ -2,15 +2,16 @@
   "name": "@godcreator02/gwb-kernel-desktop",
   "private": true,
   "productName": "gwb-kernel",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
-  "main": "out/main/index.mjs",
+  "main": "dist/main.js",
+  "description": "gwb 内核：cordis 住 Electron 主进程，整个应用只有主进程与渲染进程。只做第一个件跑起来之前必须发生的事",
   "scripts": {
     "//postinstall": "electron 这个包不带 postinstall，二进制得显式跑 install.js。见文档站",
     "postinstall": "node node_modules/electron/install.js",
-    "start": "electron-vite build && electron .",
-    "build": "electron-vite build",
-    "typecheck": "tsc --noEmit -p ../../tsconfig.json"
+    "build": "pnpm --filter @godcreator02/gwb-plugin-api build && tsc -p tsconfig.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "start": "pnpm build && electron ."
   },
   "dependencies": {
     "cordis": "4.0.0-rc.9",
@@ -21,9 +22,7 @@
   "devDependencies": {
     "@types/node": "^24.0.0",
     "electron": "44.1.1",
-    "electron-vite": "^5.0.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2",
     "pnpm": "11.21.0"
   }
 }

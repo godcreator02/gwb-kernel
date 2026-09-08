@@ -22,3 +22,9 @@ dist/
 # 实机验证的现场：隔离 home 与解包出来的件，跑完即废
 .tmp-probe/
 .tmp-theme-verify/
+
+# 探针跑出来的结果（读数抄进 probes/README.md 就行）；试验 home 里手写的试验件本身进仓，
+# 它们住在 node_modules 下是因为 loader 要按裸名解析，上面那条 node_modules/ 得给它们开个口
+apps/desktop/probes/*.out.json
+apps/desktop/probes/*.txt
+!apps/desktop/probes/homes/*/node_modules/

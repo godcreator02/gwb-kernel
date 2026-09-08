@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>probe2</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      // 探针二：loadFile 起的页面，直接从 home 的 file:// 取件的东西。
+      // 五个断言各自独立记录，一个失败不挡别的。
+      const params = new URLSearchParams(location.search)
+      const pkg = params.get('pkg') // file:///.../node_modules/gwb-probe-pane/
+      const out = { origin: location.origin, href: location.href, pkg }
+      const step = async (key, fn) => {
+        try {
+          out[key] = { ok: true, value: await fn() }
+        } catch (err) {
+          out[key] = { ok: false, error: String(err) }
+        }
+      }
+
+      // 1. 动态 import 一个 file:// 模块
+      await step('import', async () => {
+        const mod = await import(pkg + 'client.js')
+        const el = document.createElement('div')
+        document.getElementById('root').appendChild(el)
+        mod.mount(el)
+        return mod.marker
+      })
+
+      // 2. <link> 一张 file:// 样式表，等它到位，量计算样式
+      await step('stylesheet', () => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = pkg + 'style.css'
+        link.onload = () => resolve(getComputedStyle(document.querySelector('.probe-pane')).color)
+        link.onerror = () => reject(new Error('link error'))
+        document.head.appendChild(link)
+      }))
+
+      // 3. 运行时注 importmap 指向 file://，再 import 一个用裸名的模块；两次 import 拿到同一份实例
+      await step('importmap', async () => {
+        const el = document.createElement('script')
+        el.type = 'importmap'
+        el.textContent = JSON.stringify({ imports: { 'probe-shared': pkg + 'shared.js' } })
+        document.head.appendChild(el)
+        const a = await import(pkg + 'uses-shared.js')
+        const b = await import('probe-shared')
+        return { resolved: a.seen.id, direct: b.instance.id, same: a.seen === b.instance }
+      })
+
+      // 4. fetch 一个 file://（预期不行，只记录）
+      await step('fetch', async () => (await fetch(pkg + 'style.css')).status)
+
+      // 5. 顺手：JSON 模块 import（件想自己读 package.json 的话）
+      await step('json', async () => {
+        const m = await import(pkg + 'package.json', { with: { type: 'json' } })
+        return m.default.name
+      })
+
+      window.probe.report(out)
+    </script>
+  </body>
+</html>

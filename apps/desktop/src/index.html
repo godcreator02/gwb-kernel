@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>gwb</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      // 渲染层本体：听外壳是谁，注 importmap，import 它，把 #root 交出去。没有外壳就一句话。再没别的
+      const root = document.getElementById('root')
+      let current = null
+      let injected = false
+
+      // importmap 只注一次，而且必须赶在第一句裸名 import 之前——注过之后再注盖不掉已经解析过的名字
+      function injectImportmap(imports) {
+        if (injected || Object.keys(imports).length === 0) return
+        const el = document.createElement('script')
+        el.type = 'importmap'
+        el.textContent = JSON.stringify({ imports })
+        document.head.appendChild(el)
+        injected = true
+      }
+
+      window.gwb.onShell(async (shell) => {
+        const url = shell?.url ?? null
+        injectImportmap(shell?.imports ?? {})
+        if (current?.url === url) return
+        try {
+          current?.handle?.dispose?.()
+        } catch (err) {
+          console.error(`旧外壳拆不干净：${String(err)}`)
+        }
+        current = null
+        root.textContent = ''
+        if (url === null) {
+          root.textContent = '没有外壳件。装一个 provide 页面的件并在 cordis.yml 里加条目，见文档站。'
+          return
+        }
+        try {
+          const mod = await import(url)
+          if (typeof mod.default !== 'function') throw new Error(`${url} 的默认导出不是函数`)
+          current = { url, handle: mod.default(root) ?? null }
+        } catch (err) {
+          console.error(`外壳起不来：${String(err)}`)
+          root.textContent = `外壳起不来：${String(err)}`
+        }
+      })
+    </script>
+  </body>
+</html>

@@ -2,11 +2,60 @@
 
 god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 
-母仓 `god-workbench`（`26090412vav`）与件仓 `gwb-plugins`（`26090623hyz`）**准备废弃**，
-此后只作参考。**插件全部重做一份。**
+**2026-09-09 从两进程改成单进程**：cordis 从宿主子进程搬进 Electron 主进程，整个应用只剩
+主进程与渲染进程两个。理由一句——宿主子进程存在的唯一目的是把件跟 Electron 隔开，而件真正
+要的恰恰是 Electron（开窗、菜单、子进程、`electron` 这个模块本身），隔开的那道墙上于是长出了
+fd3 协议、`gwb://`、exports 解析、日志四路管道，全是为绕墙而生。墙拆了它们一起没了。
+重构在实验目录 `gwb-kernel-min` 里端到端验通（十二件真机跑过）再整套搬回来的。
 
-目标不是「内核行数最少」，是**「能把插件正常跑起来」所需的最小集**——后者带着一条验收
-标准，插件得真能干活。
+**文档站还钉着旧线**：`pnpm doc` 现在是红的，这是预期的，另议。这份 `AGENTS.md` 是眼下唯一
+跟得上代码的那份。
+
+## 内核只做六件事，一个文件
+
+| | 是什么 | 在哪 |
+| --- | --- | --- |
+| 铺 home | 建目录、缺什么补什么（`package.json`、空 `cordis.yml`），不覆盖 | `apps/desktop/src/main.ts` |
+| 起 cordis | `Context` 加 `baseUrl` 指向 home，挂官方 loader 与 include | 同上 |
+| 解析裸名（node 半） | 主进程没有 `--expose-internals`，内核给 `loader.internal` 塞五行按 home 解析 | 同上 |
+| 解析裸名（浏览器半） | 扫 home 清单里各包声明的 `gwb.shared`，解析成 `file://` importmap，随外壳地址推给页面，页面注完表才 import 外壳。内核不认识 react，只搬运提供方的声明 | 同上 |
+| 开窗与桥 | 一扇窗；`gwb:command` 派给 `ctx.gwbCommands`；`gwb:event` 推事件；`gwb:shell` 告诉页面外壳是谁 | `src/main.ts` `src/preload.cjs` |
+| 页面根 | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳一句话 | `src/index.html` |
+| 自己出错人看得见 | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退 | `src/main.ts` |
+
+（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。三个文件合计 274 行（含空行与注释）：
+`main.ts` 204、`index.html` 51、`preload.cjs` 19，外加词汇表 62。）
+
+**没有的**：`gwb://` 协议、exports 解析、`kernel.info`、阶段页、崩溃页、日志缓冲与轮转、
+宿主子进程与 fd3 协议、README 铺进 home、装机（内核不碰 pnpm）。这些全归件，或者归
+Electron 自己（页面直接吃 `file://`）。
+
+importmap **曾经**试过归外壳（2026-09-09 上午的版本），当天推翻：它是页面级的运行时服务，
+没有外壳时别的浏览器半也得解析得到 react，而且共享包的声明权该在提供方不在消费方。现在是
+内核的「浏览器半取址」。
+
+## 契约面：六个名字加一个形状
+
+node 半 `ctx.gwbKernel`：`dataDir`、`emit(payload)`、`setShell(url) → 撤销函数`。
+页面 `window.gwb`：`command(name, args)`、`on(cb)`、`onShell(cb)`。
+外壳模块：默认导出 `(root: HTMLElement) => { dispose?() } | void`。
+正本在 `packages/gwb-plugin-api/src/index.ts`（`@godcreator02/gwb-plugin-api` 0.1.0，已发本机 registry）。
+
+件的浏览器半地址由件自己从 `import.meta.url` 算，内核不认识任何包名、角色名、导出名。
+
+内核自己的话与渲染层的 console 也走 `ctx.logger`（名字 `kernel` / `renderer`），所以任何件挂
+一个 exporter 就收齐三路。内核为窗格不铺任何管道。
+
+## 件在新契约下长什么样
+
+| 件 | 改了什么 |
+| --- | --- |
+| `gwb-shell` | node 半 `ctx.effect(() => kernel.setShell(new URL('./client.js', import.meta.url).href))`；登记 `shell.env` 命令回 home 与三张样式表的 `file://` 地址（令牌表按包解析）；浏览器半的默认导出 `mountShell(root)` 问一次 `shell.env` 再调原来的 `bootShell`；窗格注册表加 `client` / `style` 两个地址字段，开格按注册表现取 |
+| `gwb-logger` | node 半真的成了日志件：挂第二个 cordis exporter、从 `ctx.logger.buffer` 补历史、自己缓冲两千条、经 `gwbKernel.emit({ t: 'gwb-logger', line })` 推、两条命令 `logger.backlog` / `logger.where`；浏览器半订 `window.gwb.on` 认自己的记号；三路是 `plugin` / `kernel` / `renderer` |
+| `gwb-hello` 等窗格件 | 两格 `registerPane` 各加 `client` 与 `style` 地址。其余一行没动 |
+| `gwb-commands` `gwb-node-cli` `gwb-py-cli` | 代码一行没动，只换了依赖来源。`ELECTRON_RUN_AS_NODE` 那一套在主进程里照样对 |
+
+窗格件要改的只有一处：注册时报 `client`（与可选的 `style`），地址从自己的 `import.meta.url` 算。
 
 ## 准入判据：两道关，都得过
 
@@ -20,39 +69,34 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 
 两道关一旦松动这个仓就没有存在理由了。拿不准就按「不进」处理——加回来永远比拿掉容易。
 
-## 内核只做三件事
+单进程之后这两关更好用了：**件跑在主进程里意味着件拿得到 `electron`**——开窗、菜单、托盘、
+对话框、协议处理、子进程，全是件的事，内核一条都不用代办。
 
-| | 是什么 |
-| --- | --- |
-| **载体** | 起一个 node 进程挂 cordis；开一扇窗 |
-| **取址** | 挂 cordis 官方 loader，baseUrl 指着 home，它自己解析 `<home>/node_modules` |
-| **桥** | fd3 命令 + 事件；`gwb://` 交出件的浏览器那半 |
+## 撞过的墙
 
-外加一份**词汇表**（`packages/gwb-plugin-api`）——它不做事，只命名。
+- Electron ESM 主进程**不能顶层 `await app.whenReady()`**：ready 要等入口模块求值完才发，
+  互相等死，整个进程静默挂住。`main.ts` 里已经处理，别改回去。
+- cordis loader 的 `internal` 只在 `import(name, baseUrl)` 一处用，是实例上的普通字段；没有
+  `--expose-internals` 时它是 `undefined`，件按 loader 自己的位置解析、**静默**挂不上。
+- 工作区 `pnpm-workspace.yaml` 的 `autoInstallPeers: false` 与 `linkWorkspacePackages: true`
+  是撞出来的：registry 上的件 peer 着 `gwb-commands >=0.0.1`，pnpm 会拿工作区里那个还没发的
+  版本去满足、再去 registry 拿它，装当场失败。
+- stderr 对端断了（没有终端起）每写一次抛一次 EPIPE，`main.ts` 里吞掉，文件那投照旧。
 
-曾经的第四件事**装机**于 2026-09-08 整口移除：**内核不碰 pnpm**，装包是进 home 手动
-`pnpm add` 的手工活，界面那半归件（件仓的 `gwb-plugins` 件）。内核对「装」只剩安家：
-每次启动幂等铺 home 三件套（`package.json` / 空 `cordis.yml` / README）。
+## 怎么跑
 
-**取址内核自己不做**：只挂 `@cordisjs/plugin-loader` 加一条 `cordis:include` 条目，
-内核连 yml 都不认识。**开着的官方件**还有 `plugin-timer`（装进 home 走 yml 条目）；
-`plugin-logger-console`（日志出口收归内核自己那个全量 exporter）与 `plugin-hmr`
-等七个明确不开。
+```powershell
+pnpm install
+cd apps\desktop; pnpm build          # tsc 直出到 dist/，无打包器（不再有 electron-vite）
+.\run.cmd                            # 落 default home（%APPDATA%\gwb-kernel\homes\default）
+$env:GWB_HOME='x'; .\run.cmd         # 名字 → homes\x；给路径（含 \ 或 /）就用那个目录
+.\run.cmd --remote-debugging-port=9335   # CDP 取证，Chromium 开关命令行上就生效，内核不管它
+```
 
-各自的判据、引导链、热挂载的形态见文档站。
-
-## 刻意不做的（母仓有，这里没有）
-
-不是还没做，是**决定不做**。要做得先推翻上面那两道关：
-
-- **自动升级**——不判四路，不存快照账本，不猜哪条是用户钉的版本。装过了就不再动它
-- **盘上对账与失败还原**——装不上就是装不上，报一句错
-- **GUI 失败兜底页**——失败不在图形界面上再解释一遍，出路走命令行（外壳没上来时的
-  已装清单阶段页原本也否在这条里，2026-09-08 推翻了那半边，界线与现场见文档站）
-- **peer 准入、环依赖拒载、自动补装**——件之间的依赖关系是件自己的事
-- **让打包器的形状渗进源码**——主进程走正常的包解析，不依赖「依赖被内联进束」
-
-哪天某一条真的被用的时候撞上了，那时再补——**补的时候要连着「它拦住了什么」一起记下来**。
+根上的门禁是 `pnpm check`（`build:api` + `typecheck` + `lint` + `test`）。探针与当时的读数在
+`apps/desktop/probes/`，页面取证走 `node probes\cdp-eval.mjs <端口> probes\<表达式>.expr.js`
+——**表达式放文件不放命令行**，PowerShell 的引号会截断它。日志在 `<home>\gwb.log`：内核自己
+的话、件的、渲染层 console 转来的，全在这一份里。
 
 ## 服务命名：一律 `gwb` 开头
 
@@ -77,9 +121,10 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 
 | 单元 | 是什么 | 这个仓怎么用它 |
 | --- | --- | --- |
-| `26090412vav\god-workbench` | 母仓，**准备废弃** | 只作参考：某处当初为什么那么做、踩过什么坑。结构、分层、包划分一概不抄 |
-| `26090623hyz\gwb-plugins` | 旧的 11 件，**准备废弃** | 同上。件重做一份，不在那个仓里改 |
-| `26090709qzp\gwb-base-plugins` | **正线的件仓** | 第一批四件：`gwb-commands`（已发 0.0.2）、`gwb-shell`、`gwb-logger`、`gwb-settings` |
+| `26090705ymz\gwb-kernel-min` | 单进程重构的**实验目录**，六节探针证据在它的 `probes/` | 结论已整套搬进本仓。它只读，别再往里写 |
+| `26090709qzp\gwb-base-plugins` | **正线的件仓**，十二件正在迁到 0.1 契约 | 件在那儿改、在那儿发版；本仓只消费 |
+| `26090412vav\god-workbench` | 母仓，**已退役** | 只作参考：某处当初为什么那么做、踩过什么坑。结构、分层、包划分一概不抄 |
+| `26090623hyz\gwb-plugins` | 旧的 11 件，**已退役** | 同上 |
 | `26090702tpu\gwb-catalog` | 推荐清单 | 装什么件由人挑，推荐将来从这儿来 |
 | `26090520zzv\registry` | 本机 Verdaccio | 件的包源：件仓 publish 到这儿，home 从这儿装。`@godcreator02` scope 指的就是它 |
 
@@ -94,17 +139,12 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 
 | skill | 什么时候用 |
 | --- | --- |
-| `gwb-test` | 在你打算说「验过了 / 跑通了 / 改动生效了」之前。实机验证：每次验开自己的隔离 home 与命名法、开之前怎么确认产物是新的、件进 home 只有哪一条路、哪几种「看着成了」其实什么都没验 |
+| `gwb-test` | 在你打算说「验过了 / 跑通了 / 改动生效了」之前。实机验证：每次验开自己的隔离 home 与命名法、开之前怎么确认产物是新的、件进 home 只有哪一条路、哪几种「看着成了」其实什么都没验、怎么从页面里取证 |
 
 **总控台那四份**（`D:\unitfolders\26090520ntn\console\.claude\skills\`：`gwb-tdd` /
 `gwb-test` / `gwb-release` / `gwb-update`）**对象仓写的是 god-workbench**。判断层在这个仓
 一样适用，**但凡提到具体路径、包名、命令的部分都要按这个仓翻译一遍**。坐在本仓时它们不进
 上下文，按上面的路径直接 Read。
-
-## 现在到哪了
-
-路线、在等什么前提、定过的事与撞过的墙，都在文档站（`roadmap` 与 `trajectory`）。
-**「等什么」那一栏是重点**——它记着为什么现在不做，正好接住准入判据第二关。
 
 ## 注释与文档：三层分流
 
@@ -122,17 +162,8 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 跑 `pnpm livedoc render --target ai` 重摆。
 
 **文档检查不在 `pnpm check` 里**——它要起文档站的解析链，太慢，每次跑测试都带上不值。
-单独两条：
-
-```powershell
-pnpm doc          # livedoc check：钉住的代码变了报黄，指向空气报红
-pnpm doc:confirm  # 看过之后确认，草稿记号也在这一步转正
-```
-
-改了被钉住的代码就跑一次；多次改动攒着一起跑也行。**提交前跑一次**是个好习惯。
-
-**文档站的组件随便加**——它不是内核，准入判据管不着它；只记得在 `livedoc.config.mjs`
-的名册里给它一条压平规则。
+单独两条 `pnpm doc` / `pnpm doc:confirm`。**改成单进程之后整站都还钉着旧线，现在是红的**，
+补文档是独立的一步，别在别的活里顺手改一半。
 
 ## 蹲住这条线
 

@@ -1,8 +1,8 @@
 import type { Context } from 'cordis'
 
 /**
- * 内核的词汇表：件说话用的那几个名词。它不做事，只命名。
- * 零运行时依赖。收进来的判据与它为什么这么小，见文档站。
+ * 内核的词汇表：件说话用的那几个名词。它不做事，只命名。零运行时依赖。
+ * 这是件与内核之间的全部契约面：node 半三个名字，页面三个函数，外壳一个导出形状。
  */
 
 /** 命令的回执形状 */
@@ -12,18 +12,17 @@ export interface GwbResult<T = unknown> {
   error?: string
 }
 
-/**
- * 内核挂在根上下文的服务，只有内核提供、永不撤销。
- *
- * **没有装机口**：包怎么进 home 是件的事，内核不碰 pnpm。
- */
+/** 内核挂在根上下文的服务，只有内核提供、永不撤销。用 `requireKernel` 取，不写进 `inject` */
 export interface GwbKernelApi {
   /** 这个 home 的目录 */
   dataDir: string
-  /** 应用版本；没传下来时是 null */
-  appVersion: string | null
-  /** 往界面推一条事件；渲染层经 window.gwb.onEvent 收 */
+  /** 往页面推一条事件；页面经 `window.gwb.on` 收 */
   emit(payload: unknown): void
+  /**
+   * 把页面根交给这个 URL 指向的模块。模块的默认导出是 `ShellBoot`。
+   * 回撤销函数——包在 `ctx.effect` 里，件卸载时页面根自动收回。后调的顶掉先调的。
+   */
+  setShell(url: string): () => void
 }
 
 /** 件的 apply 拿到的上下文：cordis 的 Context 加内核这一个服务 */
@@ -35,7 +34,7 @@ export interface GwbContext extends Context {
 export function requireKernel(ctx: Pick<GwbContext, 'gwbKernel'>): GwbKernelApi {
   const kernel = ctx.gwbKernel
   if (kernel === undefined) {
-    throw new Error('ctx.gwbKernel 不在——这个插件跑在一个不是 gwb-kernel 的 cordis 宿主里')
+    throw new Error('ctx.gwbKernel 不在——这个插件跑在一个不是 gwb 内核的 cordis 宿主里')
   }
   return kernel
 }
@@ -44,3 +43,20 @@ export function requireKernel(ctx: Pick<GwbContext, 'gwbKernel'>): GwbKernelApi 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
+
+/** 页面的公共面 `window.gwb`。谁在这页上跑都够得着 */
+export interface GwbWindowApi {
+  /** 调一条命令。除内核自己一条都不认，全派给提供 `gwbCommands` 的件 */
+  command<T = unknown>(command: string, args?: unknown): Promise<T>
+  /** 收件经 `gwbKernel.emit` 推来的事件，回注销函数 */
+  on(cb: (payload: unknown) => void): () => void
+  /**
+   * 外壳换了。订上就先收到当前值（没有外壳 url 是 null），回注销函数。
+   * `imports` 是页面级 importmap：home 里各包 `gwb.shared` 声明的裸名 → file:// 地址，内核收齐的。
+   * 页面注完它才 import 外壳。这一条只有内核自己的页面在用
+   */
+  onShell(cb: (shell: { url: string | null; imports: Record<string, string> }) => void): () => void
+}
+
+/** 外壳模块的默认导出：拿走页面根，回一个可选的拆树句柄 */
+export type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
