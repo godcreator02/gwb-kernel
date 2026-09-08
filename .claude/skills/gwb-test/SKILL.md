@@ -56,6 +56,11 @@ pnpm add <包名>@<版本>
 
 **坑：home 里的 `pnpm-workspace.yaml` 会整份盖掉全局，不合并。** 开新 home 时别建这个文件。
 
+**坑：装完的 home 不能改名。** pnpm 在 Windows 上用 junction 链接包，目标是**绝对路径**，目录一改名
+链接全断，症状是 `Cannot find module '@godcreator02/gwb-xxx'`，而 `pnpm install` 会说
+「Already up to date」不重建。真要换名（比如把验通的 home 顶成 `default`），改完名删掉它的
+`node_modules` 再 `pnpm install`（有锁文件，两秒）。2026-09-09 换 default 时撞的。
+
 **不许走「直接读件仓源码」的近路。** 把件仓（`D:\unitfolders\26090709qzp\gwb-base-plugins`）
 里的目录 `pnpm add` 成 link 只在契约实验期间允许，验发版的时候必须从 registry 装——`exports`
 漏一个子路径、`files` 少带一个目录，在近路上都不显形，装出来才炸。
