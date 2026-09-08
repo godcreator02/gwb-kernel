@@ -10,3 +10,10 @@ dist/
 
 # ZCode 与 .claude/skills 共享用的 junction（本机重建：cmd /c mklink /J .agents\skills <仓根>\.claude\skills）
 .agents/
+
+# 工作台 MCP 连接串：token 是本机凭据且按 home 走，换机器换 home 都不同，入库对谁都没用
+.zcode/config.json
+
+# 实机验证的现场：隔离 home 与解包出来的件，跑完即废
+.tmp-probe/
+.tmp-theme-verify/
