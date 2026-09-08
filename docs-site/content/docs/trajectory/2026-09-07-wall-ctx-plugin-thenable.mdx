@@ -4,9 +4,16 @@ born-at: 2026-09-07T10:40
 type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: thenable 陷阱
-domain: 宿主
+domain: 主进程
 ---
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="376-382" */}
-
 **症状**：`ctx.loader` 是 `undefined`，报 `Cannot read properties of undefined (reading 'await')`。
+
+这条墙在单进程线上原样活着：`main()` 里挂 loader 还是那一行 await（2026-09-09 抄自
+`apps/desktop/src/main.ts`，快照不是钉码）：
+
+```ts
+await ctx.plugin(Loader, {})
+```
+
+讲解现状的页在[取址](/docs/kernel/loading)。

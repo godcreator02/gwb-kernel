@@ -7,7 +7,8 @@ label: 两种格式
 domain: 主进程
 ---
 
-日志出口改成「四路各自结构化、正文投两处」之后，**第一次实机起来看日志文件就撞见了**：
+**过去的机制**：日志出口是「四路各自结构化、正文投两处」（stderr 进文件、fd3 进窗格）。
+**第一次实机起来看日志文件就撞见了**：
 
 ```
 18:36:32.897 I host up，dataDir=…，条目 1/1
@@ -19,6 +20,18 @@ domain: 主进程
 
 **为什么**：「一行长什么样」被写在了三个地方。四路合流这件事天然会引出这个问题——每加一路，就多一个人决定这一行怎么拼。
 
-**修**：抽一个 `formatLogLine` 放进两头共用的协议文件，四路都走它；渲染层里那几处手写的 `[renderer] ` 前缀删掉——有了结构化的 `name` 字段之后，那是重复信息。
+**修**：抽一个 `formatLogLine` 放进两头共用的协议文件（`shared/protocol.ts`，现已删），四路都走它；渲染层里那几处手写的 `[renderer] ` 前缀删掉——有了结构化的 `name` 字段之后，那是重复信息。当时的形状：
 
-{/* ref file="../apps/desktop/src/shared/protocol.ts" lines="84-92" */}
+```ts
+/** `HH:mm:ss.SSS`。四路合流之后「谁先谁后」是最常问的问题，秒级分不开 */
+export function formatLogLine(line: LogLine): string {
+  return `${clock(line.ts)} ${LEVEL_MARK[line.level]} ${line.name} ${line.msg}`
+}
+```
+
+## 2026-09-09：随两进程线退役
+
+四路并成三路、全走同一个 exporter 之后，**「一行长什么样」只剩一个地方**：`main.ts` 里
+那个 exporter 把正文交给 cordis 自己的 `Logger.format` 拼前缀、`say` 补 ISO 时间戳——
+没有第二个人在拼行，这个问题失去了发生的结构。「一行只许一处拼」的教训仍在：将来谁往
+出口上再加一路（比如某个件自己抢着落盘），先看这面墙。

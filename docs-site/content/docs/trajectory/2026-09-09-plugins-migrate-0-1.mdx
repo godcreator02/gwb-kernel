@@ -1,0 +1,44 @@
+---
+title: 十二件与仓外六件迁 0.1 并发版；日常 default home 重建
+born-at: 2026-09-09
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 件迁 0.1
+domain: 件仓
+---
+
+## 背景
+
+内核换成了单进程、契约面换成 0.1（`gwbKernel` 只剩 `dataDir`/`emit`/`setShell`，窗格注册
+自报 `client`/`style`，日志管道归日志件，`kernel.info`、`appVersion`、`install` 全没了）。
+件仓十二件（commands、shell、logger、settings、data、skills、theme、plugins、mcp、
+node-cli、py-cli、hello）加散在件仓外的六件，全部对着旧契约写的。
+
+## 结论与边界
+
+**一起发 0.1.0 并发版**：件仓十二件与仓外六件同步迁到 0.1 契约、对齐发版——不搞
+「兼容期」「双契约」。日常那个 default home 按新契约**重建**，原来的数据搬进去。人拍板
+（2026-09-09）。契约变化的全表与件仓自己的验证记录，见件仓文档站的决策页
+（`26090709qzp/gwb-base-plugins/docs-site/content/docs/decisions.mdx` 的 2026-09-09 条）——
+跨仓钉不了码，正本在那边。
+
+## 否掉的候选
+
+- **留在旧契约、等旧内核**——旧内核已不是运行环境，不迁就是对死宿主写代码
+- **发 0.0.x 兼容版过渡**——两套契约并存的窗口期里，「哪个件对着哪个内核」说不清，
+  错配的症状全是运行期的；一次切换、没有窗口期
+
+## 依据
+
+**改动面小到不值得兼容**：源码一行没动的有六件（commands、node-cli、py-cli、data、
+settings、skills）；要动的集中在契约表那几处——窗格件全体加自报地址、shell 加
+`setShell` 与 `shell.env`、logger 改成自己挂 exporter。实机验收（CDP 取证）：五格窗格
+全部自报 `client` 与 `style`、十二条条目全 `active`、两条 CLI 退出码 0、
+`plugins.shared` 认出两个共享包、页面 console 800 毫秒内进日志格。
+
+## 代价与遗留
+
+- **发版潮**：一次 0.1.0 × 十八件，registry 上旧版本成为死版本（不撤，佚版留档）
+- **default home 重建**：旧 home 的数据（settings、data 件的落盘）搬入新 home；装过的
+  旧前缀包不搬（见[旧线退役](/docs/trajectory/2026-09-09-retire-old-line)）
+- 件仓的 `gwb-plugin-dev` skill 与它 docs-site 里提旧面的段落，由件仓自己按同一张表追

@@ -7,8 +7,31 @@ label: external 被盖
 domain: 构建
 ---
 
-{/* ref file="../apps/desktop/electron.vite.config.ts" lines="11-21" */}
+**过去的机制**：构建走 electron-vite。两个入口（GUI 主进程＋纯 node 宿主）非得显式给
+`input` 不可，于是必须写 `rollupOptions`——而显式一写，`externalizeDepsPlugin` 注入的
+external 整个失效，要自己补。当时的解法是不用那个插件、从 `package.json` 现读依赖表自己
+判——加依赖不必回来改这里，也就不会漏：
 
-而两个入口非得显式给 `input` 不可。所以不用那个插件，改成从 `package.json` 现读依赖表自己判——加依赖不必回来改这里，也就不会漏。
+```ts
+const manifest = JSON.parse(fs.readFileSync(path.join(here, 'package.json'), 'utf8')) as {
+  dependencies?: Record<string, string>
+}
+const deps = Object.keys(manifest.dependencies ?? {})
+
+function external(source: string): boolean {
+  if (source === 'electron' || source.startsWith('node:')) return true
+  return deps.some((dep) => source === dep || source.startsWith(`${dep}/`))
+}
+
+// main.build.rollupOptions = { input: { index: 'src/main/index.ts', host: 'src/host/main.ts' }, external, … }
+```
 
 **症状**：cordis 被整个内联进宿主束，`host.mjs` 从 2KB 涨到 51.6KB，而构建一声不吭。
+
+## 2026-09-09：随两进程线退役
+
+electron-vite 连同这份配置整个删了——宿主入口没了，构建就是 `tsc` 直出 `dist/`，没有束、
+没有 external、「依赖被内联」这个问题失去了发生的位置（这条准备工作的余荫是：源码的
+import 从来没依赖过任何东西被内联，换任何构建方式都不疼）。教训本身（构建器隐式注入的
+东西会被显式配置整个盖掉，且不吭声）仍然成立——将来真到打包那天，重新拿 electron-builder
+与 Forge 各试一次时记得它。

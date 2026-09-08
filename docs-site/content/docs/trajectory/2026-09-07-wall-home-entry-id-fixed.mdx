@@ -4,11 +4,17 @@ born-at: 2026-09-07T10:40
 type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: id 写死 home
-domain: 宿主
+domain: 主进程
 ---
-
-{/* ref file="../apps/desktop/src/host/main.ts" lines="25-26" */}
 
 条目 id 有层级（`<父>:<子>`）。不写死的话父 id 是随机的（`d9509601`），所有件的 id 跟着变成 `d9509601:shell`，**每次启动都不一样**——外壳按 panel id 存的布局就全对不上。
 
 另一条 API 细节：`create()` 回的是**全路径 id**，而 `remove()` / `resolve()` 只认树内的**局部 id**。拿全路径去 remove 会报 `cannot resolve entry`。
+
+机制原样活在单进程线上。今天的代码（2026-09-09 抄自 `apps/desktop/src/main.ts`，快照不是钉码）：
+
+```ts
+await ctx.loader.root.update([{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }])
+```
+
+讲解这机制的现状页在[取址](/docs/kernel/loading)。

@@ -15,6 +15,11 @@ domain: 条目表
 
 判据得是 `fiber?.state === FiberState.ACTIVE`。**那是个 `const enum`**，`isolatedModules` 下 import 不进来，只能照抄字面量 `2` 并在注释里说明。
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="192-196" */}
-
 修完之后启动日志会诚实一些：以前永远是 `条目 5/5`，现在有件在等依赖时会显示 `2/4`，而且每条后面写着「挂上」还是「没挂」。
+
+## 2026-09-09：内核侧的实现随两进程线退役
+
+当时判 `ok` 的代码（`host/main.ts` 的条目表汇总）连同 `kernel.info` 命令一起删了——内核
+不再对外报条目表。cordis 语义那半条教训**仍然成立且有人接**：fiber 存在 ≠ ACTIVE，「挂
+上了」永远判 `fiber.state === ACTIVE`；现在用它的（谁挑件、谁看条目树）是外壳件与条目树
+API（`ctx.loader`，见[取址](/docs/kernel/loading)），正本在件仓。

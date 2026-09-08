@@ -1,0 +1,38 @@
+---
+title: Electron ESM 主进程不能顶层 `await app.whenReady()`——互相等死
+born-at: 2026-09-09
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: ready 顶层等
+domain: 主进程
+---
+
+## 现场与症状
+
+单进程重构第一晚撞的：`main.ts` 顶层写 `await app.whenReady()`，整个进程**静默挂住**——
+没有报错、没有窗口、没有日志。原因：Electron 的 `ready` 事件要等入口模块求值完才发，
+模块顶层等 ready、ready 等模块，**互相等死**。CJS 时代这个写法能活（`require` 完成即
+算求值完），ESM 主进程不行。
+
+## 修法
+
+启动体不 `await`，挂进 `.then(main)`；`main()` 里抛什么都在 `.catch` 里走 `say` 落
+stderr 与 `<home>/gwb.log`，再 `app.exit(1)`——起不来也得让人看见死因。当时代码长这样
+（2026-09-09 抄自 `apps/desktop/src/main.ts` 196–203 行，**快照不是钉码**；机制原样
+活着，活口径钉在[载体](/docs/kernel/processes)页）：
+
+```ts
+// 不能顶层 await：Electron 的 ready 要等入口模块求值完才发，顶层等 ready 就互相等死
+void app
+  .whenReady()
+  .then(main)
+  .catch((err: unknown) => {
+    say('error', 'kernel', `起不来：${stackOf(err)}`)
+    app.exit(1)
+  })
+```
+
+## 它拦住了什么
+
+「静默挂住」是最危险的失败形态：一切看起来都只是慢。AGENTS.md 把这条列进「撞过的墙」
+并写着**别改回去**——将来任何人把启动改回顶层 await，症状不会是报错，是没动静。

@@ -4,11 +4,18 @@ born-at: 2026-09-07T10:40
 type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: builtins 条目
-domain: 宿主
+domain: 主进程
 ---
-
-{/* ref file="../apps/desktop/src/host/main.ts" lines="379-381" */}
 
 `include` 住应用依赖树，而 baseUrl 指着 home——按裸名找不到它。loader 的 `import()` 对 `cordis:` 前缀的名字直接从 `builtins` 表取、不经模块解析，所以挂 `builtins.include` 再用 `cordis:include` 引它。
 
 **做成条目而不是 `ctx.plugin(Include)`**：这样它的子树挂在 loader 树上，条目表、fiber 状态、热挂卸全在一棵树里，外面只认 `ctx.loader` 一个入口。直接 `ctx.plugin` 的话它是根上的一个普通插件，`walkEntries` 走不到它读出来的条目。
+
+机制原样活在单进程线上。今天的代码（2026-09-09 抄自 `apps/desktop/src/main.ts`，快照不是钉码）：
+
+```ts
+ctx.loader.builtins.include = Include
+await ctx.loader.root.update([{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }])
+```
+
+讲解这机制的现状页在[取址](/docs/kernel/loading)。

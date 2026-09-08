@@ -7,8 +7,28 @@ label: 越界不认
 domain: 取址
 ---
 
-{/* ref file="../apps/desktop/src/shared/entries.ts" lines="87-95" */}
+**过去的机制**：`gwb://` 要替页面读包里的文件，就得防着清单把入口指到包外。`shared/entries.ts`（现已删）的 `resolvePlugin` 里有这一层唯一的一条判断：
+
+```ts
+/** 包名 → 入口文件绝对路径。查不到是正当结果 */
+export function resolvePlugin(name: string, siteDir: string, subpath = '.'): string | undefined {
+  const dir = pluginDir(name, siteDir)
+  const rel = entryFile(dir, subpath)
+  if (rel === undefined) return undefined
+  const file = path.resolve(dir, rel)
+  // 越界检查：入口指到包目录外一律不认
+  if (file !== dir && !file.startsWith(dir + path.sep)) return undefined
+  return fs.existsSync(file) ? file : undefined
+}
+```
 
 认了它，**一个包就能让内核读任意文件**。这是这一层唯一的一条判断——其余的候选名补全、位表、完整 exports 条件语义、realpath 实体化，母仓都有，这里都没有。
 
-顺带说明这半为什么还留着：挂载归 loader 了，但**主进程**的 `gwb://` 要把件的 `client.js` 交给页面，得知道包在哪，而 loader 跑在宿主子进程里，主进程够不着。
+这半为什么当年还留着：挂载归 loader 了，但**主进程**的 `gwb://` 要把件的 `client.js` 交给页面，得知道包在哪，而 loader 跑在宿主子进程里，主进程够不着。
+
+## 2026-09-09：随两进程线退役
+
+`resolvePlugin`、`entryFile` 连同 `shared/entries.ts` 整个删了——`gwb://` 没了，内核不再
+替页面读任何包里的文件：件的浏览器半地址是件**自己**从 `import.meta.url` 算出来的，页面
+加载的是件自己的模块，「内核按包名查盘上文件」这个能力连同它的越界风险一起不存在了。
+教训（替别人读文件就要防越界，且防线只留一条、放在真正挡事的位置）仍然成立。

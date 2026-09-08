@@ -7,8 +7,6 @@ label: stderr EPIPE
 domain: 主进程
 ---
 
-{/* ref file="../apps/desktop/src/main/logs.ts" lines="61-70" */}
-
 ## 现场
 
 实机压测渲染层那一路（一次灌 120 条 `console.log`）时，主进程弹「A JavaScript error
@@ -23,10 +21,23 @@ occurred in the main process: EPIPE: broken pipe, write」然后停摆。栈：
 ## 修法
 
 模块顶层给 `process.stderr.on('error', () => {})` 挂一次吞咽。stderr 没人读就断腕，
-缓冲与窗格那两投照旧。不放 `emit` 里逐次挂——同一流上重复 `on` 会把监听器堆起来。
+其余投照旧。不放 `emit` 里逐次挂——同一流上重复 `on` 会把监听器堆起来。
 
 ## 它拦住了什么
 
-修的是「诊断通道死了还带走病人」：stderr 只该是日志三投里可能缺席的一投，不该是能把
+修的是「诊断通道死了还带走病人」：stderr 只该是日志几投里可能缺席的一投，不该是能把
 进程打死的雷。验证：同一压测（120 条渲染层日志灌入、stderr 对端已断）修复前必弹窗，
 修复后全部照常进缓冲与窗格。
+
+## 2026-09-09：机制原样活在单进程线上
+
+今天它的住处在 `main.ts` 末段（51–52 行；快照不是钉码）：
+
+```ts
+// stderr 对端断了（无终端起）每写一次抛一次 EPIPE，吞掉，文件那投照旧
+process.stderr.on('error', () => {})
+```
+
+「几投」从三投缩成两投（stderr、文件），两头都在 `say` 里；旧线的缓冲与窗格那两投随日志
+管道退役了，但「无终端起」的场景还在——`run.cmd` 从计划任务或双击起时 stderr 就是断的。
+讲解现状的页在[日志](/docs/kernel/logs)。

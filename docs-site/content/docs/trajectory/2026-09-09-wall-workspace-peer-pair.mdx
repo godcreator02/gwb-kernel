@@ -1,0 +1,28 @@
+---
+title: 'workspace 里 `autoInstallPeers: false` 与 `linkWorkspacePackages: true` 是一对'
+born-at: 2026-09-09
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: workspace 两开关
+domain: 主进程
+---
+
+## 现场与症状
+
+把 registry 上的件装进 home 时**当场失败**。件的 `peerDependencies` 声明着
+`gwb-commands >=0.0.1`，而 pnpm 工作区配置里 `linkWorkspacePackages: true`——它发现
+工作区里有 `gwb-commands` 这个包（还没发过版的那个），拿它去满足 peer；配置里又是
+`autoInstallPeers: false`，不自动补装——两条撞在一起，装包直接死。
+
+## 修法
+
+`pnpm-workspace.yaml` 里把这对开关配死（`autoInstallPeers: false` ＋
+`linkWorkspacePackages: true`），让工作区链接与 peer 补装的行为可预期。这组配置是撞
+出来的，不是查文档配的——所以记在这儿：将来任何人在工作区里加包、或改这两个开关，
+先想起这面墙。
+
+## 它拦住了什么
+
+两个 pnpm 开关各自合理、组合起来才咬人，而且咬人的现场（「刚发的包装不进去」）离
+真因（「工作区里有个没发版的同名包被拿去满足 peer」）很远。AGENTS.md「撞过的墙」里
+有它的一句话版；这卡记全貌。

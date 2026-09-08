@@ -4,9 +4,31 @@ born-at: 2026-09-07T10:40
 type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: 早 provide
-domain: 宿主
+domain: 主进程
 ---
 
-{/* ref file="../apps/desktop/src/host/main.ts" lines="376-377" */}
-
 件一挂上就要取得到。晚一步的症状是第一批件全都读到 `undefined`。
+
+单进程重构后这条约束**从纪律变成了结构**：`provide` 发生在模块顶层、挂 loader 发生在
+`main()` 里——而 `main()` 只在 `app.whenReady().then` 回调里跑，怎么排都晚于模块求值。
+「晚一步」失去了一切写法上的可能。今天的代码长这样（2026-09-09 抄自 `apps/desktop/src/main.ts`，
+**是快照不是钉码**——轨迹区不定钉码，下面同）：
+
+```ts
+const kernel: GwbKernelApi = {
+  dataDir,
+  emit: (payload) => win?.webContents.send('gwb:event', payload),
+  setShell: (url) => {
+    shellUrl = url
+    win?.webContents.send('gwb:shell', shellMessage())
+    return () => {
+      if (shellUrl !== url) return
+      shellUrl = null
+      win?.webContents.send('gwb:shell', shellMessage())
+    }
+  },
+}
+ctx.provide('gwbKernel', kernel)
+```
+
+论断的活口径钉在[取址](/docs/kernel/loading)页——那页的黄就是这张卡该复核的信号。

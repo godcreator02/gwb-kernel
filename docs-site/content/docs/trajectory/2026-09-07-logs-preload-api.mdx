@@ -54,3 +54,11 @@ window.gwb = {
 **窗格件从此有一样东西不从 `args` 来。** `mountPane` 只给 `{ host, shell, pane }`，而日志窗格要伸手去够 `window.gwb`——这是个先例，将来会有人照着办。所以话要说死：`window.gwb` 是**页面的公共面**（谁在这页上跑都够得着），`args` 是**外壳给窗格的额外便利**，两者不是替代关系。**外壳不该转发日志**——它凭什么认识「日志」。
 
 第二笔：preload 多两个口，将来打包与沙箱那边多两处要顾。
+
+## 2026-09-09：随两进程线退役
+
+`window.gwb` 上的 `logs.backlog()` 与 `logs.on()` 删了，面缩回三个函数
+（`command` / `on` / `onShell`）——页面上看日志走 `on` 订 `gwb-logger` 件推的那路
+（它经 `gwbKernel.emit` 走的就是 `gwb:on` 这条通用通道）。本卡记下的先例仍然成立：
+**窗格可以伸手够 `window.gwb`，那是页面的公共面；外壳不该转发日志**，见
+[浏览器那半](/docs/plugins/client)。

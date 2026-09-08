@@ -1,15 +1,13 @@
 ---
-title: 全新 home 起不来——`include` 读不到 `cordis.yml` 会把宿主整个搞挂
+title: 全新 home 起不来——`include` 读不到 `cordis.yml` 会把整个启动搞挂
 born-at: 2026-09-07T14:27
 type: evidence
 parent: [2026-09-07-gwb-kernel]
 label: 新 home 起不来
-domain: 宿主
+domain: 主进程
 ---
 
-{/* ref file="../apps/desktop/src/host/home.ts" lines="22-37" */}
-
-**症状**：一个全新的 home 首启，宿主 `exit 1`，日志里是一条未捕获的 promise rejection：
+**症状**：一个全新的 home 首启，进程 `exit 1`，日志里是一条未捕获的 promise rejection：
 
 ```
 Error: config file not found: …\homes\boot-2609070610\cordis.yml
@@ -23,4 +21,20 @@ Error: config file not found: …\homes\boot-2609070610\cordis.yml
 
 **修**：`ensureHome` 把 home 建成**起得来**的最小形态——包清单 + 一份空条目表 `[]`。空表才是「一个件都没装」的正当表达。
 
-**它每次启动都跑，不只首启**：两样各自判在不在、幂等。只在首启补的话，有人手工删掉 `cordis.yml` 之后就再也起不来了，而那个失败同样是宿主整个退出。
+**它每次启动都跑，不只首启**：两样各自判在不在、幂等。只在首启补的话，有人手工删掉 `cordis.yml` 之后就再也起不来了。
+
+这条墙在单进程线上原样活着：`include` 读不到文件的错现在落进 `main()` 的 catch，写一句「起不来」然后 `app.exit(1)`——失败形状从「宿主退出」变成「整趟退出」，本质没变。`ensureHome` 缩成两件套（README 铺家删了），实现搬进 `main.ts`（2026-09-09 抄自 33–41 行，快照不是钉码）：
+
+```ts
+/** home 起得来的最小形态：包清单、空条目表。缺哪样补哪样，不覆盖 */
+fs.mkdirSync(dataDir, { recursive: true })
+for (const [file, content] of [
+  ['package.json', '{\n  "name": "gwb-home",\n  "private": true\n}\n'],
+  ['cordis.yml', '[]\n'],
+] as const) {
+  const target = path.join(dataDir, file)
+  if (!fs.existsSync(target)) fs.writeFileSync(target, content)
+}
+```
+
+讲解现状的页在[安家](/docs/kernel/home)。
