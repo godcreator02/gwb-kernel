@@ -22,6 +22,19 @@ protocol.registerSchemesAsPrivileged([
   },
 ])
 
+// 渲染层的滚动条定制只认 ::-webkit-scrollbar 那套伪元素——Chromium 121 起在 Windows 上
+// 默认启用 Fluent 滚动条，那套伪元素整个失效（CDP 探针实测：页面写了 width:8px，探针
+// 滚动条量出来还是原生 15px）。关掉 Fluent 回 classic，细圆条、无箭头、轨道全程可滚
+// 才做得到。标准属性 scrollbar-width/color 是另一条路，但关不掉 Windows 原生条的
+// 上下箭头，不作数。
+app.commandLine.appendSwitch('disable-features', 'FluentScrollbar,OverlayScrollbar')
+
+// 调试通道常开（打包版不开）：CDP 在 9222，gwb-test skill 第六节的取证路子——node 连上
+// Runtime.evaluate 量页面。GWB_REMOTE_DEBUG_PORT 可换端口。
+if (!app.isPackaged) {
+  app.commandLine.appendSwitch('remote-debugging-port', process.env.GWB_REMOTE_DEBUG_PORT ?? '9222')
+}
+
 /**
  * 用哪个 home，`GWB_HOME` 说了算，不给就是 `default`。
  * 名字要能当目录名——不卡住的话 `GWB_HOME=../../x` 就跳出 homes/ 了。
@@ -102,6 +115,7 @@ void app
       logDir,
       version: app.getVersion(),
       onEvent: (payload) => win?.webContents.send('gwb:event', payload),
+      onHostExit: (code) => win?.webContents.send('gwb:host-exit', code),
     })
     await createWindow()
   })

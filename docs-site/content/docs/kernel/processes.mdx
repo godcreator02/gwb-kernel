@@ -15,11 +15,11 @@ description: 宿主怎么被拉起来、fd3 是哪条管、窗口为什么必须
 
 主进程先算出 home 目录，然后**先拉宿主、后开窗**——渲染层起步第一句话就是向内核要 `kernel.info`，宿主不在，那句话没人答。
 
-{/* ref file="../apps/desktop/src/main/host-process.ts" lines="34-45" */}
+{/* ref file="../apps/desktop/src/main/host-process.ts" lines="36-47" */}
 
 `ELECTRON_RUN_AS_NODE=1` 把 electron 二进制当纯 node 使——宿主不需要 Chromium，要的是一个干净的 node。`--expose-internals` 不是装饰：cordis 的 loader 在有 node 内部 ESM loader 的场合会用它，而主进程的 `NODE_OPTIONS` 白名单拒绝这个 flag，所以只能挂在 spawn 参数上。
 
-stdio 开四条管道，第四条（fd3）是协议上行的专用管。宿主退出时主进程在日志里补一条「宿主退出（code=…）」——**宿主没法报告自己的死亡**，那一行只能由活着的这边写。
+stdio 开四条管道，第四条（fd3）是协议上行的专用管。宿主退出时主进程在日志里补一条「宿主退出（code=…）」——**宿主没法报告自己的死亡**，那一行只能由活着的这边写。写完顺带经 `gwb:host-exit` 给渲染层捎一句，窗口里那页好把整页换成崩溃页（判据与界线见[崩溃页](/docs/trajectory/2026-09-08-crash-page)）。
 
 ## fd1 留给人看
 
@@ -35,8 +35,8 @@ stdio 开四条管道，第四条（fd3）是协议上行的专用管。宿主�
 
 ## 窗口必须由内核开
 
-即使将来把窗口的尺寸、标题、关窗语义都交出去，`BrowserWindow` 这个动作本身仍留在内核——**在件挂上之前就得有一扇窗让页面加载**。这条有个不显然的推论：「窗口里画什么」倒是完全归件的，内核自己一行界面代码都没有，所以「一个件都没装」的窗口就是白的（出路见[刻意不做什么](/docs/not-doing)）。
+即使将来把窗口的尺寸、标题、关窗语义都交出去，`BrowserWindow` 这个动作本身仍留在内核——**在件挂上之前就得有一扇窗让页面加载**。这条有个不显然的推论：「窗口里画什么」归件——内核自己只画一样：外壳还没上来时的已装清单（[阶段页](/docs/trajectory/2026-09-08-stage-page)），除此之外一行界面都没有。
 
 ## 窗的安全位
 
-`contextIsolation: true`、`sandbox: false`——后者是因为 preload 用的是 ESM。页面上内核只放一个 `window.gwb`（四个函数，见[浏览器那半](/docs/plugins/client)），其余什么都不注。
+`contextIsolation: true`、`sandbox: false`——后者是因为 preload 用的是 ESM。页面上内核只放一个 `window.gwb`（五个函数，见[浏览器那半](/docs/plugins/client)），其余什么都不注。

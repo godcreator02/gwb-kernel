@@ -48,15 +48,19 @@ export function entryFile(pkgDir: string, subpath = '.'): string | undefined {
 /**
  * 包声明的 `gwb.shared`：裸名 → 本包的 exports 子路径，「我给页面提供这几个裸名」。
  * 盘上的清单谁都能手改，逐条宽容：站不住的那条剔掉，别让一条坏声明废掉整包。
+ *
+ * **空对象原样返回，不当 undefined**：`gwb.shared: {}` 是共享基础设施的自报身份
+ * （比如只出 theme.css 的令牌表——没有裸名可给，但「我是共享包」这件事由它自己说了算），
+ * kernel.info 的 sharedPkgs 靠它把这些包认出来。
  */
 function readShared(raw: unknown): Record<string, string> | undefined {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined
   const out: Record<string, string> = {}
-  for (const [bare, sub] of Object.entries(raw as Record<string, unknown>)) {
+  for (const [bare, sub] of Object.entries(raw)) {
     if (bare === '' || typeof sub !== 'string' || sub === '') continue
     out[bare] = sub
   }
-  return Object.keys(out).length === 0 ? undefined : out
+  return out
 }
 
 /**

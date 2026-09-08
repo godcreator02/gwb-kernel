@@ -280,16 +280,26 @@ function homeDependencies(): string[] {
 }
 
 /**
- * 收齐 home 里各包声明的运行时环境：裸名 → 哪个包的哪个子路径。
- * 一个裸名只许一个提供方——撞了的报出来，不静默让谁赢（浏览器那边后来的本来也覆盖不掉，
- * 静默的下场是页面上跑的是哪一份说不清）。内核全程不认识 react 这类名字，只搬运声明。
+ * 收齐 home 里各包声明的运行时环境：裸名 → 哪个包的哪个子路径。一个裸名只许一个提供方——
+ * 撞了的报出来，不静默让谁赢（浏览器那边后来的本来也覆盖不掉，静默的下场是页面上跑的
+ * 是哪一份说不清）。内核全程不认识 react 这类名字，只搬运声明。
+ *
+ * **空声明也算声明**：`gwb.shared` 写 `{}` 的包没有裸名可给，但「我是页面级共享基础
+ * 设施」这件事由它自己说了算——sharedPkgs 收的就是这一类，界面据此把它们归进「共享包」
+ * 栏目，不跟待挂条目的件混在一处。
  */
-function collectShared(): { shared: Record<string, { pkg: string; sub: string }>; conflicts: string[] } {
+function collectShared(): {
+  shared: Record<string, { pkg: string; sub: string }>
+  conflicts: string[]
+  sharedPkgs: string[]
+} {
   const shared: Record<string, { pkg: string; sub: string }> = {}
   const conflicts: string[] = []
+  const sharedPkgs: string[] = []
   for (const pkg of homeDependencies()) {
     const declared = pluginMeta(pluginDir(pkg, siteDir))?.shared
     if (declared === undefined) continue
+    sharedPkgs.push(pkg)
     for (const [bare, sub] of Object.entries(declared)) {
       const prev = shared[bare]
       if (prev !== undefined) {
@@ -299,13 +309,13 @@ function collectShared(): { shared: Record<string, { pkg: string; sub: string }>
       shared[bare] = { pkg, sub }
     }
   }
-  return { shared, conflicts }
+  return { shared, conflicts, sharedPkgs }
 }
 
 /** 内核自省口 */
 function kernelInfo(): unknown {
   const entries = walkEntries()
-  const { shared, conflicts } = collectShared()
+  const { shared, conflicts, sharedPkgs } = collectShared()
   return {
     ok: true,
     data: {
@@ -315,10 +325,12 @@ function kernelInfo(): unknown {
       logDir,
       appVersion,
       entries,
-      /** 界面根交给哪个包。没有外壳就是 null，渲染层据此留白 */
+      /** 界面根交给哪个包。没有外壳就是 null，渲染层据此摆阶段页（已装清单） */
       shellPkg: shellPackage(),
       shared,
       sharedConflicts: conflicts,
+      /** 声明了 gwb.shared 的包（含空声明）。界面据此分出「共享包」栏目 */
+      sharedPkgs,
     },
   }
 }
@@ -390,7 +402,7 @@ void bootLoader()
     log.info(`up，dataDir=${dataDir}，条目 ${entries.filter((e) => e.ok).length}/${entries.length}`)
     for (const e of entries) log.info(`  ${e.ok ? '挂上' : '没挂'} ${e.id}（${e.pkg}）`)
     /**
-     * 一个件都没装的那一刻——窗口是全白的，而那时还没有任何件能在界面上说话，
+     * 一个件都没装的那一刻——阶段页上也只有「还没有装任何件」一句，解释不了怎么装，
      * **这句日志与 home 里那张纸条是仅有的两条出路**。
      *
      * 剔掉内核自己那条 include 条目才是「装了几个件」：`walkEntries` 数得进它。
@@ -399,7 +411,7 @@ void bootLoader()
       log.warn(`${CONFIG_NAME} 里一条条目都没有，一个件都没装。怎么装见 ${path.join(dataDir, README_NAME)}`)
     }
     const shell = shellPackage()
-    log.info(`外壳：${shell ?? '（没有件 provide gwbShell，界面会留白）'}`)
+    log.info(`外壳：${shell ?? '（没有件 provide gwbShell，界面先给阶段页）'}`)
     send({ t: 'ready' })
   })
   .catch((err: unknown) => {

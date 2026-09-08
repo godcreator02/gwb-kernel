@@ -8,11 +8,16 @@ dist/
 .claude/hooks/__pycache__/
 .claude/settings.local.json
 
+# 项目级 settings：里面四条 hook 命令写死本机 .venv 的绝对路径（换机器、改仓名都会失效），
+# 入库对谁都没用。hook 脚本本身入库，settings 照 bootstrap.ps1 的说明本机重写一份
+.claude/settings.json
+
 # ZCode 与 .claude/skills 共享用的 junction（本机重建：cmd /c mklink /J .agents\skills <仓根>\.claude\skills）
 .agents/
 
-# 工作台 MCP 连接串：token 是本机凭据且按 home 走，换机器换 home 都不同，入库对谁都没用
-.zcode/config.json
+# ZCode 的本机现场：config.json 是工作台 MCP 连接串（token 是本机凭据且按 home 走，
+# 换机器换 home 都不同），plans/ 是按 session 落的一次性方案草稿。整个目录都不入库
+.zcode/
 
 # 实机验证的现场：隔离 home 与解包出来的件，跑完即废
 .tmp-probe/

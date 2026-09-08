@@ -1,0 +1,32 @@
+---
+title: stderr 管道断了还能炸掉主进程——挂一次 error 监听
+born-at: 2026-09-08T15:15
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: stderr EPIPE
+domain: 主进程
+---
+
+{/* ref file="../apps/desktop/src/main/logs.ts" lines="61-70" */}
+
+## 现场
+
+实机压测渲染层那一路（一次灌 120 条 `console.log`）时，主进程弹「A JavaScript error
+occurred in the main process: EPIPE: broken pipe, write」然后停摆。栈：
+`console-message → rendererLog → emit → process.stderr.write`。
+
+`emit` 一处两投的 stderr 那一投，写的是一条**管道**。管道对端会断：后台无终端起（stderr
+接着的收集进程退了）、终端被关，都是现场。对端一断，此后**每条日志**的 write 都抛 EPIPE；
+流上没有 `error` 监听，它就是未捕获异常——**一条日志就能让主进程弹窗停摆**，而日志恰恰
+是「出事的时候最不能缺席的东西」。
+
+## 修法
+
+模块顶层给 `process.stderr.on('error', () => {})` 挂一次吞咽。stderr 没人读就断腕，
+缓冲与窗格那两投照旧。不放 `emit` 里逐次挂——同一流上重复 `on` 会把监听器堆起来。
+
+## 它拦住了什么
+
+修的是「诊断通道死了还带走病人」：stderr 只该是日志三投里可能缺席的一投，不该是能把
+进程打死的雷。验证：同一压测（120 条渲染层日志灌入、stderr 对端已断）修复前必弹窗，
+修复后全部照常进缓冲与窗格。

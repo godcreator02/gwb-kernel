@@ -22,6 +22,10 @@ pnpm exec electron-vite build
 home 自动建在 `%APPDATA%\gwb-kernel\homes\<名>\`，**不用先创建**。不给 `GWB_HOME` 就是
 `default`——那是日常那份，**别拿它验东西**。
 
+日常 home 活着且装了 devkit 的话，这四步可以命令化：`devkit.home.new`（开新＋默认
+build）、`home.list` / `home.open` / `home.stop` / `home.rm`。**手工这四步仍是正典**——
+还没有任何 home 活着时，命令化那半也起不来。
+
 **命名 `<被测件短名>-<yyMMddHHmm>`**：`data-2609070700`、`shell-2609071130`。这样列目录时
 同一个件的挨在一起、各自按时间排，正好是第五节清理时要的顺序。
 
@@ -102,5 +106,5 @@ Remove-Item $env:APPDATA\gwb-kernel\homes\<旧的> -Recurse -Force
 再用一段 node 脚本连 CDP 求值（`Runtime.evaluate`）。这条路子这条线上跑通过：注 importmap、
 量计算样式、切亮暗都验过。
 
-**日志在 `homes/<名>/gwb-kernel.log`**——跟着 home 走，所以测试 home 的日志天然是分开的。
+**日志在 `homes/<名>/logs/gwb.log`**——跟着 home 走，所以测试 home 的日志天然是分开的。
 主进程自己的、宿主 pipe 过来的、渲染层 `console-message` 转来的，三处都汇在这一份里。

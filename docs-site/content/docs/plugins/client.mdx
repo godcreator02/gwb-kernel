@@ -13,12 +13,13 @@ description: ./client、importmap、window.gwb、bootShell 与 mountPane——�
 
 ## `window.gwb`：页面的公共面
 
-{/* ref file="../apps/desktop/src/preload/index.ts" lines="10-28" */}
+{/* ref file="../apps/desktop/src/preload/index.ts" lines="10-34" */}
 
 | | 是什么 |
 | --- | --- |
 | `command(name, args?)` | 命令通道，走到宿主分发再原路回 |
 | `onEvent(cb)` | 件经 `gwbKernel.emit` 推上来的事件，回注销函数 |
+| `onHostExit(cb)` | 宿主退出的讣告（退出码），回注销函数——页面据此把整页换成[崩溃页](/docs/trajectory/2026-09-08-crash-page) |
 | `logs.backlog()` | 开机到此刻的日志条目（主进程那圈环形缓冲） |
 | `logs.on(cb)` | 之后的日志，**按批**推，回注销函数 |
 
@@ -51,9 +52,9 @@ export function bootShell(args, root) {
 }
 ```
 
-**回一个 `{ dispose }`**：件被卸载时页面上那棵树得有人拆。眼下渲染层还不会调它（它不感知条目变化），但契约先立着——将来要热换外壳时不必回头改所有外壳件。
+**回一个 `{ dispose }`**：件被卸载时页面上那棵树得有人拆。眼下没有谁单拆外壳——阶段页顶掉它是整页换血，犯不着先拆树——但契约先立着，将来要单拆时不必回头改所有外壳件。
 
-渲染层启动时问内核要 `kernel.info`，里头的 `shellPkg` 就是答案；**一个都没有就是留白**，原因进 console 分开说两种成因（一个件都没 provide，还是有件在等它的依赖）。
+渲染层启动时问内核要 `kernel.info`，里头的 `shellPkg` 就是答案；**一个都没有就摆阶段页**（已装清单，两秒一问，外壳上来就顶掉，见[阶段页](/docs/trajectory/2026-09-08-stage-page)），原因进 console 分开说两种成因（一个件都没 provide，还是有件在等它的依赖）。
 
 ### 窗格：`mountPane` 的契约正本住件仓
 
@@ -77,6 +78,10 @@ export function mountPane({ host, shell, pane }, container) {
 **注了不等于到位**：`<link>` 是异步取的，束里第一帧 DOM 完全可能落在表到位之前，那一瞬间是一堆没有样式的裸元素。等 `link.onload` 再渲染。
 
 件的样式整张 scope 在 `[data-gwb-plugin="<完整包名>"]` 之下，容器上不挂这个属性，一个类名都不生效。设计令牌（颜色、圆角那些 CSS 变量）全生态共享一份，件的表里只有 `var(--background)` 这样的引用——**换主题＝换那一份值，所有件当场跟着变，一个都不用重新构建**。
+
+字体也是令牌：`--gwb-font-sans` / `--gwb-font-mono` 声明在 gwb-tokens 那份表里，`body` 的字体规则落在 base 层——dockview、件的裸 HTML 这些不经工具类的 DOM 靠继承吃到；`font-sans` / `font-mono` 两个工具类经映射面解析到同一对变量。**改全局字体＝覆盖这两个变量，一处值，全场生效**。
+
+用户侧的现成入口是 gwb-theme 件（件仓）：「外观」格里收两项字体加一段自定义 CSS，输入即预览、保存落盘；重启后外壳 boot 经 `theme.startupCss` 把整段取走、注在令牌表**之后**——同特异性下靠文档序取胜，所以用户写 `:root { --background: … }` 能直接换全套配色。这条命令是**软契约**：命令名两边各存一份字符串，theme 没装时总线回「没有这条命令」，外壳跳过，谁也不欠谁。
 
 ## 组件
 

@@ -3,7 +3,7 @@
     "../apps/desktop/src/main/asset.ts:9-18": {
       "kind": "git",
       "blob": "c1a3fdf80268fa48c20333c0cca1200e47192a2e",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         9,
         18
@@ -15,7 +15,7 @@
     "../apps/desktop/src/shared/asset-url.ts:39-41": {
       "kind": "git",
       "blob": "505b41c664dec280331042cbea914617a26ccd05",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         39,
         41
@@ -44,7 +44,7 @@
     "../apps/desktop/src/main/log-file.ts:98-104": {
       "kind": "git",
       "blob": "2880ea4c934a487f1f0cc42117d720b952e15290",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         98,
         104
@@ -56,7 +56,7 @@
     "../apps/desktop/electron.vite.config.ts:11-21": {
       "kind": "git",
       "blob": "4580498dc778e2feb2266f6868d57f8efd8ebee2",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         11,
         21
@@ -68,7 +68,7 @@
     "../apps/desktop/src/main/log-file.ts:5-13": {
       "kind": "git",
       "blob": "2880ea4c934a487f1f0cc42117d720b952e15290",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         5,
         13
@@ -80,7 +80,7 @@
     "../apps/desktop/src/shared/protocol.ts:84-92": {
       "kind": "git",
       "blob": "15c6da0ca5896dd78c1dc788a3289816b9aef771",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         84,
         92
@@ -139,7 +139,7 @@
     "../apps/desktop/src/main/logs.ts:40-52": {
       "kind": "git",
       "blob": "9fd02b3ee6d4c5cea262810270c637dbed93cee1",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         40,
         52
@@ -175,7 +175,7 @@
     "../apps/desktop/src/preload/index.ts:10-28": {
       "kind": "git",
       "blob": "1246e250aeacba1b54c2f5c00ac3d419760ba7c4",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         10,
         28
@@ -199,7 +199,7 @@
     "../packages/gwb-plugin-api/src/index.ts:all": {
       "kind": "git",
       "blob": "6beef1721a00d07f5cd7c93f1000b89ac8eaa3a8",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         1,
         46
@@ -247,7 +247,7 @@
     "../apps/desktop/src/host/home.ts:22-37": {
       "kind": "git",
       "blob": "6d0b4c29a185d13dacf03d9c784b677f8872cc0a",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         22,
         37
@@ -307,7 +307,7 @@
     "../packages/gwb-plugin-api/src/index.ts:all": {
       "kind": "git",
       "blob": "6beef1721a00d07f5cd7c93f1000b89ac8eaa3a8",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         1,
         46
@@ -319,7 +319,7 @@
     "../apps/desktop/src/host/home.ts:12-37": {
       "kind": "git",
       "blob": "6d0b4c29a185d13dacf03d9c784b677f8872cc0a",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         12,
         37
@@ -331,7 +331,7 @@
     "../apps/desktop/package.json:16-18": {
       "kind": "git",
       "blob": "72535f38ff94eaae8ea6d24640c7d291b1ce7382",
-      "commit": "ed3ece385f9fed0a9772227567b6ef415579d1a1",
+      "commit": "dccd751893374641d3db41328292a0c1f54bb094",
       "lines": [
         16,
         18

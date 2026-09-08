@@ -40,13 +40,13 @@ pnpm check     # typecheck + oxlint + vitest,提交前跑
 ```
 
 home 落在 `%APPDATA%/gwb-kernel/homes/<名>`（`GWB_HOME` 选格，不给是 `default`）。全新
-home 起来窗口是白的——界面由件交出（provide `gwbShell` 服务的那个）。装件两步：进 home
-`pnpm add`，`cordis.yml` 手写一条条目，重启。
+home 起来窗口先摆一张已装清单（阶段页）——界面由件交出（provide `gwbShell` 服务的那个），
+上来就顶掉清单。装件两步：进 home `pnpm add`，`cordis.yml` 手写一条条目，重启。
 
 ## 刻意不做的
 
 不是还没做，是决定不做：装机口（内核不碰 pnpm）、自动升级、盘上对账与失败还原、图形
-界面上的兜底页与阶段页、件之间的准入核对、配置文件的模板与自愈。每一条的理由都在文档
+界面上的失败兜底页、件之间的准入核对、配置文件的模板与自愈。每一条的理由都在文档
 站里写着；要做，得先推翻上面那句准入判据。
 
 ## 文档

@@ -61,6 +61,11 @@ export function createLogHub(cap: number = LOG_BUFFER_CAP, flushMs: number = FLU
 /** 主进程全局那一份 */
 const hub = createLogHub()
 
+// stderr 的管道对端断掉之后（后台无终端起、终端被关），上面那次 write 每写一次就抛一次
+// EPIPE——没有 error 监听的话它就是未捕获异常，一条日志就能让主进程弹窗停摆。吞掉：
+// stderr 没人读就断腕，缓冲与窗格那两投照旧。
+process.stderr.on('error', () => {})
+
 export const pushLog = (line: LogLine): void => hub.push(line)
 export const logBacklog = (): LogEntry[] => hub.backlog()
 export const setLogSink = (sink: ((batch: LogEntry[]) => void) | null): void => hub.setSink(sink)

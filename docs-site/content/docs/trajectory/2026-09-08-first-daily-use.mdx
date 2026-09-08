@@ -1,0 +1,58 @@
+---
+title: 第一版自用版安家——绿色目录形态跑进 default，打包条继续等真分发
+born-at: 2026-09-08T14:06
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 第一版自用
+domain: 内核
+---
+
+## 背景
+
+「最小的、能正常运行插件的那个版本」按验收口径已经齐了：五刀全绿、日志四路、home 分格、
+阶段页兜着外壳晚到。于是有了那句「是不是可以发个第一版用用看」。它正踩在
+「打包（出安装包）」那条的前提上——那条等的是「真要分发的时候」。人拍板（2026-09-08）：
+**自己当日常工具用不算分发**，发的是绿色目录自用版，不出安装包；打包那条继续等。
+
+## 结论与边界
+
+- **形态**：`apps/desktop/run.cmd`——直接跑现成 `out/`，不重新构建；不设 `GWB_HOME` 落
+  日常 default。改了内核才需要先 `pnpm exec electron-vite build`。没有安装包、没有 asar、
+  没有打包器，electron-builder 与 Forge 的对比照旧等真分发那天。
+- **日常 default 组成**：底座四件 `@godcreator02/gwb-commands` 0.0.2 / `gwb-shell` 0.0.13 /
+  `gwb-logger` 0.0.2 / `gwb-settings` 0.0.6，外加两个共享包 `gwb-shared-react` 0.0.2 /
+  `gwb-tokens` 0.0.5；`cordis.yml` 四条，`id` 手写（commands / shell / logger / settings）。
+- **验收走 gwb-test 全套**：隔离 home `use-2609081400` 先行，default 只安家不做验场。
+  基线 `pnpm check` 全绿；产物 `out/` 时间戳 2026-09-08 13:58（开之前先确认是新的）。
+
+实机断言（隔离 home 与 default 各起一轮）：
+
+| 断言 | 怎么证明的 |
+| --- | --- |
+| 全新 home 幂等铺出三件套 | `use-2609081400` 自动建，`package.json` / 空 `cordis.yml` / README 各就位 |
+| 阶段页真是那个 DOM | CDP 求值：标题「gwb 内核」、等待行、空清单「home 里还没有装任何件」、README 提示，四样全对上 |
+| 四件全挂 | 重启后 `host up … 条目 5/5`（四件 + 内核自己的 include 条目），命令/窗格/设置逐条出声 |
+| 外壳顶掉阶段页 | `.gwb-stage` 查无，`#root` 换成壳的整页布局 |
+| 命令穿得通 | 页面里 `gwb.command('settings.all')` 回 `{ok:true}`；`shell.panes` 回日志窗格一条 |
+| 四路日志进窗格 | 来源计数 件 16 / 宿主 7 / 主 0 / 渲 4（主 0 是本轮主进程还没话可说） |
+| 亮暗切换真的变色 | `oklch(0.19 0.005 286)` ↔ `oklch(1 0 0)`，根类名跟着换 |
+| default 安家即验收形态 | 不设 `GWB_HOME` 起一轮：条目 5/5、穿桥 ok、阶段页无 |
+
+边界：settings 这版只有 node 半（界面归件仓第二版），服务层验通就算数；装件仍是终端
+两步（`pnpm add` + `cordis.yml`），开箱即用继续不做。
+
+## 现场记下两笔
+
+- **件生态一处版本错位**：`gwb-shell` 0.0.13 的浏览器半开机调 `theme.startupCss`，
+  现装四件没人 provide（`gwb-settings` 0.0.6 里没有 theme 命令）。失败优雅——
+  gwb-commands 报一句「跑了条不存在的命令」，启动照常，亮暗切换实测无恙；缺的只是
+  启动反闪那段 CSS。归件仓，不归内核。
+- **AGENTS.md 一个漂了的数**：写着 `gwb-commands`「已发 0.0.3」，本机 Verdaccio 只有
+  0.0.1 / 0.0.2、latest 指着 0.0.2。顺手订正。
+
+## 代价与遗留
+
+- **两个实例同时跑仍未验**（共享同一份 userData，路线图那栏原样）。单实例自用不受影响；
+  这也是 default 起动前先把隔离 home 的实例关掉的原因。
+- `homes/` 下积了二十来个验证 home（大半是阶段页那天留的）。按 gwb-test 的规矩，
+  清理放在「开新的那一刻」，由人亲自过目，不代删。

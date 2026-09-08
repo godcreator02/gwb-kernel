@@ -24,6 +24,8 @@ export interface HostEnv {
   logDir: string
   version: string
   onEvent: (payload: unknown) => void
+  /** 宿主退出时给渲染层捎信。窗口里那页还当一切正常，得有人告诉它 */
+  onHostExit: (code: number | null) => void
 }
 
 /** 在飞的命令的超时上限 */
@@ -54,6 +56,8 @@ export function startHost(env: HostEnv): Promise<Host> {
       // 在飞的命令立刻给失败回执
       for (const done of host.pending.values()) done({ ok: false, error: '宿主已退出' })
       host.pending.clear()
+      // 渲染层那头没有管道可看，讣告得捎到——它好把整页换成崩溃页
+      env.onHostExit(code)
       reject(new Error(`宿主退出（code=${code}）`))
     })
 
@@ -79,17 +83,25 @@ export function hostCommand(host: Host, payload: { command: string; args?: unkno
   }
   const id = randomUUID()
   return new Promise((resolve) => {
-    const done = (result: unknown): void => {
-      if (host.pending.delete(id)) resolve(result)
+    // 只结算一次：先到的把计时器撤掉。不然每条成功回执的命令 120 秒后都会补报一条
+    // 假「超时」——回执明明收到了、用了，日志却说按失败收
+    let settled = false
+    const settle = (result: unknown): void => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      host.pending.delete(id)
+      resolve(result)
     }
-    host.pending.set(id, done)
-    host.proc.stdin!.write(JSON.stringify({ t: 'command', id, payload }) + '\n')
-    // 回执只是收尾,日志先说一句:超时的命令过去只在调用方那里落一句「命令超时」,
-    // 日志里对不上是哪条、卡了多久
-    setTimeout(() => {
+    const timer = setTimeout(() => {
+      if (settled) return
+      // 回执只是收尾,日志先说一句:超时的命令过去只在调用方那里落一句「命令超时」,
+      // 日志里对不上是哪条、卡了多久
       mainLog('warn', 'gwb', `命令 ${payload.command} 超时（${COMMAND_TIMEOUT}ms 没回），回执按失败收`)
-      done({ ok: false, error: '命令超时' })
+      settle({ ok: false, error: '命令超时' })
     }, COMMAND_TIMEOUT)
+    host.pending.set(id, settle)
+    host.proc.stdin!.write(JSON.stringify({ t: 'command', id, payload }) + '\n')
   })
 }
 
