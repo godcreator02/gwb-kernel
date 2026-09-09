@@ -4,7 +4,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Context } from 'cordis'
-import Loader, { type ModuleLoader } from '@cordisjs/plugin-loader'
+import Loader, { type Entry, type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator02/gwb-plugin-api'
 
@@ -14,7 +14,7 @@ import type { GwbKernelApi } from '@godcreator02/gwb-plugin-api'
  * 一条事件口、告诉页面外壳是谁、自己出错时人看得见。其余一律皆件。取舍见文档站。
  */
 
-const { app, BrowserWindow, ipcMain } = electron
+const { app, BrowserWindow, dialog, ipcMain } = electron
 const here = path.dirname(fileURLToPath(import.meta.url))
 
 declare module 'cordis' {
@@ -56,29 +56,38 @@ const ctx = new Context()
 ctx.baseUrl = pathToFileURL(dataDir + path.sep).href
 
 // cordis 的日志全量进 say。渲染交给 cordis 自己的 Logger.format（%s、%o、Error 它都会），
-// 类从一个实例的 constructor 上取，免得 import cordis 的内部
-{
-  const factory = ctx.logger as unknown as {
-    (name: string): { constructor: { format(exporter: unknown, message: unknown): string } }
-    exporter(exporter: unknown): void
-  }
-  const Logger = factory('gwb').constructor
-  const exporter = {
-    colors: 0,
-    levels: { default: 3 },
-    // 级别与名字在 cordis 那边就是字符串，正文才是任意值
-    export: (message: { type?: string; name?: string; args?: unknown[] }): void => {
-      let msg: string
-      try {
-        msg = Logger.format(exporter, message)
-      } catch {
-        msg = (message.args ?? []).map((a) => (a instanceof Error ? a.message : String(a))).join(' ')
-      }
-      say(message.type ?? 'info', message.name ?? '', msg)
-    },
-  }
-  factory.exporter(exporter)
+// 类从一个实例的 constructor 上取，免得 import cordis 的内部。buffer 是 cordis 自带的环形缓冲，
+// 页面上那份只读现状从这儿筛错误行
+interface LogMessage {
+  ts?: number
+  type?: string
+  name?: string
+  args?: unknown[]
 }
+const factory = ctx.logger as unknown as {
+  (name: string): { constructor: { format(exporter: unknown, message: unknown): string } }
+  exporter(exporter: unknown): void
+  buffer?: LogMessage[]
+}
+const Logger = factory('gwb').constructor
+function formatMessage(message: LogMessage): string {
+  try {
+    return Logger.format(exporter, message)
+  } catch {
+    return (message.args ?? []).map((a) => (a instanceof Error ? a.message : String(a))).join(' ')
+  }
+}
+const exporter = {
+  colors: 0,
+  levels: { default: 3 },
+  // 级别与名字在 cordis 那边就是字符串，正文才是任意值
+  export: (message: LogMessage): void => {
+    say(message.type ?? 'info', message.name ?? '', formatMessage(message))
+    // 错误行是页面那份只读现状的一部分，来一条就重推一次（去抖）
+    if (message.type === 'error' || message.type === 'warn') pushShell()
+  },
+}
+factory.exporter(exporter)
 
 /**
  * 内核自己的话也走 cordis logger，不直接 say：这样件（比如日志件）挂第二个 exporter 就能收齐
@@ -134,11 +143,70 @@ function collectImports(): Record<string, string> {
   return imports
 }
 
+/**
+ * 页面上那份只读现状：条目清单各自到哪一步、最近的错误行。只在没有外壳时画，数据全是内核已经
+ * 攥着的（loader 的条目树、logger 的缓冲），不归因、不摆按钮。为什么是这条线，见文档站
+ */
+interface Report {
+  home: string
+  entries: { id: string; name: string; state: string }[]
+  errors: string[]
+}
+// 状态词照 cordis 的 FiberState 原名。它是 const enum，isolatedModules 下引不到，数字照它的定义抄；
+// _error 与 _store 是 cordis 标了 private 的普通字段（失败原因、已就位的 inject）
+const FIBER_STATE = ['PENDING', 'LOADING', 'ACTIVE', 'FAILED', 'DISPOSED', 'UNLOADING'] as const
+interface FiberPeek {
+  state: number
+  inject: Record<string, unknown>
+  _error?: unknown
+  _store?: Record<string, unknown>
+}
+function describe(entry: Entry): string {
+  if (entry.disabled) return 'disabled'
+  const fiber = entry.fiber as unknown as FiberPeek | undefined
+  if (fiber === undefined) return 'no fiber（import 失败，原因在错误行里）'
+  const state = FIBER_STATE[fiber.state] ?? `state=${String(fiber.state)}`
+  if (state === 'PENDING') {
+    const missing = Object.keys(fiber.inject).filter((name) => !(name in (fiber._store ?? {})))
+    return `PENDING（缺 ${missing.length > 0 ? missing.join('、') : '？'}）`
+  }
+  if (state === 'FAILED') return `FAILED：${stackOf(fiber._error).split('\n')[0] ?? ''}`
+  return state
+}
+function report(): Report {
+  // 页面的第一声 hello 可能早于 loader 挂上，那时服务还不在
+  const loader = ctx.loader as typeof ctx.loader | undefined
+  const entries = loader === undefined ? [] : [...loader.entries()]
+  const errors = (factory.buffer ?? [])
+    .filter((m) => m.type === 'error' || m.type === 'warn')
+    .slice(-20)
+    .map((m) => `${new Date(m.ts ?? Date.now()).toISOString()} ${m.type ?? ''} ${m.name ?? ''} ${formatMessage(m)}`)
+  return {
+    home: dataDir,
+    entries: entries.map((e) => ({ id: e.id, name: e.options.name, state: describe(e) })),
+    errors,
+  }
+}
+
 let win: electron.BrowserWindow | null = null
 /** 页面根交给谁。件经 setShell 说，页面经 onShell 听 */
 let shellUrl: string | null = null
-/** 推给页面的那一份：外壳地址加 importmap。每次现算，共享包装了要重启才看得见 */
-const shellMessage = (): { url: string | null; imports: Record<string, string> } => ({ url: shellUrl, imports: collectImports() })
+/** 推给页面的那一份：外壳地址加 importmap 加只读现状。每次现算，共享包装了要重启才看得见 */
+const shellMessage = (): { url: string | null; imports: Record<string, string>; report: Report } => ({
+  url: shellUrl,
+  imports: collectImports(),
+  report: report(),
+})
+// 条目换态、错误行到来都会重推，去抖成一次；页面那头外壳在时不看 report
+let pushTimer: NodeJS.Timeout | null = null
+function pushShell(): void {
+  if (pushTimer !== null) return
+  pushTimer = setTimeout(() => {
+    pushTimer = null
+    win?.webContents.send('gwb:shell', shellMessage())
+  }, 200)
+}
+ctx.on('internal/status', () => pushShell())
 
 const kernel: GwbKernelApi = {
   dataDir,
@@ -191,6 +259,7 @@ async function main(): Promise<void> {
   await ctx.loader.root.update([{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }])
   await ctx.loader.await()
   kernelLog.info(`up，home=${dataDir}，外壳=${shellUrl ?? '（没有件调 setShell）'}`)
+  pushShell()
 }
 
 // 不能顶层 await：Electron 的 ready 要等入口模块求值完才发，顶层等 ready 就互相等死
@@ -199,6 +268,8 @@ void app
   .then(main)
   .catch((err: unknown) => {
     say('error', 'kernel', `起不来：${stackOf(err)}`)
+    // 窗可能还没开，页面画不了；Electron 保证这个框 ready 之前就能弹
+    dialog.showErrorBox('gwb 起不来', `${stackOf(err)}\n\n日志：${path.join(dataDir, 'gwb.log')}`)
     app.exit(1)
   })
 app.on('window-all-closed', () => app.quit())

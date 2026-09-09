@@ -3,11 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <title>gwb</title>
+    <style>
+      /* 只给没有外壳时那份只读现状用；外壳一来 #root 整个归它 */
+      .gwb-report { font: 13px/1.6 ui-monospace, Consolas, monospace; padding: 16px 20px; white-space: pre-wrap; }
+      .gwb-report ul { padding-left: 1.5em; margin: 0.5em 0; }
+      .gwb-report pre { margin: 0.5em 0 0; white-space: pre-wrap; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module">
-      // 渲染层本体：听外壳是谁，注 importmap，import 它，把 #root 交出去。没有外壳就一句话。再没别的
+      // 渲染层本体：听外壳是谁，注 importmap，import 它，把 #root 交出去。没有外壳就画一份只读现状。再没别的
       const root = document.getElementById('root')
       let current = null
       let injected = false
@@ -22,6 +28,38 @@
         injected = true
       }
 
+      // 只读现状：一句话说明局面，然后是内核推来的条目清单与错误行。全是 textContent，没有按钮
+      function showReport(headline, report) {
+        root.textContent = ''
+        const box = document.createElement('div')
+        box.className = 'gwb-report'
+        const add = (tag, text) => {
+          const el = document.createElement(tag)
+          el.textContent = text
+          box.appendChild(el)
+        }
+        add('p', headline)
+        if (report) {
+          add('p', `home：${report.home}`)
+          if (report.entries.length === 0) {
+            add('p', 'cordis.yml 里一条条目都没有。装一个 provide 页面的件并加一条条目，见文档站。')
+          } else {
+            const ul = document.createElement('ul')
+            for (const e of report.entries) {
+              const li = document.createElement('li')
+              li.textContent = `${e.id}  ${e.name}  ${e.state}`
+              ul.appendChild(li)
+            }
+            box.appendChild(ul)
+          }
+          if (report.errors.length > 0) {
+            add('p', '最近的错误与警告（全文在 home 里的 gwb.log）：')
+            add('pre', report.errors.join('\n'))
+          }
+        }
+        root.appendChild(box)
+      }
+
       window.gwb.onShell(async (shell) => {
         const url = shell?.url ?? null
         injectImportmap(shell?.imports ?? {})
@@ -34,7 +72,7 @@
         current = null
         root.textContent = ''
         if (url === null) {
-          root.textContent = '没有外壳件。装一个 provide 页面的件并在 cordis.yml 里加条目，见文档站。'
+          showReport('没有外壳件（没有件调 setShell）。', shell?.report)
           return
         }
         try {
@@ -43,7 +81,7 @@
           current = { url, handle: mod.default(root) ?? null }
         } catch (err) {
           console.error(`外壳起不来：${String(err)}`)
-          root.textContent = `外壳起不来：${String(err)}`
+          showReport(`外壳起不来：${String(err)}`, shell?.report)
         }
       })
     </script>
