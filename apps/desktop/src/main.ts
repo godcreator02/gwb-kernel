@@ -251,9 +251,14 @@ async function main(): Promise<void> {
 
   await ctx.plugin(Loader, {})
   // 主进程没有 --expose-internals，loader 拿不到 node 内部的 ESM loader，那时它按自己的位置
-  // 解析裸名、件静默挂不上。内核替它：按 home 的 CJS 条件解析到文件，再按 ESM import
+  // 解析裸名、件静默挂不上。内核替它：按 home 的 CJS 条件解析到文件，再按 ESM import。
+  // 先 realpathSync.native 把 home 里那个名字解成真实目录：Node 的 CJS 解析有进程级缓存、
+  // 装了新版本还会回旧版本的路径，热重挂靠这一步绕开它。找不到时 ENOENT 带着这条完整路径
   ctx.loader.internal = {
-    import: (name: string, base: string) => import(pathToFileURL(createRequire(base).resolve(name)).href),
+    import: (name: string) => {
+      const real = fs.realpathSync.native(path.join(dataDir, 'node_modules', ...name.split('/')))
+      return import(pathToFileURL(createRequire(path.join(real, 'package.json')).resolve(name)).href)
+    },
   } as unknown as ModuleLoader
   ctx.loader.builtins.include = Include
   await ctx.loader.root.update([{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }])
