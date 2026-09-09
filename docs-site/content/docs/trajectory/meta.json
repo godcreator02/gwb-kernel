@@ -70,6 +70,7 @@
     "2026-09-09-plugin-three-rules",
     "2026-09-09-wall-esm-await-whenready",
     "2026-09-09-wall-pnpm-junction-rename",
-    "2026-09-09-wall-workspace-peer-pair"
+    "2026-09-09-wall-workspace-peer-pair",
+    "2026-09-09-wall-resolver-cache"
   ]
 }

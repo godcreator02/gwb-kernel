@@ -13,18 +13,18 @@ fd3 协议、`gwb://`、exports 解析、日志四路管道，全是为绕墙而
 
 ## 内核只做六件事，一个文件
 
-|              | 是什么                                                                                                   | 在哪                              |
-| ------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------- |
-| 铺 home       | 建目录、缺什么补什么（`package.json`、空 `cordis.yml`），不覆盖                                                         | `apps/desktop/src/main.ts`      |
-| 起 cordis     | `Context` 加 `baseUrl` 指向 home，挂官方 loader 与 include                                                    | 同上                              |
-| 解析裸名（node 半） | 主进程没有 `--expose-internals`，内核给 `loader.internal` 塞五行按 home 解析                                         | 同上                              |
-| 解析裸名（浏览器半）   | 扫 home 清单里各包声明的 `gwb.shared`，解析成 `file://` importmap，随外壳地址推给页面，页面注完表才 import 外壳。内核不认识 react，只搬运提供方的声明 | 同上                              |
-| 开窗与桥         | 一扇窗；`gwb:command` 派给 `ctx.gwbCommands`；`gwb:event` 推事件；`gwb:shell` 告诉页面外壳是谁                           | `src/main.ts` `src/preload.cjs` |
-| 页面根          | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳、或外壳起不来时画一份**只读现状**（各条目到哪一步、最近的错误行），没有按钮                        | `src/index.html`                |
-| 自己出错人看得见     | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退；`main()` 起不来先弹错误框再退                       | `src/main.ts`                   |
+|              | 是什么                                                                                                                                                                                               | 在哪                              |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| 铺 home       | 建目录、缺什么补什么（`package.json`、空 `cordis.yml`），不覆盖                                                                                                                                                     | `apps/desktop/src/main.ts`      |
+| 起 cordis     | `Context` 加 `baseUrl` 指向 home，挂官方 loader 与 include                                                                                                                                                | 同上                              |
+| 解析裸名（node 半） | 主进程没有 `--expose-internals`，内核给 `loader.internal` 塞一个 import：先 `realpathSync.native` 把 `<home>/node_modules/<裸名>` 解成真实目录，再从那儿起 `createRequire` 解 `exports`。第一步绕开 Node 的 CJS 解析缓存，件换了版本停用再启用才拿得到新代码 | 同上                              |
+| 解析裸名（浏览器半）   | 扫 home 清单里各包声明的 `gwb.shared`，解析成 `file://` importmap，随外壳地址推给页面，页面注完表才 import 外壳。内核不认识 react，只搬运提供方的声明                                                                                             | 同上                              |
+| 开窗与桥         | 一扇窗；`gwb:command` 派给 `ctx.gwbCommands`；`gwb:event` 推事件；`gwb:shell` 告诉页面外壳是谁                                                                                                                       | `src/main.ts` `src/preload.cjs` |
+| 页面根          | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳、或外壳起不来时画一份**只读现状**（各条目到哪一步、最近的错误行），没有按钮                                                                                                                    | `src/index.html`                |
+| 自己出错人看得见     | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退；`main()` 起不来先弹错误框再退                                                                                                                   | `src/main.ts`                   |
 
-（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。三个文件合计 383 行（含空行与注释）：
-`main.ts` 275、`index.html` 89、`preload.cjs` 19，外加词汇表 62。）
+（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。三个文件合计 388 行（含空行与注释）：
+`main.ts` 280、`index.html` 89、`preload.cjs` 19，外加词汇表 62。）
 
 **没有的**：`gwb://` 协议、exports 解析、`kernel.info`、日志缓冲与轮转、宿主子进程与 fd3 协议、
 README 铺进 home、装机（内核不碰 pnpm），以及旧线阶段页与崩溃页那套机器（轮询、讣告、重试）。

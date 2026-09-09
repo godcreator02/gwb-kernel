@@ -1,0 +1,83 @@
+---
+title: Node 的 CJS 解析缓存会回旧版本——件换了版本热重挂拿到的还是旧代码
+born-at: 2026-09-09
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 解析回旧版
+domain: 取址
+---
+
+## 现场与症状
+
+**热重挂**是这么设想的：`pnpm add <件>@新版` 装进 home，把 `cordis.yml` 里那条停用再启用，
+loader 会重新走一遍 `internal.import`（读过 `@cordisjs/plugin-loader` 的源码：`_init()` 每次
+都重 import，不缓存插件对象），于是新代码进来、不必重启工作台。
+
+卡在内核给 loader 塞的那一行。当时是这么写的（2026-09-09 抄自 `apps/desktop/src/main.ts`，
+**快照不是钉码**）：
+
+```ts
+import: (name: string, base: string) => import(pathToFileURL(createRequire(base).resolve(name)).href),
+```
+
+`base` 是 home、`name` 是裸名，两个都没变——**Node 的 CJS 解析有进程级缓存**
+（`Module._pathCache` 与内部那份 realpath 缓存），第二次问它同一个问题，它直接把上一次的
+答案给回来，而那个答案是**旧版本的真实路径**。pnpm 布局下这条路径长成
+`node_modules/.pnpm/<包>@<版本>/node_modules/<包>/…`，版本号就在路径里，回错版本等于回错文件。
+
+在 scratchpad 做了一次隔离实验（探针跑完即废，不进仓）：仿 pnpm 布局建
+`.pnpm/x@1.0.0`，`node_modules/@s/x` 是指向它的 junction，先解一次；再建 `.pnpm/x@2.0.0`、
+把 junction 改指过去、**删掉旧目录**，第二次解。四行读数：
+
+```
+v1 kernelNow : …/.pnpm/x@1.0.0/node_modules/@s/x/dist/index.js 1.0.0
+v1 proposed  : …/.pnpm/x@1.0.0/node_modules/@s/x/dist/index.js 1.0.0
+v2 kernelNow : …/.pnpm/x@1.0.0/node_modules/@s/x/dist/index.js 1.0.0
+v2 proposed  : …/.pnpm/x@2.0.0/node_modules/@s/x/dist/index.js 2.0.0
+```
+
+第三行就是这堵墙：junction 已经改指、`x@1.0.0` 那个目录已经从盘上删掉了，旧写法照样把
+`1.0.0` 的路径交出来，`import` 还成功了——**因为 ESM 模块缓存里有那个 URL**。所以它不会报
+`ERR_MODULE_NOT_FOUND`、不会报任何错，只是安静地把上一版代码再挂一遍。跟「静默挂不上」
+一样，这是没有症状的失败：条目显示 ACTIVE，跑的是旧的。
+
+## 根因
+
+Node 解析裸名分两段，缓存在第一段：
+
+1. **找文件**——`Module._resolveFilename` 沿 `node_modules` 往上找、读 `package.json` 的
+   `exports`、最后 realpath 一次。`_pathCache` 的键是「请求名 ＋ 查找路径」，这两样不变就命中；
+   realpath 的结果也另有一份缓存。junction 换了指向、目录被删，这两份缓存都不知道。
+2. **求值**——ESM 侧按最终的 `file://` URL 缓存模块对象。
+
+内核踩的是第一段。第二段那份缓存**不是这次要动的**：同一个真实路径的模块只会求值一次，
+本来就该如此；换了版本，真实路径本身就不同（版本号在路径里），第二段自然不撞。
+
+## 修法
+
+先用系统调用把裸名解成真实目录，再从**真实目录**起 `createRequire`：
+
+```ts
+const real = fs.realpathSync.native(path.join(dataDir, 'node_modules', ...name.split('/')))
+return import(pathToFileURL(createRequire(path.join(real, 'package.json')).resolve(name)).href)
+```
+
+两句话的判据：
+
+- `fs.realpathSync.native` 是**直落系统调用**的那一版，不经 Node 那层 JS 缓存，junction 现在
+  指哪儿就回哪儿。
+- 起点从 home 换成真实目录之后，`_pathCache` 的键里**含着版本号目录**，`x@1.0.0` 与 `x@2.0.0`
+  是两把不同的钥匙，天然不撞。
+
+`exports` 表照旧交给 `createRequire` 去读——内核不认识 `exports`，这一条没变。`base` 参数
+自此不用了：home 就是内核自己的 `dataDir`。裸名找不到时 `realpathSync` 抛的 ENOENT 里带着
+`<home>/node_modules/<裸名>` 那条完整路径，人一眼看得出是哪个件、装在哪个 home 里。
+
+## 它拦住了什么
+
+拦住的是**热重挂这条路本身**。没有这一步，「装新版 → 停用 → 启用」在旧写法下是个
+看起来成了的假动作：日志不报错、条目回到 ACTIVE、跑的还是上一版。要验一个件的改动就只剩
+重启工作台一条路，而重启会连带丢掉所有件的运行时状态。
+
+也顺带记住一条更一般的：**Node 里凡是「同一个问题问两次」的解析 API，多半带缓存**——
+在一个长活进程里靠它感知盘上的变化，默认就是错的。

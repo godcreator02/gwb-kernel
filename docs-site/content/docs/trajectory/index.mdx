@@ -55,7 +55,7 @@ description: 定过的事与撞过的墙——一卡一文件，只追加
 
 另有 [第一版自用版](/docs/trajectory/2026-09-08-first-daily-use)一张证据卡（日常 home 的安家现场），不属决策也不属墙，不入两表。
 
-## 撞过的墙（28）
+## 撞过的墙（29）
 
 | 卡 | 在哪儿 | 症状 |
 | --- | --- | --- |
@@ -87,6 +87,7 @@ description: 定过的事与撞过的墙——一卡一文件，只追加
 | [ready 顶层等](/docs/trajectory/2026-09-09-wall-esm-await-whenready) | 主进程 | ESM 主进程顶层 `await whenReady()` 互相等死，静默挂住 |
 | [home 不能改名](/docs/trajectory/2026-09-09-wall-pnpm-junction-rename) | 主进程 | pnpm junction 是绝对路径；改名后删 node_modules 重装 |
 | [workspace 两开关](/docs/trajectory/2026-09-09-wall-workspace-peer-pair) | 主进程 | `autoInstallPeers:false` ＋ `linkWorkspacePackages:true` 撞出来的组合 |
+| [解析回旧版](/docs/trajectory/2026-09-09-wall-resolver-cache) | 取址 | CJS 解析有进程级缓存，换了版本还回旧路径；热重挂拿到的是上一版代码，且不报错 |
 
 ## 内核源码全貌
 

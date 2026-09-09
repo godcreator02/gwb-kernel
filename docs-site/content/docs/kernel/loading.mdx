@@ -30,16 +30,24 @@ description: 内核连 yml 都不认识——挂载归两个官方件；件的�
 
 ## 引导链：顺序全是判据
 
-{/* ref file="../apps/desktop/src/main.ts" lines="252-260" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="252-264" */}
 
 1. **先 provide `gwbKernel`，再动 loader**。这个服务挂在根 fiber 上（根 fiber 生来 ACTIVE）、
    永不撤销，而且 provide 发生在模块顶层（`ctx.provide('gwbKernel', kernel)`）、结构上先于
    `main()` 里的一切；晚一步，第一批件读到 `undefined`（见[那面墙](/docs/trajectory/2026-09-07-wall-gwbkernel-provide-early)）。
 2. **`await ctx.plugin(Loader)`**。`ctx.plugin()` 返回的是 thenable（包着 fiber 的就位等待），不 await，下一行 `ctx.loader` 就是 `undefined`（见[那面墙](/docs/trajectory/2026-09-07-wall-ctx-plugin-thenable)）。
-3. **替 loader 塞五行 `internal`**。主进程没有 `--expose-internals`，loader 拿不到 node 内部的
-   ESM loader，`ctx.loader.internal` 是 `undefined`——那时它按 loader 自己的位置解析裸名，
-   件**静默**挂不上。内核塞的那行按 home 的 CJS 条件解析到文件、再按 ESM import：
-   `import: (name, base) => import(pathToFileURL(createRequire(base).resolve(name)).href)`。
+3. **替 loader 塞一个 `internal.import`**。主进程没有 `--expose-internals`，loader 拿不到 node
+   内部的 ESM loader，`ctx.loader.internal` 是 `undefined`——那时它按 loader 自己的位置解析裸名，
+   件**静默**挂不上。内核塞的这个 import 分两步走：先 `fs.realpathSync.native` 把
+   `<home>/node_modules/<裸名>` 解成**真实目录**（pnpm 布局下那是 `.pnpm/<包>@<版本>/…` 里的
+   一处），再从那个真实目录起 `createRequire` 按 CJS 条件解析到入口文件、按 ESM `import` 进来。
+   `exports` 表照旧归 `createRequire`，内核自己不认识它。
+
+   第一步不是绕路，是**热重挂**的全部要害：Node 的 CJS 解析带进程级缓存，`pnpm add 新版` 之后
+   base 与裸名都没变，`createRequire(base).resolve(name)` 仍旧回**旧版本**的真实路径，条目停用
+   再启用换不到新代码（见[那面墙](/docs/trajectory/2026-09-09-wall-resolver-cache)）。
+   `realpathSync.native` 走系统调用、不经那层缓存；从真实目录起的 `createRequire`，它缓存的键里
+   含着版本号目录，天然不跟上一版撞。裸名找不到时 ENOENT 里带着 home ＋ 裸名那条完整路径。
 4. **include 走 loader 的 builtins**。include 住在应用依赖树里，而 baseUrl 指着 home，按裸名
    找不到它；`cordis:` 前缀的名字直接从内建表取、不经模块解析。
 5. **做成条目而不是 `ctx.plugin(Include)`，id 写死 `home`**。做成条目，它的子树就挂在 loader

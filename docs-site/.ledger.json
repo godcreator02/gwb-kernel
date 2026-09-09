@@ -8,7 +8,7 @@
     "../apps/desktop/src/preload.cjs:1-19": {
       "kind": "git",
       "blob": "90eb3c340ec920a57872d973ed4074e41258a73e",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         1,
         19
@@ -17,8 +17,8 @@
     },
     "../apps/desktop/src/main.ts:226-232": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         226,
         232
@@ -27,8 +27,8 @@
     },
     "../apps/desktop/src/main.ts:211-223": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         211,
         223
@@ -39,40 +39,40 @@
   "content/docs/kernel/loading.mdx": {
     "../apps/desktop/src/main.ts:54-56": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         54,
         56
       ],
       "hash": "7d5d86ef48a2375e24f150ac97e44d9cfe239730d1bfd9abffdf6a25968ad5ca"
     },
-    "../apps/desktop/src/main.ts:252-260": {
-      "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
-      "lines": [
-        252,
-        260
-      ],
-      "hash": "854d74622682f04d07658ff1811be798120c7a4d18732c3257d93fb80d08e053"
-    },
     "../apps/desktop/src/main.ts:101-106": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         101,
         106
       ],
       "hash": "be59fe2e9cce63bf4cb38d01ef72066d47abab610f20dc40a753a811128dd556"
+    },
+    "../apps/desktop/src/main.ts:252-264": {
+      "kind": "git",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
+      "lines": [
+        252,
+        264
+      ],
+      "hash": "bc78df66a3cd496d904d747474b37c7011fb7f44e5f6cafc729d7909200fae5d"
     }
   },
   "content/docs/kernel/logs.mdx": {
     "../apps/desktop/src/main.ts:43-52": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         43,
         52
@@ -81,8 +81,8 @@
     },
     "../apps/desktop/src/main.ts:58-90": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         58,
         90
@@ -91,8 +91,8 @@
     },
     "../apps/desktop/src/main.ts:92-99": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         92,
         99
@@ -101,32 +101,32 @@
     }
   },
   "content/docs/kernel/processes.mdx": {
-    "../apps/desktop/src/main.ts:265-274": {
-      "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
-      "lines": [
-        265,
-        274
-      ],
-      "hash": "d32921652f58d20df598dbd94a3c13bca7f50ef29cc27685e816d09d05326c2d"
-    },
     "../apps/desktop/src/main.ts:236-250": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         236,
         250
       ],
       "hash": "4f9be4a8d26dcc059eba84524eed8cd4fb86c14348b57aad0d685d1222a38011"
+    },
+    "../apps/desktop/src/main.ts:270-279": {
+      "kind": "git",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
+      "lines": [
+        270,
+        279
+      ],
+      "hash": "d32921652f58d20df598dbd94a3c13bca7f50ef29cc27685e816d09d05326c2d"
     }
   },
   "content/docs/plugins/anatomy.mdx": {
     "../apps/desktop/src/main.ts:119-130": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         119,
         130
@@ -138,7 +138,7 @@
     "../apps/desktop/src/preload.cjs:4-19": {
       "kind": "git",
       "blob": "90eb3c340ec920a57872d973ed4074e41258a73e",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         4,
         19
@@ -148,7 +148,7 @@
     "../apps/desktop/src/index.html:63-86": {
       "kind": "git",
       "blob": "ed9a9f9c7ce93ecc4a537912e9a64dc8624e21c7",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         63,
         86
@@ -158,7 +158,7 @@
     "../apps/desktop/src/index.html:31-61": {
       "kind": "git",
       "blob": "ed9a9f9c7ce93ecc4a537912e9a64dc8624e21c7",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         31,
         61
@@ -167,8 +167,8 @@
     },
     "../apps/desktop/src/main.ts:150-189": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         150,
         189
@@ -177,8 +177,8 @@
     },
     "../apps/desktop/src/main.ts:195-209": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         195,
         209
@@ -189,8 +189,8 @@
   "content/docs/plugins/services.mdx": {
     "../apps/desktop/src/main.ts:211-224": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         211,
         224
@@ -202,7 +202,7 @@
     "../packages/gwb-plugin-api/src/index.ts:all": {
       "kind": "git",
       "blob": "155dc4314286883deb1c8ebc42048623a1eb1a86",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         1,
         62
@@ -213,8 +213,8 @@
   "content/docs/kernel/home.mdx": {
     "../apps/desktop/src/main.ts:29-31": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         29,
         31
@@ -223,8 +223,8 @@
     },
     "../apps/desktop/src/main.ts:33-41": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         33,
         41
@@ -236,7 +236,7 @@
     "../apps/desktop/package.json:17-19": {
       "kind": "git",
       "blob": "2bb31d222d63cb72b83df80a57519a91285f3e48",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         17,
         19
@@ -247,8 +247,8 @@
   "content/docs/overview.mdx": {
     "../apps/desktop/src/main.ts:11-15": {
       "kind": "git",
-      "blob": "8569455a44e8cf9007da658e9bc3846fa2bd6272",
-      "commit": "77e974d9bc6b0640c5d6109233088b0b9df76fac",
+      "blob": "118417e0e6528cbcce9a453761545d3c688ea084",
+      "commit": "1e744bcf843c9957ba55b85ff442639f1fe13d7e",
       "lines": [
         11,
         15
