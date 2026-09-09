@@ -1,0 +1,78 @@
+---
+title: 件的三条通用规矩：配置走 settings、命令描述带形状、顶层申请加批准
+born-at: 2026-09-09
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 件的三条规矩
+domain: 规则
+---
+
+## 背景
+
+[知识随件走](/docs/trajectory/2026-09-09-knowledge-rides-package)落地当天，从连着 default home
+的 Claude Code 会话做了两轮实测，量出 MCP 这道口三样发现面的真实行为：
+
+- 顶层工具清单是连接时的快照，服务端命令表变了它不动
+- resources 列表也是快照，只有读正文是现问
+- server instructions 进系统提示时会被截断——13 份说明书逐条点名，列到第 8 份就断了
+
+同时看清了三件事：桥逐条渲染出来的工具，schema 全是 `args: unknown`，比 `gwb_command_run`
+只多一个名字；件仓 mcp 页至今写的是「工具面只有两件、没有逐条门牌」，逐条渲染是一次提交信息
+为「a」的提交带进来的、没记理由；`plugins.disable` 的描述没写它要 `{ entryId }`，agent 靠猜。
+
+另有两处件在吃 `cordis.yml` 的条目 `config`（mcp 的 `port`、unit-folder 的两键），而其余的件
+都走 `gwb-settings`——同一件事两个答案。
+
+## 结论与边界
+
+三条通用规矩，对所有件生效：
+
+1. **件的配置一律 `gwbSettings.define`，不吃 `cordis.yml` 的 `config`。** 条目只剩 `id` /
+   `name` / `disabled`。settings 加 `list` 类型；件用时现读（没有变更通知，`config` 的
+   reconfigure 语义丢掉，端口这类启动即定的改了重启）
+2. **命令描述必须写参数形状。** `register` 的 `description` 是参数形状的唯一真相，agent 只看它
+   就得知道怎么给；无参数写「无参数」。先立成纪律，不给 `GwbCommandDef` 加机读字段——
+   等第二个要机读形状的消费方出现再加
+3. **MCP 顶层是申请加批准。** 桥固定两枚顶层工具（`gwb_command_list` / `gwb_command_run`），
+   其余命令一律经 `run`；件要上顶层就在登记命令时标 `top: true`（`GwbCommandDef` 新字段，
+   这是申请），上不上由 mcp 件的 `top` 设置定（这是人批的名单，缺省 `skill.list` /
+   `skill.read`）。桥每请求现读名单，改了下一请求就生效；申请了没批的桥在日志里点名
+
+连带：node-cli / py-cli 的 `run` 加按次 `cwd`（存在的绝对路径），总线镜像认
+`{ args, cwd }`——CLI 形态的东西经它们登记之后，`livedoc check` 这类认 cwd 的命令才跑得了。
+
+人拍板（2026-09-09）。
+
+## 否掉的候选
+
+- **保持逐条渲染，靠兜底两枚**——接受快照陈旧与 instructions 截断。否掉：说明书一多
+  instructions 必截，而那是唯一的发现面
+- **只留桥的名单、件不申请**——不动契约，但「注册需要同意」这个动词没了，人只能单方面提拔；
+  agent 写新件时也没有机器痕迹说「我想上顶层」
+- **把参数形状写进 skill**——形状随命令登记走，用法随 skill 走；写进 skill 就是第二份真相
+- **`top` 名单先存逗号字符串、不加 list 类型**——省一次 settings 契约改动，但名单是列表，
+  设置页迟早要按列表渲染；这次一并加
+- **桥改有状态、推 `list_changed`**——要 SDK 有状态会话、注册表变更事件、常开通知流三笔账，
+  只为让一张本来不该常驻的清单保持新鲜
+
+## 依据
+
+三样发现面两样快照一样截断，**常驻的清单在这道口上没有一样是可靠的**；可靠的只有「每请求
+现算」的回执。桥无状态、每请求一对——它天然适合「先列再调」，不适合「把清单常驻在对面」。
+收成固定几枚加名单，桥的契约面从「快照加兜底」收成「一条活的口」，无状态这个选择终于自洽。
+
+配置走 settings 的判据是「同一件事一个答案」：设置页、`settings.*` 命令、按条目分区、
+`shared` 共享区都已经在，`config` 多出来的只有 reconfigure，而真用到它的两处都不需要。
+
+「用户同意」在这个系统里只能是纪律——agent 有整台机器的权限，改 `settings.json` 跟改任何
+文件一样容易。所以门那一段多一行：`top` 名单人批、agent 不动。
+
+## 代价与遗留
+
+- 每个会话头一次得先 `gwb_command_list` 与 `skill_list` 各一次；四枚固定工具的 description
+  成了永不截断的入口，要写得像说明书
+- Claude Code 按工具名分级的权限门从此对 gwb 无效——本来就不在信任模型里（持 token 就是
+  完整写面）；真要分级在桥里按命令名做 deny，到期再加
+- 每个有命令的件都要重发一版补描述；default home 全套升一次
+- settings 没有变更通知，件只能用时现读；将来真有件要「改了立刻反应」再议
+- unit-folder 那两键随这轮迁；件仓 AGENTS 与 devkit 手册同步写进三条规矩
