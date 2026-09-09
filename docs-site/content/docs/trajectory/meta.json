@@ -66,6 +66,7 @@
     "2026-09-09-importmap-in-kernel",
     "2026-09-09-retire-old-line",
     "2026-09-09-plugins-migrate-0-1",
+    "2026-09-09-knowledge-rides-package",
     "2026-09-09-wall-esm-await-whenready",
     "2026-09-09-wall-pnpm-junction-rename",
     "2026-09-09-wall-workspace-peer-pair"

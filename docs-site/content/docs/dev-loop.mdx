@@ -52,10 +52,11 @@ importmap）那一块，等它稳定下来再补测；`vitest` 眼下报「no te
 
 ## 实机验证怎么做
 
-实机的规矩正本在仓里 `.claude/skills/gwb-test/SKILL.md`：每次验开自己的隔离 home、开之前
-确认产物是新的（`dist/` 时间戳）、件进 home 只有「registry 发版 → home 里 `pnpm add` →
-`cordis.yml` 写条目」这一条路、哪几种「看着成了」其实什么都没验。页面取证用
-`cdp-eval.mjs`——`run.cmd --remote-debugging-port=9335` 开 CDP，表达式放文件不放命令行。
+实机的规矩正本是 `gwb-devkit` 件带的 skill（`skill://gwb/gwb-devkit/SKILL.md`，末尾
+「你改的是内核」一节）：每次验开自己的隔离 home、开之前确认产物是新的（`dist/` 时间戳）、
+件进 home 只有「registry 发版 → home 里 `pnpm add` → `cordis.yml` 写条目」这一条路、哪几种
+「看着成了」其实什么都没验。页面取证用它登记的 node CLI `cdp-eval`——
+`run.cmd --remote-debugging-port=9335` 开 CDP，表达式放文件不放命令行。
 
 有个具体例子说明为什么实机不可省：home 分格第一次开测试 home 时撞出「全新 home 起不来」——
 `cordis.yml` 不在，include 抛错落在挂载链上，整趟起不来（见

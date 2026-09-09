@@ -96,8 +96,8 @@ $env:GWB_HOME='x'; .\run.cmd         # 名字 → homes\x；给路径（含 \ �
 ```
 
 根上的门禁是 `pnpm check`（`build:api` + `typecheck` + `lint` + `test`）。页面取证的小工具与规矩
-在总控台 `D:\unitfolders\26090520ntn\console\.claude\skills\gwb-devkit\`（`cdp-eval.mjs`，表达式放
-文件不放命令行；起内核带的 CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人的页面）。日志在 `<home>\gwb.log`：
+归 `gwb-devkit` 件（`cdp-eval` 是它登记的一条 node CLI；表达式放文件不放命令行；起内核带的
+CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人的页面）。日志在 `<home>\gwb.log`：
 内核自己的话、件的、渲染层 console 转来的，全在这一份里。仓里不放验场、不放探针，临时东西
 一律进 scratchpad，跑完即废。
 
@@ -134,18 +134,19 @@ $env:GWB_HOME='x'; .\run.cmd         # 名字 → homes\x；给路径（含 \ �
 **件的包名：`@godcreator02/gwb-<件名>`**。加 `gwb-` 前缀跟废弃那批错开（`@godcreator02/shell`
 那些已被占着）。scope 不换。
 
-## 干活之前：判断层住总控台
+## 干活之前：知识随件走
 
-本仓不放 skill（2026-09-09 整个撤走）。gwb 的三份 skill 正本住总控台
-`D:\unitfolders\26090520ntn\console\.claude\skills\`：
+本仓不放 skill。说明书住提供能力的那个件，随包发、经 `gwb-mcp` 件开给 agent
+（`skill://gwb/<名>/SKILL.md` resource，server instructions 里逐条点名）。连着 `default` home
+的会话直接读；没连着就按包内路径 Read：
 
-| skill        | 什么时候用                                                          |
-| ------------ | -------------------------------------------------------------- |
-| `gwb-decide` | 遇到选型、判「进内核还是做成件」、决定要不要做某个功能之前。推完交给人拍板，拍板后记轨迹卡                  |
-| `gwb-devkit` | 写件的整条路；**改内核的验机路子在末尾一节**：隔离 home 与命名法、产物是不是新的、四种「看着成了」、怎么从页面取证 |
-| `gwb-doc`    | 写或改文档站之前                                                       |
+| skill                         | 住哪                                                                                  | 什么时候用                                                          |
+| ----------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `gwb-devkit`                  | `gwb-devkit` 包 `skills/`（仓 `D:\unitfolders\260908dkv\gwb-devkit`）                   | 写件的整条路；**改内核的验机路子在末尾一节**：隔离 home 与命名法、产物是不是新的、四种「看着成了」、怎么从页面取证 |
+| `livedoc-docs` / `trajectory` | `live-doc-cli` 包 `skills/`（仓 `D:\unitfolders\26090315xby\god-live-doc`），devkit 代为挂上 | 写或改文档站之前；记轨迹卡之前                                                |
+| `gwb-decide`                  | 总控台 `D:\unitfolders\26090520ntn\console\.claude\skills\`（宿主 skill，不随件）              | 遇到选型、判「进内核还是做成件」、决定要不要做某个功能之前。推完交给人拍板，拍板后记轨迹卡                  |
 
-坐在本仓时它们不进上下文，按那个路径直接 Read；从总控台起手就自动可见。
+判据与代价见[知识随件走](/docs/trajectory/2026-09-09-knowledge-rides-package)。
 
 ## 注释与文档：三层分流
 

@@ -1,0 +1,74 @@
+---
+title: 知识随件走：skill 正本回包，经 MCP 分发；default home 固定口
+born-at: 2026-09-09
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 知识随件走
+domain: 规则
+---
+
+## 背景
+
+同一天上午刚定过相反的事：内核仓与件仓的 skill 全撤，三份 gwb skill（`gwb-decide` /
+`gwb-devkit` / `gwb-doc`）的正本只住总控台 `.claude/skills/`。理由是宿主机制——项目级 skill
+只沿当前工作目录的祖先链加载，坐在件仓里看不见别处的 skill，所以写件的活从总控台起手。
+
+当晚重推前提。gwb 的设计里它是人和 agent 共用的工作台，agent 经 `gwb-mcp` 件拿到命令面与
+说明书：件仓的 `gwb-skills` 收各件 `skills/` 目录，mcp 把它们挂成 `skill://gwb/<名>/<文件>`
+resource、在 server instructions 里逐条点名。这套机器已经在，六件已经这么发说明书，
+`gwb-devkit` 自己也是件、包里带着一份同名 skill。于是出现两份正本：总控台那份约 450 行、
+包里那份 10 KB，模板 27 文件对 4 文件，已经分叉。
+
+## 结论与边界
+
+- **知识随件走**：能力的说明书住提供能力的那个包，随包发、随包装、经 MCP 到 agent。
+  `gwb-devkit` 的 skill 与件模板回 devkit 包；`gwb-doc` 拆两半落 livedoc——教义并进
+  `livedoc-docs` skill，建站能力做成 `livedoc init` 子命令，两份 livedoc skill 进
+  `live-doc-cli` 的 `files`，devkit 依赖它并把那个 `skills/` 也挂给 `gwbSkills`
+- **`gwb-decide` 留总控台**当宿主 skill：它点名 `AskUserQuestion`，是宿主的纪律不是
+  gwb 的知识；别的 agent 客户端本来也没有那个工具
+- 总控台 `.claude/skills/` 里 devkit 与 doc 各留一个几行的壳：描述、`skill://` URI、
+  包内路径兜底——home 起不来时按路径读得到，宿主的按描述触发也还在
+- **CLI 形态的东西一律经 `gwbNodeCli` / `gwbPyCli` 登记**，不做总线命令、不进程内调：
+  它们自动镜像到总线，于是自动是 MCP 工具，回执自带 stdout 与退出码
+- **总控台会话永远连 `default` home**：mcp 件对名为 `default` 的 home 固定 2870、被占报错
+  不退让；其它 home 随机口。客户端用标准 `.mcp.json`（总控台已 gitignore），`mcp.info`
+  回标准 `mcpServers` 片段
+- **agent 自改的门**（写进 mcp 件的 instructions，每会话必读）：修 bug、改说明书、加命令
+  加件不问；动内核，或动被别人 inject 的七件（commands / data / skills / mcp / shell /
+  settings / plugins）的契约面与依赖，先问再改
+- 人拍板（2026-09-09）。
+
+## 否掉的候选
+
+- **什么都不做，正本留总控台**——devkit 两份已分叉；生态里六件走包、三份走总控台，两套分发；
+  总控台 AGENTS 自己写着「能存东西的地方半年后必然变成垃圾场」，正在发生
+- **全进件、总控台删光**——兜底路断：home 起不来时只能按绝对路径去读包里那份，宿主的
+  按描述触发也没了。多留几行壳就换回这两样，不值得省
+- **发一个 Claude Code plugin 打包 skills + `.mcp.json`**——官方支持、自动触发保留，但 skill
+  又走了第二条分发渠道；眼下没有第二个 agent 客户端逼着它，按「真遇到需求才加」不到期
+- **decide 也进件**——它绑宿主；写成宿主中立的话就只剩「停下来问人」一句，不值得一个包
+
+## 依据
+
+**前提变了就要重推。** 上午那条的前提是「项目级 skill 只在自己仓可见」；MCP 分发让可见性
+不再取决于会话坐在哪个目录，而取决于连上哪个 home。前提一换，「正本住总控台」失去唯一
+理由，剩下的只有分叉的代价。
+
+代价不对称：往件里搬错了，退回来是搬 markdown；留在总控台错了，每新一个件都要问一遍
+「说明书写哪」，答案越来越乱。往件那边倒。
+
+热更实测（同日）：无状态桥发不出 `list_changed`，Claude Code 的顶层工具清单在服务端命令表
+变化后不刷新；`gwb_command_list` / `gwb_command_run` 两枚兜底工具看得到真相。桥维持无状态，
+instructions 里写明。
+
+## 代价与遗留
+
+- 说明书从此改一个字也要抬版本、发版、`plugins.update`——`gwb-skills` 的「正文现读盘」只对
+  装进 home 的那份生效，不对仓里那份。所有件的常态，不为说明书开特例
+- devkit 多了 livedoc 这条运行时依赖，livedoc 的 cli 改契约 devkit 跟着抖
+- 总控台的 MCP 连线是本机配置（token 落 default home 的数据目录），换机器要重写一次
+  `.mcp.json`
+- 实测顺带撞出一堵墙，归件仓：**停用条目不等于命令注销**——hello 自己在 ctx 上登记的两条
+  命令停用后仍留在命令表，调用报 `inactive context`；只有经 node-cli / py-cli 服务登记的
+  两条真被撤了。件仓自己记
