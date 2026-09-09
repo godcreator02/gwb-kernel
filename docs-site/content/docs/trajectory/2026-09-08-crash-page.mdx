@@ -73,3 +73,10 @@ domain: 内核
 掉，`gwb:host-exit` 没了。它拦住的趋势（自动恢复、失败归因爬上界面）仍由
 [刻意不做](/docs/not-doing)的失败兜底页条管着；「进程真崩了」（内核自己的错）落到
 `main()` 的 catch：写一句「起不来」、`app.exit(1)`，讣告在 stderr 与 `<home>/gwb.log`。
+
+## 2026-09-09 晚：一行错误框
+
+那条 catch 只写 stderr 与文件——窗可能还没开，人看到的是程序闪一下没了。补一行
+`dialog.showErrorBox`（Electron 保证 ready 之前可调）再 `app.exit(1)`。这不是崩溃页回归：
+进程死了页面画不了任何东西，这一行是「自己出错人看得见」的补漏。非致命的错（件没挂上、
+外壳起不来）归[阶段页](/docs/trajectory/2026-09-08-stage-page)卡尾说的那份只读现状。

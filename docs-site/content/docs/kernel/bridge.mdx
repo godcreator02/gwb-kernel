@@ -16,7 +16,7 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 | --- | --- | --- |
 | `gwb:command` | 页面 → 件 | `ipcMain.handle`，原样派给命令总线，回 `GwbResult` |
 | `gwb:event` | 件 → 页面 | `webContents.send` 单向推，火过就灭 |
-| `gwb:shell`（＋`gwb:hello`） | 内核 → 页面 | 推 `{ url, imports }`：外壳的 `file://` 地址＋importmap |
+| `gwb:shell`（＋`gwb:hello`） | 内核 → 页面 | 推 `{ url, imports, report }`：外壳的 `file://` 地址＋importmap＋只读现状（外壳在时页面不看它） |
 
 ## 命令：内核不认识任何命令名
 
@@ -28,7 +28,7 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 → 主进程 ipcMain.handle：原样派给 ctx.gwbCommands.run → 兑现回页面
 ```
 
-{/* ref file="../apps/desktop/src/main.ts" lines="158-164" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="226-232" */}
 
 **内核一条原生命令都没有。** 旧线那条 `kernel.info` 随两进程退役了——自省、装机、版本
 这些需求要么没有了，要么归了件。`handle` 里只做两件防呆：命令名不是字符串回一句错；
@@ -41,7 +41,7 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 
 ## 事件：emit 的那一头是页面
 
-{/* ref file="../apps/desktop/src/main.ts" lines="143-155" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="211-223" */}
 
 件调 `ctx.gwbKernel.emit(payload)`，主进程 `webContents.send('gwb:event', payload)`，页面的
 `gwb.on(cb)` 收到（见[浏览器那半](/docs/plugins/client)）。**事件是火过就灭的**，没有历史
@@ -53,10 +53,12 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 返回的撤销函数把地址收回——件把 `setShell` 包在 `ctx.effect` 里，fiber 卸载时自动收回，
 这就是「外壳件被卸了页面要换」的全部机制。
 
-推给页面的不是裸地址，是 `shellMessage()` 现算的一份 `{ url, imports }`（importmap 怎么拼
-的见[取址](/docs/kernel/loading)）。推的时机有三个：`setShell` 调用时、撤销函数收回时、
-页面订上时——`gwb:hello` 这条 `ipcMain.on` 专门应答最后那种：页面 `onShell` 订上的瞬间先
-问一次当前值，免得件在页面起来之前就 `setShell` 过了。
+推给页面的不是裸地址，是 `shellMessage()` 现算的一份 `{ url, imports, report }`（importmap
+怎么拼的见[取址](/docs/kernel/loading)，`report` 是什么见[浏览器那半](/docs/plugins/client#没有外壳时那份只读现状)）。
+推的时机有四种：`setShell` 调用时、撤销函数收回时、页面订上时——`gwb:hello` 这条
+`ipcMain.on` 专门应答这种：页面 `onShell` 订上的瞬间先问一次当前值，免得件在页面起来之前
+就 `setShell` 过了——以及条目换态或错误行到来时的去抖重推（`pushShell`），那是给只读现状
+用的，外壳在时页面收到也不动。
 
 ## 资产：没有协议，页面直接吃 file://
 

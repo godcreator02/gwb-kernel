@@ -45,7 +45,7 @@ dist 下的产物互为邻居，从自己的模块地址出发一步就到。这
 
 `index.html` 是内核的一部分，也是「页面根」这件事的另一半。它要做的全部事情：
 
-{/* ref file="../apps/desktop/src/index.html" lines="25-48" */}
+{/* ref file="../apps/desktop/src/index.html" lines="63-86" */}
 
 四步，每步都有理由：
 
@@ -53,11 +53,38 @@ dist 下的产物互为邻居，从自己的模块地址出发一步就到。这
    import 就炸（见[取址](/docs/kernel/loading#浏览器半的取址-importmap-是内核拼的)）；
    空表不注，注一张空表没有意义还占坑
 2. **拆旧外壳**——`dispose()` 失败只 `console.error`，不阻新的上
-3. **url 是 null 就说一句话**——「没有外壳件。装一个 provide 页面的件并在 cordis.yml 里加
-   条目」。没有阶段页、没有已装清单、没有轮询：单进程后不存在「外壳还没轮到」的中间态
+3. **url 是 null 就画只读现状**——一句「没有外壳件」，下面是内核推来的条目清单与错误行
+   （见下一节）。没有轮询：单进程后不存在「外壳还没轮到」的中间态，条目换态是内核推过来的
 4. **校验默认导出是函数再调**——`mod.default(root)`，返回的 `dispose` 记下来给下一轮拆
    （形状就是词汇表的 `ShellBoot`，见[词汇表](/docs/plugins/vocab)）；失败 `console.error`
-   加一句话，页面不替失败解释
+   加同一份只读现状，头一句换成「外壳起不来：原话」
+
+## 没有外壳时那份只读现状
+
+外壳没上来、或外壳起不来时，`#root` 里画的是这个：
+
+{/* ref file="../apps/desktop/src/index.html" lines="31-61" */}
+
+全是 `textContent`，没有一颗按钮、没有一句归因。它画的三样东西——home 在哪、各条目到了
+哪一步、最近的错误行——都是内核已经攥着的，随 `gwb:shell` 那条消息里的 `report` 一起来
+（见[桥](/docs/kernel/bridge#外壳地址setshell-说onshell-听)）；外壳在时页面根本不看这个字段。
+内核那半：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="150-189" */}
+
+状态词是 cordis 自己的 `FiberState` 原名，不另造中文：`ACTIVE` / `LOADING` / `UNLOADING` /
+`DISPOSED` 照抄；`PENDING` 带上缺哪个服务——件声明了 `inject` 没人提供时 fiber 就停在这儿，
+**不报错、不进日志**，这份现状是它唯一能被看见的地方；`FAILED` 带错误的第一行；条目根本
+没有 fiber（模块 import 失败）与 `disabled` 是 fiber 状态之外的两种，另起两个词。错误行从
+cordis 自带的日志缓冲里筛 error / warn，内核不自建缓冲。
+
+推的时机在内核那边：条目换态（cordis 的 `internal/status` 事件）与错误行到来都去抖成一次
+`gwb:shell` 重推：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="195-209" */}
+
+这条线为什么划在「只读、不归因」，以及它跟母仓的兜底页族、跟 09-08 那版阶段页的关系，
+见[刻意不做](/docs/not-doing#图形界面上的失败兜底页)。
 
 ## 两种角色，两个动词
 

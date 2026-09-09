@@ -36,7 +36,7 @@ include 不监听文件，改 yml 不热生效——热挂载走条目树 API（
 
 `gwb.shared` 这条值得钉住看——内核怎么消费它，决定了它只能是清单声明而不是运行时注册：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="110-121" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="119-130" */}
 
 **给人看的东西别往清单里放。** 曾经有个 `gwb.title`，四个包都写着，从来没有过读者；这种
 字段死掉的时候没有任何机制会发现，因为「没人读」跟「读了没用上」在盘上长得一模一样。

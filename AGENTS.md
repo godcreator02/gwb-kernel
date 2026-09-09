@@ -9,8 +9,7 @@ fd3 协议、`gwb://`、exports 解析、日志四路管道，全是为绕墙而
 重构在实验目录 `gwb-kernel-min` 里端到端验通（外壳、日志、总线、hello、node-cli、py-cli
 六件按新契约改造后真机跑过）再整套搬回来的。
 
-**文档站还钉着旧线**：`pnpm doc` 现在是红的，这是预期的，另议。这份 `AGENTS.md` 是眼下唯一
-跟得上代码的那份。
+文档站已跟上单进程线，`pnpm doc` 全绿；改机制页要连引用一起复核（`pnpm doc:confirm`）。
 
 ## 内核只做六件事，一个文件
 
@@ -21,15 +20,17 @@ fd3 协议、`gwb://`、exports 解析、日志四路管道，全是为绕墙而
 | 解析裸名（node 半） | 主进程没有 `--expose-internals`，内核给 `loader.internal` 塞五行按 home 解析                                         | 同上                              |
 | 解析裸名（浏览器半）   | 扫 home 清单里各包声明的 `gwb.shared`，解析成 `file://` importmap，随外壳地址推给页面，页面注完表才 import 外壳。内核不认识 react，只搬运提供方的声明 | 同上                              |
 | 开窗与桥         | 一扇窗；`gwb:command` 派给 `ctx.gwbCommands`；`gwb:event` 推事件；`gwb:shell` 告诉页面外壳是谁                           | `src/main.ts` `src/preload.cjs` |
-| 页面根          | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳一句话                                                             | `src/index.html`                |
-| 自己出错人看得见     | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退                                           | `src/main.ts`                   |
+| 页面根          | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳、或外壳起不来时画一份**只读现状**（各条目到哪一步、最近的错误行），没有按钮                        | `src/index.html`                |
+| 自己出错人看得见     | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退；`main()` 起不来先弹错误框再退                       | `src/main.ts`                   |
 
-（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。三个文件合计 274 行（含空行与注释）：
-`main.ts` 204、`index.html` 51、`preload.cjs` 19，外加词汇表 62。）
+（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。三个文件合计 383 行（含空行与注释）：
+`main.ts` 275、`index.html` 89、`preload.cjs` 19，外加词汇表 62。）
 
-**没有的**：`gwb://` 协议、exports 解析、`kernel.info`、阶段页、崩溃页、日志缓冲与轮转、
-宿主子进程与 fd3 协议、README 铺进 home、装机（内核不碰 pnpm）。这些全归件，或者归
-Electron 自己（页面直接吃 `file://`）。
+**没有的**：`gwb://` 协议、exports 解析、`kernel.info`、日志缓冲与轮转、宿主子进程与 fd3 协议、
+README 铺进 home、装机（内核不碰 pnpm），以及旧线阶段页与崩溃页那套机器（轮询、讣告、重试）。
+这些全归件，或者归 Electron 自己（页面直接吃 `file://`）。没有外壳时那份只读现状不是它们的
+回归：只画内核已经攥着的数据（loader 的条目树、logger 的缓冲），**不归因、不重试、不自动恢复**，
+边界见文档站「刻意不做」。
 
 importmap **曾经**试过归外壳（2026-09-09 上午的版本），当天推翻：它是页面级的运行时服务，
 没有外壳时别的浏览器半也得解析得到 react，而且共享包的声明权该在提供方不在消费方。现在是
@@ -95,7 +96,8 @@ $env:GWB_HOME='x'; .\run.cmd         # 名字 → homes\x；给路径（含 \ �
 ```
 
 根上的门禁是 `pnpm check`（`build:api` + `typecheck` + `lint` + `test`）。页面取证的小工具与规矩
-在 `.claude/skills/gwb-test/`（`cdp-eval.mjs`，表达式放文件不放命令行）。日志在 `<home>\gwb.log`：
+在总控台 `D:\unitfolders\26090520ntn\console\.claude\skills\gwb-devkit\`（`cdp-eval.mjs`，表达式放
+文件不放命令行；起内核带的 CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人的页面）。日志在 `<home>\gwb.log`：
 内核自己的话、件的、渲染层 console 转来的，全在这一份里。仓里不放验场、不放探针，临时东西
 一律进 scratchpad，跑完即废。
 
@@ -132,20 +134,18 @@ $env:GWB_HOME='x'; .\run.cmd         # 名字 → homes\x；给路径（含 \ �
 **件的包名：`@godcreator02/gwb-<件名>`**。加 `gwb-` 前缀跟废弃那批错开（`@godcreator02/shell`
 那些已被占着）。scope 不换。
 
-## 干活之前：判断层住 skill
+## 干活之前：判断层住总控台
 
-**本仓的一份**（坐在这儿自动可见——Claude 扫 `.claude/skills/`，ZCode 扫 `.agents/skills/`，
-后者是前者的 junction。换机器克隆后重建一条：
-`cmd /c mklink /J .agents\skills <仓根>\.claude\skills`）：
+本仓不放 skill（2026-09-09 整个撤走）。gwb 的三份 skill 正本住总控台
+`D:\unitfolders\26090520ntn\console\.claude\skills\`：
 
-| skill      | 什么时候用                                                                                                     |
-| ---------- | --------------------------------------------------------------------------------------------------------- |
-| `gwb-test` | 在你打算说「验过了 / 跑通了 / 改动生效了」之前。实机验证：每次验开自己的隔离 home 与命名法、开之前怎么确认产物是新的、件进 home 只有哪一条路、哪几种「看着成了」其实什么都没验、怎么从页面里取证 |
+| skill        | 什么时候用                                                          |
+| ------------ | -------------------------------------------------------------- |
+| `gwb-decide` | 遇到选型、判「进内核还是做成件」、决定要不要做某个功能之前。推完交给人拍板，拍板后记轨迹卡                  |
+| `gwb-devkit` | 写件的整条路；**改内核的验机路子在末尾一节**：隔离 home 与命名法、产物是不是新的、四种「看着成了」、怎么从页面取证 |
+| `gwb-doc`    | 写或改文档站之前                                                       |
 
-**总控台那四份**（`D:\unitfolders\26090520ntn\console\.claude\skills\`：`gwb-tdd` /
-`gwb-test` / `gwb-release` / `gwb-update`）**对象仓写的是 god-workbench**。判断层在这个仓
-一样适用，**但凡提到具体路径、包名、命令的部分都要按这个仓翻译一遍**。坐在本仓时它们不进
-上下文，按上面的路径直接 Read。
+坐在本仓时它们不进上下文，按那个路径直接 Read；从总控台起手就自动可见。
 
 ## 注释与文档：三层分流
 
@@ -164,8 +164,7 @@ $env:GWB_HOME='x'; .\run.cmd         # 名字 → homes\x；给路径（含 \ �
 一起提交。`CLAUDE.md` 只有一行 `@AGENTS.md`，不派生。
 
 **文档检查不在 `pnpm check` 里**——它要起文档站的解析链，太慢，每次跑测试都带上不值。
-单独两条 `pnpm doc` / `pnpm doc:confirm`。**改成单进程之后整站都还钉着旧线，现在是红的**，
-补文档是独立的一步，别在别的活里顺手改一半。
+单独两条 `pnpm doc` / `pnpm doc:confirm`。改机制再补文档是独立的一步，别在别的活里顺手改一半。
 
 ## 蹲住这条线
 

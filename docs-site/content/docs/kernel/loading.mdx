@@ -30,7 +30,7 @@ description: 内核连 yml 都不认识——挂载归两个官方件；件的�
 
 ## 引导链：顺序全是判据
 
-{/* ref file="../apps/desktop/src/main.ts" lines="184-192" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="252-260" */}
 
 1. **先 provide `gwbKernel`，再动 loader**。这个服务挂在根 fiber 上（根 fiber 生来 ACTIVE）、
    永不撤销，而且 provide 发生在模块顶层（`ctx.provide('gwbKernel', kernel)`）、结构上先于
@@ -55,7 +55,7 @@ description: 内核连 yml 都不认识——挂载归两个官方件；件的�
 内核扫 home 清单收齐、用 `createRequire(ctx.baseUrl)` 解析成 `file://` 表，随外壳地址推给
 页面。内核不认识 react 这个词，只搬运声明；共享包没有 node 半，清单是它唯一能说话的地方。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="92-97" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="101-106" */}
 
 两条规则都在这段扫描里：**先声明先得**——撞名只认先到的，后来者报一句警告、不算错；
 **解析不到也是警告不是错**——某个共享包坏了只损失它自己那几个裸名，不连累别的件。

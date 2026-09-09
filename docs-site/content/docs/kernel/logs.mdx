@@ -27,14 +27,18 @@ cordis 的日志在没有 exporter 时**只缓冲不输出**。内核的全量 e
 挂 loader、开窗都在它后面，第一个挂不上的件可能正是要报错的主角，它的报错不能等
 （见[那面墙](/docs/trajectory/2026-09-07-wall-loader-error-swallowed)）。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="58-81" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="58-90" */}
 
-两处细节值得看：
+三处细节值得看：
 
 - **渲染交给 cordis 自己的 `Logger.format`**——`%s`、`%o`、Error 它都认。类从一个实例的
   `constructor` 上取，免得 import cordis 的内部；format 失败还有一层把参数逐个 String 的
   兜底，**日志格式化自己坏了不能把业务调用点炸了**
 - 级别与名字在 cordis 那边就是字符串，`export` 里照抄不加工——真级别在源头就是真的
+- error / warn 到来时**捅一下页面**（`pushShell`，去抖）：没有外壳时页面画的那份只读现状
+  里有「最近的错误行」，它从 cordis 自带的 `buffer` 里筛——内核不自建缓冲，用 cordis 那份
+  （见[浏览器那半](/docs/plugins/client#没有外壳时那份只读现状)）。exporter 里做的仍然
+  只是「通知」，不写任何会进日志的东西
 
 ## 三路怎么齐的
 
@@ -44,14 +48,14 @@ cordis 的日志在没有 exporter 时**只缓冲不输出**。内核的全量 e
 | `kernel` | `kernel` | 内核自己的话也走 `ctx.logger('kernel')`，**不直接 `say`** |
 | `renderer` | `renderer` | 页面 console 经 `console-message` 事件转进来（见[载体](/docs/kernel/processes#渲染层的-console-归流)） |
 
-{/* ref file="../apps/desktop/src/main.ts" lines="83-90" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="92-99" */}
 
 「内核的话也走 logger」是刻意的小绕：不绕的话内核的话只进文件，件挂 exporter 收不到它。
 走了同一条流，**任何件挂一个 exporter 就把三路收齐**。件仓的 `gwb-logger` 就是那个收的
 件：挂第二个 exporter、从 `ctx.logger.buffer` 补历史段、经 `gwbKernel.emit` 推给页面上的
 日志窗格——内核不为窗格铺任何管道。
 
-88–90 行那两个 `process.on` 是「件跑在这个进程里」的直接后果：件的错就是这个进程的错。
+末尾那两个 `process.on` 是「件跑在这个进程里」的直接后果：件的错就是这个进程的错。
 **只记不退**——一个坏件不该带走工作台。三种坏法（apply 同步抛、没人接的 rejection、
 定时器里抛）实机验过全接得住、主进程活着，读数见
 [单进程重构](/docs/trajectory/2026-09-09-single-process)。
