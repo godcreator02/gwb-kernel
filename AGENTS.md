@@ -115,9 +115,8 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 * **配置一律 `gwbSettings.define`，不吃 `cordis.yml` 的 `config`**。条目只剩 `id` / `name` /
   `disabled`；件用时现读，没有变更通知
 * **命令描述必须写参数形状**。`register` 的 `description` 是形状的唯一真相，无参数写「无参数」
-* **MCP 顶层是申请加批准**。桥只固定 `gwb_command_list` / `gwb_command_run` 两枚，其余经
-  `run`；要上顶层在登记时标 `top: true`，上不上由 mcp 件的 `top` 设置（人批的名单）定，agent
-  不动名单
+* **MCP 顶层在写件时决定**。桥只固定 `gwb_command_list` / `gwb_command_run` 两枚，其余经
+  `run`；要上顶层在登记时标 `top: true`，桥照它渲染，没有运行时名单；agent 标之前先问人
 
 判据见[件的三条规矩](/docs/trajectory/2026-09-09-plugin-three-rules)。
 
