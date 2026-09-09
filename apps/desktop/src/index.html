@@ -4,8 +4,11 @@
     <meta charset="UTF-8" />
     <title>gwb</title>
     <style>
-      /* 只给没有外壳时那份只读现状用；外壳一来 #root 整个归它 */
-      .gwb-report { font: 13px/1.6 ui-monospace, Consolas, monospace; padding: 16px 20px; white-space: pre-wrap; }
+      /* 反闪兜底：与 main.ts 的窗底同一个值，也是令牌暗色 --background 那档井色。
+         令牌表没到、外壳没来的每一帧（含整页 reload 的第一帧）都按它画，不露白 */
+      html { background: #151518; }
+      /* 只给没有外壳时那份只读现状用；外壳一来 #root 整个归它。暗底上要亮字 */
+      .gwb-report { color: #fafafa; font: 13px/1.6 ui-monospace, Consolas, monospace; padding: 16px 20px; white-space: pre-wrap; }
       .gwb-report ul { padding-left: 1.5em; margin: 0.5em 0; }
       .gwb-report pre { margin: 0.5em 0 0; white-space: pre-wrap; }
     </style>

@@ -237,8 +237,15 @@ async function main(): Promise<void> {
   win = new BrowserWindow({
     width: 1100,
     height: 720,
+    // 窗底取令牌暗色那档井色（tokens.css 的 --background ≈ #151518），与 index.html 的
+    // html 背景同一个值：窗口创建到首帧之间、最小化还原的空档、整页 reload 的第一帧，
+    // 露出来的都是它而不是白。默认主题若换了底色，这里跟 index.html 一起改
+    backgroundColor: '#151518',
+    // 首帧画好再亮窗（ready-to-show），启动那一刻也不露白
+    show: false,
     webPreferences: { preload: path.join(here, 'preload.cjs') },
   })
+  win.once('ready-to-show', () => win?.show())
   // 渲染层的 console 也归进 cordis logger 那条流，名字 renderer。electron 的级别词只有 warning 一个跟 cordis 不同
   win.webContents.on('console-message', (event) => {
     const method = event.level === 'error' ? 'error' : event.level === 'warning' ? 'warn' : event.level === 'debug' ? 'debug' : 'info'
