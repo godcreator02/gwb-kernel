@@ -1,0 +1,72 @@
+# ESM 加戳重载的代价
+
+Node        v24.14.1  win32/x64
+跑的时刻    2026-09-10T06:39:30.741Z
+重载次数    60（前 10 次当热身，斜率从第 10 次起算）
+
+## 一 / 二、每次重载净泄漏多少，泄漏由什么构成
+
+  light.mjs 不带戳（对照）
+    最小二乘斜率      0.3 KiB/次   (R²=0.7375, 取样 50 点)
+    相邻差值中位数    0.0 KiB/次
+    heapUsed 首→尾    4.43 MiB → 4.47 MiB
+    heapTotal 增量    0.25 MiB
+    rss 增量          0.21 MiB
+    external 增量     0.0 KiB
+    命名空间对象存活  60/60，去重后 1 份（GC 之后 WeakRef 还 deref 得到的）
+
+  light.mjs 带戳
+    最小二乘斜率      5.9 KiB/次   (R²=0.9986, 取样 50 点)
+    相邻差值中位数    5.2 KiB/次
+    heapUsed 首→尾    4.48 MiB → 4.94 MiB
+    heapTotal 增量    1.00 MiB
+    rss 增量          1.06 MiB
+    external 增量     8.0 KiB
+    命名空间对象存活  60/60，去重后 60 份（GC 之后 WeakRef 还 deref 得到的）
+
+  heavy.mjs 不带戳（对照）
+    最小二乘斜率      0.1 KiB/次   (R²=0.9667, 取样 50 点)
+    相邻差值中位数    0.0 KiB/次
+    heapUsed 首→尾    5.95 MiB → 5.95 MiB
+    heapTotal 增量    2.75 MiB
+    rss 增量          1.45 MiB
+    external 增量     0.0 KiB
+    命名空间对象存活  60/60，去重后 1 份（GC 之后 WeakRef 还 deref 得到的）
+
+  heavy.mjs 带戳
+    最小二乘斜率      1032.3 KiB/次   (R²=1.0000, 取样 50 点)
+    相邻差值中位数    1031.8 KiB/次
+    heapUsed 首→尾    6.97 MiB → 66.44 MiB
+    heapTotal 增量    184.98 MiB
+    rss 增量          69.55 MiB
+    external 增量     0.0 KiB
+    命名空间对象存活  60/60，去重后 60 份（GC 之后 WeakRef 还 deref 得到的）
+
+  噪音底线（不带戳那两条的斜率绝对值取大）  0.3 KiB/次
+  模块本身（light 带戳）                     5.9 KiB/次
+  模块 + 1 MiB 闭包载荷（heavy 带戳）        1032.3 KiB/次
+  两者之差 ≈ 闭包持有的东西                  1026.3 KiB/次（假模块里放的是 1024.0 KiB）
+
+## 三、旧模块的副作用清得掉吗
+
+  第一幕 只加戳、不 dispose：
+    重载三次之后各自的累计 tick   {"A1":13,"A2":10,"A3":8}
+    再等 200ms，各自新增的 tick   {"A1":6,"A2":7,"A3":7}
+    还在跳的旧模块个数            2
+
+  第二幕 每次重载前先 dispose 上一个：
+    重载三次之后各自的累计 tick   {"B1":2,"B2":2,"B3":8}
+    再等 200ms，各自新增的 tick   {"B1":0,"B2":0,"B3":7}
+    还在跳的旧模块个数            0
+
+## 四、Node 有没有清除 ESM 模块图的口子
+
+  node:module 的导出（31 个）：
+    Module SourceMap _cache _debug _extensions _findPath _initPaths _load _nodeModulePaths _pathCache _preloadModules _resolveFilename _resolveLookupPaths builtinModules constants createRequire default enableCompileCache findPackageJSON findSourceMap flushCompileCache getCompileCacheDir getSourceMapsSupport globalPaths isBuiltin register registerHooks runMain setSourceMapsSupport stripTypeScriptTypes syncBuiltinESMExports
+  名字里带 cache/clear/delete/invalidate/flush/purge/unload/reset 的：
+    _cache _pathCache enableCompileCache flushCompileCache getCompileCacheDir
+  import 过的 .mjs 出现在 require.cache 里吗   否
+  不带旗子时 vm.SourceTextModule               {"hasSourceTextModule":"undefined"}
+  带 --experimental-vm-modules 连造两个实例    {"ok":true,"distinct":true}
+  --experimental-test-module-mocks 的 mock     {"mockModule":"function","restoreAll":"function"}
+
