@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "gwb-kernel 的文档站：livedoc 钉码 + 账本，README 与 .ai.md 由 render 摆出",
+  "description": "gwb-kernel 的文档站：docfirst 钉码 + 账本，README 与 .ai.md 由 render 摆出",
   "scripts": {
     "dev": "next dev -p 4314",
     "build": "next build",
     "start": "next start -p 4314",
-    "livedoc": "livedoc"
+    "docfirst": "docfirst"
   },
   "dependencies": {
     "fumadocs-core": "16.15.1",
@@ -19,9 +19,7 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@godcreator02/live-doc-cli": "0.1.0",
-    "@godcreator02/live-doc-format-fumadocs": "0.1.0",
-    "@godcreator02/live-doc-project": "0.1.0",
+    "@godcreator02/docfirst-workflow": "^0.2.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/mdx": "^2.0.14",
     "@types/node": "^26.2.0",

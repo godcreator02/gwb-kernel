@@ -9,8 +9,8 @@
     "lint": "oxlint . --type-aware --deny-warnings",
     "test": "vitest run",
     "check": "pnpm build:api && pnpm typecheck && pnpm lint && pnpm test",
-    "doc": "pnpm --filter gwb-kernel-docs-site exec livedoc check",
-    "doc:confirm": "pnpm --filter gwb-kernel-docs-site exec livedoc confirm"
+    "doc": "pnpm --filter gwb-kernel-docs-site exec docfirst check",
+    "doc:confirm": "pnpm --filter gwb-kernel-docs-site exec docfirst confirm"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
