@@ -1,0 +1,68 @@
+---
+title: 'peer 加现查能让活着的进程换掉依赖，但包必须是 home 的直接依赖'
+born-at: 2026-09-10T15:25
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 依赖热换
+domain: 主进程
+---
+
+## 背景
+
+件依赖一个**会独立升级**的 npm 包（livedoc），只读它的文件、起它的进程，从不 import 它的代码。
+包升级之后件仍读到旧内容、零报错，最后只能重启工作台。加戳强制重载那条路被上一张卡的数字否掉了
+（不可逆泄漏、还要求每个件把 `dispose()` 写对），于是要验另一条：**那个包降成 peer、件每次现查
+`<home>/node_modules/<包名>`，让它根本不进模块图。**
+
+pivots-from:: [重载代价](2026-09-10-esm-reload-leak-cost.md)
+
+## 结论与边界
+
+**方案成立，但成立的前提是那个包必须以直接依赖的身份出现在 home 的 `package.json` 里。**
+一个活着的 Node 进程，在包升级之后不重启、不重挂、不重新 import 任何模块，重新读一次
+`<home>/node_modules/<包名>/<文件>`，**读到的是新内容**；升级动作必须是 `pnpm add 包@精确版本`。
+
+**靠 pnpm 自动补 peer 那条省事的路不通**：自动装的 peer 只塞进 `.pnpm/`、只软链进件自己的私有
+`node_modules/`，`<home>/node_modules/<包名>` **根本不存在**。连带后果是 `plugins.outdated` 走的
+`pnpm outdated` 只看 `package.json`，自动补的 peer 永远进不了那份清单，`update-all` 也就永远升不到它。
+
+边界：pnpm **11.21.0**、Node v24.14.1、win32-x64 上验的，用的是五对自造假包，
+没在真件上复量；多个件 peer 同一个包时的卸载行为**没验**（方案里的处置是「卸件时不动 peer」，
+理由是代价不对称，不是实测结论）。
+
+## 经过
+
+五个场景各用自己的一对包名互不污染：peer 加只装件、peer 加件与库一起装、`dependencies`（今天的形状）、
+`.npmrc` 关自动装、`pnpm-workspace.yaml` 关自动装。每场一个长跑进程，起来时 import 一次假件、
+之后再不 import 任何东西；库发新版本与升级命令都发生在它活着的时候。每张快照并排量五样：现查 home
+根路径、攥着首次 `import.meta.resolve` 的 URL、同进程再 resolve、同进程再 `createRequire().resolve`、
+**新起进程** resolve（磁盘地面真相，与前几栏的差就是进程内缓存）。
+
+顺带测出两条：`auto-install-peers` 这个键在 pnpm 11 上**写 `.npmrc` 完全不认**（关了跟默认一模一样），
+只有 `pnpm-workspace.yaml` 认；`pnpm update` 对**精确版本**依赖是空操作，而真 home 里每条依赖都是
+精确版本——所以升级只能走 `pnpm add 包@新版本`。
+
+## 依据
+
+今天那个 bug 的成因由场景 c 钉死：`pnpm update` 之后磁盘真翻到了新版（新起进程 resolve 读到 new、
+件私有软链也改了指向），而老进程里再算 `import.meta.resolve` / `createRequire().resolve` **全是 old**，
+且「跟首次同一个 URL」这一栏五场十七次快照**全是「是」**。
+
+**差别不在缓存清不清得掉，在取址方式**：`import.meta.resolve` 返回的是解开软链、带版本号的**真实路径**，
+一次性定死；而 `<home>/node_modules/<包名>` 是一条 junction，pnpm 升级时会改它的指向。pnpm 又从不
+清理旧目录，旧文件原样躺着，读它一路成功——**这就是为什么全程零报错**。
+
+材料在 `probes/2609101500_peer-dep-live-swap/`，三次原始输出在它的 `runs/` 下。
+第一趟 `01-baseline.txt` 整段作废（五场共用同一对包名，第二场装的时候新版本已经在 registry 上了），
+留着当「场景互相污染」的现场。假包十个已全部 unpublish。
+
+## 代价与遗留
+
+**「谁把那个包装成 home 的直接依赖」成了新的卡点。** 实测下来只剩两条路：`plugins.install` 装件时
+顺带把 peer 装成直接依赖，或者人手装。开 `auto-install-peers` 那条被证伪，不是选项。
+
+`pnpm add` 会为件新建一个虚拟仓目录而**旧目录不清理**，所以任何还攥着旧真实路径的东西都会继续
+静默读旧文件——这条对将来任何「自己算路径」的代码都成立，不只这一处。
+
+多个件 peer 同一个包时怎么卸没验。方案里的处置是不动它：残留一个没人用的包只是占磁盘，
+误删一个还有件在用的包是运行时故障。
