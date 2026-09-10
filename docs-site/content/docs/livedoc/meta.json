@@ -1,6 +1,0 @@
-{
-  "title": "文档与账本",
-  "description": "livedoc 怎么运作、页怎么写——人和 AI 一起读的那套规矩",
-  "root": true,
-  "pages": ["how-it-works", "writing"]
-}

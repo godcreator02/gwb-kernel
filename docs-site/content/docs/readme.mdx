@@ -1,6 +1,6 @@
 ---
 title: README（仓根正本）
-description: 仓根 README.md 由这一页摆出去——改这里，跑 livedoc render，一起提交
+description: 仓根 README.md 由这一页摆出去——改这里，跑 docfirst render，一起提交
 ---
 
 # gwb-kernel
@@ -65,11 +65,11 @@ pnpm --filter gwb-kernel-docs-site dev     # http://localhost:4314
 ```
 
 **代码注释只写现状**——为什么这么写、撞过什么、判据怎么来的，全在文档站：机制页用
-livedoc 钉在对应代码上，代码一改就报黄，得有人复核；[轨迹](/docs/trajectory)一卡一
+docfirst 钉在对应代码上，代码一改就报黄，得有人复核；[轨迹](/docs/trajectory)一卡一
 文件记定过的事与撞过的墙，是纯历史，不钉码。
 
-`livedoc check` **不在 `pnpm check` 里**——它要起文档站的解析链，太慢，每次跑测试都带上
+`docfirst check` **不在 `pnpm check` 里**——它要起文档站的解析链，太慢，每次跑测试都带上
 不值。单独两条 `pnpm doc` / `pnpm doc:confirm`，改了被钉住的代码就跑一次。
 
 这份 README 是生成物，正本是 `docs-site/content/docs/readme.mdx`，改完在 `docs-site` 跑
-`pnpm livedoc render --target ai` 重摆，一起提交。
+`pnpm docfirst render --target ai` 重摆，一起提交。

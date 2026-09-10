@@ -150,11 +150,11 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 （`skill://gwb/<名>/SKILL.md` resource，server instructions 里逐条点名）。连着 `default` home
 的会话直接读；没连着就按包内路径 Read：
 
-| skill                         | 住哪                                                                                  | 什么时候用                                                          |
-| ----------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `gwb-devkit`                  | `gwb-devkit` 包 `skills/`（仓 `D:\unitfolders\260908dkv\gwb-devkit`）                   | 写件的整条路；**改内核的验机路子在末尾一节**：隔离 home 与命名法、产物是不是新的、四种「看着成了」、怎么从页面取证 |
-| `livedoc-docs` / `trajectory` | `live-doc-cli` 包 `skills/`（仓 `D:\unitfolders\26090315xby\god-live-doc`），devkit 代为挂上 | 写或改文档站之前；记轨迹卡之前                                                |
-| `gwb-decide`                  | 总控台 `D:\unitfolders\26090520ntn\console\.claude\skills\`（宿主 skill，不随件）              | 遇到选型、判「进内核还是做成件」、决定要不要做某个功能之前。推完交给人拍板，拍板后记轨迹卡                  |
+| skill                          | 住哪                                                                                             | 什么时候用                                                          |
+| ------------------------------ | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `gwb-devkit`                   | `gwb-devkit` 包 `skills/`（仓 `D:\unitfolders\260908dkv\gwb-devkit`）                              | 写件的整条路；**改内核的验机路子在末尾一节**：隔离 home 与命名法、产物是不是新的、四种「看着成了」、怎么从页面取证 |
+| `docfirst-docs` / `trajectory` | `@godcreator02/gwb-docfirst-workflow` 件 `skills/`（仓 `D:\unitfolders\26090315xby\god-live-doc`） | 写或改文档站之前；记轨迹卡之前                                                |
+| `gwb-decide`                   | 总控台 `D:\unitfolders\26090520ntn\console\.claude\skills\`（宿主 skill，不随件）                         | 遇到选型、判「进内核还是做成件」、决定要不要做某个功能之前。推完交给人拍板，拍板后记轨迹卡                  |
 
 判据与代价见[知识随件走](/docs/trajectory/2026-09-09-knowledge-rides-package)。
 
@@ -166,12 +166,12 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 | 文档站（钉代码）       | 为什么这么定、撞过什么、判据怎么来的  | 需要时查；代码一变就报黄  |
 | 代码注释           | 只写现状：这个文件装什么、这行在做什么 | 离了它读不懂**这一行** |
 
-**注释里不写文档站的页名或锚点**——livedoc 只钉「文档 → 代码」，反向没有任何守卫，
+**注释里不写文档站的页名或锚点**——docfirst 只钉「文档 → 代码」，反向没有任何守卫，
 写死位置必然腐烂而且没人发现。要指路就写「见文档站」四个字。
 
 文档站正本在 `docs-site/content/docs/`，`pnpm --filter gwb-kernel-docs-site dev` 起在 4314。
 **仓根 `README.md` 与这份 `AGENTS.md` 都是生成物，别手改**——正本分别是 `content/docs/readme.mdx`
-与 `content/docs/agents.mdx`，改完在 `docs-site` 跑 `pnpm livedoc render --target ai` 重摆，
+与 `content/docs/agents.mdx`，改完在 `docs-site` 跑 `pnpm docfirst render --target ai` 重摆，
 一起提交。`CLAUDE.md` 只有一行 `@AGENTS.md`，不派生。
 
 **文档检查不在 `pnpm check` 里**——它要起文档站的解析链，太慢，每次跑测试都带上不值。

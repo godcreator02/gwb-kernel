@@ -29,8 +29,8 @@ lint 面很小，但**它是靠人记的**——仓里眼下就五个 `.ts`：�
 在不在某份 tsconfig 里，它会静默留在 lint 面外，没有任何东西会说话。数不上就该去看一眼。
 
 **文档站不在里面**：它钉 `typescript ^6.0.3`，而 type-aware 要 TS 7+，tsgolint 给它建不出
-program。它本来也不进根 build/test，自己有 `livedoc check` 与 `next build` 两道，
-见[账本与钉码](/docs/livedoc/how-it-works)。
+program。它本来也不进根 build/test，自己有 `docfirst check` 与 `next build` 两道，
+见[账本与钉码](/docs/docfirst/how-it-works)。
 
 两个 flag 都不是装饰：**不带 `--deny-warnings`，有诊断也照样 `exit 0`**（屏幕上有红字而
 门禁放行）；`--type-aware` 配置里已经开着，CLI 上再写一次是为了让「它没生效」变成看得见

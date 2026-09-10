@@ -5,7 +5,7 @@ description: 文档怎么钉住代码、账本记了什么、check 四色各是�
 
 # 账本与钉码
 
-读完这页你能回答：livedoc 的五类引用怎么写；账本里存的是什么；check 的四种颜色分别要你做什么；为什么它不在 `pnpm check` 里。
+读完这页你能回答：docfirst 的五类引用怎么写；账本里存的是什么；check 的四种颜色分别要你做什么；为什么它不在 `pnpm check` 里。
 
 ## 文档钉代码
 
@@ -17,7 +17,7 @@ description: 文档怎么钉住代码、账本记了什么、check 四色各是�
 
 五类引用：`ref`（行段/整文件）、`tree`（目录树，可带 depth）、`exists`/`absent`（断言在/不在）、`has`（文件里有这个字面量）。**引用路径相对文档站目录**（`../apps/...`）。**跨仓钉不了**——件仓的代码只能在件仓自己的站上钉。
 
-草稿写 `@@livedoc ref ../x.ts:12-20 @@`，confirm 时转正。
+草稿写 `@@docfirst ref ../x.ts:12-20 @@`，confirm 时转正。
 
 ## 账本：`.ledger.json`
 
@@ -42,7 +42,7 @@ check 还会报：孤儿记录、已删文档的残留记录、名册外组件�
 
 ## 生成物：README 与 `.ai.md`
 
-`livedoc.config.mjs` 的 `outputs` 把正本摆出去：`readme.mdx` → 仓根 `README.md`。`render --target ai` 把每页渲染成无 JSX、锚点齐全、引用展开成真代码的 `.ai.md`——给不带浏览器的读者（比如 agent）直接读的那份。
+`docfirst.config.mjs` 的 `outputs` 把正本摆出去：`readme.mdx` → 仓根 `README.md`。`render --target ai` 把每页渲染成无 JSX、锚点齐全、引用展开成真代码的 `.ai.md`——给不带浏览器的读者（比如 agent）直接读的那份。
 
 **README 别手改**，改正本、跑 render、一起提交。
 
@@ -51,7 +51,7 @@ check 还会报：孤儿记录、已删文档的残留记录、名册外组件�
 它要起文档站的解析链，太慢，每次跑测试都带上不值。单独两条：
 
 ```powershell
-pnpm doc          # livedoc check：钉住的代码变了报黄，指向空气报红
+pnpm doc          # docfirst check：钉住的代码变了报黄，指向空气报红
 pnpm doc:confirm  # 看过之后确认；草稿记号也在这一步转正
 ```
 
@@ -59,4 +59,4 @@ pnpm doc:confirm  # 看过之后确认；草稿记号也在这一步转正
 
 ## 反向没有守卫
 
-livedoc 只钉「文档 → 代码」。代码里想指文档？没有任何机制保证那个页面还在——所以**注释里不写文档站的页名或锚点**，要指路就写「见文档站」四个字。
+docfirst 只钉「文档 → 代码」。代码里想指文档？没有任何机制保证那个页面还在——所以**注释里不写文档站的页名或锚点**，要指路就写「见文档站」四个字。
