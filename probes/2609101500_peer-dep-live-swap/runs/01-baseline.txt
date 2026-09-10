@@ -1,0 +1,692 @@
+
+==============================================================================
+零、环境
+==============================================================================
+$ pnpm --version
+  | 11.21.0
+  → exit 0
+
+node: v24.14.1
+平台: win32/x64
+$ pnpm config get auto-install-peers
+  | undefined
+  → exit 0
+
+$ npm ping --registry http://127.0.0.1:4873/
+  | npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+  | npm notice PING http://127.0.0.1:4873/
+  | npm notice PONG 10ms
+  → exit 0
+
+用户级 ~/.npmrc (C:\Users\godamericatb14\.npmrc) 存在？ true
+  | @godcreator02:registry=http://127.0.0.1:4873/
+  | //registry.npmjs.org/:_authToken=<抹掉>
+
+真 home 里有没有 .npmrc 覆盖（只读不改，default home 此刻人在用）:
+  antiflash-2609091538: (没有 .npmrc)
+  badyml-2609090838: (没有 .npmrc)
+  block-note-2609100323: @godcreator02:registry=http://127.0.0.1:4873/
+  block-note-2609100425: @godcreator02:registry=http://127.0.0.1:4873/
+  broken-2609090837: (没有 .npmrc)
+  default: (没有 .npmrc)
+  default-old: (没有 .npmrc)
+  devkit-2609101239: @godcreator02:registry=http://127.0.0.1:4873/
+  devloop-2609100215: @godcreator02:registry=http://127.0.0.1:4873/
+  docssite-2609100240: @godcreator02:registry=http://127.0.0.1:4873/
+  empty-2609090836: (没有 .npmrc)
+  ldinit-2609100035: (没有 .npmrc)
+  livedoc-2609092040: @godcreator02:registry=http://127.0.0.1:4873/
+  prefix-2609090824: (没有 .npmrc)
+  prefix-all-2609091137: (没有 .npmrc)
+  unit-folder-2609091457: @godcreator02:registry=http://127.0.0.1:4873/
+
+==============================================================================
+一、造假包并发到本机 registry
+==============================================================================
+工作目录 = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work
+假库 = @godcreator02/probe-peer-lib（0.1.0 marker=old / 0.1.1 marker=new）
+假件 = @godcreator02/probe-peer-plugin（peerDependencies: { "@godcreator02/probe-peer-lib": "^0.1.0" }，从不 import 它）
+
+$ pnpm unpublish @godcreator02/probe-peer-lib --force --registry http://127.0.0.1:4873/   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work)
+  | [WARN] using --force I sure hope you know what you are doing
+  | [ERR_PNPM_PACKAGE_NOT_FOUND] Package "@godcreator02/probe-peer-lib" not found in registry
+  → exit 1
+
+$ pnpm unpublish @godcreator02/probe-peer-plugin --force --registry http://127.0.0.1:4873/   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work)
+  | [WARN] using --force I sure hope you know what you are doing
+  | [ERR_PNPM_PACKAGE_NOT_FOUND] Package "@godcreator02/probe-peer-plugin" not found in registry
+  → exit 1
+
+$ pnpm publish --registry http://127.0.0.1:4873/ --no-git-checks   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\lib-0.1.0)
+  | 📦 @godcreator02/probe-peer-lib@0.1.0 → http://127.0.0.1:4873/
+  | ✅ Published package @godcreator02/probe-peer-lib@0.1.0
+  → exit 0
+
+$ pnpm publish --registry http://127.0.0.1:4873/ --no-git-checks   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\plugin-0.1.0)
+  | 📦 @godcreator02/probe-peer-plugin@0.1.0 → http://127.0.0.1:4873/
+  | ✅ Published package @godcreator02/probe-peer-plugin@0.1.0
+  → exit 0
+
+$ npm view @godcreator02/probe-peer-lib versions --registry http://127.0.0.1:4873/
+  | 0.1.0
+  | npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+  → exit 0
+
+
+==============================================================================
+场景 A-默认设置
+==============================================================================
+home = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置
+home/.npmrc = @godcreator02:registry=http://127.0.0.1:4873/
+
+$ pnpm add @godcreator02/probe-peer-plugin@0.1.0   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置)
+  | Progress: resolved 1, reused 0, downloaded 0, added 0
+  | Packages: +2
+  | ++
+  | Packages are hard linked from the content-addressable store to the virtual store.
+  |   Content-addressable store is at: C:\Users\godamericatb14\AppData\Local\pnpm\store\v11
+  |   Virtual store is at:             node_modules/.pnpm
+  | Progress: resolved 2, reused 0, downloaded 2, added 2, done
+  | 
+  | dependencies:
+  | + @godcreator02/probe-peer-plugin 0.1.0
+  | 
+  | Done in 456ms using pnpm v11.21.0
+  → exit 0
+
+--- 现场 [A-默认设置 装完 · lib 还是 0.1.0] ---
+home/package.json: { "name": "gwb-home", "private": true, "dependencies": { "@godcreator02/probe-peer-plugin": "0.1.0" } }
+node_modules/.modules.yaml: "hoistPattern": [ | "nodeLinker": "isolated",
+<home>/node_modules/@godcreator02/probe-peer-lib 存在？ false
+  .pnpm/ 下与假包相关的目录: @godcreator02+probe-peer-lib@0.1.0, @godcreator02+probe-peer-pl_3e750703517a0c7db17f523b0c20f834
+  锁文件 importers 段:
+    | importers:
+    | 
+    |   .:
+    |     dependencies:
+    |       '@godcreator02/probe-peer-plugin':
+    |         specifier: 0.1.0
+    |         version: 0.1.0(@godcreator02/probe-peer-lib@0.1.0)
+    | 
+    | packages:
+    | 
+    |   '@godcreator02/probe-peer-lib@0.1.0':
+    |     resolution: {integrity: sha512-QwYs0fhXN+cgAC5z94ez9Mo+0x8NaAqaydrwxXEi67RvPoJdoETMjL+jg8L2ZNe9FQDj3Vt2fULplhzmAG3p/w==}
+    | 
+    |   '@godcreator02/probe-peer-plugin@0.1.0':
+
+$ pnpm list --depth 1   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置)
+  | Legend: production dependency, optional only, dev only
+  | 
+  | gwb-home C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置 (PRIVATE)
+  | │
+  | │   dependencies:
+  | └─┬ @godcreator02/probe-peer-plugin@0.1.0
+  |   └── @godcreator02/probe-peer-lib@0.1.0 peer
+  | 
+  | 2 packages
+  → exit 0
+
+长跑进程起来了: READY {"home":"C:\\Users\\GODAME~1\\AppData\\Local\\Temp\\gwb-probe-peer\\work\\home-A-默认设置","libDir":"C:\\Users\\GODAME~1\\AppData\\Local\\Temp\\gwb-probe-peer\\work\\home-A-默认设置\\node_modules\\@godcreator02\\probe-peer-lib"}
+
+--- 长跑进程快照 [升级前] ---
+  现查路径 <home>/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    marker      = ERR ENOENT
+    version     = ERR ENOENT
+    形态        = ERR ENOENT → ERR ENOENT
+    realpath    = ERR ENOENT
+  攥着首次 import.meta.resolve 的 URL（今天件的做法）
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-A-%E9%BB%98%E8%AE%A4%E8%AE%BE%E7%BD%AE/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.0/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = old
+  同进程里再算一次 import.meta.resolve
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-A-%E9%BB%98%E8%AE%A4%E8%AE%BE%E7%BD%AE/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.0/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = old
+    跟首次一样？ true
+  同进程里再算一次 createRequire().resolve
+    path        = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib\marker.txt
+    读出来      = old
+
+
+==============================================================================
+二、假库发 0.1.1（marker=new），长跑进程此刻还活着
+==============================================================================
+$ pnpm publish --registry http://127.0.0.1:4873/ --no-git-checks   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\lib-0.1.1)
+  | 📦 @godcreator02/probe-peer-lib@0.1.1 → http://127.0.0.1:4873/
+  | ✅ Published package @godcreator02/probe-peer-lib@0.1.1
+  → exit 0
+
+$ npm view @godcreator02/probe-peer-lib versions --registry http://127.0.0.1:4873/
+  | [ '0.1.0', '0.1.1' ]
+  | npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+  → exit 0
+
+
+==============================================================================
+场景 A-默认设置 · 升级动作: pnpm update @godcreator02/probe-peer-lib
+==============================================================================
+$ pnpm update @godcreator02/probe-peer-lib   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置)
+  | ✓ Lockfile passes supply-chain policies (verified 2s ago)
+  | Progress: resolved 1, reused 0, downloaded 0, added 0
+  | Already up to date
+  | Progress: resolved 2, reused 0, downloaded 0, added 0, done
+  | 
+  | Done in 429ms using pnpm v11.21.0
+  → exit 0
+
+--- 现场 [A-默认设置 跑完 pnpm update @godcreator02/probe-peer-lib] ---
+home/package.json: { "name": "gwb-home", "private": true, "dependencies": { "@godcreator02/probe-peer-plugin": "0.1.0" } }
+node_modules/.modules.yaml: "hoistPattern": [ | "nodeLinker": "isolated",
+<home>/node_modules/@godcreator02/probe-peer-lib 存在？ false
+  .pnpm/ 下与假包相关的目录: @godcreator02+probe-peer-lib@0.1.0, @godcreator02+probe-peer-pl_3e750703517a0c7db17f523b0c20f834
+  锁文件 importers 段:
+    | importers:
+    | 
+    |   .:
+    |     dependencies:
+    |       '@godcreator02/probe-peer-plugin':
+    |         specifier: 0.1.0
+    |         version: 0.1.0(@godcreator02/probe-peer-lib@0.1.0)
+    | 
+    | packages:
+    | 
+    |   '@godcreator02/probe-peer-lib@0.1.0':
+    |     resolution: {integrity: sha512-QwYs0fhXN+cgAC5z94ez9Mo+0x8NaAqaydrwxXEi67RvPoJdoETMjL+jg8L2ZNe9FQDj3Vt2fULplhzmAG3p/w==}
+    | 
+    |   '@godcreator02/probe-peer-plugin@0.1.0':
+
+--- 长跑进程快照 [pnpm update @godcreator02/probe-peer-lib 之后] ---
+  现查路径 <home>/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    marker      = ERR ENOENT
+    version     = ERR ENOENT
+    形态        = ERR ENOENT → ERR ENOENT
+    realpath    = ERR ENOENT
+  攥着首次 import.meta.resolve 的 URL（今天件的做法）
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-A-%E9%BB%98%E8%AE%A4%E8%AE%BE%E7%BD%AE/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.0/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = old
+  同进程里再算一次 import.meta.resolve
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-A-%E9%BB%98%E8%AE%A4%E8%AE%BE%E7%BD%AE/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.0/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = old
+    跟首次一样？ true
+  同进程里再算一次 createRequire().resolve
+    path        = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib\marker.txt
+    读出来      = old
+
+
+==============================================================================
+场景 A-默认设置 · 升级动作: pnpm update
+==============================================================================
+$ pnpm update   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置)
+  | ✓ Lockfile passes supply-chain policies (verified 442ms ago)
+  | Progress: resolved 1, reused 0, downloaded 0, added 0
+  | Already up to date
+  | Progress: resolved 2, reused 0, downloaded 0, added 0, done
+  | 
+  | Done in 430ms using pnpm v11.21.0
+  → exit 0
+
+--- 现场 [A-默认设置 跑完 pnpm update] ---
+home/package.json: { "name": "gwb-home", "private": true, "dependencies": { "@godcreator02/probe-peer-plugin": "0.1.0" } }
+node_modules/.modules.yaml: "hoistPattern": [ | "nodeLinker": "isolated",
+<home>/node_modules/@godcreator02/probe-peer-lib 存在？ false
+  .pnpm/ 下与假包相关的目录: @godcreator02+probe-peer-lib@0.1.0, @godcreator02+probe-peer-pl_3e750703517a0c7db17f523b0c20f834
+  锁文件 importers 段:
+    | importers:
+    | 
+    |   .:
+    |     dependencies:
+    |       '@godcreator02/probe-peer-plugin':
+    |         specifier: 0.1.0
+    |         version: 0.1.0(@godcreator02/probe-peer-lib@0.1.0)
+    | 
+    | packages:
+    | 
+    |   '@godcreator02/probe-peer-lib@0.1.0':
+    |     resolution: {integrity: sha512-QwYs0fhXN+cgAC5z94ez9Mo+0x8NaAqaydrwxXEi67RvPoJdoETMjL+jg8L2ZNe9FQDj3Vt2fULplhzmAG3p/w==}
+    | 
+    |   '@godcreator02/probe-peer-plugin@0.1.0':
+
+--- 长跑进程快照 [pnpm update 之后] ---
+  现查路径 <home>/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    marker      = ERR ENOENT
+    version     = ERR ENOENT
+    形态        = ERR ENOENT → ERR ENOENT
+    realpath    = ERR ENOENT
+  攥着首次 import.meta.resolve 的 URL（今天件的做法）
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-A-%E9%BB%98%E8%AE%A4%E8%AE%BE%E7%BD%AE/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.0/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = old
+  同进程里再算一次 import.meta.resolve
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-A-%E9%BB%98%E8%AE%A4%E8%AE%BE%E7%BD%AE/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.0/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = old
+    跟首次一样？ true
+  同进程里再算一次 createRequire().resolve
+    path        = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib\marker.txt
+    读出来      = old
+
+
+==============================================================================
+场景 A-默认设置 · 升级动作: pnpm install
+==============================================================================
+$ pnpm install   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置)
+  | Already up to date
+  | Done in 286ms using pnpm v11.21.0
+  → exit 0
+
+--- 现场 [A-默认设置 跑完 pnpm install] ---
+home/package.json: { "name": "gwb-home", "private": true, "dependencies": { "@godcreator02/probe-peer-plugin": "0.1.0" } }
+node_modules/.modules.yaml: "hoistPattern": [ | "nodeLinker": "isolated",
+<home>/node_modules/@godcreator02/probe-peer-lib 存在？ false
+  .pnpm/ 下与假包相关的目录: @godcreator02+probe-peer-lib@0.1.0, @godcreator02+probe-peer-pl_3e750703517a0c7db17f523b0c20f834
+  锁文件 importers 段:
+    | importers:
+    | 
+    |   .:
+    |     dependencies:
+    |       '@godcreator02/probe-peer-plugin':
+    |         specifier: 0.1.0
+    |         version: 0.1.0(@godcreator02/probe-peer-lib@0.1.0)
+    | 
+    | packages:
+    | 
+    |   '@godcreator02/probe-peer-lib@0.1.0':
+    |     resolution: {integrity: sha512-QwYs0fhXN+cgAC5z94ez9Mo+0x8NaAqaydrwxXEi67RvPoJdoETMjL+jg8L2ZNe9FQDj3Vt2fULplhzmAG3p/w==}
+    | 
+    |   '@godcreator02/probe-peer-plugin@0.1.0':
+
+--- 长跑进程快照 [pnpm install 之后] ---
+  现查路径 <home>/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    marker      = ERR ENOENT
+    version     = ERR ENOENT
+    形态        = ERR ENOENT → ERR ENOENT
+    realpath    = ERR ENOENT
+  攥着首次 import.meta.resolve 的 URL（今天件的做法）
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-A-%E9%BB%98%E8%AE%A4%E8%AE%BE%E7%BD%AE/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.0/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = old
+  同进程里再算一次 import.meta.resolve
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-A-%E9%BB%98%E8%AE%A4%E8%AE%BE%E7%BD%AE/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.0/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = old
+    跟首次一样？ true
+  同进程里再算一次 createRequire().resolve
+    path        = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib\marker.txt
+    读出来      = old
+
+
+==============================================================================
+场景 A-默认设置 · 升级动作: pnpm add @godcreator02/probe-peer-lib@0.1.1
+==============================================================================
+$ pnpm add @godcreator02/probe-peer-lib@0.1.1   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置)
+  | ✓ Lockfile passes supply-chain policies (verified 815ms ago)
+  | Progress: resolved 1, reused 0, downloaded 0, added 0
+  | Packages: +2 -2
+  | ++--
+  | Progress: resolved 2, reused 1, downloaded 1, added 2, done
+  | 
+  | dependencies:
+  | + @godcreator02/probe-peer-lib 0.1.1
+  | 
+  | Done in 457ms using pnpm v11.21.0
+  → exit 0
+
+--- 现场 [A-默认设置 跑完 pnpm add @godcreator02/probe-peer-lib@0.1.1] ---
+home/package.json: { "name": "gwb-home", "private": true, "dependencies": { "@godcreator02/probe-peer-lib": "0.1.1", "@godcreator02/probe-peer-plugin": "0.1.0" } }
+node_modules/.modules.yaml: "hoistPattern": [ | "nodeLinker": "isolated",
+<home>/node_modules/@godcreator02/probe-peer-lib 存在？ true
+  形态: symlink/junction
+  readlink: C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.1\node_modules\@godcreator02\probe-peer-lib
+  marker.txt: new
+  package.json version: 0.1.1
+  .pnpm/ 下与假包相关的目录: @godcreator02+probe-peer-lib@0.1.0, @godcreator02+probe-peer-lib@0.1.1, @godcreator02+probe-peer-pl_3e750703517a0c7db17f523b0c20f834, @godcreator02+probe-peer-pl_ed0d53b617661ae551165e67f661f2ef
+  锁文件 importers 段:
+    | importers:
+    | 
+    |   .:
+    |     dependencies:
+    |       '@godcreator02/probe-peer-lib':
+    |         specifier: 0.1.1
+    |         version: 0.1.1
+    |       '@godcreator02/probe-peer-plugin':
+    |         specifier: 0.1.0
+    |         version: 0.1.0(@godcreator02/probe-peer-lib@0.1.1)
+    | 
+    | packages:
+    | 
+    |   '@godcreator02/probe-peer-lib@0.1.1':
+
+--- 长跑进程快照 [pnpm add @godcreator02/probe-peer-lib@0.1.1 之后] ---
+  现查路径 <home>/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    marker      = new
+    version     = 0.1.1
+    形态        = symlink/junction → C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.1\node_modules\@godcreator02\probe-peer-lib
+    realpath    = C:\Users\godamericatb14\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.1\node_modules\@godcreator02\probe-peer-lib
+  攥着首次 import.meta.resolve 的 URL（今天件的做法）
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-A-%E9%BB%98%E8%AE%A4%E8%AE%BE%E7%BD%AE/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.0/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = old
+  同进程里再算一次 import.meta.resolve
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-A-%E9%BB%98%E8%AE%A4%E8%AE%BE%E7%BD%AE/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.0/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = old
+    跟首次一样？ true
+  同进程里再算一次 createRequire().resolve
+    path        = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-A-默认设置\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib\marker.txt
+    读出来      = old
+
+
+==============================================================================
+场景 A-默认设置 · 汇总
+==============================================================================
+| 升级动作 | 现查路径读到 | 攥着的 URL 读到 | 再算 resolve 读到 | resolve 跟首次一样？ |
+| --- | --- | --- | --- | --- |
+| （升级前） | ERR ENOENT (vERR ENOENT) | old | old | true |
+| pnpm update @godcreator02/probe-peer-lib | ERR ENOENT (vERR ENOENT) | old | old | true |
+| pnpm update | ERR ENOENT (vERR ENOENT) | old | old | true |
+| pnpm install | ERR ENOENT (vERR ENOENT) | old | old | true |
+| pnpm add @godcreator02/probe-peer-lib@0.1.1 | new (v0.1.1) | old | old | true |
+
+
+==============================================================================
+场景 B-关掉auto-install-peers
+==============================================================================
+home = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers
+home/.npmrc = @godcreator02:registry=http://127.0.0.1:4873/ ; auto-install-peers=false
+
+$ pnpm add @godcreator02/probe-peer-plugin@0.1.0   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers)
+  | Progress: resolved 1, reused 0, downloaded 0, added 0
+  | Packages: +2
+  | ++
+  | Packages are hard linked from the content-addressable store to the virtual store.
+  |   Content-addressable store is at: C:\Users\godamericatb14\AppData\Local\pnpm\store\v11
+  |   Virtual store is at:             node_modules/.pnpm
+  | Progress: resolved 2, reused 2, downloaded 0, added 2, done
+  | 
+  | dependencies:
+  | + @godcreator02/probe-peer-plugin 0.1.0
+  | 
+  | Done in 444ms using pnpm v11.21.0
+  → exit 0
+
+--- 现场 [B-关掉auto-install-peers 装完 · lib 还是 0.1.0] ---
+home/package.json: { "name": "gwb-home", "private": true, "dependencies": { "@godcreator02/probe-peer-plugin": "0.1.0" } }
+node_modules/.modules.yaml: "hoistPattern": [ | "nodeLinker": "isolated",
+<home>/node_modules/@godcreator02/probe-peer-lib 存在？ false
+  .pnpm/ 下与假包相关的目录: @godcreator02+probe-peer-lib@0.1.1, @godcreator02+probe-peer-pl_ed0d53b617661ae551165e67f661f2ef
+  锁文件 importers 段:
+    | importers:
+    | 
+    |   .:
+    |     dependencies:
+    |       '@godcreator02/probe-peer-plugin':
+    |         specifier: 0.1.0
+    |         version: 0.1.0(@godcreator02/probe-peer-lib@0.1.1)
+    | 
+    | packages:
+    | 
+    |   '@godcreator02/probe-peer-lib@0.1.1':
+    |     resolution: {integrity: sha512-4AfsTcymeSMC/jagB1prziXaauKrzPo+hED7gsJbMkxfIyydRzQwYwu+EqITMKnzVRxBVrDnqzDZMjGglf2EHQ==}
+    | 
+    |   '@godcreator02/probe-peer-plugin@0.1.0':
+
+$ pnpm list --depth 1   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers)
+  | Legend: production dependency, optional only, dev only
+  | 
+  | gwb-home C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers (PRIVATE)
+  | │
+  | │   dependencies:
+  | └─┬ @godcreator02/probe-peer-plugin@0.1.0
+  |   └── @godcreator02/probe-peer-lib@0.1.1 peer
+  | 
+  | 2 packages
+  → exit 0
+
+长跑进程起来了: READY {"home":"C:\\Users\\GODAME~1\\AppData\\Local\\Temp\\gwb-probe-peer\\work\\home-B-关掉auto-install-peers","libDir":"C:\\Users\\GODAME~1\\AppData\\Local\\Temp\\gwb-probe-peer\\work\\home-B-关掉auto-install-peers\\node_modules\\@godcreator02\\probe-peer-lib"}
+
+--- 长跑进程快照 [升级前] ---
+  现查路径 <home>/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    marker      = ERR ENOENT
+    version     = ERR ENOENT
+    形态        = ERR ENOENT → ERR ENOENT
+    realpath    = ERR ENOENT
+  攥着首次 import.meta.resolve 的 URL（今天件的做法）
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-B-%E5%85%B3%E6%8E%89auto-install-peers/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.1/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = new
+  同进程里再算一次 import.meta.resolve
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-B-%E5%85%B3%E6%8E%89auto-install-peers/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.1/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = new
+    跟首次一样？ true
+  同进程里再算一次 createRequire().resolve
+    path        = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.1\node_modules\@godcreator02\probe-peer-lib\marker.txt
+    读出来      = new
+
+
+==============================================================================
+场景 B-关掉auto-install-peers · 升级动作: pnpm update @godcreator02/probe-peer-lib
+==============================================================================
+$ pnpm update @godcreator02/probe-peer-lib   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers)
+  | ✓ Lockfile passes supply-chain policies (verified 860ms ago)
+  | Progress: resolved 1, reused 0, downloaded 0, added 0
+  | Already up to date
+  | Progress: resolved 2, reused 0, downloaded 0, added 0, done
+  | 
+  | Done in 395ms using pnpm v11.21.0
+  → exit 0
+
+--- 现场 [B-关掉auto-install-peers 跑完 pnpm update @godcreator02/probe-peer-lib] ---
+home/package.json: { "name": "gwb-home", "private": true, "dependencies": { "@godcreator02/probe-peer-plugin": "0.1.0" } }
+node_modules/.modules.yaml: "hoistPattern": [ | "nodeLinker": "isolated",
+<home>/node_modules/@godcreator02/probe-peer-lib 存在？ false
+  .pnpm/ 下与假包相关的目录: @godcreator02+probe-peer-lib@0.1.1, @godcreator02+probe-peer-pl_ed0d53b617661ae551165e67f661f2ef
+  锁文件 importers 段:
+    | importers:
+    | 
+    |   .:
+    |     dependencies:
+    |       '@godcreator02/probe-peer-plugin':
+    |         specifier: 0.1.0
+    |         version: 0.1.0(@godcreator02/probe-peer-lib@0.1.1)
+    | 
+    | packages:
+    | 
+    |   '@godcreator02/probe-peer-lib@0.1.1':
+    |     resolution: {integrity: sha512-4AfsTcymeSMC/jagB1prziXaauKrzPo+hED7gsJbMkxfIyydRzQwYwu+EqITMKnzVRxBVrDnqzDZMjGglf2EHQ==}
+    | 
+    |   '@godcreator02/probe-peer-plugin@0.1.0':
+
+--- 长跑进程快照 [pnpm update @godcreator02/probe-peer-lib 之后] ---
+  现查路径 <home>/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    marker      = ERR ENOENT
+    version     = ERR ENOENT
+    形态        = ERR ENOENT → ERR ENOENT
+    realpath    = ERR ENOENT
+  攥着首次 import.meta.resolve 的 URL（今天件的做法）
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-B-%E5%85%B3%E6%8E%89auto-install-peers/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.1/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = new
+  同进程里再算一次 import.meta.resolve
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-B-%E5%85%B3%E6%8E%89auto-install-peers/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.1/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = new
+    跟首次一样？ true
+  同进程里再算一次 createRequire().resolve
+    path        = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.1\node_modules\@godcreator02\probe-peer-lib\marker.txt
+    读出来      = new
+
+
+==============================================================================
+场景 B-关掉auto-install-peers · 升级动作: pnpm add @godcreator02/probe-peer-lib@0.1.0
+==============================================================================
+$ pnpm add @godcreator02/probe-peer-lib@0.1.0   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers)
+  | ✓ Lockfile passes supply-chain policies (verified 415ms ago)
+  | Progress: resolved 1, reused 0, downloaded 0, added 0
+  | Packages: +2 -2
+  | ++--
+  | Progress: resolved 2, reused 2, downloaded 0, added 2, done
+  | 
+  | dependencies:
+  | + @godcreator02/probe-peer-lib 0.1.0 (0.1.1 is available)
+  | 
+  | Done in 423ms using pnpm v11.21.0
+  → exit 0
+
+--- 现场 [B-关掉auto-install-peers 跑完 pnpm add @godcreator02/probe-peer-lib@0.1.0] ---
+home/package.json: { "name": "gwb-home", "private": true, "dependencies": { "@godcreator02/probe-peer-lib": "0.1.0", "@godcreator02/probe-peer-plugin": "0.1.0" } }
+node_modules/.modules.yaml: "hoistPattern": [ | "nodeLinker": "isolated",
+<home>/node_modules/@godcreator02/probe-peer-lib 存在？ true
+  形态: symlink/junction
+  readlink: C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib
+  marker.txt: old
+  package.json version: 0.1.0
+  .pnpm/ 下与假包相关的目录: @godcreator02+probe-peer-lib@0.1.0, @godcreator02+probe-peer-lib@0.1.1, @godcreator02+probe-peer-pl_3e750703517a0c7db17f523b0c20f834, @godcreator02+probe-peer-pl_ed0d53b617661ae551165e67f661f2ef
+  锁文件 importers 段:
+    | importers:
+    | 
+    |   .:
+    |     dependencies:
+    |       '@godcreator02/probe-peer-lib':
+    |         specifier: 0.1.0
+    |         version: 0.1.0
+    |       '@godcreator02/probe-peer-plugin':
+    |         specifier: 0.1.0
+    |         version: 0.1.0(@godcreator02/probe-peer-lib@0.1.0)
+    | 
+    | packages:
+    | 
+    |   '@godcreator02/probe-peer-lib@0.1.0':
+
+--- 长跑进程快照 [pnpm add @godcreator02/probe-peer-lib@0.1.0 之后] ---
+  现查路径 <home>/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    marker      = old
+    version     = 0.1.0
+    形态        = symlink/junction → C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib
+    realpath    = C:\Users\godamericatb14\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib
+  攥着首次 import.meta.resolve 的 URL（今天件的做法）
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-B-%E5%85%B3%E6%8E%89auto-install-peers/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.1/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = new
+  同进程里再算一次 import.meta.resolve
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-B-%E5%85%B3%E6%8E%89auto-install-peers/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.1/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = new
+    跟首次一样？ true
+  同进程里再算一次 createRequire().resolve
+    path        = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.1\node_modules\@godcreator02\probe-peer-lib\marker.txt
+    读出来      = new
+
+
+==============================================================================
+场景 B-关掉auto-install-peers · 升级动作: pnpm update @godcreator02/probe-peer-lib
+==============================================================================
+$ pnpm update @godcreator02/probe-peer-lib   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers)
+  | ✓ Lockfile passes supply-chain policies (verified 459ms ago)
+  | Progress: resolved 1, reused 0, downloaded 0, added 0
+  | Already up to date
+  | Progress: resolved 2, reused 0, downloaded 0, added 0, done
+  | 
+  | Done in 400ms using pnpm v11.21.0
+  → exit 0
+
+--- 现场 [B-关掉auto-install-peers 跑完 pnpm update @godcreator02/probe-peer-lib] ---
+home/package.json: { "name": "gwb-home", "private": true, "dependencies": { "@godcreator02/probe-peer-lib": "0.1.0", "@godcreator02/probe-peer-plugin": "0.1.0" } }
+node_modules/.modules.yaml: "hoistPattern": [ | "nodeLinker": "isolated",
+<home>/node_modules/@godcreator02/probe-peer-lib 存在？ true
+  形态: symlink/junction
+  readlink: C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib
+  marker.txt: old
+  package.json version: 0.1.0
+  .pnpm/ 下与假包相关的目录: @godcreator02+probe-peer-lib@0.1.0, @godcreator02+probe-peer-lib@0.1.1, @godcreator02+probe-peer-pl_3e750703517a0c7db17f523b0c20f834, @godcreator02+probe-peer-pl_ed0d53b617661ae551165e67f661f2ef
+  锁文件 importers 段:
+    | importers:
+    | 
+    |   .:
+    |     dependencies:
+    |       '@godcreator02/probe-peer-lib':
+    |         specifier: 0.1.0
+    |         version: 0.1.0
+    |       '@godcreator02/probe-peer-plugin':
+    |         specifier: 0.1.0
+    |         version: 0.1.0(@godcreator02/probe-peer-lib@0.1.0)
+    | 
+    | packages:
+    | 
+    |   '@godcreator02/probe-peer-lib@0.1.0':
+
+--- 长跑进程快照 [pnpm update @godcreator02/probe-peer-lib 之后] ---
+  现查路径 <home>/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    marker      = old
+    version     = 0.1.0
+    形态        = symlink/junction → C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib
+    realpath    = C:\Users\godamericatb14\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.0\node_modules\@godcreator02\probe-peer-lib
+  攥着首次 import.meta.resolve 的 URL（今天件的做法）
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-B-%E5%85%B3%E6%8E%89auto-install-peers/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.1/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = new
+  同进程里再算一次 import.meta.resolve
+    url         = file:///C:/Users/GODAME%7E1/AppData/Local/Temp/gwb-probe-peer/work/home-B-%E5%85%B3%E6%8E%89auto-install-peers/node_modules/.pnpm/@godcreator02+probe-peer-lib@0.1.1/node_modules/@godcreator02/probe-peer-lib/marker.txt
+    读出来      = new
+    跟首次一样？ true
+  同进程里再算一次 createRequire().resolve
+    path        = C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work\home-B-关掉auto-install-peers\node_modules\.pnpm\@godcreator02+probe-peer-lib@0.1.1\node_modules\@godcreator02\probe-peer-lib\marker.txt
+    读出来      = new
+
+
+==============================================================================
+场景 B-关掉auto-install-peers · 汇总
+==============================================================================
+| 升级动作 | 现查路径读到 | 攥着的 URL 读到 | 再算 resolve 读到 | resolve 跟首次一样？ |
+| --- | --- | --- | --- | --- |
+| （升级前） | ERR ENOENT (vERR ENOENT) | new | new | true |
+| pnpm update @godcreator02/probe-peer-lib | ERR ENOENT (vERR ENOENT) | new | new | true |
+| pnpm add @godcreator02/probe-peer-lib@0.1.0 | old (v0.1.0) | new | new | true |
+| pnpm update @godcreator02/probe-peer-lib | old (v0.1.0) | new | new | true |
+
+
+==============================================================================
+九、收尾：把假包从 registry 上清掉
+==============================================================================
+$ pnpm unpublish @godcreator02/probe-peer-lib --force --registry http://127.0.0.1:4873/   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work)
+  | [WARN] using --force I sure hope you know what you are doing
+  | Successfully unpublished all 2 version(s) of @godcreator02/probe-peer-lib
+  → exit 0
+
+$ pnpm unpublish @godcreator02/probe-peer-plugin --force --registry http://127.0.0.1:4873/   (cwd=C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work)
+  | [WARN] using --force I sure hope you know what you are doing
+  | Successfully unpublished all 1 version(s) of @godcreator02/probe-peer-plugin
+  → exit 0
+
+$ npm view @godcreator02/probe-peer-lib --registry http://127.0.0.1:4873/
+  | npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+  | npm error code E404
+  | npm error 404 Not Found - GET http://127.0.0.1:4873/@godcreator02%2fprobe-peer-lib - no such package available
+  | npm error 404
+  | npm error 404  The requested resource '@godcreator02/probe-peer-lib@*' could not be found or you do not have permission to access it.
+  | npm error 404
+  | npm error 404 Note that you can also install from a
+  | npm error 404 tarball, folder, http url, or git url.
+  | npm error A complete log of this run can be found in: C:\Users\godamericatb14\AppData\Local\npm-cache\_logs\2026-09-10T07_04_42_024Z-debug-0.log
+  → exit 1
+
+$ npm view @godcreator02/probe-peer-plugin --registry http://127.0.0.1:4873/
+  | npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+  | npm error code E404
+  | npm error 404 Not Found - GET http://127.0.0.1:4873/@godcreator02%2fprobe-peer-plugin - no such package available
+  | npm error 404
+  | npm error 404  The requested resource '@godcreator02/probe-peer-plugin@*' could not be found or you do not have permission to access it.
+  | npm error 404
+  | npm error 404 Note that you can also install from a
+  | npm error 404 tarball, folder, http url, or git url.
+  | npm error A complete log of this run can be found in: C:\Users\godamericatb14\AppData\Local\npm-cache\_logs\2026-09-10T07_04_42_588Z-debug-0.log
+  → exit 1
+
+工作目录已删: C:\Users\GODAME~1\AppData\Local\Temp\gwb-probe-peer\work
+
+==============================================================================
+十、总表
+==============================================================================
+场景 A-默认设置
+| 升级动作 | 现查路径读到 | 攥着的 URL 读到 | 再算 resolve 读到 | resolve 跟首次一样？ |
+| --- | --- | --- | --- | --- |
+| （升级前） | ERR ENOENT (vERR ENOENT) | old | old | true |
+| pnpm update @godcreator02/probe-peer-lib | ERR ENOENT (vERR ENOENT) | old | old | true |
+| pnpm update | ERR ENOENT (vERR ENOENT) | old | old | true |
+| pnpm install | ERR ENOENT (vERR ENOENT) | old | old | true |
+| pnpm add @godcreator02/probe-peer-lib@0.1.1 | new (v0.1.1) | old | old | true |
+
+场景 B-关掉auto-install-peers
+| 升级动作 | 现查路径读到 | 攥着的 URL 读到 | 再算 resolve 读到 | resolve 跟首次一样？ |
+| --- | --- | --- | --- | --- |
+| （升级前） | ERR ENOENT (vERR ENOENT) | new | new | true |
+| pnpm update @godcreator02/probe-peer-lib | ERR ENOENT (vERR ENOENT) | new | new | true |
+| pnpm add @godcreator02/probe-peer-lib@0.1.0 | old (v0.1.0) | new | new | true |
+| pnpm update @godcreator02/probe-peer-lib | old (v0.1.0) | new | new | true |
+
