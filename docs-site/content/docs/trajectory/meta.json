@@ -71,6 +71,9 @@
     "2026-09-09-wall-esm-await-whenready",
     "2026-09-09-wall-pnpm-junction-rename",
     "2026-09-09-wall-workspace-peer-pair",
-    "2026-09-09-wall-resolver-cache"
+    "2026-09-09-wall-resolver-cache",
+    "2026-09-10-esm-reload-leak-cost",
+    "2026-09-10-peer-dep-live-swap",
+    "2026-09-11-kernel-writes-runtime-record"
   ]
 }

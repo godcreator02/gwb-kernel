@@ -51,6 +51,37 @@ const stackOf = (e: unknown): string => (e instanceof Error ? (e.stack ?? e.mess
 // stderr 对端断了（无终端起）每写一次抛一次 EPIPE，吞掉，文件那投照旧
 process.stderr.on('error', () => {})
 
+/**
+ * 这一轮的运行时身份落 `runtime.json`：pid、起的时刻、应用目录，外加 Chromium 调试口——
+ * 那个口**只有起进程的这只手知道**，内核不认识它、页面也读不到，而外面的工具要靠它才够得着
+ * 这个 home。
+ *
+ * **每次开机整份重写**，跟上面那几行「缺哪样补哪样、不覆盖」正好相反：那两样是 home 的家当，
+ * 这一份是此刻这个进程的身份，上一轮留下的每一格（包括别的写者后来补进去的）都该被盖掉。
+ * 进程退出不删——崩溃与被 kill 时那条路本来就不会跑，留着的记录是「上一次它在哪儿」的唯一
+ * 线索；**读的人负责验活**（pid 还在，且那个 pid 真的持着那个端口）。写不动只报一句就走，
+ * 这一格是给工具用的方便，不是启动的前置。
+ */
+const cdpPort = Number(app.commandLine.getSwitchValue('remote-debugging-port'))
+try {
+  fs.writeFileSync(
+    path.join(dataDir, 'runtime.json'),
+    JSON.stringify(
+      {
+        pid: process.pid,
+        startedAt: Date.now(),
+        appDir: app.getAppPath(),
+        // 没开这道口就没有这一格：写 0 或 null 的话，读的人还得再判一次「这个数算不算数」
+        ...(Number.isInteger(cdpPort) && cdpPort > 0 && cdpPort < 65536 ? { cdp: cdpPort } : {}),
+      },
+      null,
+      2,
+    ) + '\n',
+  )
+} catch (err) {
+  say('warn', 'kernel', `runtime.json 写不动：${stackOf(err)}`)
+}
+
 const ctx = new Context()
 /** 模块解析的起点指向 home；loader 与 include 都从根上下文继承它 */
 ctx.baseUrl = pathToFileURL(dataDir + path.sep).href
