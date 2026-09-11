@@ -225,7 +225,10 @@ async function scenario(cfg) {
   const plugin = `${SCOPE}/probe-peer-plugin-${key}`;
 
   head(`场景 ${key}：${name}`);
-  if (note) say(note), say('');
+  if (note) {
+    say(note);
+    say('');
+  }
   say(`假库 ${lib}   0.1.0(marker=old) / 0.1.1(marker=new)`);
   say(`假件 ${plugin} 0.1.0，把库写在 ${shape === 'peer' ? 'peerDependencies' : 'dependencies'}，从不 import 它的代码`);
   say('');
