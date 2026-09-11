@@ -24,9 +24,10 @@ pnpm check   # build:api（词汇表直出 dist）+ typecheck 全仓 + oxlint + 
 这种「几乎肯定是错的」），其中 16 条要类型信息。style / pedantic / restriction 那些
 噪音类别默认一条都不开。
 
-lint 面很小，但**它是靠人记的**——仓里眼下就五个 `.ts`：内核 `main.ts`、词汇表
-`index.ts`、`vitest.config.ts`、docs-site 的两个源码文件。将来加了新包、新目录，忘了它
-在不在某份 tsconfig 里，它会静默留在 lint 面外，没有任何东西会说话。数不上就该去看一眼。
+lint 面很小，但**它是靠人记的**——仓里眼下就七个 `.ts`：内核 `main.ts` 与 `imports.ts`、
+测试 `tests/imports.test.ts`、词汇表 `index.ts`、`vitest.config.ts`、docs-site 的两个源码
+文件。将来加了新包、新目录，忘了它在不在某份 tsconfig 里，它会静默留在 lint 面外，没有任何
+东西会说话。数不上就该去看一眼。
 
 **文档站不在里面**：它钉 `typescript ^6.0.3`，而 type-aware 要 TS 7+，tsgolint 给它建不出
 program。它本来也不进根 build/test，自己有 `docfirst check` 与 `next build` 两道，
@@ -36,16 +37,17 @@ program。它本来也不进根 build/test，自己有 `docfirst check` 与 `nex
 门禁放行）；`--type-aware` 配置里已经开着，CLI 上再写一次是为了让「它没生效」变成看得见
 的错误，而不是静默降级成非类型模式——那是这条门禁最危险的失败形态，因为一切看起来都绿。
 
-## 测试：判据还在，眼下是空档
+## 测试：判据还在，空档已补
 
 这个仓写逻辑之前先写测试。TDD 在这里最大的用处不是保证正确，是**它自己会把代码逼成
 可测的形状**：写不出测试的那一刻，就知道该把纯逻辑从副作用里抠出来了。
 
 判据是**「跑它要不要起一个 Electron」**，不是「这段重不重要」。两进程线上有六个纯逻辑
-文件各配单测（协议、条目、URL、日志缓冲、日志文件、宿主进程）——**它们随两进程线整个
-删了**。单进程内核 274 行里够得上这个判据的是 `collectImports`（扫 `gwb.shared` 拼
-importmap）那一块，等它稳定下来再补测；`vitest` 眼下报「no test files found」是如实
-话，**门禁绿不等于有测试覆盖**，别误读。
+文件各配单测（协议、条目、URL、日志缓冲、日志文件、宿主进程）——它们随两进程线整个
+删了。单进程内核里够得上这个判据的只有 `collectImports`（扫 `gwb.shared` 拼 importmap），
+2026-09-12 从 `main.ts` 抽成独立的 `src/imports.ts`（warn 由调用方注入，副作用只剩磁盘读），
+`tests/imports.test.ts` 八个用例：空仓、无依赖、正常收进、子路径不带前缀、地址断言、撞名
+先到先得、解析不到只 warn、坏形状静默忽略。
 
 其余——`BrowserWindow`、IPC、loader、真件挂载——一律归实机验证。硬凑自动化只会得到
 一堆脆弱的桩。

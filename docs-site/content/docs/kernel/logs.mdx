@@ -10,7 +10,7 @@ description: 三路都走 ctx.logger，内核只铺一个出口；件想看，�
 
 内核铺的出口**只有一处**：stderr，加 home 里一个只追加的文件。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="43-52" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="54-63" */}
 
 一个件都没有、窗口没起、终端不在——只要这个进程活着，`<home>/gwb.log` 里就有人读得懂的
 一行行。`say` 只给 exporter 本身与「起不来」那一句用；格式是最朴素的 `ISO 时间 级别 名字
@@ -27,7 +27,7 @@ cordis 的日志在没有 exporter 时**只缓冲不输出**。内核的全量 e
 挂 loader、开窗都在它后面，第一个挂不上的件可能正是要报错的主角，它的报错不能等
 （见[那面墙](/docs/trajectory/2026-09-07-wall-loader-error-swallowed)）。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="89-121" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="114-146" */}
 
 三处细节值得看：
 
@@ -48,7 +48,7 @@ cordis 的日志在没有 exporter 时**只缓冲不输出**。内核的全量 e
 | `kernel` | `kernel` | 内核自己的话也走 `ctx.logger('kernel')`，**不直接 `say`** |
 | `renderer` | `renderer` | 页面 console 经 `console-message` 事件转进来（见[载体](/docs/kernel/processes#渲染层的-console-归流)） |
 
-{/* ref file="../apps/desktop/src/main.ts" lines="123-130" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="148-155" */}
 
 「内核的话也走 logger」是刻意的小绕：不绕的话内核的话只进文件，件挂 exporter 收不到它。
 走了同一条流，**任何件挂一个 exporter 就把三路收齐**。件仓的 `gwb-logger` 就是那个收的

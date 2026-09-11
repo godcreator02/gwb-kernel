@@ -74,6 +74,8 @@
     "2026-09-09-wall-resolver-cache",
     "2026-09-10-esm-reload-leak-cost",
     "2026-09-10-peer-dep-live-swap",
-    "2026-09-11-kernel-writes-runtime-record"
+    "2026-09-11-kernel-writes-runtime-record",
+    "2026-09-12-one-home-one-instance",
+    "2026-09-12-kernel-on-registry"
   ]
 }

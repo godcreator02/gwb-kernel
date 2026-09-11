@@ -9,6 +9,18 @@ description: 从 pnpm install 到窗口里有东西——home、装件、日志�
 
 ## 起一次
 
+**日常路（不动这个仓）**：内核是发在本机 registry 的包，从固定安装位起——
+
+```powershell
+cd D:\unitfolders\26091201qzv\gwb-app
+.\run.cmd
+```
+
+`run.cmd` 把 electron 指到包上，`GWB_HOME` 与 CDP 开关原样透传；升级是安装位里一趟
+`pnpm update`。哪一版在跑，看 home 里 `runtime.json` 的 `version`。
+
+**改内核本身才走仓里的 build**：
+
 ```powershell
 pnpm install
 cd apps\desktop
@@ -19,7 +31,9 @@ pnpm build        # tsc 直出到 dist/，没有打包器；index.html 与 prelo
 `pnpm install` 会顺带把 Electron 的二进制取下来。这一步有个坑值得知道：**electron 这个包
 本身不带 `postinstall`**，二进制得显式跑一次 `install.js` 才会落盘，不跑的症状是装完起
 不来而 pnpm 一声不吭。`apps/desktop` 挂了一条自己的 `postinstall` 补上（见
-[那面墙](/docs/trajectory/2026-09-07-wall-electron-postinstall)）。
+[那面墙](/docs/trajectory/2026-09-07-wall-electron-postinstall)）。安装位那边没有这条
+（消费者侧 pnpm 默认不批依赖的 build script），装完手动跑一次
+`node node_modules\electron\install.js`。
 
 `run.cmd` 直接跑 `dist/`，不重新构建——改了内核先 `pnpm build`。给它带 Chromium 开关
 （比如 `--remote-debugging-port=9222`）就原样生效，内核不管它。

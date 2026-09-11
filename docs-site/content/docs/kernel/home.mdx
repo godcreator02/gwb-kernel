@@ -6,19 +6,37 @@ description: 内核不碰 pnpm——它只保证 home 起得来
 # 安家：home 两件套
 
 读完这页你能回答：home 在哪、里面有什么；为什么每次启动都要铺一遍；那份**每次开机整份重写**的
-运行时身份为什么跟别的反着来；装机去哪了。
+运行时身份为什么跟别的反着来；同一 home 为什么开不出第二份；装机去哪了。
 
 ## home 在哪
 
-{/* ref file="../apps/desktop/src/main.ts" lines="29-31" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="30-44" */}
 
-不设 `GWB_HOME` 落 `userData/homes/default`（即 `%APPDATA%\gwb-kernel\homes\default`）。
-`GWB_HOME` 给**纯名字**落 `homes\<名>`；给**含 `\` 或 `/` 的路径**就把那个目录本身当 home——
-验收要干净场子时指一个 scratchpad 下的目录就行，名字与路径两种写法没有第三种语义。
+不设 `GWB_HOME` 落 `%APPDATA%\gwb-kernel\homes\default`。`GWB_HOME` 给**纯名字**落
+`homes\<名>`；给**含 `\` 或 `/` 的路径**就把那个目录本身当 home——验收要干净场子时指一个
+scratchpad 下的目录就行，名字与路径两种写法没有第三种语义。
+
+选出来的路径先 `realpath` 归一（大小写、junction、斜杠写法都钉到磁盘真实路径）：同一 home
+的两种给法必须归成同一个串，下面的单开锁才认得出「同一个 home」。
+
+**Chromium 的 userData 拆成每 home 一份**（`<home>/electron`）：一是多个 home 并跑不再共享
+同一份 Local Storage 互相串味（隔离 home 的页面看不见 default 的 UI 状态）；二是单开锁的
+钥匙就是 userData，拆了它锁才按 home 生效。homes 的根从 `appData` 推、不从 userData
+推——userData 已经按 home 拆了，再从它推就成了递归。
+
+## 同一 home 只许一个实例
+
+{/* ref file="../apps/desktop/src/main.ts" lines="65-76" */}
+
+Electron 的平台锁，钥匙是上面拆出来的那份 userData：同一 home 的第二份拿不到锁，stderr
+报一句、退出码 1、`runtime.json` 不动（在跑那份的身份不被盖掉）；第一个实例把已在跑的窗
+抬到前面。不同 home 钥匙不同，随便并跑。不手搓锁文件——那得判 pid 活没活，平台锁在进程
+死时由操作系统放掉，没有陈锁这回事。判据与否掉的候选见
+[单开锁](/docs/trajectory/2026-09-12-one-home-one-instance)。
 
 ## 每次启动铺两件套
 
-{/* ref file="../apps/desktop/src/main.ts" lines="33-41" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="45-53" */}
 
 这段每次启动都跑，幂等，差什么补什么、**在的一律不覆盖**：
 
@@ -42,12 +60,14 @@ description: 内核不碰 pnpm——它只保证 home 起得来
 
 ## 还有一份运行时身份
 
-{/* ref file="../apps/desktop/src/main.ts" lines="54-83" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="78-109" */}
 
 `runtime.json` 不属于上面那两件套，**规矩正好相反：每次开机整份重写**。两件套是 home 的家当，
 谁也不该替用户覆盖；这一份是**此刻这个进程**的身份，上一轮留下的每一格都该被盖掉。
 
-里面是 pid、起的时刻、应用目录，外加 Chromium 调试口。那个口是这份记录存在的理由：它是命令行
+里面是 pid、起的时刻、版本、应用目录，外加 Chromium 调试口。版本是 `app.getVersion()`——
+从内核包自己的清单读，装在仓里还是安装位都报得出自己是哪一版；mcp 件绑上口之后补它的
+`mcp` 格，读改写、保留不认得的字段，这一格活得下来。调试口是这份记录存在的理由：它是命令行
 上的开关，**只有起进程的这只手知道**——内核不认识它、页面也读不到，而外面的工具（比如要换一版
 件再看一眼的那条链）得先够得着这个 home 才谈得上别的。没开这道口就**没有那一格**，不写 0 也不
 写 null：写了的话读的人还得再判一次「这个数算不算数」。

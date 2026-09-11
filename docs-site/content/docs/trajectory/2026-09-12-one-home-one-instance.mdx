@@ -1,0 +1,59 @@
+---
+title: 同一 home 只许一个实例，锁的钥匙是每 home 一份的 userData
+born-at: 2026-09-12T01:15
+type: choice
+parent: [2026-09-07-gwb-kernel, 2026-09-11-kernel-writes-runtime-record]
+label: 单开锁
+domain: 主进程
+---
+
+## 背景
+
+日常形态就是多实例并跑：default 常驻（agent 的 MCP 从它进来），改件的内循环又不停开隔离
+home。但所有 home 一直共享**同一份 userData**（`%APPDATA%\gwb-kernel` 根下那一份 Chromium
+家当），多实例的可行性全靠侥幸——路线图上挂着「两个实例同时跑没验过」，轨迹区运行时记录
+那张卡还记着「这台机器上三个 home 同时跑是常态」。
+
+更要命的那个现场是**同一 home 被开两份**：agent 忘了 default 在跑又起一份，第二份照常挂件、
+跟第一份交错写 `gwb.log` 与 `runtime.json`，唯一的可见症状是 2870 被占、第二份的 mcp 件
+不开口——在总控台那边只看见工具全灰，不知道为什么。
+
+## 结论与边界
+
+**Chromium 的 userData 拆成每 home 一份**（`<home>/electron`，`app.setPath` 在 ready 之前
+调）。一石二鸟：多个 home 并跑不再共享同一份 Local Storage 互相串味（隔离 home 的页面从此
+看不见 default 的 UI 状态）；而**单开锁自动按 home 生效**——`app.requestSingleInstanceLock()`
+的钥匙就是 userData，每 home 一把钥匙，同一 home 的第二份拿不到锁，stderr 报一句、退出码
+1、不写 `runtime.json`（在跑那份的身份不被盖掉）；第一个实例收到 `second-instance`，把
+已在跑的窗抬到前面——人第二次双击看到的是原窗聚焦，不是无声无息。不同 home 钥匙不同，
+随便并跑。
+
+home 的选法路径先 `realpathSync.native` 归一（大小写、junction、斜杠写法都钉到磁盘真实
+路径）：名字式、路径式、乱大小写的路径式必须归成同一个 home，锁才认得出「同一个」。
+
+homes 的根从 `app.getPath('appData')` 推（`%APPDATA%\gwb-kernel\homes`，与拆 userData 之前
+的值一字不差），**不再从 userData 推**——userData 已经按 home 拆了，再从它推就成了递归。
+
+可见代价一处：userData 搬家后，外壳若在 localStorage 存过窗格布局之类的 UI 状态，升级后
+第一起归零一次。
+
+## 否掉的候选
+
+**home 里放锁文件（pid + 验活）。** 验活就是 `runtime.json` 那套「读的人负责验活」，只不过
+从旁路变成**阻塞启动**——正是「刻意不做」清单上盘上对账的味道。平台锁在进程死时由操作
+系统放掉，崩溃、被 kill 都不留陈锁；手搓的没有这个性质。
+
+**共享 userData 不动，锁整个应用。** 那会把「不同 home 并跑」一起禁掉——恰是日常形态。
+锁要按 home 粒度，钥匙就必须按 home 分。
+
+**读 `DevToolsActivePort` 判是不是同一个 home。** 那个文件住 userData，共享时只剩最后一个
+写者的值——判据同运行时记录那张卡。
+
+## 依据
+
+2026-09-12 凌晨实机，全部隔离 home，仓里与安装位各跑一遍：
+
+- 同一 home 名字式二开：拒，stderr 一行「已有实例在跑」，退出码 1；
+- 同一 home 乱大小写**路径式**二开：拒，且报出的路径是归一后的规范路径——realpath 收敛成立；
+- 两个不同 home 并跑：两个主进程同时活着，各自 CDP 口都应答；
+- default（安装位起的）与两个隔离 home 三实例并跑，MCP 握手与 `devkit.home.new` 照常工作。

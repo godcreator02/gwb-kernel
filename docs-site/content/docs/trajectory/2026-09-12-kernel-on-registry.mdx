@@ -1,0 +1,55 @@
+---
+title: 内核 0.1.0 上架本机 registry，日常从安装位起，不打安装包
+born-at: 2026-09-12T01:45
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 上架与安装位
+domain: 发版
+---
+
+## 背景
+
+内核到 0.1.0 为止只有一条起法：进仓 `pnpm install` + `pnpm build` + `run.cmd`。自己用、
+调件、起 default 全都背着内核仓——仓被别的会话动着工区、`dist/` 新旧不明，跑的到底是哪份
+代码说不清。件那边早就定过「只有一条路：发一版进本机 registry、装进 home」，近路绕过安装
+这个动作、`files` 漏目录装出来才炸——这条判据对内核同样成立，内核自己却从没走过。
+
+路线图上「打包（出安装包）」挂着的前提是「真要分发的时候」。可眼下要的不是分发，是
+**自己这台机器不用走 build**。两件事不是一件。
+
+## 结论与边界
+
+**上架，不打安装包。** `@godcreator02/gwb-kernel-desktop` 发本机 registry（0.1.0，tarball
+五个文件：清单 + `dist/` 四件），日常从**固定安装位**起：单元 `26091201qzv\gwb-app` 里
+`pnpm add` 这个包加 `electron@44.1.1`，`run.cmd` 一行把 electron.exe 指到包上，`GWB_HOME`
+与 CDP 开关照旧透传。升级 = 安装位 `pnpm update`——**发完内核版就去升安装位**，跟
+「发完版就去升 default home」并排成一条纪律。
+
+electron 留在包的 devDependencies：主进程里 `import 'electron'` 是内建模块，运行时不需要
+npm 那个包；npm 包只为二进制与类型存在，二进制由安装位自己声明。包里那条 postinstall
+跟着发布，消费者侧 pnpm 默认不批依赖的 build script、静默跳过，无害；安装位装完手动跑一次
+`node node_modules\electron\install.js`（本机缓存命中，离线可跑）。
+
+发版形态三处是硬的：`files` 只带 `dist`、`prepublishOnly` 先构建（少了它会把上一版的
+`dist/` 原样发出去而且一声不吭）、`pnpm publish` 自动把 `workspace:*` 改写成实号。
+
+electron-builder / Forge 的安装包**继续等「真要分发」**，开放问题（pnpm 怎么进产物）原样
+留着。
+
+边界：内核仓从「日常载体」退回「改内核本身的地方」——进仓 build 只剩改代码这一种理由。
+`runtime.json` 从此带 `version`（`app.getVersion()`），装在哪儿都报得出自己是哪一版；mcp
+件对这份记录是读改写、保留不认得的字段，这一格活得下来。
+
+## 否掉的候选
+
+**electron-builder 出安装包。** 解决的是分发给别人；这台机器一个人用，装出 asar、安装器、
+升级器缓存，纯增机器，还提前背上「pnpm 怎么进产物」那个开放问题。
+
+**把 electron 写进包的 dependencies。** 每个装它的地方都得拖一份二进制，且 postinstall
+的相对路径在 pnpm 虚拟店里本来就不通——二进制的所有权放安装位更诚实。
+
+## 依据
+
+0.1.0 发布后从安装位实机验收：scratch home 起得来（`runtime.json` 的 `appDir` 指安装位里的
+包、`version` 0.1.0）；同一 home 二开被拒退出码 1；default 从安装位起，MCP 全链路
+（initialize → tools/list 四枚顶层 → `devkit.home.new` 开出新 home）走通。

@@ -11,7 +11,7 @@ description: 定过的事与撞过的墙——一卡一文件，只追加
 
 **轨迹区不定钉码**（2026-09-09 起）：这里是纯历史，钉了活代码它就变成会变黄的现状文档。卡里出现的代码都是从当时的文件**复制**的静态段，卡尾的「2026-09-09」一节说的是它今天的下落；机制现状由各机制页钉住。
 
-## 定过的事（37）
+## 定过的事（40）
 
 | 卡 | 定了什么 |
 | --- | --- |
@@ -52,8 +52,11 @@ description: 定过的事与撞过的墙——一卡一文件，只追加
 | [件迁 0.1](/docs/trajectory/2026-09-09-plugins-migrate-0-1) | 十二件＋仓外六件并发版；default home 重建（数据搬入） |
 | [知识随件走](/docs/trajectory/2026-09-09-knowledge-rides-package) | skill 正本回包、经 MCP 分发；decide 留总控台；default home 固定 2870；agent 自改的门 |
 | [件的三条规矩](/docs/trajectory/2026-09-09-plugin-three-rules) | 配置一律走 settings；命令描述带参数形状；MCP 顶层写件时定（`top: true`，标之前问人），其余经 `command_run` |
+| [运行时记录](/docs/trajectory/2026-09-11-kernel-writes-runtime-record) | 内核开机整份重写 `runtime.json`；别的写者读改写、退出不删、读的人验活 |
+| [单开锁](/docs/trajectory/2026-09-12-one-home-one-instance) | userData 拆成每 home 一份，平台锁自动按 home 生效；同一 home 二开拒掉，不同 home 随便并跑 |
+| [上架与安装位](/docs/trajectory/2026-09-12-kernel-on-registry) | 内核 0.1.0 发本机 registry，日常从固定安装位起不走 build；安装包仍等真分发 |
 
-另有 [第一版自用版](/docs/trajectory/2026-09-08-first-daily-use)一张证据卡（日常 home 的安家现场），不属决策也不属墙，不入两表。
+另有 [第一版自用版](/docs/trajectory/2026-09-08-first-daily-use)、[ESM 加戳重载的代价](/docs/trajectory/2026-09-10-esm-reload-leak-cost)、[peer 现查换版](/docs/trajectory/2026-09-10-peer-dep-live-swap)三张证据卡，不属决策也不属墙，不入两表。
 
 ## 撞过的墙（29）
 
@@ -91,6 +94,7 @@ description: 定过的事与撞过的墙——一卡一文件，只追加
 
 ## 内核源码全貌
 
-`apps/desktop/src` 就三个文件：`main.ts`（204 行，内核本体）、`index.html`（51 行，页面根）、
-`preload.cjs`（19 行，桥的浏览器半）。活树引用钉在[系统地图](/docs/system-map)——
+`apps/desktop/src` 四个文件：`main.ts`（305 行，内核本体）、`imports.ts`（63 行，importmap
+那块纯逻辑，2026-09-12 抽出成可单测的模块）、`index.html`（92 行，页面根）、`preload.cjs`
+（19 行，桥的浏览器半）。活树引用钉在[系统地图](/docs/system-map)——
 轨迹区是纯历史，不放活钉。

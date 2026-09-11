@@ -11,7 +11,7 @@ description: 两个进程、盘上的目录、四条流——一页看全，细�
 
 | 进程 | 是什么 | 起法 | 说什么 |
 | --- | --- | --- | --- |
-| **主进程** | Electron 本体。cordis 与所有件都住这儿，不再有独立的宿主子进程——所以件 `import('electron')` 就够得着开窗、菜单、托盘、子进程 | `run.cmd` 起 `electron.exe .`，入口 `dist/main.js` | cordis 日志与自己的话走 `ctx.logger('kernel')`，出口是 stderr 加 `<home>/gwb.log` |
+| **主进程** | Electron 本体。cordis 与所有件都住这儿，不再有独立的宿主子进程——所以件 `import('electron')` 就够得着开窗、菜单、托盘、子进程 | 日常从安装位 `run.cmd` 起 `electron.exe <内核包>`；改内核才从仓里起 `electron.exe .`。入口都是 `dist/main.js` | cordis 日志与自己的话走 `ctx.logger('kernel')`，出口是 stderr 加 `<home>/gwb.log` |
 | **渲染层** | 页面。内核只铺一个空 root 和一张 importmap，画的是外壳件 | `main()` 里开窗，先于挂件——外壳没上来时页面自己说「没有外壳件」 | `console` 转 `ctx.logger('renderer')`，进同一份 `gwb.log` |
 
 先开窗、后挂件：窗口起来时页面会先显示占位一句话，等 `gwb:shell` 把外壳地址推过来。
@@ -20,8 +20,9 @@ description: 两个进程、盘上的目录、四条流——一页看全，细�
 
 {/* tree dir="../apps/desktop/src" depth="1" */}
 
-`apps/desktop/src` 就这三个文件——内核本体 274 行（`main.ts` 204、`index.html` 51、
-`preload.cjs` 19）。没有打包器，`tsc` 直出 `dist/`，`index.html` 与 `preload.cjs` 原样复制。
+`apps/desktop/src` 四个文件——内核本体 479 行（`main.ts` 305、`imports.ts` 63、
+`index.html` 92、`preload.cjs` 19）。没有打包器，`tsc` 直出 `dist/`，`index.html` 与
+`preload.cjs` 原样复制。
 
 | 路径 | 是什么 |
 | --- | --- |
@@ -31,6 +32,8 @@ description: 两个进程、盘上的目录、四条流——一页看全，细�
 | `<home>/cordis.yml` | 条目表。**内核唯一认的配置文件**，但解析归 include |
 | `<home>/node_modules/` | 包本身：件、共享包都在；loader 解析裸名落到这儿 |
 | `<home>/gwb.log` | 全量日志，只追加不轮转。三路（件 / 内核 / 渲染层 console）都在这一份里 |
+| `<home>/runtime.json` | 这一轮的运行时身份（pid、起的时刻、版本、应用目录、CDP 口），每次开机整份重写、退出不删，读的人验活 |
+| `<home>/electron/` | 这一份 home 自己的 Chromium userData（Local Storage、Cache 那些）——每 home 一份，多实例并跑不串味，单开锁的钥匙也是它 |
 
 home 的完整位置：`%APPDATA%\gwb-kernel\homes\<GWB_HOME ?? default>`——`GWB_HOME` 给纯
 名字落 `homes\<名>`，给含 `\` 或 `/` 的路径就用那个目录。它是个普通的 npm 项目根——装件、

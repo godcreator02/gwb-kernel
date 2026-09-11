@@ -11,20 +11,20 @@ fd3 协议、`gwb://`、exports 解析、日志四路管道，全是为绕墙而
 
 文档站已跟上单进程线，`pnpm doc` 全绿；改机制页要连引用一起复核（`pnpm doc:confirm`）。
 
-## 内核只做六件事，一个文件
+## 内核只做六件事
 
-|              | 是什么                                                                                                                                                                                               | 在哪                              |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| 铺 home       | 建目录、缺什么补什么（`package.json`、空 `cordis.yml`），不覆盖。另落一份 `runtime.json`（pid、起的时刻、应用目录、Chromium 调试口），**这一份每次开机整份重写、退出不删，读的人负责验活**；内核不做对账、不清理                                                             | `apps/desktop/src/main.ts`      |
-| 起 cordis     | `Context` 加 `baseUrl` 指向 home，挂官方 loader 与 include                                                                                                                                                | 同上                              |
-| 解析裸名（node 半） | 主进程没有 `--expose-internals`，内核给 `loader.internal` 塞一个 import：先 `realpathSync.native` 把 `<home>/node_modules/<裸名>` 解成真实目录，再从那儿起 `createRequire` 解 `exports`。第一步绕开 Node 的 CJS 解析缓存，件换了版本停用再启用才拿得到新代码 | 同上                              |
-| 解析裸名（浏览器半）   | 扫 home 清单里各包声明的 `gwb.shared`，解析成 `file://` importmap，随外壳地址推给页面，页面注完表才 import 外壳。内核不认识 react，只搬运提供方的声明                                                                                             | 同上                              |
-| 开窗与桥         | 一扇窗；`gwb:command` 派给 `ctx.gwbCommands`；`gwb:event` 推事件；`gwb:shell` 告诉页面外壳是谁                                                                                                                       | `src/main.ts` `src/preload.cjs` |
-| 页面根          | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳、或外壳起不来时画一份**只读现状**（各条目到哪一步、最近的错误行），没有按钮                                                                                                                    | `src/index.html`                |
-| 自己出错人看得见     | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退；`main()` 起不来先弹错误框再退                                                                                                                   | `src/main.ts`                   |
+|              | 是什么                                                                                                                                                                                                                                                            | 在哪                              |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| 铺 home       | 建目录、缺什么补什么（`package.json`、空 `cordis.yml`），不覆盖。**同一 home 只许一个实例**：Electron 平台锁，钥匙是每 home 一份的 userData（`<home>/electron`）——同一 home 二开拒掉（stderr 一句、退出码 1），不同 home 随便并跑。另落一份 `runtime.json`（pid、起的时刻、版本、应用目录、Chromium 调试口），**这一份每次开机整份重写、退出不删，读的人负责验活**；内核不做对账、不清理 | `apps/desktop/src/main.ts`      |
+| 起 cordis     | `Context` 加 `baseUrl` 指向 home，挂官方 loader 与 include                                                                                                                                                                                                             | 同上                              |
+| 解析裸名（node 半） | 主进程没有 `--expose-internals`，内核给 `loader.internal` 塞一个 import：先 `realpathSync.native` 把 `<home>/node_modules/<裸名>` 解成真实目录，再从那儿起 `createRequire` 解 `exports`。第一步绕开 Node 的 CJS 解析缓存，件换了版本停用再启用才拿得到新代码                                                              | 同上                              |
+| 解析裸名（浏览器半）   | 扫 home 清单里各包声明的 `gwb.shared`，解析成 `file://` importmap，随外壳地址推给页面，页面注完表才 import 外壳。内核不认识 react，只搬运提供方的声明。这段是纯函数，单独住 `imports.ts`（可单测）                                                                                                                             | `apps/desktop/src/imports.ts`   |
+| 开窗与桥         | 一扇窗；`gwb:command` 派给 `ctx.gwbCommands`；`gwb:event` 推事件；`gwb:shell` 告诉页面外壳是谁                                                                                                                                                                                    | `src/main.ts` `src/preload.cjs` |
+| 页面根          | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳、或外壳起不来时画一份**只读现状**（各条目到哪一步、最近的错误行），没有按钮                                                                                                                                                                                 | `src/index.html`                |
+| 自己出错人看得见     | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退；`main()` 起不来先弹错误框再退                                                                                                                                                                                | `src/main.ts`                   |
 
-（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。三个文件合计 407 行（含空行与注释）：
-`main.ts` 300、`index.html` 89、`preload.cjs` 18，外加词汇表 54。）
+（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。四个文件合计 479 行（含空行与注释）：
+`main.ts` 305、`imports.ts` 63、`index.html` 92、`preload.cjs` 19，外加词汇表 62。）
 
 **没有的**：`gwb://` 协议、exports 解析、`kernel.info`、日志缓冲与轮转、宿主子进程与 fd3 协议、
 README 铺进 home、装机（内核不碰 pnpm），以及旧线阶段页与崩溃页那套机器（轮询、讣告、重试）。
@@ -80,19 +80,31 @@ node 半 `ctx.gwbKernel`：`dataDir`、`emit(payload)`、`setShell(url) → 撤�
   互相等死，整个进程静默挂住。`main.ts` 里已经处理，别改回去。
 * cordis loader 的 `internal` 只在 `import(name, baseUrl)` 一处用，是实例上的普通字段；没有
   `--expose-internals` 时它是 `undefined`，件按 loader 自己的位置解析、**静默**挂不上。
-* 工作区 `pnpm-workspace.yaml` 的 `autoInstallPeers: false` 与 `linkWorkspacePackages: true`
-  是撞出来的：registry 上的件 peer 着 `gwb-commands >=0.0.1`，pnpm 会拿工作区里那个还没发的
-  版本去满足、再去 registry 拿它，装当场失败。
+* 工作区链接会替 registry 满足 peer，装包当场死的墙就是这么撞的（当时配的是
+  `autoInstallPeers: false` ＋ `linkWorkspacePackages: true`，卡在轨迹区）。**这两条如今没写
+  在 `pnpm-workspace.yaml`**——装包再撞墙先现读那份文件与 pnpm-lock 的 `settings` 现值，
+  别按老配置办事。
 * stderr 对端断了（没有终端起）每写一次抛一次 EPIPE，`main.ts` 里吞掉，文件那投照旧。
 
 ## 怎么跑
 
+**日常（自己用、调件、起 default）：从固定安装位起，不进这个仓。** 内核是发在本机 registry
+上的包（`@godcreator02/gwb-kernel-desktop`），住在安装位单元 `D:\unitfolders\26091201qzv\gwb-app`：
+
 ```powershell
-pnpm install
-cd apps\desktop; pnpm build          # tsc 直出到 dist/，无打包器（不再有 electron-vite）
+cd D:\unitfolders\26091201qzv\gwb-app
 .\run.cmd                            # 落 default home（%APPDATA%\gwb-kernel\homes\default）
 $env:GWB_HOME='x'; .\run.cmd         # 名字 → homes\x；给路径（含 \ 或 /）就用那个目录
 .\run.cmd --remote-debugging-port=9335   # CDP 取证，Chromium 开关命令行上就生效，内核不管它
+# 升级：本目录 pnpm update —— 发完内核版就去升安装位，别攒着
+```
+
+**改内核本身才进这个仓**（探新代码永远在隔离 home，别拿 default 试）：
+
+```powershell
+pnpm install
+cd apps\desktop; pnpm build          # tsc 直出到 dist/，无打包器（不再有 electron-vite）
+.\run.cmd                            # 与安装位同一个内核，只是代码来自本仓
 ```
 
 根上的门禁是 `pnpm check`（`build:api` + `typecheck` + `lint` + `test`）。页面取证的小工具与规矩
@@ -132,14 +144,15 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 
 ## 容器里的邻居
 
-| 单元                             | 是什么                      | 这个仓怎么用它                                                   |
-| ------------------------------ | ------------------------ | --------------------------------------------------------- |
-| `26090705ymz\gwb-kernel-min`   | 单进程重构的**实验目录**，用完即弃      | 结论已整套搬进本仓，探针读数该进文档站的轨迹。它只读，别再往里写，件迁完就删                    |
-| `26090709qzp\gwb-base-plugins` | **正线的件仓**，十二件正在迁到 0.1 契约 | 件在那儿改、在那儿发版；本仓只消费                                         |
-| `26090412vav\god-workbench`    | 母仓，**已退役**               | 只作参考：某处当初为什么那么做、踩过什么坑。结构、分层、包划分一概不抄                       |
-| `26090623hyz\gwb-plugins`      | 旧的 11 件，**已退役**          | 同上                                                        |
-| `26090702tpu\gwb-catalog`      | 推荐清单                     | 装什么件由人挑，推荐将来从这儿来                                          |
-| `26090520zzv\registry`         | 本机 Verdaccio             | 件的包源：件仓 publish 到这儿，home 从这儿装。`@godcreator02` scope 指的就是它 |
+| 单元                             | 是什么                      | 这个仓怎么用它                                                                              |
+| ------------------------------ | ------------------------ | ------------------------------------------------------------------------------------ |
+| `26090705ymz\gwb-kernel-min`   | 单进程重构的**实验目录**，用完即弃      | 结论已整套搬进本仓，探针读数该进文档站的轨迹。它只读，别再往里写，件迁完就删                                               |
+| `26090709qzp\gwb-base-plugins` | **正线的件仓**，十二件正在迁到 0.1 契约 | 件在那儿改、在那儿发版；本仓只消费                                                                    |
+| `26090412vav\god-workbench`    | 母仓，**已退役**               | 只作参考：某处当初为什么那么做、踩过什么坑。结构、分层、包划分一概不抄                                                  |
+| `26090623hyz\gwb-plugins`      | 旧的 11 件，**已退役**          | 同上                                                                                   |
+| `26090702tpu\gwb-catalog`      | 推荐清单                     | 装什么件由人挑，推荐将来从这儿来                                                                     |
+| `26090520zzv\registry`         | 本机 Verdaccio             | 件与内核的包源：仓 publish 到这儿，home 与安装位从这儿装。`@godcreator02` scope 指的就是它                      |
+| `26091201qzv\gwb-app`          | **内核固定安装位**（不是 git 仓）    | 日常起工作台从这儿：`@godcreator02/gwb-kernel-desktop` + `electron` 二进制都在安装位里，升级 `pnpm update` |
 
 **件的包名：`@godcreator02/gwb-<件名>`**。加 `gwb-` 前缀跟废弃那批错开（`@godcreator02/shell`
 那些已被占着）。scope 不换。
