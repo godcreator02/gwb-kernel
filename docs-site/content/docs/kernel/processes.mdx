@@ -29,7 +29,7 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 所以 `await app.whenReady()` 写在模块顶层就是互相等死——模块等 ready、ready 等模块——
 而且**静默挂住**，一个报错都没有。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="270-279" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="308-317" */}
 
 这段就是那堵墙的形状：入口模块里不 `await`，把启动体挂进 `.then(main)`；`main()` 里抛
 什么都在 `.catch` 里走 `say` 落 stderr 与 `<home>/gwb.log`，弹一个 `dialog.showErrorBox`
@@ -45,7 +45,7 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 即使将来把窗口的尺寸、标题、关窗语义都交出去，`BrowserWindow` 这个动作本身仍留在内核——
 **在件挂上之前就得有一扇窗让页面加载**（页面加载后先说「没有外壳件」，见[页面那半](/docs/plugins/client)）。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="236-250" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="267-288" */}
 
 窗口先于挂件：`main()` 开完窗、加载 `index.html`，然后才 `ctx.plugin(Loader)` 去挂
 home 的条目树（见[取址](/docs/kernel/loading)）。窗口里画什么归件——内核不画外壳，只铺

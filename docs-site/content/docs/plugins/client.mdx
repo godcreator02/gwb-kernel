@@ -45,7 +45,7 @@ dist 下的产物互为邻居，从自己的模块地址出发一步就到。这
 
 `index.html` 是内核的一部分，也是「页面根」这件事的另一半。它要做的全部事情：
 
-{/* ref file="../apps/desktop/src/index.html" lines="63-86" */}
+{/* ref file="../apps/desktop/src/index.html" lines="66-89" */}
 
 四步，每步都有理由：
 
@@ -63,14 +63,14 @@ dist 下的产物互为邻居，从自己的模块地址出发一步就到。这
 
 外壳没上来、或外壳起不来时，`#root` 里画的是这个：
 
-{/* ref file="../apps/desktop/src/index.html" lines="31-61" */}
+{/* ref file="../apps/desktop/src/index.html" lines="34-64" */}
 
 全是 `textContent`，没有一颗按钮、没有一句归因。它画的三样东西——home 在哪、各条目到了
 哪一步、最近的错误行——都是内核已经攥着的，随 `gwb:shell` 那条消息里的 `report` 一起来
 （见[桥](/docs/kernel/bridge#外壳地址setshell-说onshell-听)）；外壳在时页面根本不看这个字段。
 内核那半：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="150-189" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="181-220" */}
 
 状态词是 cordis 自己的 `FiberState` 原名，不另造中文：`ACTIVE` / `LOADING` / `UNLOADING` /
 `DISPOSED` 照抄；`PENDING` 带上缺哪个服务——件声明了 `inject` 没人提供时 fiber 就停在这儿，
@@ -81,7 +81,7 @@ cordis 自带的日志缓冲里筛 error / warn，内核不自建缓冲。
 推的时机在内核那边：条目换态（cordis 的 `internal/status` 事件）与错误行到来都去抖成一次
 `gwb:shell` 重推：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="195-209" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="226-240" */}
 
 这条线为什么划在「只读、不归因」，以及它跟母仓的兜底页族、跟 09-08 那版阶段页的关系，
 见[刻意不做](/docs/not-doing#图形界面上的失败兜底页)。

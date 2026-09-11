@@ -42,7 +42,7 @@ description: 内核不碰 pnpm——它只保证 home 起得来
 
 ## 还有一份运行时身份
 
-@@docfirst ref ../apps/desktop/src/main.ts:54-83 @@
+{/* ref file="../apps/desktop/src/main.ts" lines="54-83" */}
 
 `runtime.json` 不属于上面那两件套，**规矩正好相反：每次开机整份重写**。两件套是 home 的家当，
 谁也不该替用户覆盖；这一份是**此刻这个进程**的身份，上一轮留下的每一格都该被盖掉。
