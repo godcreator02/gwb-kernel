@@ -3,7 +3,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     include: ['{apps,packages}/**/tests/**/*.test.ts'],
-    // 单进程内核眼下一个纯函数模块都没有：main.ts 一进门就摸 electron 与磁盘，验证靠探针不靠单测
+    // 内核的纯函数住 apps/desktop/src/imports.ts，测试就在旁边 tests/；main.ts 一进门就摸
+    // electron，那一半靠实机验证不靠单测
     passWithNoTests: true,
   },
 })

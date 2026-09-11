@@ -7,6 +7,7 @@ import { Context } from 'cordis'
 import Loader, { type Entry, type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator02/gwb-plugin-api'
+import { collectImports } from './imports.js'
 
 /**
  * gwb 内核，一个文件：载体、宿主、桥都在这个主进程里，页面是唯一的另一个进程。
@@ -28,10 +29,20 @@ declare module 'cordis' {
 
 /** 用哪个 home：`GWB_HOME` 是个名字就落 userData/homes/<名>，带路径分隔符就当成目录本身 */
 const homeArg = process.env.GWB_HOME ?? 'default'
-const dataDir = /[\\/]/.test(homeArg) ? path.resolve(homeArg) : path.join(app.getPath('userData'), 'homes', homeArg)
+const homePath = /[\\/]/.test(homeArg) ? path.resolve(homeArg) : path.join(app.getPath('appData'), 'gwb-kernel', 'homes', homeArg)
+fs.mkdirSync(homePath, { recursive: true })
+// realpath 把大小写、junction、斜杠写法都钉到磁盘上的真实路径：同一 home 的两种给法必须归成
+// 同一个串，下面那把按 userData 生效的单开锁才认得出「同一个 home」
+const dataDir = fs.realpathSync.native(homePath)
+
+/**
+ * Chromium 的家当拆成每 home 一份（<home>/electron）。一是单开锁的钥匙是 userData，拆了它
+ * 锁才按 home 生效；二是多个 home 同时跑不再共享同一份 Local Storage 互相串味。homes 的根
+ * 从 appData 推、不从 userData 推——userData 已经按 home 拆了，再从它推就成了递归
+ */
+app.setPath('userData', path.join(dataDir, 'electron'))
 
 /** home 起得来的最小形态：包清单、空条目表。缺哪样补哪样，不覆盖 */
-fs.mkdirSync(dataDir, { recursive: true })
 for (const [file, content] of [
   ['package.json', '{\n  "name": "gwb-home",\n  "private": true\n}\n'],
   ['cordis.yml', '[]\n'],
@@ -52,7 +63,19 @@ const stackOf = (e: unknown): string => (e instanceof Error ? (e.stack ?? e.mess
 process.stderr.on('error', () => {})
 
 /**
- * 这一轮的运行时身份落 `runtime.json`：pid、起的时刻、应用目录，外加 Chromium 调试口——
+ * 同一 home 只许一个实例：Electron 的平台锁，钥匙是 userData——上面刚把它拆成每 home 一份，
+ * 这把锁就自动按 home 生效。第二个实例解出同一个 home（realpath 已归一）时拿不到锁，报一句
+ * 退出；不同 home 钥匙不同，可以并跑。不手搓锁文件：那得判 pid 活没活，平台锁在进程死时由
+ * 操作系统放掉，没有陈锁这回事。被拒的这一份不往下走，runtime.json 不动，在跑那份的
+ * 身份不会被这份盖掉
+ */
+if (!app.requestSingleInstanceLock()) {
+  say('error', 'kernel', `home ${dataDir} 已有实例在跑，本实例退出`)
+  app.exit(1)
+}
+
+/**
+ * 这一轮的运行时身份落 `runtime.json`：pid、起的时刻、版本、应用目录，外加 Chromium 调试口——
  * 那个口**只有起进程的这只手知道**，内核不认识它、页面也读不到，而外面的工具要靠它才够得着
  * 这个 home。
  *
@@ -70,6 +93,8 @@ try {
       {
         pid: process.pid,
         startedAt: Date.now(),
+        // app.getVersion() 读的是内核包自己的清单：从仓里起还是从安装位起，都报得出自己是哪一版
+        version: app.getVersion(),
         appDir: app.getAppPath(),
         // 没开这道口就没有这一格：写 0 或 null 的话，读的人还得再判一次「这个数算不算数」
         ...(Number.isInteger(cdpPort) && cdpPort > 0 && cdpPort < 65536 ? { cdp: cdpPort } : {}),
@@ -130,51 +155,6 @@ process.on('unhandledRejection', (e) => kernelLog.error(`没人接的 rejection�
 process.on('uncaughtException', (e) => kernelLog.error(`未捕获异常：${stackOf(e)}`))
 
 /**
- * 浏览器半的取址：页面上的裸名（react 那一族）指到 home 里哪个文件。跟下面替 loader 塞的那五行是同一件
- * 事的两面。提供方在自己的 package.json 里声明 `gwb.shared`（裸名 → exports 子路径），内核扫 home 清单
- * 收齐、解析成 file:// 表，随外壳地址推给页面，页面注完表才 import 外壳。内核不认识 react 这个词，只搬运
- * 声明；共享包没有 node 半，清单是它唯一能说话的地方。撞名只认先到的，报一句
- */
-function collectImports(): Record<string, string> {
-  const imports: Record<string, string> = {}
-  const resolver = createRequire(ctx.baseUrl ?? pathToFileURL(dataDir + path.sep).href)
-  let deps: string[] = []
-  try {
-    const manifest = JSON.parse(fs.readFileSync(path.join(dataDir, 'package.json'), 'utf8')) as {
-      dependencies?: Record<string, unknown>
-    }
-    deps = Object.keys(manifest.dependencies ?? {})
-  } catch {
-    /* 没有清单就没有共享包 */
-  }
-  for (const pkg of deps) {
-    let shared: unknown
-    try {
-      const manifest = JSON.parse(
-        fs.readFileSync(path.join(dataDir, 'node_modules', ...pkg.split('/'), 'package.json'), 'utf8'),
-      ) as { gwb?: { shared?: unknown } }
-      shared = manifest.gwb?.shared
-    } catch {
-      continue
-    }
-    if (typeof shared !== 'object' || shared === null) continue
-    for (const [bare, sub] of Object.entries(shared as Record<string, unknown>)) {
-      if (bare === '' || typeof sub !== 'string' || sub === '') continue
-      if (imports[bare] !== undefined) {
-        kernelLog.warn(`裸名 ${bare} 有两个提供方，只认先到的，${pkg} 的那条忽略`)
-        continue
-      }
-      try {
-        imports[bare] = pathToFileURL(resolver.resolve(`${pkg}/${sub.replace(/^\.\//, '')}`)).href
-      } catch (err) {
-        kernelLog.warn(`${pkg} 声明的 ${bare} → ${sub} 解析不到：${stackOf(err)}`)
-      }
-    }
-  }
-  return imports
-}
-
-/**
  * 页面上那份只读现状：条目清单各自到哪一步、最近的错误行。只在没有外壳时画，数据全是内核已经
  * 攥着的（loader 的条目树、logger 的缓冲），不归因、不摆按钮。为什么是这条线，见文档站
  */
@@ -220,12 +200,19 @@ function report(): Report {
 }
 
 let win: electron.BrowserWindow | null = null
+// 同一 home 的第二份被锁拒掉时，Electron 会通知第一个实例：把已经在跑的窗抬到前面——
+// 人第二次双击看到的是原窗聚焦，不是无声无息
+app.on('second-instance', () => {
+  if (win === null) return
+  win.show()
+  win.focus()
+})
 /** 页面根交给谁。件经 setShell 说，页面经 onShell 听 */
 let shellUrl: string | null = null
 /** 推给页面的那一份：外壳地址加 importmap 加只读现状。每次现算，共享包装了要重启才看得见 */
 const shellMessage = (): { url: string | null; imports: Record<string, string>; report: Report } => ({
   url: shellUrl,
-  imports: collectImports(),
+  imports: collectImports({ dataDir, baseUrl: ctx.baseUrl, warn: (msg) => kernelLog.warn(msg) }),
   report: report(),
 })
 // 条目换态、错误行到来都会重推，去抖成一次；页面那头外壳在时不看 report
