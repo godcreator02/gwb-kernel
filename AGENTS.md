@@ -110,8 +110,9 @@ cd apps\desktop; pnpm build          # tsc 直出到 dist/，无打包器（不�
 根上的门禁是 `pnpm check`（`build:api` + `typecheck` + `lint` + `test`）。页面取证的小工具与规矩
 归 `gwb-devkit` 件（`cdp-eval` 是它登记的一条 node CLI；表达式放文件不放命令行；起内核带的
 CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人的页面）。日志在 `<home>\gwb.log`：
-内核自己的话、件的、渲染层 console 转来的，全在这一份里。仓里不放验场、不放探针，临时东西
-一律进 scratchpad，跑完即废。
+内核自己的话、件的、渲染层 console 转来的，全在这一份里。实验与测量的材料落仓根
+`probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm workspace、不进
+文档门禁；evidence 卡在依据段用相对仓根的路径指过去，判据见 trajectory skill。
 
 ## 服务命名：一律 `gwb` 开头
 

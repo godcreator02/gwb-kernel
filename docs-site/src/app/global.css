@@ -3,7 +3,43 @@
 @import 'fumadocs-ui/css/preset.css';
 /* 状态点的样式随格式包发,一行引进来 */
 @import '@godcreator02/docfirst-workflow/fumadocs/light.css';
+/* 星轨盘的 HUD / 图例 / 浮层样式随 trajectory 包发 */
+@import '@godcreator02/docfirst-trajectory/star.css';
 
 html {
   scrollbar-gutter: stable;
+}
+
+/* 星轨盘整页的壳：顶栏一条，盘吃满剩下的高度（盘自己按容器短边居中）。
+   顶栏归页面画，盘上的页签 / 工具条 / 图例归组件贴在容器四角。 */
+.trajectory-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.trajectory-topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--color-fd-border);
+  background: var(--color-fd-background);
+}
+.trajectory-topbar-left,
+.trajectory-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.trajectory-sick {
+  font-size: 12px;
+  color: var(--color-fd-muted-foreground);
+}
+.trajectory-stage {
+  flex: 1 1 auto;
+  min-height: 0;
 }
