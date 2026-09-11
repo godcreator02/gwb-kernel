@@ -1,6 +1,5 @@
 {
   "title": "上手",
   "description": "跑起来、装上第一批件、写下第一个件",
-  "root": true,
   "pages": ["first-run", "first-plugin"]
 }

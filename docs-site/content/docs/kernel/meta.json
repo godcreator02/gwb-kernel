@@ -1,6 +1,5 @@
 {
   "title": "内核",
   "description": "底座 cordis、三件事各自的机制、边界与判据——每一章都要回答「为什么它不能是插件」",
-  "root": true,
   "pages": ["cordis", "processes", "loading", "bridge", "logs", "home"]
 }
