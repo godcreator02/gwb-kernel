@@ -84,7 +84,7 @@ cordis 自带的日志缓冲里筛 error / warn，内核不自建缓冲。
 {/* ref file="../apps/desktop/src/main.ts" lines="212-228" */}
 
 这条线为什么划在「只读、不归因」，以及它跟母仓的兜底页族、跟 09-08 那版阶段页的关系，
-见[刻意不做](/docs/not-doing#图形界面上的失败兜底页)。
+见[刻意不做](/future/not-doing#图形界面上的失败兜底页)。
 
 ## 两种角色，两个动词
 
@@ -105,7 +105,7 @@ export function apply(ctx: GwbContext) {
 
 包在 `effect` 里：件卸载、撤销函数跑、页面收回那句话——外壳身份是运行时一通电话，不是
 清单声明（旧线「谁 provide `gwbShell` 谁是外壳」的判法随两进程退役了，
-了断见[轨迹](/docs/trajectory/2026-09-09-single-process)）。开机要的 home 与三张样式
+了断见[轨迹](/trajectory/2026-09-09-single-process)）。开机要的 home 与三张样式
 表地址，外壳的浏览器半开机问一次 `shell.env` 命令再起——命令契约正本在件仓。
 
 默认导出的形状：
@@ -125,8 +125,8 @@ export default function mountShell(root) {
 `mountPane` 的 `args` 里有什么，**是外壳件说了算的**——内核只定 `ShellBoot`，它连「窗格」
 这个概念都没有。窗格清单是运行时注册：件在 `apply` 里调 `ctx.gwbShell.registerPane(…)`，
 报 `client`/`style` 地址，不写进包清单（判据见
-[窗格动态注册](/docs/trajectory/2026-09-07-panes-runtime-registry)与
-[args 归外壳](/docs/trajectory/2026-09-07-pane-args-shell-owned)）。大意是这样，细节以
+[窗格动态注册](/trajectory/2026-09-07-panes-runtime-registry)与
+[args 归外壳](/trajectory/2026-09-07-pane-args-shell-owned)）。大意是这样，细节以
 件仓 `gwb-shell` 那页为准：
 
 ```js

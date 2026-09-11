@@ -1,9 +1,4 @@
 {
-  "content/docs/trajectory/2026-09-07-wall-electron-postinstall.mdx": {
-    "has ../apps/desktop/package.json \"node node_modules/electron/install.js\"": {
-      "kind": "has"
-    }
-  },
   "content/docs/kernel/bridge.mdx": {
     "../apps/desktop/src/preload.cjs:1-19": {
       "kind": "git",
@@ -262,18 +257,6 @@
         22
       ],
       "hash": "17332c2405c74643fe50e6ae48d39e487e8497618a4317f227b62cc7acc969ac"
-    }
-  },
-  "content/docs/overview.mdx": {
-    "../apps/desktop/src/main.ts:12-16": {
-      "kind": "git",
-      "blob": "1ec8384f1628315043e579da4969d0ca8ca09cb8",
-      "commit": "b410063cc9beac113b56b0ebffe446209bea921d",
-      "lines": [
-        12,
-        16
-      ],
-      "hash": "69b5469a81334bc85c7a7d5dfa2b59408e05e7e0255c5eccfb2cf97ae689417a"
     }
   },
   "content/docs/system-map.mdx": {

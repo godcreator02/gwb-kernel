@@ -1,0 +1,28 @@
+---
+title: 取址交给 cordis 官方 loader，内核自己不做
+born-at: 2026-09-07T11:01
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 取址归 loader
+domain: 内核
+---
+
+## 背景
+
+第二刀自己写了 87 行取址（读 yml → 拼路径 → import）。cordis 有官方的 `plugin-loader` 与 `plugin-include`，要不要用。
+
+## 结论与边界
+
+内核只挂 loader，再往它的树上放一条 `cordis:include` 条目，其余全归这两个。内核连 yml 都不认识。人拍板（2026-09-07）。
+
+## 否掉的候选
+
+- 保持自己写——热挂卸要自己造，母仓为同一件事写了 500 行。
+
+## 依据
+
+`EntryTree` 的 API 是现成的（`create`/`remove`/`update`/`store`/`await`），**热挂卸是白得的**——直接消掉了「设置件改完要重启」那个取舍。而母仓不用 include、自己写了 500 行做同一件事。
+
+## 代价与遗留
+
+多两个依赖；引导链有四条判据要记住（都住应用依赖树、include 走 `builtins`、做成条目而非 `ctx.plugin`、承载 yml 那条 id 写死）。这些连同踩到的坑记在墙卡：[include 走 builtins](/trajectory/2026-09-07-wall-include-via-builtins)、[id 写死 home](/trajectory/2026-09-07-wall-home-entry-id-fixed)、[baseUrl 设在根上下文](/trajectory/2026-09-07-wall-baseurl-on-root-ctx)、[include 的 path 是 URL](/trajectory/2026-09-07-wall-include-path-is-url)。

@@ -66,7 +66,7 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 维护 exports 定址表、管 MIME 白名单——单进程之后**整套退役**：Electron 的页面直接吃
 `file://`。动态 `import`、`<link>` 样式表、fetch、JSON 模块、importmap 指到 `file://` 后
 与直连是同一份实例——探针五项全过，读数见
-[单进程重构](/docs/trajectory/2026-09-09-single-process)。
+[单进程重构](/trajectory/2026-09-09-single-process)。
 
 地址由件**自己算、自己报**：`new URL('./client.js', import.meta.url).href`——dist 下的
 产物互为邻居，从自己的模块地址出发一步就到。注册窗格时报 `client`（与可选 `style`）两个

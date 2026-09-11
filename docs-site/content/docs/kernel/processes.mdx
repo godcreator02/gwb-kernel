@@ -21,7 +21,7 @@ description: cordis 为什么住进 Electron 主进程、ready 为什么不能�
 墙拆掉，cordis 搬进主进程：**件跑在主进程里，意味着件拿得到 `electron`**——开窗、菜单、
 对话框、协议处理、子进程，全是件的事，内核一条都不用代办。两道准入判据因此更好用了。
 
-了断与四个探针的读数见[单进程重构](/docs/trajectory/2026-09-09-single-process)。
+了断与四个探针的读数见[单进程重构](/trajectory/2026-09-09-single-process)。
 
 ## 启动的形状：ready 不能顶层等
 
@@ -34,7 +34,7 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 这段就是那堵墙的形状：入口模块里不 `await`，把启动体挂进 `.then(main)`；`main()` 里抛
 什么都在 `.catch` 里走 `say` 落 stderr 与 `<home>/gwb.log`，弹一个 `dialog.showErrorBox`
 （Electron 保证 ready 之前就能弹——这时窗多半还没开，没有这个框人看到的是程序闪一下没了），
-再 `app.exit(1)`——起不来也得让人看见死因。现场见[那面墙](/docs/trajectory/2026-09-09-wall-esm-await-whenready)。
+再 `app.exit(1)`——起不来也得让人看见死因。现场见[那面墙](/trajectory/2026-09-09-wall-esm-await-whenready)。
 **别改回顶层 await。**
 
 模块顶层那几行（铺 home、开日志文件）不在这个 `.catch` 里——它们抛了就是 Electron 自己的

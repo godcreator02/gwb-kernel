@@ -58,7 +58,7 @@ export function apply(ctx: GwbContext) {
 
 就这三样——没有自省命令、没有版本号、没有装机。旧线 `gwbKernel` 上的 `appVersion` 与
 `install()` 删了：版本号读件自己包里的 `package.json`，装包归 `gwb-plugins` 件的
-`plugins.install`。变化全表见件仓的[决策记录](/docs/trajectory)。
+`plugins.install`。变化全表见件仓的[决策记录](/trajectory)。
 
 **内核信息怎么给件：两条路，不能混。** 这次运行的状态（home 在哪）走 **cordis 服务**——
 `dataDir` 是内核启动时算出来的运行时值，import 一份内核代码拿到的是代码不是那次运行的

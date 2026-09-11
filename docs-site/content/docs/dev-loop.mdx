@@ -62,8 +62,8 @@ program。它本来也不进根 build/test，自己有 `docfirst check` 与 `nex
 
 有个具体例子说明为什么实机不可省：home 分格第一次开测试 home 时撞出「全新 home 起不来」——
 `cordis.yml` 不在，include 抛错落在挂载链上，整趟起不来（见
-[那面墙](/docs/trajectory/2026-09-07-wall-fresh-home-no-yml)）。**单测抓不着这个**：每个
+[那面墙](/trajectory/2026-09-07-wall-fresh-home-no-yml)）。**单测抓不着这个**：每个
 函数单看都对，是「从没被走过的一条路径」上才显形的组合问题。实机起一次，一眼就看见。
 
 单进程重构走的也是这条路：四个探针逐个验「墙拆了件活不活得成」，读数进了
-[轨迹](/docs/trajectory/2026-09-09-single-process)，探针本身验完即删、不进仓。
+[轨迹](/trajectory/2026-09-09-single-process)，探针本身验完即删、不进仓。

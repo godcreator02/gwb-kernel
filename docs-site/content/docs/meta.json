@@ -1,16 +1,11 @@
 {
   "pages": [
-    "overview",
-    "glossary",
     "system-map",
+    "glossary",
     "getting-started",
     "kernel",
     "plugins",
     "dev-loop",
-    "docfirst",
-    "roadmap",
-    "not-doing",
-    "trajectory",
-    "readme"
+    "docfirst"
   ]
 }

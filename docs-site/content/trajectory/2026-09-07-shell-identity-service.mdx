@@ -1,0 +1,51 @@
+---
+title: 外壳身份也改运行时：谁 provide `gwbShell`，谁就是外壳
+born-at: 2026-09-07T17:49
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 外壳身份运行时
+domain: 内核
+---
+
+## 背景
+
+删掉 `gwb.title` 之后，`gwb.shell` 是包清单里最后一个「件自己声明自己是谁」的字段。它该跟着搬吗？
+
+## 结论与边界
+
+件 provide 一个约定名的服务，内核反查提供者。内核认 `gwbShell` 这个**服务名**（不绑包名，外壳件叫什么都行）。人拍板（2026-09-07）。
+
+**白得三样**——这也是选它而不是「留着」的真正理由：
+
+1. **「多于一条外壳」这种局面不存在了**。cordis 的 `provide` 撞名直接抛，第二个件根本挂不上，日志里明说撞的是谁。渲染层那条留白分支删掉了
+2. **半死的外壳挑不出来**。反查只认 `fiber.state === ACTIVE`。这顺手暴露并修掉了一个真 bug：`walkEntries` 原来判 `fiber !== undefined`，而 `registry.plugin()` **同步建 fiber、跟 inject 无关**，所以 inject 永远等不到的件也报 `ok: true`（见墙卡 [「fiber 在不在」不是「挂上了没有」](/trajectory/2026-09-07-wall-fiber-not-active)）
+3. `kernel.info` 不用再把每个包的 `package.json` 重读一遍
+
+**`gwb.shared` 不跟着搬**：共享包**不是件**——在 home 的 `dependencies` 里但不在 `cordis.yml` 里，没有 `apply`、没有 fiber、没有 ctx，压根没有运行时可言。而且 importmap 必须赶在第一句动态 import 之前注入，比任何运行时都早（共享包的运行时只能靠 import 它自己跑起来，那一句就已经晚了）。它跟 `gwb.shell` 并列过一阵，但**并列的理由只是碰巧都还在清单里**：一个是必须在，一个是还没搬。
+
+## 否掉的候选
+
+- 留着 `gwb.shell` 字段——它是清单里最后一个自声明字段，见代价与遗留里白得的三样
+- 件调 `gwbKernel.claimShell()` 认领——是反查的严格劣化：认领必须能撤，件得自己 `ctx.effect` 包住、忘了包就是「件卸了外壳还占着」；而反查里 cordis 的 `provide` 本来就走 `fiber.effect`，收尾是白得的。而且它的调用方身份还是得从 fiber 反推——反查照做不误
+- 内核完全不认识外壳，改由渲染层去问某条命令——把耦合挪到了**更差的位置**：渲染层得硬编码那个命令名，等于内核仍然认识外壳、只是从「字段名」换成「命令名」，而渲染层是最没资格持有约定的那层；诊断也更远（`gwbCommands` 缺席时说的是「认不出 shell.boot」）
+
+## 依据
+
+先确认可行——cordis 4.0.0-rc.9 **有反查提供者的公开面**：`ctx.reflect.store`（`Dict<Impl, symbol>`）的 `Impl` 带 `fiber`，loader 用 `declare module` 给 `Fiber` 加了 `entry?: Entry`，两处都有类型声明。时序上也没有窗口：主进程**先起宿主、等它 `loader.await()` 收敛发 `ready`，才开窗**，所以渲染层问的时候件早挂完了。
+
+## 代价与遗留
+
+内核仍然认识一个名字（从字段名变成服务名），耦合度没变——它总得挑一个件把 `#root` 交出去。另外「装了但还没挂上的外壳」从此在条目表里只是一条 `ok: false`，认不出它本来想当外壳；那个信息现在只在宿主日志里。真需要「装了但没启用的件」那种界面时另想办法（同 [describeSelf 那条](/trajectory/2026-09-07-describe-self)的代价）。
+
+## 2026-09-09：又往前走了一步——内核连 `gwbShell` 也不认识了
+
+单进程重构把外壳身份改成**运行时一通电话**：件的 node 半自己调
+`gwbKernel.setShell(url)` 交页面根，包在 `ctx.effect` 里，卸载即收回——谁调用、谁是外壳，
+后调的顶掉先调的。本卡那句「内核认识 `gwbShell` 这一个服务名（不绑包名）」变成了
+**内核一个名字都不认识**：`setShell` 是一条通用 API，内核只有「页面根」这个概念。
+
+有意思的是，本卡否掉的第三候选（内核完全不认识外壳）走了大半——当年否它的理由是
+「渲染层得硬编码命令名，耦合挪到更差的位置」；现在交根的动作是件与内核之间的一条通用
+API，渲染层只管听 `onShell`，无需知道任何名字。「多于一条外壳」的性质也还在：setShell
+返回撤销函数，后调顶掉先调，不靠 provide 撞名抛错了。现状见
+[服务与命令](/docs/plugins/services)与[浏览器那半](/docs/plugins/client)。

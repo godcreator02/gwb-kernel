@@ -1,0 +1,28 @@
+---
+title: 依赖写 peer 还是 dev：三档，不是两档
+born-at: 2026-09-07T11:01
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 依赖三档
+domain: 契约
+---
+
+## 背景
+
+母仓的判据是「运行时真 import 了才写 peer，只 `import type` 写 dev」。按它写，两次都错。
+
+## 结论与边界
+
+三档——运行时真 import → peer；**只 import type 但出现在导出的类型里 → 也要 peer**；只在实现内部用、不出现在导出面 → dev。人拍板（2026-09-07）。
+
+## 否掉的候选
+
+- 沿用两档——中间那档两次撞出同一个错，见依据。
+
+## 依据
+
+**发布出去的包不带 devDependencies**。词汇表包的 `GwbContext extends Context` 把 cordis 写成 dev，消费方那边 `ctx.logger`/`effect`/`provide` 全报「不存在」；`gwb-commands` 的 `gwbCommands.run` 回 `GwbResult` 是同一回事。现场记在墙卡：[cordis 走 peer 不是 dev](/trajectory/2026-09-07-wall-cordis-peer)。
+
+## 代价与遗留
+
+判断时要多看一眼「它出现在导出面吗」。白得一条：peer 声明之后 pnpm 会把它自动装进 home，消费方不用手动装。

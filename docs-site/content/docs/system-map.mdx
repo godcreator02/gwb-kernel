@@ -49,7 +49,7 @@ home 的完整位置：`%APPDATA%\gwb-kernel\homes\<GWB_HOME ?? default>`——`
 | **外壳与资产** | 内核 → 页面 / 盘 → 页面 | `gwb:shell` 推 `{ url, imports }`（外壳的 `file://` 地址＋内核拼好的 importmap），页面注完表才 `import` 外壳；件的浏览器半由件自己从 `import.meta.url` 算成 `file://` 自报 | [桥](/docs/kernel/bridge) |
 
 没有 `gwb://` 这类资源协议：Electron 的页面直接吃 `file://`——动态 import、`<link>`
-样式表、fetch、JSON 模块都过（探针五项全过，读数见[单进程重构](/docs/trajectory/2026-09-09-single-process)）。
+样式表、fetch、JSON 模块都过（探针五项全过，读数见[单进程重构](/trajectory/2026-09-09-single-process)）。
 
 ## 速查
 

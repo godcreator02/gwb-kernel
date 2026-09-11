@@ -1,0 +1,46 @@
+---
+title: 装机口整口移除：内核不碰 pnpm
+born-at: 2026-09-08T01:46
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 装机口移除
+domain: 内核
+---
+
+## 背景
+
+四件事里曾有装机：`kernel.install` 命令转发 pnpm、首启按 `RECOMMENDED` 推荐列表装一遍。
+`RECOMMENDED` 从立仓起一直是空表，`kernel.install` 的消费方只有外壳的一个调试入口。安家
+拆成独立的 `home.ts` 之后做了一次盘点：装机在内核里剩一条 pnpm 转发加一个没人用过的
+推荐列表。而 `install()` 写在词汇表包里，是契约，删它要走版本（0.0.4）。
+
+## 结论与边界
+
+`kernel.install` 命令、`GwbKernelApi.install`、`host/install.ts`、`GWB_PNPM`、首启推荐
+安装，全删。内核对「装」只保留一件事：`ensureHome` 保证 home 是个**起得来的普通 npm
+项目根**。装包是 home 里的手工活（home 的 README 写着全流程）；图形界面的装件面归件——
+件仓的 `gwb-plugins` 件，`plugins.install` 命令干这个。人拍板（2026-09-08）。
+
+## 否掉的候选
+
+- **留着 `kernel.install` 等界面用**——界面那半是件，件自己能跑 pnpm，不必经内核转发；
+  内核那条口唯一的消费方从来只有外壳的调试按钮
+- **保留推荐列表的数据结构等 catalog**——`RECOMMENDED` 几轮下来一直是空表；真到 catalog
+  有内容那天，读清单的是件不是内核
+- **`install()` 留在词汇表但内核不实现（必抛）**——契约里留一个必抛的口比没有更糟
+
+## 依据
+
+准入判据第一关：「第一个件存在之前必须发生的事」。装包不在其中——第一个件完全可以由人
+手工放进去，home README 写的就是这个流程；「界面点一下就装上」的时机在件仓（market 件），
+不在内核。装机当年列进四件事的推论是「用户可以装插件」，这个推论如今换了根：用户可以装
+插件，因为 **home 是个普通 npm 项目、件可以自己提供装机面**——推论保住了，内核少养一台
+机器。
+
+## 代价与遗留
+
+- 词汇表 0.0.4 是破坏性变更：消费过 `install()` 的件要跟着升（实测只有外壳调试用过）
+- 「开箱即用」没了：全新 home 起来窗口是白的，装件要进终端。GUI 兜底页那条本来就不做，
+  于是首次体验就是「白的窗口 + README」——这是刻意的，不是漏了
+- 装件面的正主落到了件仓的 `gwb-plugins` 件（`plugins.install`），它的判据住件仓；内核
+  这边 pnpm 相关的墙（[electron 装脚本](/trajectory/2026-09-07-wall-electron-postinstall)除外）就此封卷

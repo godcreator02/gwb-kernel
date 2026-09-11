@@ -1,0 +1,16 @@
+---
+title: 以下几条是**读源码得出的，没实机撞过**
+born-at: 2026-09-07T18:50
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 读源码五条
+domain: 条目表
+---
+
+第二版接「插件管理」（启停/卸载）时才会用到它们，真用之前建议各验一次：
+
+- **`update` 改 `config` 是整个重挂**，不是原地更新：`Entry.update` → `_patchContext` → `fiber.update` → `restart()` → 完整 unload＋reload，`apply` 重跑、`provide` 全撤销再建。而 `provide` 一撤销就 `notify` 一圈，**`inject` 它的件跟着卸载再挂**——改一项配置抖一条依赖链。想不重挂得自己截 `internal/update` 且不调 `next()`（loader 自带的 Group 与 Include 就是这么干的）
+- **写回 yml 是全量 `yaml.dump(root.data)`**，源文本只用于「内容没变就不重读」的比对、不参与写。**注释、空行、引号风格全丢**，键序还被 `sortKeys` 重排成 id/name/其余字母序/config。而按[刻意不做什么](/future/not-doing)的判断，那个文件**归用户**——第一次从界面改配置就把人写的注释清了，这件事得先想清楚
+- **没有文件监听**。两个包里没有 `fs.watch` 也没有 chokidar，`Include.refresh()` 是个从未被调用的公开方法。外部手改 `cordis.yml` 不会被感知，要重启
+- **`ctx.loader.remove('home:x')` 可能是静默 no-op**：`EntryTree.remove` 拿全路径 id 去调 `EntryGroup.remove`，而后者拿它当短 id 查 `store`（键是 `x` 不是 `home:x`），查不到就直接 return——**条目没删，`write()` 还照写一遍**。`update` 没这问题（它先 resolve 成 `Entry` 对象）
+- **`ctx.loader.create(opts)` 不传 `parent` 落不了盘**：默认 `parent = null` 解析到 Loader 自己的 root group，而 `Loader.write()` 是**空实现**。要写进 `cordis.yml` 得传 `parent: 'home'`（那条 include 条目的 id）

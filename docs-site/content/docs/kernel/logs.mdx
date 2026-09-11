@@ -14,18 +14,18 @@ description: 三路都走 ctx.logger，内核只铺一个出口；件想看，�
 
 一个件都没有、窗口没起、终端不在——只要这个进程活着，`<home>/gwb.log` 里就有人读得懂的
 一行行。`say` 只给 exporter 本身与「起不来」那一句用；格式是最朴素的 `ISO 时间 级别 名字
-正文`。**只追加、不轮转**——按字节切段的旧机制随日志管道一起退役了（见[轨迹](/docs/trajectory)），
+正文`。**只追加、不轮转**——按字节切段的旧机制随日志管道一起退役了（见[轨迹](/trajectory)），
 真到文件要人管的那天，重新过判据。
 
 末行那句 `process.stderr.on('error', () => {})` 不是可省的：没有终端起的时候（比如从
 `run.cmd` 双击起），stderr 对端是断的，每写一次抛一次 EPIPE，不吞它进程就死在写日志上
-（见[那面墙](/docs/trajectory/2026-09-08-wall-stderr-epipe)）。
+（见[那面墙](/trajectory/2026-09-08-wall-stderr-epipe)）。
 
 ## exporter 必须在第一个件之前
 
 cordis 的日志在没有 exporter 时**只缓冲不输出**。内核的全量 exporter 在模块顶层注册——
 挂 loader、开窗都在它后面，第一个挂不上的件可能正是要报错的主角，它的报错不能等
-（见[那面墙](/docs/trajectory/2026-09-07-wall-loader-error-swallowed)）。
+（见[那面墙](/trajectory/2026-09-07-wall-loader-error-swallowed)）。
 
 {/* ref file="../apps/desktop/src/main.ts" lines="114-146" */}
 
@@ -58,7 +58,7 @@ cordis 的日志在没有 exporter 时**只缓冲不输出**。内核的全量 e
 末尾那两个 `process.on` 是「件跑在这个进程里」的直接后果：件的错就是这个进程的错。
 **只记不退**——一个坏件不该带走工作台。三种坏法（apply 同步抛、没人接的 rejection、
 定时器里抛）实机验过全接得住、主进程活着，读数见
-[单进程重构](/docs/trajectory/2026-09-09-single-process)。
+[单进程重构](/trajectory/2026-09-09-single-process)。
 
 ## 两条纪律
 

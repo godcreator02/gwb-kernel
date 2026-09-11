@@ -1,0 +1,18 @@
+---
+title: 建 home 的 `package.json` 不由装机代劳
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 建清单排队
+domain: 宿主
+---
+
+**（2026-09-08 订正）**：装机口整口移除（见[装机口移除](/trajectory/2026-09-08-no-install-port)），这条钉住的代码（`main.ts` 的 `ensureHomeManifest` 与装机先后的组合）已经不存在了，引用随之取下。墙留在这儿，是因为「**两个各自正确的函数，组合顺序错了**」这个教训仍然成立——现在的组合换成了 `ensureHome` 与 loader 的先后，而那条的现场记在[全新 home 起不来](/trajectory/2026-09-07-wall-fresh-home-no-yml)。
+
+---
+
+推荐列表是空表时装机会提前返回（`specs.length === 0`），`ensureHomeManifest` 轮不到，于是 `package.json` 建不出来，「装过了」永远判不成立——**每次启动都当新 home**。
+
+这个 bug 是实机验收抓到的：删净 home 起一次，日志说了「新 home」，但目录是空的。**单测抓不着**，因为它是两个各自正确的函数组合顺序错了。
+
+**后来从根上拆掉了这个组合**：`ensureHome` 挪到 `firstRun` 的第一行、无条件跑，跟装机再无先后关系（见[全新 home 起不来](/trajectory/2026-09-07-wall-fresh-home-no-yml)）。当时那个修法是「建 home 不走装机那条路」，现在是「建 home 根本不跟装机排队」。

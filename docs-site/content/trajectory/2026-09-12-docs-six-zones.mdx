@@ -1,0 +1,48 @@
+---
+title: 文档站装配 docfirst 六区
+born-at: 2026-09-12
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 站升六区
+domain: 文档
+---
+
+## 背景
+
+站是老款单树：`content/docs` 一个集合包打一切——机制现状、全部轨迹卡、愿景三页、
+README 与 AGENTS 的正本全混在一个 URL 空间里，「目录即状态」无从谈起，check 的范围
+也只能笼统罩住整个 docs。docfirst-workflow 的六区模式已在 docfirst 自己的仓与 devkit
+等仓落地：六种生命周期各占一个目录，check 只扫对代码说话的两区。
+
+## 结论与边界
+
+- 六区物理分区 + 六集合接线：`source.config.ts` 六个 `defineDocs`，卡集合走
+  `cardSchema`（born-at / type / domain / parent / label），`applyMdxPreset` 保默认
+  preset、挂关系边插件；站侧六条 loader、`(zones)` 路由组、侧栏单树六个 `root` 节
+- **钉码只在现状区**。愿景三页搬去 future 时摘掉 overview 里的那颗 ref 钉（改指
+  系统地图）；墙卡里最后一颗 `has` 钉一并摘除——「轨迹区不定钉码」2026-09-09 就立了，
+  这颗是漏网的，账本里两条死键同步清掉
+- README / AGENTS 正本迁 `content/outputs/`，config 的 `docs` 改成两区数组、
+  `trajectory` 指卡目录、`comparator: git`；render 命令不变
+- 老 URL 全保：`next.config.mjs` 的 redirects 把 `/docs/trajectory/*`、愿景三页、
+  readme / agents 全数重定向到新家；全仓 40 余处内链（含卡间互链）直接改写
+
+## 否掉的候选
+
+- **留在单树里用子目录 meta 标 root 做侧栏分区**：失去「目录即状态」的物理边界，
+  check 范围没法按目录收窄，卡的「不进 check」也无从兑现
+- **愿景三页留在 docs/**：现状区禁未来与历史，混着写必然漂——这次搬家的起因就是这个
+
+## 依据
+
+写法正本是 `docfirst-docs` skill（六区、钉码红线、装配两步）；接线照抄 god-live-doc 站
+——它是这套模式最全的示例站（六 loader、`(zones)` 路由组、zoneTree、cardSchema）。
+本仓 74 张卡的 frontmatter 本就是新格式，cardSchema 直接过。
+
+## 代价与遗留
+
+- 旧链接改写是全仓一动：`/docs/trajectory/...` → `/trajectory/...` 等 40 余处，靠 sed
+  一趟完成，人没有逐处过目——build 与 check 绿是唯一守卫
+- trajectory 的星轨盘没跟：那是 god-live-doc 自己的整页路由，本仓不需要，导读页 index
+  留作区入口
+- `out/` 里躺着一批已删页的陈旧 `.ai.md` 副本（目录本就 gitignore），本地清掉了

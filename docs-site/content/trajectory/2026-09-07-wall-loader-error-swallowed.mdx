@@ -1,0 +1,56 @@
+---
+title: loader 挂不上一个件时，错误在启动期没有出口
+born-at: 2026-09-07T10:40
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 出口不在场
+domain: 主进程
+---
+
+内核在**任何件之前**就注册好日志出口。
+
+**loader 没有吞错误**，它老老实实写着 `.catch(error => this.ctx.logger.error(error))`。问题在下游：cordis 的 `LoggerService` 把消息存进 `buffer`，**没有 exporter 就没有出口**。而 `logger-console` 是 `cordis.yml` 里一条**并发挂载**的普通件——件挂载失败的那一刻，它可能还没注册 exporter。
+
+**症状**：件静默挂不上，日志一个字都没有，连「哪个件、为什么」都问不出来。第一个件（`gwb-commands`）因为相对 import 少了 `.js` 撞上这个，查了几分钟。
+
+补上之后同样的错当场是一行：
+
+```
+[loader] include: Error [ERR_MODULE_NOT_FOUND]: Cannot find module
+  '...\@test\broken\does-not-exist.js' imported from '...\@test\broken\index.js'
+```
+
+**后来这条保底线转正了**：做日志窗格时出口从「只管 error」扩成了全量，`logger-console` 也跟着撤掉——两个都在的话同一句话会打两遍。判据见[出口收归内核](/trajectory/2026-09-07-kernel-owns-log-export)。
+
+当初「只管 error、`info`/`warn` 归 `logger-console`」那个取舍留在这儿，是因为**它解释了这个 exporter 为什么必须在挂 loader 之前注册**：那一刻还没有任何件，包括原来负责好格式的那个。扩成全量之后这条要求只会更强。
+
+这条墙在单进程线上原样活着，而且注册点更靠前了——模块顶层、`ctx` 造出来之后紧跟的一段（2026-09-09 抄自 `apps/desktop/src/main.ts`，快照不是钉码）：
+
+```ts
+// cordis 的日志全量进 say。渲染交给 cordis 自己的 Logger.format（%s、%o、Error 它都会），
+// 类从一个实例的 constructor 上取，免得 import cordis 的内部
+{
+  const factory = ctx.logger as unknown as {
+    (name: string): { constructor: { format(exporter: unknown, message: unknown): string } }
+    exporter(exporter: unknown): void
+  }
+  const Logger = factory('gwb').constructor
+  const exporter = {
+    colors: 0,
+    levels: { default: 3 },
+    // 级别与名字在 cordis 那边就是字符串，正文才是任意值
+    export: (message: { type?: string; name?: string; args?: unknown[] }): void => {
+      let msg: string
+      try {
+        msg = Logger.format(exporter, message)
+      } catch {
+        msg = (message.args ?? []).map((a) => (a instanceof Error ? a.message : String(a))).join(' ')
+      }
+      say(message.type ?? 'info', message.name ?? '', msg)
+    },
+  }
+  factory.exporter(exporter)
+}
+```
+
+讲解现状的页在[日志](/docs/kernel/logs)。

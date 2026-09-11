@@ -1,0 +1,35 @@
+---
+title: 窗格表经外壳自己的命令过桥，外壳硬依赖命令总线
+born-at: 2026-09-07T15:38
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 窗格表过桥
+domain: 外壳
+---
+
+## 背景
+
+窗格注册发生在 node 半（件的 `apply` 里），排窗格的是浏览器半。表怎么过去。
+
+## 结论与边界
+
+`static inject = ['gwbCommands']`，硬依赖。命令名 `shell.panes`。人拍板（2026-09-07）。
+
+## 否掉的候选
+
+- 内核的 `kernel.info` 顺手把窗格带上——**过不了准入判据第一关**：内核得认识「窗格」这个概念才带得动，而它现在零 UI 知识
+- 内核在 `bootShell` 的 args 里塞给外壳——同上
+
+## 依据
+
+①在这条线上其实是唯一的路：内核的 `dispatch` 只有 `kernel.info` 一条自省命令（2026-09-08 订正：曾是两条，`kernel.install` 随装机口移除），其余**全部走 `ctx.gwbCommands`**，任何件的任何命令都从那儿派发。
+
+那么外壳依赖命令总线该多硬？**代价不对称**：写成可选的话，cli 缺席时外壳照挂、界面照画，用户看到的是个什么都开不出来的空井，症状「点哪儿都没反应」得自己去翻 console；写成硬的话 cordis 在日志里明说「gwb-shell 在等 gwbCommands」，而且 cli 后来挂上时外壳自动跟着起来——那是 `inject` 白得的。
+
+## 代价与遗留
+
+cli 没挂时外壳跟着挂不上。
+
+**这条代价当时记错了**（2026-09-07 当天修正）：原话写的是「渲染层那句错会说成『没有外壳件挂上』，而实际是装了没挂」，前提是「条目表里有 `shell: true` 但 `ok: false`」。**实际 `ok` 是 `true`**——`walkEntries` 当时判的是 `fiber !== undefined`，而 cordis 同步就把 fiber 建出来了、跟 inject 满不满足无关。所以真实的现象比记的更糟：渲染层**照样 boot 了那个半死的外壳**，井是空的而 console 里只有一句「`shell.panes` 调不通」。
+
+两处一起修了：`ok` 的判据改成 `fiber?.state === ACTIVE`（见墙卡 [「fiber 在不在」不是「挂上了没有」](/trajectory/2026-09-07-wall-fiber-not-active)）；外壳身份改成运行时（见[外壳身份也改运行时](/trajectory/2026-09-07-shell-identity-service)），内核从此只挑真的挂起来了的。

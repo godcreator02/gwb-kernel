@@ -130,7 +130,7 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 * **MCP 顶层在写件时决定**。桥只固定 `gwb_command_list` / `gwb_command_run` 两枚，其余经
   `run`；要上顶层在登记时标 `top: true`，桥照它渲染，没有运行时名单；agent 标之前先问人
 
-判据见[件的三条规矩](/docs/trajectory/2026-09-09-plugin-three-rules)。
+判据见[件的三条规矩](/trajectory/2026-09-09-plugin-three-rules)。
 
 ## 依赖写 peer 还是 dev：三档
 
@@ -169,7 +169,7 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 | `docfirst-docs` / `trajectory` | `@godcreator02/gwb-docfirst-workflow` 件 `skills/`（仓 `D:\unitfolders\26090315xby\god-live-doc`） | 写或改文档站之前；记轨迹卡之前                                                |
 | `gwb-decide`                   | 总控台 `D:\unitfolders\26090520ntn\console\.claude\skills\`（宿主 skill，不随件）                         | 遇到选型、判「进内核还是做成件」、决定要不要做某个功能之前。推完交给人拍板，拍板后记轨迹卡                  |
 
-判据与代价见[知识随件走](/docs/trajectory/2026-09-09-knowledge-rides-package)。
+判据与代价见[知识随件走](/trajectory/2026-09-09-knowledge-rides-package)。
 
 ## 注释与文档：三层分流
 
@@ -182,9 +182,10 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 **注释里不写文档站的页名或锚点**——docfirst 只钉「文档 → 代码」，反向没有任何守卫，
 写死位置必然腐烂而且没人发现。要指路就写「见文档站」四个字。
 
-文档站正本在 `docs-site/content/docs/`，`pnpm --filter gwb-kernel-docs-site dev` 起在 4314。
-**仓根 `README.md` 与这份 `AGENTS.md` 都是生成物，别手改**——正本分别是 `content/docs/readme.mdx`
-与 `content/docs/agents.mdx`，改完在 `docs-site` 跑 `pnpm docfirst render --target ai` 重摆，
+文档站在 `docs-site/`，六区装配（现状 / 轨迹 / 交接 / 未来 / 生成正本 / 反馈），起站
+`pnpm --filter gwb-kernel-docs-site dev`，口在 4314。
+**仓根 `README.md` 与这份 `AGENTS.md` 都是生成物，别手改**——正本分别是 `content/outputs/readme.mdx`
+与 `content/outputs/agents.mdx`，改完在 `docs-site` 跑 `pnpm docfirst render --target ai` 重摆，
 一起提交。`CLAUDE.md` 只有一行 `@AGENTS.md`，不派生。
 
 **文档检查不在 `pnpm check` 里**——它要起文档站的解析链，太慢，每次跑测试都带上不值。
