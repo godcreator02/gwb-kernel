@@ -12,7 +12,7 @@ description: 这条线造的词都在这儿——每个词一句定义，指到�
 | 词 | 是什么 |
 | --- | --- |
 | **正线** | gwb-kernel 自己。母仓与旧件仓已退役，这条线是接班的那个 |
-| **内核** | `apps/desktop/src` 三个文件，274 行——一个 Electron 应用，只做六件事，其余一切皆件 |
+| **内核** | `apps/desktop/src` 四个文件，504 行——一个 Electron 应用，只做六件事，其余一切皆件 |
 | **件** | 插件。一个普通 npm 包，装在 home 的 `node_modules` 下，由 cordis 挂载。单进程后件跑在 Electron 主进程里，`import('electron')` 就够得着 |
 | **词汇表** | `@godcreator02/gwb-plugin-api`。零运行时依赖，七个名字加一个形状，62 行，只命名不做事 |
 | **home** | `%APPDATA%\gwb-kernel\homes\<名>`（`GWB_HOME` 也可给绝对路径）。件住的地方，一个普通的 npm 项目根 |

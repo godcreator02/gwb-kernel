@@ -6,7 +6,7 @@ description: cordis 为什么住进 Electron 主进程、ready 为什么不能�
 # 载体：一个进程、一扇窗
 
 读完这页你能回答：cordis 和所有件为什么住在 Electron 主进程里；启动那几行为什么长那样；
-窗口为什么必须由内核开。
+退出时 cordis 由谁收走；窗口为什么必须由内核开。
 
 **做什么**：主进程里一个 cordis `Context`（件全挂它身上），一扇 `BrowserWindow`。
 
@@ -29,7 +29,7 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 所以 `await app.whenReady()` 写在模块顶层就是互相等死——模块等 ready、ready 等模块——
 而且**静默挂住**，一个报错都没有。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="295-304" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="297-306" */}
 
 这段就是那堵墙的形状：入口模块里不 `await`，把启动体挂进 `.then(main)`；`main()` 里抛
 什么都在 `.catch` 里走 `say` 落 stderr 与 `<home>/gwb.log`，弹一个 `dialog.showErrorBox`
@@ -40,12 +40,29 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 模块顶层那几行（铺 home、开日志文件）不在这个 `.catch` 里——它们抛了就是 Electron 自己的
 未捕获异常框。够用，不另铺。
 
+## 退出的形状：will-quit 里收走 cordis
+
+「起 cordis」有收尾的另一半：app 退出前 dispose 掉 loader 的 fiber，整棵件树
+（home → include → 每个件）的收尾 effect 递归跑完。件起的长命子进程（站件起的 node
+那种）靠这条路被带走——不然主进程一退，它们就是孤儿占着端口。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="309-330" */}
+
+判据一句话：**谁起了 Context 谁收 Context**。收运行时是「起 cordis」的收尾半，住内核；
+件各自挂 will-quit 各救各的会是第二份真相——总有件忘了挂，而忘了的那件恰好就是起进程
+的那件时，没人兜底。
+
+这段里四个要素缺一不可：`preventDefault` 拦住这一趟，收完尾再 `app.quit()`；`quitting`
+标记放收尾完的二次 quit 过去；dispose 的错只记不拦——一个件的收尾抛了不该拦住别的件的
+收尾；**5 秒超时兜底**——某个件的收尾挂死时工作台也必须退得出去，超时就硬退，没杀干净
+的认了。`main()` 还没走到挂 loader（起得慢、起来就退）时 fiber 是 undefined，放行正常退出。
+
 ## 窗口必须由内核开
 
 即使将来把窗口的尺寸、标题、关窗语义都交出去，`BrowserWindow` 这个动作本身仍留在内核——
 **在件挂上之前就得有一扇窗让页面加载**（页面加载后先说「没有外壳件」，见[页面那半](/docs/plugins/client)）。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="254-275" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="256-277" */}
 
 窗口先于挂件：`main()` 开完窗、加载 `index.html`，然后才 `ctx.plugin(Loader)` 去挂
 home 的条目树（见[取址](/docs/kernel/loading)）。窗口里画什么归件——内核不画外壳，只铺

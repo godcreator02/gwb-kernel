@@ -70,7 +70,7 @@ dist 下的产物互为邻居，从自己的模块地址出发一步就到。这
 （见[桥](/docs/kernel/bridge#外壳地址setshell-说onshell-听)）；外壳在时页面根本不看这个字段。
 内核那半：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="161-200" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="163-202" */}
 
 状态词是 cordis 自己的 `FiberState` 原名，不另造中文：`ACTIVE` / `LOADING` / `UNLOADING` /
 `DISPOSED` 照抄；`PENDING` 带上缺哪个服务——件声明了 `inject` 没人提供时 fiber 就停在这儿，
@@ -81,7 +81,7 @@ cordis 自带的日志缓冲里筛 error / warn，内核不自建缓冲。
 推的时机在内核那边：条目换态（cordis 的 `internal/status` 事件）与错误行到来都去抖成一次
 `gwb:shell` 重推：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="212-228" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="214-230" */}
 
 这条线为什么划在「只读、不归因」，以及它跟母仓的兜底页族、跟 09-08 那版阶段页的关系，
 见[刻意不做](/future/not-doing#图形界面上的失败兜底页)。

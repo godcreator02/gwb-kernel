@@ -30,7 +30,7 @@ description: 内核连 yml 都不认识——挂载归两个官方件；件的�
 
 ## 引导链：顺序全是判据
 
-{/* ref file="../apps/desktop/src/main.ts" lines="277-289" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="279-291" */}
 
 1. **先 provide `gwbKernel`，再动 loader**。这个服务挂在根 fiber 上（根 fiber 生来 ACTIVE）、
    永不撤销，而且 provide 发生在模块顶层（`ctx.provide('gwbKernel', kernel)`）、结构上先于
@@ -54,7 +54,7 @@ description: 内核连 yml 都不认识——挂载归两个官方件；件的�
    树上：条目表、fiber 状态、热挂卸全在一棵树里，外面只认 `ctx.loader` 一个入口。id 有层级
    （`<父>:<子>`），父 id 一变，所有件的 id 跟着变，外壳按 panel id 存的布局就全对不上。
 
-之后 `ctx.loader.await()`（192 行）等整棵树收敛，`main()` 才算走完。
+之后 `ctx.loader.await()`（292 行）等整棵树收敛，`main()` 才算走完。
 
 ## 浏览器半的取址：importmap 是内核拼的
 
