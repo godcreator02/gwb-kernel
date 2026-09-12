@@ -3,11 +3,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Context, type Fiber } from 'cordis'
-import Loader, { type Entry, type ModuleLoader } from '@cordisjs/plugin-loader'
+import Loader, { type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator02/gwb-plugin-api'
 import { collectImports } from './imports.js'
 import { bareImportFromHome } from './bare-import.js'
+import { describeEntry, type EntryStatus } from './entry-state.js'
 
 /**
  * gwb 内核，一个文件：载体、宿主、桥都在这个主进程里，页面是唯一的另一个进程。
@@ -162,29 +163,8 @@ process.on('uncaughtException', (e) => kernelLog.error(`未捕获异常：${stac
  */
 interface Report {
   home: string
-  entries: { id: string; name: string; state: string }[]
+  entries: EntryStatus[]
   errors: string[]
-}
-// 状态词照 cordis 的 FiberState 原名。它是 const enum，isolatedModules 下引不到，数字照它的定义抄；
-// _error 与 _store 是 cordis 标了 private 的普通字段（失败原因、已就位的 inject）
-const FIBER_STATE = ['PENDING', 'LOADING', 'ACTIVE', 'FAILED', 'DISPOSED', 'UNLOADING'] as const
-interface FiberPeek {
-  state: number
-  inject: Record<string, unknown>
-  _error?: unknown
-  _store?: Record<string, unknown>
-}
-function describe(entry: Entry): string {
-  if (entry.disabled) return 'disabled'
-  const fiber = entry.fiber as unknown as FiberPeek | undefined
-  if (fiber === undefined) return 'no fiber（import 失败，原因在错误行里）'
-  const state = FIBER_STATE[fiber.state] ?? `state=${String(fiber.state)}`
-  if (state === 'PENDING') {
-    const missing = Object.keys(fiber.inject).filter((name) => !(name in (fiber._store ?? {})))
-    return `PENDING（缺 ${missing.length > 0 ? missing.join('、') : '？'}）`
-  }
-  if (state === 'FAILED') return `FAILED：${stackOf(fiber._error).split('\n')[0] ?? ''}`
-  return state
 }
 function report(): Report {
   // 页面的第一声 hello 可能早于 loader 挂上，那时服务还不在
@@ -196,7 +176,7 @@ function report(): Report {
     .map((m) => `${new Date(m.ts ?? Date.now()).toISOString()} ${m.type ?? ''} ${m.name ?? ''} ${formatMessage(m)}`)
   return {
     home: dataDir,
-    entries: entries.map((e) => ({ id: e.id, name: e.options.name, state: describe(e) })),
+    entries: entries.map((e) => ({ id: e.id, name: e.options.name, state: describeEntry(e) })),
     errors,
   }
 }
