@@ -10,7 +10,7 @@ description: 内核不碰 pnpm——它只保证 home 起得来
 
 ## home 在哪
 
-{/* ref file="../apps/desktop/src/main.ts" lines="30-44" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="32-45" */}
 
 不设 `GWB_HOME` 落 `%APPDATA%\gwb-kernel\homes\default`。`GWB_HOME` 给**纯名字**落
 `homes\<名>`；给**含 `\` 或 `/` 的路径**就把那个目录本身当 home——验收要干净场子时指一个
@@ -26,7 +26,7 @@ scratchpad 下的目录就行，名字与路径两种写法没有第三种语义
 
 ## 同一 home 只许一个实例
 
-{/* ref file="../apps/desktop/src/main.ts" lines="65-76" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="66-75" */}
 
 Electron 的平台锁，钥匙是上面拆出来的那份 userData：同一 home 的第二份拿不到锁，stderr
 报一句、退出码 1、`runtime.json` 不动（在跑那份的身份不被盖掉）；第一个实例把已在跑的窗
@@ -36,7 +36,7 @@ Electron 的平台锁，钥匙是上面拆出来的那份 userData：同一 home
 
 ## 每次启动铺两件套
 
-{/* ref file="../apps/desktop/src/main.ts" lines="45-53" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="46-54" */}
 
 这段每次启动都跑，幂等，差什么补什么、**在的一律不覆盖**：
 
@@ -60,7 +60,7 @@ Electron 的平台锁，钥匙是上面拆出来的那份 userData：同一 home
 
 ## 还有一份运行时身份
 
-{/* ref file="../apps/desktop/src/main.ts" lines="78-109" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="77-103" */}
 
 `runtime.json` 不属于上面那两件套，**规矩正好相反：每次开机整份重写**。两件套是 home 的家当，
 谁也不该替用户覆盖；这一份是**此刻这个进程**的身份，上一轮留下的每一格都该被盖掉。

@@ -71,7 +71,7 @@ dist 下的产物互为邻居，从自己的模块地址出发一步就到。这
 内核那半：条目到哪一步的那句话，2026-09-13 从 `main.ts` 抽成独立的分类器模块
 `src/entry-state.ts`（手造条目就能单测），`report()` 留在 `main.ts` 收现场：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="160-182" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="153-175" */}
 
 {/* ref file="../apps/desktop/src/entry-state.ts" lines="1-15" */}
 
@@ -84,7 +84,7 @@ cordis 自带的日志缓冲里筛 error / warn，内核不自建缓冲。
 推的时机在内核那边：条目换态（cordis 的 `internal/status` 事件）与错误行到来都去抖成一次
 `gwb:shell` 重推：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="194-210" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="186-202" */}
 
 这条线为什么划在「只读、不归因」，以及它跟母仓的兜底页族、跟 09-08 那版阶段页的关系，
 见[刻意不做](/future/not-doing#图形界面上的失败兜底页)。
