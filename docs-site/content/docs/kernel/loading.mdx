@@ -41,7 +41,11 @@ description: 内核连 yml 都不认识——挂载归两个官方件；件的�
    件**静默**挂不上。内核塞的这个 import 分两步走：先 `fs.realpathSync.native` 把
    `<home>/node_modules/<裸名>` 解成**真实目录**（pnpm 布局下那是 `.pnpm/<包>@<版本>/…` 里的
    一处），再从那个真实目录起 `createRequire` 按 CJS 条件解析到入口文件、按 ESM `import` 进来。
-   `exports` 表照旧归 `createRequire`，内核自己不认识它。
+   `exports` 表照旧归 `createRequire`，内核自己不认识它。这段解析 2026-09-13 从 `main.ts` 抽成
+   独立的纯函数模块 `src/bare-import.ts`（副作用只剩磁盘读），单测就在旁边 `tests/`——
+   junction 换版那条把 pnpm 布局原样造了一遍。
+
+@@docfirst ref ../apps/desktop/src/bare-import.ts:6-16 @@
 
    第一步不是绕路，是**热重挂**的全部要害：Node 的 CJS 解析带进程级缓存，`pnpm add 新版` 之后
    base 与裸名都没变，`createRequire(base).resolve(name)` 仍旧回**旧版本**的真实路径，条目停用
@@ -54,7 +58,7 @@ description: 内核连 yml 都不认识——挂载归两个官方件；件的�
    树上：条目表、fiber 状态、热挂卸全在一棵树里，外面只认 `ctx.loader` 一个入口。id 有层级
    （`<父>:<子>`），父 id 一变，所有件的 id 跟着变，外壳按 panel id 存的布局就全对不上。
 
-之后 `ctx.loader.await()`（292 行）等整棵树收敛，`main()` 才算走完。
+之后 `ctx.loader.await()`（286 行）等整棵树收敛，`main()` 才算走完。
 
 ## 浏览器半的取址：importmap 是内核拼的
 
