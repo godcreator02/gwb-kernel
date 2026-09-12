@@ -29,7 +29,7 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 所以 `await app.whenReady()` 写在模块顶层就是互相等死——模块等 ready、ready 等模块——
 而且**静默挂住**，一个报错都没有。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="297-306" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="291-300" */}
 
 这段就是那堵墙的形状：入口模块里不 `await`，把启动体挂进 `.then(main)`；`main()` 里抛
 什么都在 `.catch` 里走 `say` 落 stderr 与 `<home>/gwb.log`，弹一个 `dialog.showErrorBox`
@@ -46,7 +46,7 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 （home → include → 每个件）的收尾 effect 递归跑完。件起的长命子进程（站件起的 node
 那种）靠这条路被带走——不然主进程一退，它们就是孤儿占着端口。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="309-338" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="303-332" */}
 
 判据一句话：**谁起了 Context 谁收 Context**。收运行时是「起 cordis」的收尾半，住内核；
 件各自挂 will-quit 各救各的会是第二份真相——总有件忘了挂，而忘了的那件恰好就是起进程

@@ -30,7 +30,7 @@ description: 内核连 yml 都不认识——挂载归两个官方件；件的�
 
 ## 引导链：顺序全是判据
 
-{/* ref file="../apps/desktop/src/main.ts" lines="279-291" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="279-285" */}
 
 1. **先 provide `gwbKernel`，再动 loader**。这个服务挂在根 fiber 上（根 fiber 生来 ACTIVE）、
    永不撤销，而且 provide 发生在模块顶层（`ctx.provide('gwbKernel', kernel)`）、结构上先于
@@ -45,7 +45,7 @@ description: 内核连 yml 都不认识——挂载归两个官方件；件的�
    独立的纯函数模块 `src/bare-import.ts`（副作用只剩磁盘读），单测就在旁边 `tests/`——
    junction 换版那条把 pnpm 布局原样造了一遍。
 
-@@docfirst ref ../apps/desktop/src/bare-import.ts:6-16 @@
+{/* ref file="../apps/desktop/src/bare-import.ts" lines="6-16" */}
 
    第一步不是绕路，是**热重挂**的全部要害：Node 的 CJS 解析带进程级缓存，`pnpm add 新版` 之后
    base 与裸名都没变，`createRequire(base).resolve(name)` 仍旧回**旧版本**的真实路径，条目停用
