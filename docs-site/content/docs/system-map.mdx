@@ -20,8 +20,9 @@ description: 两个进程、盘上的目录、四条流——一页看全，细�
 
 {/* tree dir="../apps/desktop/src" depth="1" */}
 
-`apps/desktop/src` 四个文件——内核本体 512 行（`main.ts` 338、`imports.ts` 63、
-`index.html` 92、`preload.cjs` 19）。没有打包器，`tsc` 直出 `dist/`，`index.html` 与
+`apps/desktop/src` 六个文件——内核本体 537 行（`main.ts` 302、`bare-import.ts` 21、
+`entry-state.ts` 40、`imports.ts` 63、`index.html` 92、`preload.cjs` 19；不带 electron 的
+纯函数各自成文件，测试就在旁边 `tests/`）。没有打包器，`tsc` 直出 `dist/`，`index.html` 与
 `preload.cjs` 原样复制。
 
 | 路径 | 是什么 |
@@ -46,7 +47,7 @@ home 的完整位置：`%APPDATA%\gwb-kernel\homes\<GWB_HOME ?? default>`——`
 | **命令** | 页面 → 件 | preload `gwb.command` → IPC `gwb:command` → 内核原样派给 `ctx.gwbCommands.run`，回 `GwbResult`。内核不认识任何命令名 | [桥](/docs/kernel/bridge) |
 | **事件** | 件 → 页面 | 件 `gwbKernel.emit(payload)` → 主进程 `gwb:event` 推 → preload `gwb.on` | [桥](/docs/kernel/bridge) |
 | **日志** | 三源 → stderr + 文件 | 件 / 内核 / 渲染层 console 都走 `ctx.logger`，内核挂的 exporter 全量写 stderr 加 `<home>/gwb.log`；页面上要看的日志归 `gwb-logger` 件（自己挂第二个 exporter，经 `emit` 推） | [日志](/docs/kernel/logs) |
-| **外壳与资产** | 内核 → 页面 / 盘 → 页面 | `gwb:shell` 推 `{ url, imports }`（外壳的 `file://` 地址＋内核拼好的 importmap），页面注完表才 `import` 外壳；件的浏览器半由件自己从 `import.meta.url` 算成 `file://` 自报 | [桥](/docs/kernel/bridge) |
+| **外壳与资产** | 内核 → 页面 / 盘 → 页面 | `gwb:shell` 推 `{ url, imports, report }`（外壳的 `file://` 地址＋内核拼好的 importmap＋只读现状，外壳在时页面不看最后那格），页面注完表才 `import` 外壳；件的浏览器半由件自己从 `import.meta.url` 算成 `file://` 自报 | [桥](/docs/kernel/bridge) |
 
 没有 `gwb://` 这类资源协议：Electron 的页面直接吃 `file://`——动态 import、`<link>`
 样式表、fetch、JSON 模块都过（探针五项全过，读数见[单进程重构](/trajectory/2026-09-09-single-process)）。

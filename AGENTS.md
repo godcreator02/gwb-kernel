@@ -13,18 +13,19 @@ fd3 协议、`gwb://`、exports 解析、日志四路管道，全是为绕墙而
 
 ## 内核只做六件事
 
-|              | 是什么                                                                                                                                                                                                                                                            | 在哪                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| 铺 home       | 建目录、缺什么补什么（`package.json`、空 `cordis.yml`），不覆盖。**同一 home 只许一个实例**：Electron 平台锁，钥匙是每 home 一份的 userData（`<home>/electron`）——同一 home 二开拒掉（stderr 一句、退出码 1），不同 home 随便并跑。另落一份 `runtime.json`（pid、起的时刻、版本、应用目录、Chromium 调试口），**这一份每次开机整份重写、退出不删，读的人负责验活**；内核不做对账、不清理 | `apps/desktop/src/main.ts`      |
-| 起 cordis     | `Context` 加 `baseUrl` 指向 home，挂官方 loader 与 include；**app 退出前（will-quit）dispose loader 的 fiber 并等整棵件树拆完**（dispose 后补 await()；件的收尾要回 promise 才会被等；5 秒超时硬退兜底）                                                                                                     | 同上                              |
-| 解析裸名（node 半） | 主进程没有 `--expose-internals`，内核给 `loader.internal` 塞一个 import：先 `realpathSync.native` 把 `<home>/node_modules/<裸名>` 解成真实目录，再从那儿起 `createRequire` 解 `exports`。第一步绕开 Node 的 CJS 解析缓存，件换了版本停用再启用才拿得到新代码                                                              | 同上                              |
-| 解析裸名（浏览器半）   | 扫 home 清单里各包声明的 `gwb.shared`，解析成 `file://` importmap，随外壳地址推给页面，页面注完表才 import 外壳。内核不认识 react，只搬运提供方的声明。这段是纯函数，单独住 `imports.ts`（可单测）                                                                                                                             | `apps/desktop/src/imports.ts`   |
-| 开窗与桥         | 一扇窗；`gwb:command` 派给 `ctx.gwbCommands`；`gwb:event` 推事件；`gwb:shell` 告诉页面外壳是谁                                                                                                                                                                                    | `src/main.ts` `src/preload.cjs` |
-| 页面根          | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳、或外壳起不来时画一份**只读现状**（各条目到哪一步、最近的错误行），没有按钮                                                                                                                                                                                 | `src/index.html`                |
-| 自己出错人看得见     | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退；`main()` 起不来先弹错误框再退                                                                                                                                                                                | `src/main.ts`                   |
+|              | 是什么                                                                                                                                                                                                                                                            | 在哪                                |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| 铺 home       | 建目录、缺什么补什么（`package.json`、空 `cordis.yml`），不覆盖。**同一 home 只许一个实例**：Electron 平台锁，钥匙是每 home 一份的 userData（`<home>/electron`）——同一 home 二开拒掉（stderr 一句、退出码 1），不同 home 随便并跑。另落一份 `runtime.json`（pid、起的时刻、版本、应用目录、Chromium 调试口），**这一份每次开机整份重写、退出不删，读的人负责验活**；内核不做对账、不清理 | `apps/desktop/src/main.ts`        |
+| 起 cordis     | `Context` 加 `baseUrl` 指向 home，挂官方 loader 与 include；**app 退出前（will-quit）dispose loader 的 fiber 并等整棵件树拆完**（dispose 后补 await()；件的收尾要回 promise 才会被等；5 秒超时硬退兜底）                                                                                                     | 同上                                |
+| 解析裸名（node 半） | 主进程没有 `--expose-internals`，内核给 `loader.internal` 塞一个 import：先 `realpathSync.native` 把 `<home>/node_modules/<裸名>` 解成真实目录，再从那儿起 `createRequire` 解 `exports`。第一步绕开 Node 的 CJS 解析缓存，件换了版本停用再启用才拿得到新代码。这段是纯函数，单独住 `bare-import.ts`（可单测）                             | `apps/desktop/src/bare-import.ts` |
+| 解析裸名（浏览器半）   | 扫 home 清单里各包声明的 `gwb.shared`，解析成 `file://` importmap，随外壳地址推给页面，页面注完表才 import 外壳。内核不认识 react，只搬运提供方的声明。这段是纯函数，单独住 `imports.ts`（可单测）                                                                                                                             | `apps/desktop/src/imports.ts`     |
+| 开窗与桥         | 一扇窗；`gwb:command` 派给 `ctx.gwbCommands`；`gwb:event` 推事件；`gwb:shell` 告诉页面外壳是谁                                                                                                                                                                                    | `src/main.ts` `src/preload.cjs`   |
+| 页面根          | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳、或外壳起不来时画一份**只读现状**（各条目到哪一步、最近的错误行），没有按钮                                                                                                                                                                                 | `src/index.html`                  |
+| 自己出错人看得见     | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退；`main()` 起不来先弹错误框再退                                                                                                                                                                                | `src/main.ts`                     |
 
-（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。四个文件合计 512 行（含空行与注释）：
-`main.ts` 338、`imports.ts` 63、`index.html` 92、`preload.cjs` 19，外加词汇表 62。）
+（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。src 下六个文件合计 537 行（含空行与注释）：
+`main.ts` 302、`bare-import.ts` 21、`entry-state.ts` 40、`imports.ts` 63、`index.html` 92、
+`preload.cjs` 19，外加词汇表 62。不带 electron 的纯函数都单独成文件、测试就在旁边 `tests/`。）
 
 **没有的**：`gwb://` 协议、exports 解析、`kernel.info`、日志缓冲与轮转、宿主子进程与 fd3 协议、
 README 铺进 home、装机（内核不碰 pnpm），以及旧线阶段页与崩溃页那套机器（轮询、讣告、重试）。
