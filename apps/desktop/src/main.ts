@@ -1,13 +1,13 @@
 import electron from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
-import { createRequire } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Context, type Fiber } from 'cordis'
 import Loader, { type Entry, type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator02/gwb-plugin-api'
 import { collectImports } from './imports.js'
+import { bareImportFromHome } from './bare-import.js'
 
 /**
  * gwb 内核，一个文件：载体、宿主、桥都在这个主进程里，页面是唯一的另一个进程。
@@ -278,15 +278,9 @@ async function main(): Promise<void> {
 
   loaderFiber = await ctx.plugin(Loader, {})
   // 主进程没有 --expose-internals，loader 拿不到 node 内部的 ESM loader，那时它按自己的位置
-  // 解析裸名、件静默挂不上。内核替它：按 home 的 CJS 条件解析到文件，再按 ESM import。
-  // 先 realpathSync.native 把 home 里那个名字解成真实目录：Node 的 CJS 解析有进程级缓存、
-  // 装了新版本还会回旧版本的路径，热重挂靠这一步绕开它。找不到时 ENOENT 带着这条完整路径
-  ctx.loader.internal = {
-    import: (name: string) => {
-      const real = fs.realpathSync.native(path.join(dataDir, 'node_modules', ...name.split('/')))
-      return import(pathToFileURL(createRequire(path.join(real, 'package.json')).resolve(name)).href)
-    },
-  } as unknown as ModuleLoader
+  // 解析裸名、件静默挂不上。内核替它塞一个 import：裸名怎么解成真实路径并 import 进来，
+  // 单独住 bare-import.ts（可单测）
+  ctx.loader.internal = { import: bareImportFromHome(dataDir) } as unknown as ModuleLoader
   ctx.loader.builtins.include = Include
   await ctx.loader.root.update([{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }])
   await ctx.loader.await()
