@@ -46,11 +46,17 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 （home → include → 每个件）的收尾 effect 递归跑完。件起的长命子进程（站件起的 node
 那种）靠这条路被带走——不然主进程一退，它们就是孤儿占着端口。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="309-330" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="309-338" */}
 
 判据一句话：**谁起了 Context 谁收 Context**。收运行时是「起 cordis」的收尾半，住内核；
 件各自挂 will-quit 各救各的会是第二份真相——总有件忘了挂，而忘了的那件恰好就是起进程
 的那件时，没人兜底。
+
+**等到拆完是两半的合同，缺一不可**（2026-09-12 隔离 home 实测撞出来的）：cordis 的
+`dispose()` 只把拆卸**启动**，嵌套的异步收尾不包在它的 promise 里——孙层 300ms 的清理
+它不等，随后 `await()` 补上才等得到整棵树；件那半也得把真收尾**返回**出来（effect 清理
+回 promise），否则 cordis 沿链等的时候手里等的是个立即完成的空盒。两半只修其一，实测
+现象是「退出日志一切正常、子进程原地活着」。
 
 这段里四个要素缺一不可：`preventDefault` 拦住这一趟，收完尾再 `app.quit()`；`quitting`
 标记放收尾完的二次 quit 过去；dispose 的错只记不拦——一个件的收尾抛了不该拦住别的件的

@@ -27,7 +27,7 @@ god 工作台的正线：**最小的、能正常运行插件的那个版本**。
 | **开窗与桥** | 一扇窗；`gwb:command` 派给命令总线、`gwb:event` 推事件、`gwb:shell` 告诉页面外壳是谁 |
 | **页面根与错误出口** | 页面听 `onShell` 加载外壳，没有外壳时画一份只读现状；日志全量进 stderr 加 `<home>/gwb.log`，出错只记不退 |
 
-四个文件合计 504 行（`main.ts` 330、`imports.ts` 63、`index.html` 92、`preload.cjs` 19），
+四个文件合计 512 行（`main.ts` 338、`imports.ts` 63、`index.html` 92、`preload.cjs` 19），
 外加词汇表 62 行——六个名字加一个形状，正本在 `packages/gwb-plugin-api`。
 
 准入判据两道关：**一、凡是「第一个件存在之前必须发生的事」，才进内核，其余一律皆件。

@@ -319,9 +319,17 @@ app.on('will-quit', (event) => {
   if (quitting || loaderFiber === undefined) return
   event.preventDefault()
   quitting = true
+  // 闭包里拿得住的非空那份（模块级的 let 收窄不进闭包）
+  const fiber = loaderFiber
+  // dispose() 只把拆卸**启动**：嵌套的异步收尾（件杀子进程那些）不包在它的 promise 里
+  // ——实测带 Loader 的真机树上孙层 300ms 的清理它不等。件那半还得把真收尾**返回**出来
+  // （effect 清理回 promise，cordis 才会沿链等），两半缺一不可。
   // 某个件的收尾挂死时 5 秒超时兜底：超时就硬退，没杀干净的认了，工作台不能赖着不走
   void Promise.race([
-    loaderFiber.dispose().catch((err) => kernelLog.warn(`退出收尾出错：${stackOf(err)}`)),
+    fiber
+      .dispose()
+      .then(() => fiber.await())
+      .catch((err) => kernelLog.warn(`退出收尾出错：${stackOf(err)}`)),
     new Promise<void>((resolve) => setTimeout(resolve, 5000)),
   ]).then(() => {
     kernelLog.info('收尾完，退出')
