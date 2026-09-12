@@ -1,0 +1,14 @@
+真机（隔离 home docssite-2609121656，内核 repo 构建，含 will-quit 收尾、
+fiber.dispose() 不带 await()；站件收尾 effect 当时是 void 不回 promise）：
+
+2026-09-12T09:15:36.016Z info kernel 收尾完，退出
+——关窗后约 4ms 就「收尾完」，此前没有任何件收尾日志；
+   站点进程树完整存活：cmd(根，已死) → node(pnpm) → cmd(next 壳) → node(next server，仍听端口)。
+   例：09:15 那轮，端口 61109 的 next server 在内核退出后仍 LISTENING。
+
+同一晚更早一轮（09:04:50，站件收尾同为 void）：
+2026-09-12T09:04:50.652Z info kernel 收尾完，退出
+——同样无「已停」、同样留孤儿。
+
+结论：真机上 dispose-only 的 promise 瞬间 resolve，条目树的收尾没有被执行（或没来得及
+执行就被进程退出打断）——与合成链（01/02、03）的行为相反。

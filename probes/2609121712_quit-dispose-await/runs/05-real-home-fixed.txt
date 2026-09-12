@@ -1,0 +1,17 @@
+真机（同一个隔离 home，内核补 await() + 站件收尾回 promise 之后）：
+
+2026-09-12T09:27:35.769Z info kernel 退出收尾前：fiber.state=2；条目：home:2、home:commands:2、home:shell:2、home:settings:2、home:docs-site:2、home:data:2、home:plugins:2
+2026-09-12T09:27:35.771Z info gwb-docs-site 收尾：杀 1 个站（D:\unitfolders\26090315xby\god-live-doc\docs-site:running）
+2026-09-12T09:27:36.403Z info gwb-docs-site 已停：D:\unitfolders\26090315xby\god-live-doc\docs-site
+2026-09-12T09:27:36.403Z info kernel 收尾完，退出
+
+——关窗后收尾 effect 真跑了、taskkill 完成后才退出（整段 634ms）；
+   netstat 端口释放、tasklist 根 cmd 不在、无 next node 残留。
+
+定稿版（去掉诊断日志后再验一轮，09:32）：
+2026-09-12T09:32:23.425Z info gwb-docs-site 收尾：杀 1 个站（…:running）
+2026-09-12T09:32:24.041Z info gwb-docs-site 已停：D:\unitfolders\26090315xby\god-live-doc\docs-site
+2026-09-12T09:32:24.041Z info kernel 收尾完，退出
+——同样全绿：口释放、根进程不在。
+
+（上面「退出收尾前：条目…」那行是诊断版内核打的，定稿版已删。）

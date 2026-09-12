@@ -1,0 +1,17 @@
+阴性结果：带 Loader + include + cordis.yml 条目的合成复现（2026-09-12）。
+
+结构照抄内核 main.ts：Context + baseUrl、ctx.plugin(Loader)、loader.internal.import
+覆盖、builtins.include、root.update 到 cordis:include 读 cordis.yml；条目插件在
+收尾 effect 里返回 300ms 的 promise。
+
+结果（当天实跑）：
+  条目: [ 'home:2', 'home:p1:2' ]
+  --- dispose ---
+    [my-plugin cleanup 起]
+    [my-plugin cleanup 完（300ms）]
+  dispose 耗时: 308 ms
+
+——合成复现里 dispose-only 就能等到嵌套收尾完成（与 01/02 一致），与真机行为相反。
+条目 fiber 链（Include <- Loader <- root）与真机完全相同。真机上让 dispose 瞬回的
+具体诱因没能在合成环境里复现出来；修复（dispose 后补 await()）在真机上验证有效，
+见 runs/04、05。阴性结果留档：它排除了「纯拓扑/纯 include 机制就能解释」这条路。
