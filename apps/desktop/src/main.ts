@@ -11,9 +11,10 @@ import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
 
 /**
- * gwb 内核，一个文件：载体、宿主、桥都在这个主进程里，页面是唯一的另一个进程。
+ * gwb 内核的主进程入口：载体、宿主、桥都在这个进程里，页面是唯一的另一个进程；不带
+ * electron 的纯函数住旁边几个模块（imports / bare-import / entry-state），各自可单测。
  * 只做第一个件跑起来之前必须发生的事：铺 home、起 cordis、挂 loader、开窗、一条命令口、
- * 一条事件口、告诉页面外壳是谁、自己出错时人看得见。其余一律皆件。取舍见文档站。
+ * 一条事件口、告诉页面外壳是谁、自己出错时人看得见。其余一律皆件。取舍见文档站
  */
 
 const { app, BrowserWindow, dialog, ipcMain } = electron
@@ -28,7 +29,7 @@ declare module 'cordis' {
   }
 }
 
-/** 用哪个 home：`GWB_HOME` 是个名字就落 userData/homes/<名>，带路径分隔符就当成目录本身 */
+/** 用哪个 home：`GWB_HOME` 是个名字就落 appData/gwb-kernel/homes/<名>，带路径分隔符就当成目录本身 */
 const homeArg = process.env.GWB_HOME ?? 'default'
 const homePath = /[\\/]/.test(homeArg) ? path.resolve(homeArg) : path.join(app.getPath('appData'), 'gwb-kernel', 'homes', homeArg)
 fs.mkdirSync(homePath, { recursive: true })
@@ -37,9 +38,8 @@ fs.mkdirSync(homePath, { recursive: true })
 const dataDir = fs.realpathSync.native(homePath)
 
 /**
- * Chromium 的家当拆成每 home 一份（<home>/electron）。一是单开锁的钥匙是 userData，拆了它
- * 锁才按 home 生效；二是多个 home 同时跑不再共享同一份 Local Storage 互相串味。homes 的根
- * 从 appData 推、不从 userData 推——userData 已经按 home 拆了，再从它推就成了递归
+ * Chromium 的 userData 拆成每 home 一份（<home>/electron）：单开锁的钥匙，多 home 并跑不串
+ * Local Storage。homes 的根从 appData 推、不从 userData 推——userData 已按 home 拆，从它推就递归了
  */
 app.setPath('userData', path.join(dataDir, 'electron'))
 
@@ -64,11 +64,9 @@ const stackOf = (e: unknown): string => (e instanceof Error ? (e.stack ?? e.mess
 process.stderr.on('error', () => {})
 
 /**
- * 同一 home 只许一个实例：Electron 的平台锁，钥匙是 userData——上面刚把它拆成每 home 一份，
- * 这把锁就自动按 home 生效。第二个实例解出同一个 home（realpath 已归一）时拿不到锁，报一句
- * 退出；不同 home 钥匙不同，可以并跑。不手搓锁文件：那得判 pid 活没活，平台锁在进程死时由
- * 操作系统放掉，没有陈锁这回事。被拒的这一份不往下走，runtime.json 不动，在跑那份的
- * 身份不会被这份盖掉
+ * 同一 home 只许一个实例：Electron 的平台锁，钥匙是上面那份 per-home userData。第二个实例
+ * 拿不到锁就报一句、退出码 1、不动 runtime.json；在跑那份收到 second-instance 把窗抬到前面。
+ * 不手搓锁文件（判据见文档站）
  */
 if (!app.requestSingleInstanceLock()) {
   say('error', 'kernel', `home ${dataDir} 已有实例在跑，本实例退出`)
@@ -76,15 +74,10 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 /**
- * 这一轮的运行时身份落 `runtime.json`：pid、起的时刻、版本、应用目录，外加 Chromium 调试口——
- * 那个口**只有起进程的这只手知道**，内核不认识它、页面也读不到，而外面的工具要靠它才够得着
- * 这个 home。
- *
- * **每次开机整份重写**，跟上面那几行「缺哪样补哪样、不覆盖」正好相反：那两样是 home 的家当，
- * 这一份是此刻这个进程的身份，上一轮留下的每一格（包括别的写者后来补进去的）都该被盖掉。
- * 进程退出不删——崩溃与被 kill 时那条路本来就不会跑，留着的记录是「上一次它在哪儿」的唯一
- * 线索；**读的人负责验活**（pid 还在，且那个 pid 真的持着那个端口）。写不动只报一句就走，
- * 这一格是给工具用的方便，不是启动的前置。
+ * 这一轮的运行时身份落 `runtime.json`：pid、起的时刻、版本、应用目录，外加 Chromium 调试口
+ * ——那个口只有起进程的这只手知道，内核不认识它、页面也读不到。**每次开机整份重写**（与上面
+ * 两件套「缺什么补什么」相反：那是 home 的家当，这是此刻这个进程的身份）；退出不删，读的人
+ * 负责验活；写不动只报一句就走。判据见文档站
  */
 const cdpPort = Number(app.commandLine.getSwitchValue('remote-debugging-port'))
 try {
@@ -149,8 +142,8 @@ const exporter = {
 factory.exporter(exporter)
 
 /**
- * 内核自己的话也走 cordis logger，不直接 say：这样件（比如日志件）挂第二个 exporter 就能收齐
- * 内核、件、渲染层三路，内核不必再为窗格铺任何管道。say 只给 exporter 本身与起不来那一句用
+ * 内核自己的话也走 cordis logger，不直接 say：任何件挂一个 exporter 就收齐内核、件、渲染层
+ * 三路，内核不为窗格铺任何管道。say 只给 exporter 本身与起不来那一句用。见文档站
  */
 const kernelLog = ctx.logger('kernel')
 // 件跑在这个进程里，件的错就是这个进程的错。只记不退：一个坏件不该带走工作台
@@ -182,8 +175,7 @@ function report(): Report {
 }
 
 let win: electron.BrowserWindow | null = null
-// 同一 home 的第二份被锁拒掉时，Electron 会通知第一个实例：把已经在跑的窗抬到前面——
-// 人第二次双击看到的是原窗聚焦，不是无声无息
+// 第二实例被锁拒时 Electron 会通知第一实例：把已在跑的窗抬到前面，人第二次双击看到的是原窗聚焦
 app.on('second-instance', () => {
   if (win === null) return
   win.show()
@@ -281,24 +273,22 @@ void app
 app.on('window-all-closed', () => app.quit())
 
 /**
- * 退出时收走自己起的 cordis 运行时：拆 loader 的 fiber，整棵件树（home → include → 每个件）
- * 的收尾 effect 递归跑完——件起的长命子进程（站件起的 node 进程那些）靠这条路被带走，
- * 不然主进程一退它们就是孤儿占着端口。谁起了 Context 谁收 Context：收尾是「起 cordis」
- * 的另一半，住内核；件各自挂 will-quit 各救各的会是第二份真相
+ * 退出时收走自己起的 cordis 运行时：拆 loader 的 fiber，整棵件树的收尾 effect 递归跑完——
+ * 件起的长命子进程靠这条路被带走，不然主进程一退它们就是孤儿。谁起了 Context 谁收
+ * Context，见文档站
  */
 let quitting = false
 app.on('will-quit', (event) => {
-  // 收完尾的 app.quit() 会二次进 will-quit，quitting 放它过去；main() 还没挂上 loader
+  // 收完尾的 app.quit() 会二次进 will-quit（quitting 放它过去）；main() 还没挂上 loader
   // （起得慢、起来就退）时没有可拆的，同样放行
   if (quitting || loaderFiber === undefined) return
   event.preventDefault()
   quitting = true
   // 闭包里拿得住的非空那份（模块级的 let 收窄不进闭包）
   const fiber = loaderFiber
-  // dispose() 只把拆卸**启动**：嵌套的异步收尾（件杀子进程那些）不包在它的 promise 里
-  // ——实测带 Loader 的真机树上孙层 300ms 的清理它不等。件那半还得把真收尾**返回**出来
-  // （effect 清理回 promise，cordis 才会沿链等），两半缺一不可。
-  // 某个件的收尾挂死时 5 秒超时兜底：超时就硬退，没杀干净的认了，工作台不能赖着不走
+  // dispose() 只把拆卸**启动**，补 await() 才等得到嵌套的异步收尾；件那半还得把真收尾
+  // **返回**出来（effect 清理回 promise），两半缺一不可（实测读数见文档站）。
+  // 某个件的收尾挂死时 5 秒超时兜底：超时就硬退，工作台不能赖着不走
   void Promise.race([
     fiber
       .dispose()

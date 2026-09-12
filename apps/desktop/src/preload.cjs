@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('gwb', {
     return () => ipcRenderer.off('gwb:event', listener)
   },
   onShell: (cb) => {
-    // 收到的是 { url, imports }：外壳地址加页面级 importmap
+    // 收到的是 { url, imports, report }：外壳地址、页面级 importmap、只读现状（无外壳时页面画它）
     const listener = (_event, shell) => cb(shell)
     ipcRenderer.on('gwb:shell', listener)
     // 订上就问一次当前值，免得件在页面起来之前就 setShell 过了
