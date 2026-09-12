@@ -10,3 +10,19 @@ docfirst: none
 第一行写来源；处理完删——这里是周转区不是档案，判据该留的落轨迹卡。
 
 此刻没有投来的反馈。
+
+## 2026-09-12 安装位 gwb-app 起隔离 home 单进程无声挂死
+
+来源：件仓多桌面第二波实机验收（总控台会话）。
+
+现象：从安装位 `D:\unitfolders\26091201qzv\gwb-app` 起 `GWB_HOME=desk-2609121500` 的
+home（electron.exe 直调，带 `--remote-debugging-port=9337
+--disable-backgrounding-occluded-windows`），主进程单进程挂死：不写 `runtime.json`、
+不建 `<home>/electron`、不落 `gwb.log`、不弹错误框可辨输出，只吐一句
+`[WARNING] Ignore caches that are heterogeneous`；Git Bash 与 pwsh 两种起法同样挂。
+同一 home、同一参数从内核仓 `apps\desktop`（今日构建的 dist）起**一切正常**
+（runtime.json、CDP 口、页面全通）。default home 从安装位起是活的（77572）。
+排查未深入：下一步疑点在安装位的 kernel-desktop 0.1.0 与 node_modules 新旧错配
+（安装位可能没跟上内核仓的最新发版），或 electron 44.1.1 的 userData/cache 状态。
+验收当轮已绕开（用仓内产物），安装位本身没动。
+
