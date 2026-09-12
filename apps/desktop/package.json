@@ -1,7 +1,7 @@
 {
   "name": "@godcreator02/gwb-kernel-desktop",
   "productName": "gwb-kernel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "main": "dist/main.js",
   "description": "gwb 内核：cordis 住 Electron 主进程，整个应用只有主进程与渲染进程。只做第一个件跑起来之前必须发生的事",

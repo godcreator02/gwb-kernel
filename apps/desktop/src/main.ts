@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { Context } from 'cordis'
+import { Context, type Fiber } from 'cordis'
 import Loader, { type Entry, type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator02/gwb-plugin-api'
@@ -110,6 +110,8 @@ try {
 const ctx = new Context()
 /** 模块解析的起点指向 home；loader 与 include 都从根上下文继承它 */
 ctx.baseUrl = pathToFileURL(dataDir + path.sep).href
+/** 挂上的 loader 的 fiber，退出时（will-quit）拆它收走整棵件树；main() 走到挂载那步之前是 undefined */
+let loaderFiber: Fiber | undefined
 
 // cordis 的日志全量进 say。渲染交给 cordis 自己的 Logger.format（%s、%o、Error 它都会），
 // 类从一个实例的 constructor 上取，免得 import cordis 的内部。buffer 是 cordis 自带的环形缓冲，
@@ -274,7 +276,7 @@ async function main(): Promise<void> {
   })
   await win.loadFile(path.join(here, 'index.html'))
 
-  await ctx.plugin(Loader, {})
+  loaderFiber = await ctx.plugin(Loader, {})
   // 主进程没有 --expose-internals，loader 拿不到 node 内部的 ESM loader，那时它按自己的位置
   // 解析裸名、件静默挂不上。内核替它：按 home 的 CJS 条件解析到文件，再按 ESM import。
   // 先 realpathSync.native 把 home 里那个名字解成真实目录：Node 的 CJS 解析有进程级缓存、
@@ -303,3 +305,26 @@ void app
     app.exit(1)
   })
 app.on('window-all-closed', () => app.quit())
+
+/**
+ * 退出时收走自己起的 cordis 运行时：拆 loader 的 fiber，整棵件树（home → include → 每个件）
+ * 的收尾 effect 递归跑完——件起的长命子进程（站件起的 node 进程那些）靠这条路被带走，
+ * 不然主进程一退它们就是孤儿占着端口。谁起了 Context 谁收 Context：收尾是「起 cordis」
+ * 的另一半，住内核；件各自挂 will-quit 各救各的会是第二份真相
+ */
+let quitting = false
+app.on('will-quit', (event) => {
+  // 收完尾的 app.quit() 会二次进 will-quit，quitting 放它过去；main() 还没挂上 loader
+  // （起得慢、起来就退）时没有可拆的，同样放行
+  if (quitting || loaderFiber === undefined) return
+  event.preventDefault()
+  quitting = true
+  // 某个件的收尾挂死时 5 秒超时兜底：超时就硬退，没杀干净的认了，工作台不能赖着不走
+  void Promise.race([
+    loaderFiber.dispose().catch((err) => kernelLog.warn(`退出收尾出错：${stackOf(err)}`)),
+    new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+  ]).then(() => {
+    kernelLog.info('收尾完，退出')
+    app.quit()
+  })
+})
