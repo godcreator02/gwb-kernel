@@ -52,7 +52,7 @@ Electron 的平台锁，钥匙是上面拆出来的那份 userData：同一 home
 那个失败同样是整趟退出。
 
 `dataDir` 是单源：`ctx.baseUrl`、`gwb.log` 的路径都从它推出来。插件要路径走
-`gwbKernel.dataDir` 拿（见[服务与命令](/docs/plugins/services)），**别自己拼**——home 的
+`gwbKernel.dataDir` 拿（见[内核契约面](/docs/plugins/contract)），**别自己拼**——home 的
 选法哪天变了，自己拼的不报错，只会静默写错地方。
 
 铺家是安家，不是装机——它只保证 home **起得来**，不保证里面有什么。

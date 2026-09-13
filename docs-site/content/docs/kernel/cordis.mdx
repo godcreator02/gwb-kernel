@@ -33,7 +33,7 @@ Applications」**——一个用来构建框架的框架：服务容器、插件
 | --- | --- | --- |
 | `Context` | 一切入口：依赖容器、插件挂载、事件总线三合一，可 extend 出子上下文 | 主进程 `new Context()` 一个根，provide 与挂 loader 全在它身上 |
 | 插件与 fiber | `apply(ctx, config)` 或 `Service` 子类；fiber 六个状态，挂载/卸载/重挂构成生命周期 | gwb 插件＝cordis 插件；「挂上了」判 fiber ACTIVE（见[取址](/docs/kernel/loading)） |
-| 服务系统 | `provide` / `inject` / `Service` 基类；服务撞名当场抛；`reflect.store` 可反查提供者 | `gwbKernel`、`gwbCommands` 全是 cordis 服务（见[服务与命令](/docs/plugins/services)） |
+| 服务系统 | `provide` / `inject` / `Service` 基类；服务撞名当场抛；`reflect.store` 可反查提供者 | `gwbKernel`、`gwbCommands` 全是 cordis 服务（见[内核契约面](/docs/plugins/contract)） |
 | effect | `ctx.effect(() => 清理函数)`：注册即记档，卸载时逆序回收 | 插件提供服务的标准包法（外壳的 `setShell` 就包在这里面）；热挂载的清理靠它白得 |
 | 事件 | `ctx.on` / `emit`，事件即服务（`EventService` 也是可注入的） | 插件与插件之间照用。插件到页面不走它——走 IPC（`gwbKernel.emit` → `gwb:event`，见[桥](/docs/kernel/bridge)） |
 | 配置校验 | `plugin.Config` 走 Standard Schema，同步校验，async schema 直接拒 | 条目 `config` 原样交给 `apply`，校验归 cordis 本体 |

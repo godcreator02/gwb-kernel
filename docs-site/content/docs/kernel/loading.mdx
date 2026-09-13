@@ -77,7 +77,7 @@ description: 内核连 yml 都不认识——挂载归两个官方插件；插�
 拼好的表不单独发：`shellMessage()` 把 `{ url, imports }` 打成一份，`setShell`、撤销、
 `gwb:hello` 应答三个时机推的都是它（见[桥](/docs/kernel/bridge)）。**每次现算**——所以共享包
 装了要重启才看得见：就算表更新了，页面那张 importmap 只注一次、注过就盖不掉已解析过的名字
-（见[浏览器那半](/docs/plugins/client)）。
+（见[内核契约面](/docs/plugins/contract)）。
 
 ## 热挂载：条目树的 API，不是文件监听
 
@@ -103,7 +103,7 @@ cordis 建 fiber 是**同步**的、与 inject 满不满足无关——一个 `i
 
 - **`cordis.yml` 不存在 = 整趟起不来**，不是「一个插件都没装」——include 读不到文件会抛，落进 `main()` 的 catch，写一句「起不来」然后 `app.exit(1)`。所以 `ensureHome` 每次启动幂等地铺一份空表 `[]`（见[安家](/docs/kernel/home)与[那面墙](/trajectory/2026-09-07-wall-fresh-home-no-yml)）
 - **挂载错误要有人听才看得见**：loader 挂不上插件时只 `logger.error`，而 cordis 的日志在没有 exporter 时只缓冲不输出。内核的全量 exporter 在挂 loader **之前**注册，坏插件才报得出 `ERR_MODULE_NOT_FOUND` 带完整路径（见[日志](/docs/kernel/logs)）
-- **不写 `id` 就发随机串，而且首次加载不写回 yml**——它会一直漂到某次写回才固化，在那之前每次启动都是新的。所以 id 一律手写（见[一个插件的解剖](/docs/plugins/anatomy)）
+- **不写 `id` 就发随机串，而且首次加载不写回 yml**——它会一直漂到某次写回才固化，在那之前每次启动都是新的。所以 id 一律手写（见[内核契约面](/docs/plugins/contract)）
 
 ## 官方插件：开着的与不开的
 

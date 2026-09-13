@@ -65,13 +65,13 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 ## 窗口必须由内核开
 
 即使将来把窗口的尺寸、标题、关窗语义都交出去，`BrowserWindow` 这个动作本身仍留在内核——
-**在插件挂上之前就得有一扇窗让页面加载**（页面加载后先说「没有外壳件」，那句是 `index.html` 里的原话，见[页面那半](/docs/plugins/client)）。
+**在插件挂上之前就得有一扇窗让页面加载**（页面加载后先说「没有外壳件」，那句是 `index.html` 里的原话，见[内核契约面](/docs/plugins/contract)）。
 
 {/* ref file="../apps/desktop/src/main.ts" lines="228-249" */}
 
 窗口先于挂载插件：`main()` 开完窗、加载 `index.html`，然后才 `ctx.plugin(Loader)` 去挂
 home 的条目树（见[取址](/docs/kernel/loading)）。窗口里画什么归插件——内核不画外壳，只铺
-`#root`；外壳不在时页面画的那份只读现状是唯一例外（见[页面那半](/docs/plugins/client#没有外壳时那份只读现状)）。
+`#root`；外壳不在时页面画的那份只读现状是唯一例外（见[内核契约面](/docs/plugins/contract#没有外壳时那份只读现状)）。
 
 ## 渲染层的 console 归流
 

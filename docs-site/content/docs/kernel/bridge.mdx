@@ -44,7 +44,7 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 {/* ref file="../apps/desktop/src/main.ts" lines="203-215" */}
 
 插件调 `ctx.gwbKernel.emit(payload)`，主进程 `webContents.send('gwb:event', payload)`，页面的
-`gwb.on(cb)` 收到（见[浏览器那半](/docs/plugins/client)）。**事件是火过就灭的**，没有历史
+`gwb.on(cb)` 收到（见[内核契约面](/docs/plugins/contract)）。**事件是火过就灭的**，没有历史
 段——要历史的是日志，那是日志插件自己张罗的事（见[日志](/docs/kernel/logs)）。
 
 ## 外壳地址：setShell 说，onShell 听
@@ -54,7 +54,7 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 这就是「外壳插件被卸了页面要换」的全部机制。
 
 推给页面的不是裸地址，是 `shellMessage()` 现算的一份 `{ url, imports, report }`（importmap
-怎么拼的见[取址](/docs/kernel/loading)，`report` 是什么见[浏览器那半](/docs/plugins/client#没有外壳时那份只读现状)）。
+怎么拼的见[取址](/docs/kernel/loading)，`report` 是什么见[内核契约面](/docs/plugins/contract#没有外壳时那份只读现状)）。
 推的时机有四种：`setShell` 调用时、撤销函数收回时、页面订上时——`gwb:hello` 这条
 `ipcMain.on` 专门应答这种：页面 `onShell` 订上的瞬间先问一次当前值，免得插件在页面起来之前
 就 `setShell` 过了——以及条目换态或错误行到来时的去抖重推（`pushShell`），那是给只读现状
@@ -70,7 +70,7 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 
 地址由插件**自己算、自己报**：`new URL('./client.js', import.meta.url).href`——dist 下的
 产物互为邻居，从自己的模块地址出发一步就到。注册窗格时报 `client`（与可选 `style`）两个
-字段，内核与外壳都不认识任何包的 exports 表。契约见[一个插件的解剖](/docs/plugins/anatomy)。
+字段，内核与外壳都不认识任何包的 exports 表。契约见[内核契约面](/docs/plugins/contract)。
 
 ## preload：桥的浏览器那半
 

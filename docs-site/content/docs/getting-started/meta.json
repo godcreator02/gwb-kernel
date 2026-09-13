@@ -1,5 +1,5 @@
 {
   "title": "上手",
-  "description": "跑起来、装上第一批插件、写下第一个插件",
-  "pages": ["first-run", "first-plugin"]
+  "description": "把内核跑起来、装上第一批插件",
+  "pages": ["first-run"]
 }

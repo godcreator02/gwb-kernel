@@ -1,5 +1,5 @@
 {
-  "title": "写插件",
-  "description": "一个插件的解剖、服务与命令、浏览器那半、词汇表——插件作者要的全部",
-  "pages": ["anatomy", "services", "client", "vocab"]
+  "title": "插件那边",
+  "description": "内核契约面与词汇表——内核给插件与页面提供什么、认什么、不管什么",
+  "pages": ["contract", "vocab"]
 }

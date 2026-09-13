@@ -49,7 +49,6 @@ description: 这条线造的词都在这儿——每个词一句定义，指到�
 | **`GwbResult`** | 命令回执形状 `{ ok, data?, error? }` |
 | **外壳** | 调了 `gwbKernel.setShell(url)` 的那个插件。内核不挑外壳：谁调用、谁是，后调的顶掉先调的。页面 `import` 那个 URL，调它的默认导出 |
 | **`setShell` / `onShell`** | 插件的 node 半交出外壳 `file://` 地址（撤销函数返回时收回）／页面订外壳地址（订上先收当前值） |
-| **窗格** | 外壳窗格容器（well，代码模块 `well-hub`）里的一个窗格。窗格插件导出 `mountPane`，注册时报 `client`（与可选的 `style`）的 `file://` 地址——从插件自己的 `import.meta.url` 算。契约正本住插件仓 |
 | **三路日志** | 插件（`plugin`）、内核（`kernel`）、渲染层 console（`renderer`）三路都走 `ctx.logger`；任何插件挂一个 exporter 就收齐。内核铺的出口只有 stderr 加 `<home>/gwb.log` |
 | **`loader.internal`** | cordis loader 解析裸名的内部通道。Electron 主进程没有 `--expose-internals`，它是 `undefined`，内核塞五行补上——塞晚了插件**静默**挂不上 |
 

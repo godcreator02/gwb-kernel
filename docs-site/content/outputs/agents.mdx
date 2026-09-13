@@ -107,51 +107,14 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm workspace、不进
 文档门禁；evidence 卡在依据段用相对仓根的路径指过去，判据见 trajectory skill。
 
-## 服务命名：一律 `gwb` 开头
-
-- **内核提供**：`gwbKernel`（永不撤销，用词汇表包的 `requireKernel` 取，**不写进 `inject`**）
-- **插件提供**：默认跟插件名对应（`gwb-commands` 插件 → `ctx.gwbCommands`）
-- **例外：cordis 官方插件的服务照它自己的**（`timer`、`loader`）——那不是我们的东西
-- 消费方一律 `inject: ['gwbCommands']` 这样写
-
-为什么全加而不是「通用名才加」，见文档站。
-
-## 插件的三条通用规矩
-
-- **配置一律 `gwbSettings.define`，不吃 `cordis.yml` 的 `config`**。条目只剩 `id` / `name` /
-  `disabled`；插件用时现读，没有变更通知
-- **命令描述必须写参数形状**。`register` 的 `description` 是形状的唯一真相，无参数写「无参数」
-- **MCP 顶层在写插件时决定**。桥只固定 `gwb_command_list` / `gwb_command_run` 两个，其余经
-  `run`；要上顶层在登记时标 `top: true`，桥照它渲染，没有运行时名单；agent 标之前先问人
-
-判据见[件的三条规矩](/trajectory/2026-09-09-plugin-three-rules)。
-
-## 依赖写 peer 还是 dev：三档
-
-| 情形 | 写哪 |
-| --- | --- |
-| 运行时真 import 了它 | `peer`（或 `dependencies`） |
-| **只 import type，但它出现在导出的类型里** | **`peer`**——消费方必须解析得到 |
-| 只在实现内部用类型、不出现在导出面 | `dev` |
-
-中间那档漏了两次，现场见文档站。
-
 ## 容器里的邻居
+
+本仓特有的两个；其余单元（基础插件仓、UI 平台、验收仓、registry 等）全表在总控台。
 
 | 单元 | 是什么 | 这个仓怎么用它 |
 | --- | --- | --- |
-| `26090705ymz\gwb-kernel-min` | 单进程重构的**实验目录**，用完即弃 | 结论已整套搬进本仓，探针读数该进文档站的轨迹。它只读，别再往里写，插件迁完就删 |
-| `26090709qzp\gwb-base-plugins` | **无头基础插件仓**——九个插件 | 插件在那儿改、在那儿发版；本仓只消费 |
-| `26091217uiz\gwb-ui-plugins` | **UI 平台仓**：shell、theme、baseui 与两个共享包 | 本仓只消费 |
-| `26091217hkq\gwb-hello` | **验收仓**：hello 单插件，依赖全走 registry 的装配态验收 | 装配态验收位 |
-| `26090412vav\god-workbench` | 母仓，**已退役** | 只作参考：某处当初为什么那么做、踩过什么坑。结构、分层、包划分一概不抄 |
-| `26090623hyz\gwb-plugins` | 旧的 11 个插件，**已退役** | 同上 |
-| `26090702tpu\gwb-catalog` | 推荐清单 | 装什么插件由人挑，推荐将来从这儿来 |
-| `26090520zzv\registry` | 本机 Verdaccio | 插件与内核的包源：仓 publish 到这儿，home 与安装位从这儿装。`@godcreator02` scope 指的就是它 |
-| `26091201qzv\gwb-app` | **内核固定安装位**（不是 git 仓） | 日常起工作台从这儿：`@godcreator02/gwb-kernel-desktop` + `electron` 二进制都在安装位里，升级 `pnpm update` |
-
-**插件的包名：`@godcreator02/gwb-<插件名>`**。加 `gwb-` 前缀跟废弃那批错开（`@godcreator02/shell`
-那些已被占着）。scope 不换。
+| `26090705ymz\gwb-kernel-min` | 单进程重构的**实验目录**，用完即弃 | 只读，别再往里写；插件迁完就删 |
+| `26091201qzv\gwb-app` | **内核固定安装位**（不是 git 仓） | 日常起工作台从这儿，升级 `pnpm update`（见「怎么跑」） |
 
 ## 干活之前：知识随插件走
 

@@ -37,7 +37,7 @@ cordis 的日志在没有 exporter 时**只缓冲不输出**。内核的全量 e
 - 级别与名字在 cordis 那边就是字符串，`export` 里照抄不加工——真级别在源头就是真的
 - error / warn 到来时**捅一下页面**（`pushShell`，去抖）：没有外壳时页面画的那份只读现状
   里有「最近的错误行」，它从 cordis 自带的 `buffer` 里筛——内核不自建缓冲，用 cordis 那份
-  （见[浏览器那半](/docs/plugins/client#没有外壳时那份只读现状)）。exporter 里做的仍然
+  （见[内核契约面](/docs/plugins/contract#没有外壳时那份只读现状)）。exporter 里做的仍然
   只是「通知」，不写任何会进日志的东西
 
 ## 三路怎么齐的
