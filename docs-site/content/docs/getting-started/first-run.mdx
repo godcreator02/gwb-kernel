@@ -1,11 +1,11 @@
 ---
 title: 跑起来
-description: 从 pnpm install 到窗口里有东西——home、装件、日志各在哪
+description: 从 pnpm install 到窗口里有东西——home、装插件、日志各在哪
 ---
 
 # 跑起来
 
-读完这页你能回答：第一次跑要做哪几步；件怎么装进 home；日志去哪看。
+读完这页你能回答：第一次跑要做哪几步；插件怎么装进 home；日志去哪看。
 
 ## 起一次
 
@@ -38,15 +38,15 @@ pnpm build        # tsc 直出到 dist/，没有打包器；index.html 与 prelo
 `run.cmd` 直接跑 `dist/`，不重新构建——改了内核先 `pnpm build`。给它带 Chromium 开关
 （比如 `--remote-debugging-port=9222`）就原样生效，内核不管它。
 
-## home：你的件住的地方
+## home：你的插件住的地方
 
-`%APPDATA%\gwb-kernel\homes\<名字>`，`GWB_HOME` 选格，不给就是 `default`；给含 `\` 或 `/`
+`%APPDATA%\gwb-kernel\homes\<名字>`，`GWB_HOME` 选 home，不给就是 `default`；给含 `\` 或 `/`
 的路径就把那个目录当 home（验「从零」时指一个 scratchpad 目录最省事）。内核每次启动幂等
-地铺两件套（包清单、空的 `cordis.yml`——见[安家](/docs/kernel/home)）。
+地铺两个文件（包清单、空的 `cordis.yml`——见[安家](/docs/kernel/home)）。
 
-**装件、配件、看设置，都在这个目录**——它就是个普通的 npm 项目，pnpm 认得它。
+**装插件、配插件、看设置，都在这个目录**——它就是个普通的 npm 项目，pnpm 认得它。
 
-## 装一个件：两步，缺一不挂
+## 装一个插件：两步，缺一不挂
 
 **一、装包**。在这个目录下跑 `pnpm add <包名>`。`@godcreator02` 这个 scope 指向本机
 Verdaccio（`127.0.0.1:4873`），路标是用户级 `~/.npmrc` 里那行 `@godcreator02:registry=...`；
@@ -65,21 +65,21 @@ Verdaccio（`127.0.0.1:4873`），路标是用户级 `~/.npmrc` 里那行 `@godc
 
 重启应用。哪步没做，日志会说——挂载逐条报，挂不上的带错因（`ERR_MODULE_NOT_FOUND` 给
 完整路径）。共享包（`gwb-shared-react` 这类）装了就行，**不进 `cordis.yml`**：它们不是
-件，是件的浏览器那半在运行时要解析到的东西。
+插件，是插件的浏览器那半在运行时要解析到的东西。
 
-从零写一个包出来，见[写第一个件](/docs/getting-started/first-plugin)。
+从零写一个包出来，见[写第一个插件](/docs/getting-started/first-plugin)。
 
 ## 哪里看什么
 
 | 看什么 | 去哪 |
 | --- | --- |
-| 起步、条目逐条的挂载结果、坏件错因 | 终端——`run.cmd` 那个窗口 |
+| 起步、条目逐条的挂载结果、坏插件错因 | 终端——`run.cmd` 那个窗口 |
 | 同样这些、外加渲染层 console | `<home>\gwb.log`——三路日志一份，只追加（见[日志](/docs/kernel/logs)） |
-| 页面上的日志窗格 | 装了 `gwb-logger` 件才有——日志管道归件，内核不铺 |
-| 件的浏览器那半报的错 | 页面 console（同时转进 `gwb.log`） |
+| 页面上的日志窗格 | 装了 `gwb-logger` 插件才有——日志管道归插件，内核不铺 |
+| 插件的浏览器那半报的错 | 页面 console（同时转进 `gwb.log`） |
 
 ## 一个会话一个干净 home
 
 验「从零」这类事，把 home 整个删掉再起，或 `GWB_HOME=test-xxx` 开一个。别复用上一次留下
-的——里头是若干个不同时刻手工放进去的件，验什么都不算数。实机验证的完整纪律在
+的——里头是若干个不同时刻手工放进去的插件，验什么都不算数。实机验证的完整纪律在
 [怎么跑、怎么验](/docs/dev-loop)。

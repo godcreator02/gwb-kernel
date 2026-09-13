@@ -11,20 +11,20 @@ description: 这条线造的词都在这儿——每个词一句定义，指到�
 
 | 词 | 是什么 |
 | --- | --- |
-| **正线** | gwb-kernel 自己。母仓与旧件仓已退役，这条线是接班的那个 |
-| **内核** | `apps/desktop/src` 四个文件，512 行——一个 Electron 应用，只做六件事，其余一切皆件 |
-| **件** | 插件。一个普通 npm 包，装在 home 的 `node_modules` 下，由 cordis 挂载。单进程后件跑在 Electron 主进程里，`import('electron')` 就够得着 |
+| **正线** | gwb-kernel 自己。母仓与旧插件仓已退役，这条线是接班的那个 |
+| **内核** | `apps/desktop/src` 六个文件，537 行——一个 Electron 应用，只做六件事，其余一切皆插件 |
+| **插件** | 一个普通 npm 包，装在 home 的 `node_modules` 下，由 cordis 挂载，跑在 Electron 主进程里——`import('electron')` 就够得着 |
 | **词汇表** | `@godcreator02/gwb-plugin-api`。零运行时依赖，七个名字加一个形状，62 行，只命名不做事 |
-| **home** | `%APPDATA%\gwb-kernel\homes\<名>`（`GWB_HOME` 也可给绝对路径）。件住的地方，一个普通的 npm 项目根 |
-| **安家** | 内核保证 home 起得来：每次启动幂等补两件套（`package.json`＋空 `cordis.yml`），不覆盖。**不是装机**——内核不碰 pnpm |
-| **准入判据** | 两道关：第一个件之前必须发生的事才进内核；真遇到需求才加 |
-| **cordis** | 底座元框架（服务容器＋件生命周期＋事件），件的运行时。见[底座：cordis](/docs/kernel/cordis) |
+| **home** | `%APPDATA%\gwb-kernel\homes\<名>`（`GWB_HOME` 也可给绝对路径）。插件住的地方，一个普通的 npm 项目根 |
+| **安家** | 内核保证 home 起得来：每次启动幂等补两个文件（`package.json`＋空 `cordis.yml`），不覆盖。**不是装机**——内核不碰 pnpm |
+| **准入判据** | 两道关：第一个插件之前必须发生的事才进内核；真遇到需求才加 |
+| **cordis** | 底座元框架（服务容器＋插件生命周期＋事件），插件的运行时。见[底座：cordis](/docs/kernel/cordis) |
 
 ## 内核六件事
 
 | 词 | 是什么 |
 | --- | --- |
-| **铺 home** | 启动第一件事：目录在、两件套在。见[安家](/docs/kernel/home) |
+| **铺 home** | 启动第一件事：目录在、两个文件在。见[安家](/docs/kernel/home) |
 | **起 cordis** | 根上下文 `baseUrl` 指向 home，挂官方 loader 与 include。见[取址](/docs/kernel/loading) |
 | **解析裸名（node 半）** | 给 `loader.internal` 塞五行，裸包名按 home 的 `node_modules` 解析。见[取址](/docs/kernel/loading) |
 | **解析裸名（浏览器半）** | 扫 home 清单里各包声明的 `gwb.shared`，拼成 `file://` importmap 随外壳地址推给页面。内核不认识 react，只搬运提供方的声明 |
@@ -35,23 +35,23 @@ description: 这条线造的词都在这儿——每个词一句定义，指到�
 | --- | --- |
 | **条目** | `cordis.yml` 数组里的一条：`{ id, name, config?, disabled? }`。`id` 是身份，手写；不写 loader 发随机 id 且不写回 |
 | **fiber / ACTIVE** | cordis 的执行单元与其「挂上了」的状态 |
-| **热挂载** | 运行中调条目树 API（`create`/`update`/`remove`）挂卸件，yml 自动写回。**不是文件监听**——改 yml 要重启 |
+| **热挂载** | 运行中调条目树 API（`create`/`update`/`remove`）挂卸插件，yml 自动写回。**不是文件监听**——改 yml 要重启 |
 
 ## 桥与取址
 
 | 词 | 是什么 |
 | --- | --- |
-| **三条 IPC** | `gwb:command`（页面 → 命令总线）、`gwb:event`（件 → 页面单向推）、`gwb:shell`（内核 → 页面推外壳地址与 importmap）。见[桥](/docs/kernel/bridge) |
+| **三条 IPC** | `gwb:command`（页面 → 命令总线）、`gwb:event`（插件 → 页面单向推）、`gwb:shell`（内核 → 页面推外壳地址与 importmap）。见[桥](/docs/kernel/bridge) |
 | **`window.gwb`** | 页面公共面，只有三个函数：`command` / `on` / `onShell`，由 `preload.cjs` 经 contextBridge 暴露 |
 | **importmap** | 裸名 → `file://` URL 的映射表。内核扫 `gwb.shared` 拼、随 `gwb:shell` 推，页面注完表才 import 外壳——赶在第一句裸名 import 之前 |
 | **`gwb.shared`** | 包清单里唯一被内核读的字段：「我给页面提供这几个裸名」。**先声明先得**，撞名只报不改 |
-| **命令总线** | `ctx.gwbCommands`，某个件提供的服务。**内核一条原生命令都没有**——`gwb:command` 收到什么原样派给它，没人提供总线就报错 |
+| **命令总线** | `ctx.gwbCommands`，某个插件提供的服务。**内核一条原生命令都没有**——`gwb:command` 收到什么原样派给它，没人提供总线就报错 |
 | **`GwbResult`** | 命令回执形状 `{ ok, data?, error? }` |
-| **外壳** | 调了 `gwbKernel.setShell(url)` 的那个件。内核不挑外壳：谁调用、谁是，后调的顶掉先调的。页面 `import` 那个 URL，调它的默认导出 |
-| **`setShell` / `onShell`** | 件的 node 半交出外壳 `file://` 地址（撤销函数返回时收回）／页面订外壳地址（订上先收当前值） |
-| **窗格** | 外壳井里的一格。窗格件导出 `mountPane`，注册时报 `client`（与可选 `style`）的 `file://` 地址——从件自己的 `import.meta.url` 算。契约正本住件仓 |
-| **三路日志** | 件（`plugin`）、内核（`kernel`）、渲染层 console（`renderer`）三路都走 `ctx.logger`；任何件挂一个 exporter 就收齐。内核铺的出口只有 stderr 加 `<home>/gwb.log` |
-| **`loader.internal`** | cordis loader 解析裸名的内部通道。Electron 主进程没有 `--expose-internals`，它是 `undefined`，内核塞五行补上——塞晚了件**静默**挂不上 |
+| **外壳** | 调了 `gwbKernel.setShell(url)` 的那个插件。内核不挑外壳：谁调用、谁是，后调的顶掉先调的。页面 `import` 那个 URL，调它的默认导出 |
+| **`setShell` / `onShell`** | 插件的 node 半交出外壳 `file://` 地址（撤销函数返回时收回）／页面订外壳地址（订上先收当前值） |
+| **窗格** | 外壳窗格容器（well，代码模块 `well-hub`）里的一个窗格。窗格插件导出 `mountPane`，注册时报 `client`（与可选的 `style`）的 `file://` 地址——从插件自己的 `import.meta.url` 算。契约正本住插件仓 |
+| **三路日志** | 插件（`plugin`）、内核（`kernel`）、渲染层 console（`renderer`）三路都走 `ctx.logger`；任何插件挂一个 exporter 就收齐。内核铺的出口只有 stderr 加 `<home>/gwb.log` |
+| **`loader.internal`** | cordis loader 解析裸名的内部通道。Electron 主进程没有 `--expose-internals`，它是 `undefined`，内核塞五行补上——塞晚了插件**静默**挂不上 |
 
 ## 退役的词
 
@@ -63,7 +63,18 @@ description: 这条线造的词都在这儿——每个词一句定义，指到�
 | **fd3** | 宿主的第四条 stdio 管道，回执/事件/日志的上行专线 | 没有了——三条 IPC 直达 |
 | **`gwb://`** | 把件的浏览器那半交给页面的自定义协议 | 没有了——页面直接吃 `file://` |
 | **`kernel.info`** | 内核唯一的原生命令，报 pid/dataDir/条目/外壳/共享包 | 没有了——内核一条原生命令都没有 |
-| **阶段页 / 崩溃页** | 外壳没上来时摆已装清单并轮询等外壳；宿主崩了整页换讣告 | 那套机器没有了。没有外壳时页面画一份**只读现状**（各条目到哪一步、最近错误行），不轮询、不归因；件的错落主进程、只记不退，见[刻意不做](/future/not-doing) |
+| **阶段页 / 崩溃页** | 外壳没上来时摆已装清单并轮询等外壳；宿主崩了整页换讣告 | 那套机器没有了。没有外壳时页面画一份**只读现状**（各条目到哪一步、最近错误行），不轮询、不归因；插件的错落主进程、只记不退，见[刻意不做](/future/not-doing) |
+
+2026-09-13 文档统一改口又退了一批称呼（机制没变，只是换说法）。旧卡、旧会话与 home 里旧版说明书上见到，按右列读：
+
+| 词 | 曾经指 | 现在写 |
+| --- | --- | --- |
+| **件 / 枚件** | 插件；「一枚件」＝一个插件 | 插件 |
+| **件仓** | 插件仓 | 插件仓 |
+| **井** | 窗格容器（well，代码模块 `well-hub`） | 窗格容器 |
+| **格** | 窗格实例（井里的一格）；开格 / 关格 / 预览格 | 窗格；开窗格 / 关窗格 / 预览窗格 |
+| **口** | 量词（一口井）或端口（CDP 口、那道口） | 个；端口 / 入口 |
+| **两件套** | home 的 `package.json` 与 `cordis.yml` | 两个文件 |
 
 ## 文档与账本
 

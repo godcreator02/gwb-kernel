@@ -1,18 +1,18 @@
 ---
 title: 日志：stderr 加一个文件
-description: 三路都走 ctx.logger，内核只铺一个出口；件想看，自己挂 exporter
+description: 三路都走 ctx.logger，内核只铺一个出口；插件想看，自己挂 exporter
 ---
 
 # 日志：stderr 加一个文件
 
-读完这页你能回答：日志有哪些路、出口在哪儿；为什么内核不替窗格铺日志管道；件的日志件
-怎么把三路收齐。
+读完这页你能回答：日志有哪些路、出口在哪儿；为什么内核不替窗格铺日志管道；插件仓的
+`gwb-logger` 怎么把三路收齐。
 
 内核铺的出口**只有一处**：stderr，加 home 里一个只追加的文件。
 
 {/* ref file="../apps/desktop/src/main.ts" lines="55-64" */}
 
-一个件都没有、窗口没起、终端不在——只要这个进程活着，`<home>/gwb.log` 里就有人读得懂的
+一个插件都没有、窗口没起、终端不在——只要这个进程活着，`<home>/gwb.log` 里就有人读得懂的
 一行行。`say` 只给 exporter 本身与「起不来」那一句用；格式是最朴素的 `ISO 时间 级别 名字
 正文`。**只追加、不轮转**——按字节切段的旧机制随日志管道一起退役了（见[轨迹](/trajectory)），
 真到文件要人管的那天，重新过判据。
@@ -21,10 +21,10 @@ description: 三路都走 ctx.logger，内核只铺一个出口；件想看，�
 `run.cmd` 双击起），stderr 对端是断的，每写一次抛一次 EPIPE，不吞它进程就死在写日志上
 （见[那面墙](/trajectory/2026-09-08-wall-stderr-epipe)）。
 
-## exporter 必须在第一个件之前
+## exporter 必须在第一个插件之前
 
 cordis 的日志在没有 exporter 时**只缓冲不输出**。内核的全量 exporter 在模块顶层注册——
-挂 loader、开窗都在它后面，第一个挂不上的件可能正是要报错的主角，它的报错不能等
+挂 loader、开窗都在它后面，第一个挂不上的插件可能正是要报错的主角，它的报错不能等
 （见[那面墙](/trajectory/2026-09-07-wall-loader-error-swallowed)）。
 
 {/* ref file="../apps/desktop/src/main.ts" lines="110-142" */}
@@ -44,28 +44,28 @@ cordis 的日志在没有 exporter 时**只缓冲不输出**。内核的全量 e
 
 | 路 | 名字 | 怎么进来 |
 | --- | --- | --- |
-| `plugin` | 件自己的 logger 名 | 件正常用 `ctx.logger`，cordis 分发到 exporter |
+| `plugin` | 插件自己的 logger 名 | 插件正常用 `ctx.logger`，cordis 分发到 exporter |
 | `kernel` | `kernel` | 内核自己的话也走 `ctx.logger('kernel')`，**不直接 `say`** |
 | `renderer` | `renderer` | 页面 console 经 `console-message` 事件转进来（见[载体](/docs/kernel/processes#渲染层的-console-归流)） |
 
 {/* ref file="../apps/desktop/src/main.ts" lines="144-151" */}
 
-「内核的话也走 logger」是刻意的小绕：不绕的话内核的话只进文件，件挂 exporter 收不到它。
-走了同一条流，**任何件挂一个 exporter 就把三路收齐**。件仓的 `gwb-logger` 就是那个收的
-件：挂第二个 exporter、从 `ctx.logger.buffer` 补历史段、经 `gwbKernel.emit` 推给页面上的
+「内核的话也走 logger」是刻意的小绕：不绕的话内核的话只进文件，插件挂 exporter 收不到它。
+走了同一条流，**任何插件挂一个 exporter 就把三路收齐**。插件仓的 `gwb-logger` 就是那个收的
+插件：挂第二个 exporter、从 `ctx.logger.buffer` 补历史段、经 `gwbKernel.emit` 推给页面上的
 日志窗格——内核不为窗格铺任何管道。
 
-末尾那两个 `process.on` 是「件跑在这个进程里」的直接后果：件的错就是这个进程的错。
-**只记不退**——一个坏件不该带走工作台。三种坏法（apply 同步抛、没人接的 rejection、
+末尾那两个 `process.on` 是「插件跑在这个进程里」的直接后果：插件的错就是这个进程的错。
+**只记不退**——一个坏插件不该带走工作台。三种坏法（apply 同步抛、没人接的 rejection、
 定时器里抛）实机验过全接得住、主进程活着，读数见
 [单进程重构](/trajectory/2026-09-09-single-process)。
 
 ## 两条纪律
 
-**一、收日志的件只读不写。** 件挂 exporter 是正道（日志件就靠它），但 exporter 里不许再
+**一、收日志的插件只读不写。** 插件挂 exporter 是正道（日志插件就靠它），但 exporter 里不许再
 碰任何会进日志的东西——再 `console` 或 `logger` 一句，那句又被自己收走，一变二、二变四。
 内核那份 exporter 里 `try/catch` 兜底也是同一个理由。
 
 **二、渲染层窗格里的 console 是日志的源，不是调试台。** 页面窗格打一句 console → 转成
-`renderer` 路 → 日志件收走 → 推回窗格 → 路上谁再打一句就是回环，界面当场冻死。取数据
+`renderer` 路 → 日志插件收走 → 推回窗格 → 路上谁再打一句就是回环，界面当场冻死。取数据
 失败那种非循环路径上的可以留。

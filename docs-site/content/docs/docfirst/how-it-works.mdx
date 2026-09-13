@@ -15,7 +15,7 @@ description: 文档怎么钉住代码、账本记了什么、check 四色各是�
 {/* ref file="../apps/desktop/src/host/home.ts" lines="32-37" */}
 ```
 
-五类引用：`ref`（行段/整文件）、`tree`（目录树，可带 depth）、`exists`/`absent`（断言在/不在）、`has`（文件里有这个字面量）。**引用路径相对文档站目录**（`../apps/...`）。**跨仓钉不了**——件仓的代码只能在件仓自己的站上钉。
+五类引用：`ref`（行段/整文件）、`tree`（目录树，可带 depth）、`exists`/`absent`（断言在/不在）、`has`（文件里有这个字面量）。**引用路径相对文档站目录**（`../apps/...`）。**跨仓钉不了**——插件仓的代码只能在插件仓自己的站上钉。
 
 草稿写 `@@docfirst ref ../x.ts:12-20 @@`，confirm 时转正。
 

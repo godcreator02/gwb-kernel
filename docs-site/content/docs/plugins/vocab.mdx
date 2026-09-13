@@ -13,8 +13,8 @@ description: 六个名字加一个形状，零运行时依赖——内核契约�
 
 | 名字 | 什么时候用 |
 | --- | --- |
-| `GwbResult<T>` | 命令的回执形状 `{ ok, data?, error? }`。提供命令的件拿它包返回值，消费命令的件 `await` 到的就是它 |
-| `GwbKernelApi` | 内核服务的形状：`{ dataDir, emit(payload), setShell(url) → 撤销函数 }`。**就这三样**——没有自省、没有版本号、没有装机口 |
+| `GwbResult<T>` | 命令的回执形状 `{ ok, data?, error? }`。提供命令的插件拿它包返回值，消费命令的插件 `await` 到的就是它 |
+| `GwbKernelApi` | 内核服务的形状：`{ dataDir, emit(payload), setShell(url) → 撤销函数 }`。**就这三样**——没有自省、没有版本号、没有装机入口 |
 | `GwbContext` | `apply` 第一参数的类型：cordis `Context` + `gwbKernel` |
 | `requireKernel(ctx)` | 取内核服务；跑在不是 gwb 内核的 cordis 宿主里会当场抛。**别写进 `inject`** |
 | `isRecord(value)` | 把 `unknown` 收窄成 `Record` 的判形——写命令 handler 收参数时用 |
@@ -25,10 +25,10 @@ description: 六个名字加一个形状，零运行时依赖——内核契约�
 
 **零运行时依赖。** 一个只命名不做事的东西，本来就不该依赖任何执行环境。cordis 是 peer 而不是 dev——`Context` 出现在导出的类型里，消费方必须解析得到（见[那面墙](/trajectory/2026-09-07-wall-cordis-peer)）。
 
-**它就这么大。** 母仓 11 件实测只从平台包根出口取了 12 个名字，其中真属于内核词汇表的只有 3 个；件与件之间的契约（http 件对 mcp 件的承诺那种）该住提供方自己的包里，内核根本不知道 http 是什么（见[那面墙](/trajectory/2026-09-07-wall-vocab-just-size)）。
+**它就这么大。** 母仓 11 个插件实测只从平台包根出口取了 12 个名字，其中真属于内核词汇表的只有 3 个；插件与插件之间的契约（http 插件对 mcp 插件的承诺那种）该住提供方自己的包里，内核根本不知道 http 是什么（见[那面墙](/trajectory/2026-09-07-wall-vocab-just-size)）。
 
 ## 类型住这儿，值走服务
 
-从这个包 import 到的是**类型**，拿不到 `dataDir`——那是内核那次启动算出来的运行时值，只有 cordis 服务送得到（见[服务与命令](/docs/plugins/services)）。把内核的 `src/` 整个发成包给件用是错的：件用不着内核入口，而发出去就成了要维护的契约。
+从这个包 import 到的是**类型**，拿不到 `dataDir`——那是内核那次启动算出来的运行时值，只有 cordis 服务送得到（见[服务与命令](/docs/plugins/services)）。把内核的 `src/` 整个发成包给插件用是错的：插件用不着内核入口，而发出去就成了要维护的契约。
 
 包里那份 `README.md` 只列名字、指回这页——两处各记一份必然漂移，参考的正本在这儿。

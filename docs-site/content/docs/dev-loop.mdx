@@ -7,7 +7,7 @@ description: 门禁是哪几条、为什么这个仓的验收大半靠实机
 
 读完这页你能回答：提交前要过哪道门禁；为什么这个仓的验收大半靠实机；从改代码到说「验过了」的路。
 
-第一次跑、装件、home 在哪，见[跑起来](/docs/getting-started/first-run)——那页管「跑起来」，这页管「怎么验」。
+第一次跑、装插件、home 在哪，见[跑起来](/docs/getting-started/first-run)——那页管「跑起来」，这页管「怎么验」。
 
 ## 门禁
 
@@ -24,10 +24,10 @@ pnpm check   # build:api（词汇表直出 dist）+ typecheck 全仓 + oxlint + 
 这种「几乎肯定是错的」），其中 16 条要类型信息。style / pedantic / restriction 那些
 噪音类别默认一条都不开。
 
-lint 面很小，但**它是靠人记的**——仓里眼下就七个 `.ts`：内核 `main.ts` 与 `imports.ts`、
-测试 `tests/imports.test.ts`、词汇表 `index.ts`、`vitest.config.ts`、docs-site 的两个源码
-文件。将来加了新包、新目录，忘了它在不在某份 tsconfig 里，它会静默留在 lint 面外，没有任何
-东西会说话。数不上就该去看一眼。
+lint 面很小，但**它是靠人记的**——仓里非 docs-site 的 `.ts` 眼下十个：内核四个
+（`main.ts` / `imports.ts` / `bare-import.ts` / `entry-state.ts`）、旁边三个测试、
+词汇表 `index.ts` 与它的测试、`vitest.config.ts`。将来加了新包、新目录，忘了它在不在
+某份 tsconfig 里，它会静默留在 lint 面外，没有任何东西会说话。数不上就该去看一眼。
 
 **文档站不在里面**：它钉 `typescript ^6.0.3`，而 type-aware 要 TS 7+，tsgolint 给它建不出
 program。它本来也不进根 build/test，自己有 `docfirst check` 与 `next build` 两道，
@@ -42,28 +42,27 @@ program。它本来也不进根 build/test，自己有 `docfirst check` 与 `nex
 这个仓写逻辑之前先写测试。TDD 在这里最大的用处不是保证正确，是**它自己会把代码逼成
 可测的形状**：写不出测试的那一刻，就知道该把纯逻辑从副作用里抠出来了。
 
-判据是**「跑它要不要起一个 Electron」**，不是「这段重不重要」。两进程线上有六个纯逻辑
-文件各配单测（协议、条目、URL、日志缓冲、日志文件、宿主进程）——它们随两进程线整个
-删了。单进程内核里够得上这个判据的只有 `collectImports`（扫 `gwb.shared` 拼 importmap），
-2026-09-12 从 `main.ts` 抽成独立的 `src/imports.ts`（warn 由调用方注入，副作用只剩磁盘读），
-`tests/imports.test.ts` 八个用例：空仓、无依赖、正常收进、子路径不带前缀、地址断言、撞名
-先到先得、解析不到只 warn、坏形状静默忽略。
+判据是**「跑它要不要起一个 Electron」**，不是「这段重不重要」。单进程内核里够得上这个判据的
+是三个纯函数模块——`imports.ts`（扫 `gwb.shared` 拼 importmap）、`bare-import.ts`（裸名两步
+解析）、`entry-state.ts`（条目状态分类），各自的副作用只剩磁盘读，单测就在旁边 `tests/`
+（imports 那份八个用例：空仓、无依赖、正常收进、子路径不带前缀、地址断言、撞名先到先得、
+解析不到只 warn、坏形状静默忽略）。
 
-其余——`BrowserWindow`、IPC、loader、真件挂载——一律归实机验证。硬凑自动化只会得到
+其余——`BrowserWindow`、IPC、loader、真插件挂载——一律归实机验证。硬凑自动化只会得到
 一堆脆弱的桩。
 
 ## 实机验证怎么做
 
-实机的规矩正本是 `gwb-devkit` 件带的 skill（`skill://gwb/gwb-devkit/SKILL.md`，末尾
+实机的规矩正本是 `gwb-devkit` 插件带的 skill（`skill://gwb/gwb-devkit/SKILL.md`，末尾
 「你改的是内核」一节）：每次验开自己的隔离 home、开之前确认产物是新的（`dist/` 时间戳）、
-件进 home 只有「registry 发版 → home 里 `pnpm add` → `cordis.yml` 写条目」这一条路、哪几种
+插件进 home 只有「registry 发版 → home 里 `pnpm add` → `cordis.yml` 写条目」这一条路、哪几种
 「看着成了」其实什么都没验。页面取证用它登记的 node CLI `cdp-eval`——
 `run.cmd --remote-debugging-port=9335` 开 CDP，表达式放文件不放命令行。
 
-有个具体例子说明为什么实机不可省：home 分格第一次开测试 home 时撞出「全新 home 起不来」——
+有个具体例子说明为什么实机不可省：第一次开测试 home 时撞出「全新 home 起不来」——
 `cordis.yml` 不在，include 抛错落在挂载链上，整趟起不来（见
 [那面墙](/trajectory/2026-09-07-wall-fresh-home-no-yml)）。**单测抓不着这个**：每个
 函数单看都对，是「从没被走过的一条路径」上才显形的组合问题。实机起一次，一眼就看见。
 
-单进程重构走的也是这条路：四个探针逐个验「墙拆了件活不活得成」，读数进了
+单进程重构走的也是这条路：四个探针逐个验「墙拆了插件活不活得成」，读数进了
 [轨迹](/trajectory/2026-09-09-single-process)，探针本身验完即删、不进仓。

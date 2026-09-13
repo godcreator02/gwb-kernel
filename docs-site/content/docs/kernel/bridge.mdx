@@ -5,17 +5,17 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 
 # 桥：三条 IPC 与 file://
 
-读完这页你能回答：页面上一次点击到件的处理函数要经过几跳；外壳地址与 importmap 是怎么
-到页面的；件的浏览器那半凭什么不用任何协议就能加载。
+读完这页你能回答：页面上一次点击到插件的处理函数要经过几跳；外壳地址与 importmap 是怎么
+到页面的；插件的浏览器那半凭什么不用任何协议就能加载。
 
-**为什么不能是插件**：两个执行世界之间的通道，得在任何一边有件之前就存在。
+**为什么不能是插件**：两个执行世界之间的通道，得在任何一边有插件之前就存在。
 
 三条通道各管一个方向：
 
 | 通道 | 方向 | 走什么 |
 | --- | --- | --- |
-| `gwb:command` | 页面 → 件 | `ipcMain.handle`，原样派给命令总线，回 `GwbResult` |
-| `gwb:event` | 件 → 页面 | `webContents.send` 单向推，火过就灭 |
+| `gwb:command` | 页面 → 插件 | `ipcMain.handle`，原样派给命令总线，回 `GwbResult` |
+| `gwb:event` | 插件 → 页面 | `webContents.send` 单向推，火过就灭 |
 | `gwb:shell`（＋`gwb:hello`） | 内核 → 页面 | 推 `{ url, imports, report }`：外壳的 `file://` 地址＋importmap＋只读现状（外壳在时页面不看它） |
 
 ## 命令：内核不认识任何命令名
@@ -31,10 +31,10 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 {/* ref file="../apps/desktop/src/main.ts" lines="218-224" */}
 
 **内核一条原生命令都没有。** 旧线那条 `kernel.info` 随两进程退役了——自省、装机、版本
-这些需求要么没有了，要么归了件。`handle` 里只做两件防呆：命令名不是字符串回一句错；
-`ctx.gwbCommands` 是 `undefined`（没装总线件）回一句带命令名的错。其余原样转发——由某个
-件提供的命令总线收。「内核不认识件的命令名」是有意的纪律：内核要用某个件的能力，正确的
-做法是让那个件把服务送上来，而不是内核去点名调它。
+这些需求要么没有了，要么归了插件。`handle` 里只做两件防呆：命令名不是字符串回一句错；
+`ctx.gwbCommands` 是 `undefined`（没装总线插件）回一句带命令名的错。其余原样转发——由某个
+插件提供的命令总线收。「内核不认识插件的命令名」是有意的纪律：内核要用某个插件的能力，正确的
+做法是让那个插件把服务送上来，而不是内核去点名调它。
 
 没有超时计时器，也没有「宿主死了在途命令全废」——命令在**同一个进程**里直达，没有跨进程
 配对这回事；页面等不等得起、等多久，是页面与外壳的事。
@@ -43,34 +43,34 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 
 {/* ref file="../apps/desktop/src/main.ts" lines="203-215" */}
 
-件调 `ctx.gwbKernel.emit(payload)`，主进程 `webContents.send('gwb:event', payload)`，页面的
+插件调 `ctx.gwbKernel.emit(payload)`，主进程 `webContents.send('gwb:event', payload)`，页面的
 `gwb.on(cb)` 收到（见[浏览器那半](/docs/plugins/client)）。**事件是火过就灭的**，没有历史
-段——要历史的是日志，那是日志件自己张罗的事（见[日志](/docs/kernel/logs)）。
+段——要历史的是日志，那是日志插件自己张罗的事（见[日志](/docs/kernel/logs)）。
 
 ## 外壳地址：setShell 说，onShell 听
 
 内核不挑外壳：`kernel` 对象里那个 `setShell(url)`，**谁调用、谁是外壳**，后调的顶掉先调的。
-返回的撤销函数把地址收回——件把 `setShell` 包在 `ctx.effect` 里，fiber 卸载时自动收回，
-这就是「外壳件被卸了页面要换」的全部机制。
+返回的撤销函数把地址收回——插件把 `setShell` 包在 `ctx.effect` 里，fiber 卸载时自动收回，
+这就是「外壳插件被卸了页面要换」的全部机制。
 
 推给页面的不是裸地址，是 `shellMessage()` 现算的一份 `{ url, imports, report }`（importmap
 怎么拼的见[取址](/docs/kernel/loading)，`report` 是什么见[浏览器那半](/docs/plugins/client#没有外壳时那份只读现状)）。
 推的时机有四种：`setShell` 调用时、撤销函数收回时、页面订上时——`gwb:hello` 这条
-`ipcMain.on` 专门应答这种：页面 `onShell` 订上的瞬间先问一次当前值，免得件在页面起来之前
+`ipcMain.on` 专门应答这种：页面 `onShell` 订上的瞬间先问一次当前值，免得插件在页面起来之前
 就 `setShell` 过了——以及条目换态或错误行到来时的去抖重推（`pushShell`），那是给只读现状
 用的，外壳在时页面收到也不动。
 
 ## 资产：没有协议，页面直接吃 file://
 
-件的浏览器那半住在 home 的 `node_modules` 里，页面要加载它。旧线为此注册了 `gwb://` 协议、
+插件的浏览器那半住在 home 的 `node_modules` 里，页面要加载它。旧线为此注册了 `gwb://` 协议、
 维护 exports 定址表、管 MIME 白名单——单进程之后**整套退役**：Electron 的页面直接吃
 `file://`。动态 `import`、`<link>` 样式表、fetch、JSON 模块、importmap 指到 `file://` 后
 与直连是同一份实例——探针五项全过，读数见
 [单进程重构](/trajectory/2026-09-09-single-process)。
 
-地址由件**自己算、自己报**：`new URL('./client.js', import.meta.url).href`——dist 下的
+地址由插件**自己算、自己报**：`new URL('./client.js', import.meta.url).href`——dist 下的
 产物互为邻居，从自己的模块地址出发一步就到。注册窗格时报 `client`（与可选 `style`）两个
-字段，内核与外壳都不认识任何包的 exports 表。契约见[一件的解剖](/docs/plugins/anatomy)。
+字段，内核与外壳都不认识任何包的 exports 表。契约见[一个插件的解剖](/docs/plugins/anatomy)。
 
 ## preload：桥的浏览器那半
 

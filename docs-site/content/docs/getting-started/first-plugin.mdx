@@ -1,18 +1,18 @@
 ---
-title: 写第一个件
-description: 从空目录到挂上运行，再到页面里有一格——每步都实机验收
+title: 写第一个插件
+description: 从空目录到挂上运行，再到页面里有一个窗格——每步都实机验收
 ---
 
-# 写第一个件
+# 写第一个插件
 
-读完这页你能回答：一个件最少要哪几个文件；怎么让它挂上；怎么在窗口里占一格。
+读完这页你能回答：一个插件最少要哪几个文件；怎么让它挂上；怎么在窗口里占一个窗格。
 
 每步做完就重启验一次——**实机是这仓的验收方式**，日志把条目逐条报出来（终端与
-`<home>\gwb.log` 同一份）。
+`<home>/gwb.log` 同一份）。
 
 ## 1. 建包
 
-一个件就是一个普通的 npm 包：
+一个插件就是一个普通的 npm 包：
 
 ```json
 {
@@ -23,7 +23,7 @@ description: 从空目录到挂上运行，再到页面里有一格——每步�
 }
 ```
 
-node 半的入口靠 node 自己的解析认 `exports`。**浏览器那半不读它**——那半的地址由件自己从
+node 半的入口靠 node 自己的解析认 `exports`。**浏览器那半不读它**——那半的地址由插件自己从
 `import.meta.url` 算（第 7 步），清单里没有专门的「客户端入口」字段。
 
 ## 2. 写 apply
@@ -62,8 +62,8 @@ export function apply(ctx) {
 }
 ```
 
-服务名一律 `gwb` 开头；`ctx.effect` 包一层，件卸载时自动撤销。消费方写
-`inject: ['gwbThing']`——那是硬等待：服务不在，件不挂。
+服务名一律 `gwb` 开头；`ctx.effect` 包一层，插件卸载时自动撤销。消费方写
+`inject: ['gwbThing']`——那是硬等待：服务不在，插件不挂。
 
 **想被页面调到**：注册进命令总线（`ctx.gwbCommands.register(...)`，如果装了
 `gwb-commands`）。总线的收据形状是 `GwbResult`，未知命令不 throw——契约见
@@ -86,7 +86,7 @@ export function apply(ctx) {
 
 ## 6. 声明共享的裸名（要用 react 才需要）
 
-件的浏览器那半要用 `react`，别打包它——让共享包声明、内核搬运：
+插件的浏览器那半要用 `react`，别打包它——让共享包声明、内核搬运：
 
 ```json
 { "gwb": { "shared": { "react": "./vendor/react.js" } } }
@@ -114,12 +114,12 @@ ctx.gwbShell?.registerPane({
 
 ```js
 export function mountPane(args, container) {
-  container.textContent = 'thing 的第一格'
+  container.textContent = 'thing 的第一个窗格'
   return { dispose() {} }
 }
 ```
 
 打包时**只把 importmap 里有的裸名外置**（第 6 步声明的那几个），其余打进自己这份束；相对
 导入带 `.js`。`mountPane` 的完整契约、`setShell` 当外壳、样式与组件的规矩：
-[浏览器那半](/docs/plugins/client)；一个真实件的全部现状在件仓 `gwb-hello`——**跨仓钉不了
+[浏览器那半](/docs/plugins/client)；一个真实插件的全部现状在插件仓 `gwb-hello`——**跨仓钉不了
 码**，那边的论断钉那边的代码。
