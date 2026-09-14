@@ -17,11 +17,11 @@ description: 内核到哪了、下一步是什么、哪些在等前提——「�
 | | 断言 | 怎么证明的 |
 | --- | --- | --- |
 | **第六刀** 单进程重构 | cordis 住进 Electron 主进程，应用只剩主进程＋渲染层 | 四个探针在实验目录逐个验：`loader.internal` 可塞、页面直吃 `file://` 五项全通、件三种出错主进程都活着、v0 内核端到端；再拿外壳＋日志两个真件与四件组合实机跑通，整套搬回本仓（读数全文见[单进程重构](/trajectory/2026-09-09-single-process)） |
-| 词汇表 0.1 | 契约面只有七个名字加一个形状 | `@team/gwb-plugin-api@0.1.0` 已发本机 registry，正文逐条钉在 `index.ts`（见[词汇表](/docs/plugins/vocab)） |
+| 词汇表 0.1 | 契约面只有七个名字加一个形状 | `@godcreator/gwb-plugin-api@0.1.0` 已发本机 registry，正文逐条钉在 `index.ts`（见[词汇表](/docs/plugins/vocab)） |
 | 十二件迁 0.1 | 件仓十二件并发版全部对上新契约 | 件仓那边验：五格窗格全自报 `client`/`style`、十二条条目 active、两条 CLI 退出码 0、日志实时回环（件仓的决策页记着账） |
 | 文档站对齐 | 站不再说旧线的话 | 机制页全部重钉 `main.ts` / `index.html` / `preload.cjs`；轨迹区纯历史化、零钉码；`pnpm doc` 全绿、站能 build |
 | 同一 home 单开 | userData 拆成每 home 一份，平台锁自动按 home 生效；不同 home 随便并跑 | 名字式与乱大小写路径式的二开都被拒（退出码 1，报归一后的路径）；双 home、三 home 并跑各自 CDP 应答（见[单开锁](/trajectory/2026-09-12-one-home-one-instance)） |
-| 内核 0.1.0 上架 | 日常用与调件不再进仓走 build；跑的哪一版说得出 | `@team/gwb-kernel-desktop@0.1.0` 在本机源上，tarball 五个文件；安装位（`26091201qzv\gwb-app`）起 default，`runtime.json` 的 `appDir` 指安装位、`version` 0.1.0；MCP 握手调通 `devkit.home.new`（见[上架与安装位](/trajectory/2026-09-12-kernel-on-registry)） |
+| 内核 0.1.0 上架 | 日常用与调件不再进仓走 build；跑的哪一版说得出 | `@godcreator/gwb-kernel-desktop@0.1.0` 在本机源上，tarball 五个文件；安装位（`26091201qzv\gwb-app`）起 default，`runtime.json` 的 `appDir` 指安装位、`version` 0.1.0；MCP 握手调通 `devkit.home.new`（见[上架与安装位](/trajectory/2026-09-12-kernel-on-registry)） |
 
 内核现在 **512 行**（`main.ts` 338、`imports.ts` 63、`index.html` 92、`preload.cjs` 19）加
 词汇表 62 行，对照母仓 5100。`imports.ts` 是 2026-09-12 从 `main.ts` 抽出去的纯逻辑
@@ -55,7 +55,7 @@ exporter 全量写 stderr 加 `<home>/gwb.log`。**任何件再挂一个 exporte
 件的路线、每个件的状态与版本号，全在**件仓的文档站**（`26090709qzp/gwb-base-plugins`）。
 
 **这儿不再抄一份**——两处各记一份必然漂移。形势一句话：十二件已迁 0.1 并发版、实机
-验通，日常 default home 就是这套安的家；废弃那批无前缀包（`@team/shell` 那些）
+验通，日常 default home 就是这套安的家；废弃那批无前缀包（`@godcreator/shell` 那些）
 从 registry 删掉，`gwb-` 前缀跟它们错开。
 
 ## 不在路线上
