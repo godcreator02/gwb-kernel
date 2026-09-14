@@ -48,19 +48,19 @@ pnpm build        # tsc 直出到 dist/，没有打包器；index.html 与 prelo
 
 ## 装一个插件：两步，缺一不挂
 
-**一、装包**。在这个目录下跑 `pnpm add <包名>`。`@team` 这个 scope 指向本机
-Verdaccio（`npm.tianshen02.online:28377`），路标是用户级 `~/.npmrc` 里那行 `@team:registry=...`；
+**一、装包**。在这个目录下跑 `pnpm add <包名>`。`@godcreator` 这个 scope 指向本机
+Verdaccio（`npm.tianshen02.online:28377`），路标是用户级 `~/.npmrc` 里那行 `@godcreator:registry=...`；
 刚发的包装不进去，查 pnpm 的 `minimumReleaseAgeExclude` 有没有放行这个 scope。
 
 **二、写条目**。`cordis.yml` 里加一条，`id` 手写短名：
 
 ```yaml
 - id: commands
-  name: '@team/gwb-commands'
+  name: '@godcreator/gwb-commands'
 - id: shell
-  name: '@team/gwb-shell'
+  name: '@godcreator/gwb-shell'
 - id: logger
-  name: '@team/gwb-logger'
+  name: '@godcreator/gwb-logger'
 ```
 
 重启应用。哪步没做，日志会说——挂载逐条报，挂不上的带错因（`ERR_MODULE_NOT_FOUND` 给
