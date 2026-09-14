@@ -1,4 +1,4 @@
-# @team/gwb-plugin-api
+# @godcreator/gwb-plugin-api
 
 gwb-kernel 的**词汇表包**：不做事，只命名。零运行时依赖；`cordis` 是 peer——`Context`
 出现在导出的类型里，消费方必须解析得到。
