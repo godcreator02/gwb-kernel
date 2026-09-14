@@ -1,5 +1,5 @@
 {
-  "name": "@team/gwb-kernel-desktop",
+  "name": "@godcreator/gwb-kernel-desktop",
   "productName": "gwb-kernel",
   "version": "0.2.0",
   "author": {"name": "godcreator"},
@@ -12,7 +12,7 @@
   "scripts": {
     "//postinstall": "electron 这个包不带 postinstall，二进制得显式跑 install.js。见文档站",
     "postinstall": "node node_modules/electron/install.js",
-    "build": "pnpm --filter @team/gwb-plugin-api build && tsc -p tsconfig.build.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\"",
+    "build": "pnpm --filter @godcreator/gwb-plugin-api build && tsc -p tsconfig.build.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "pnpm build",
     "start": "pnpm build && electron ."
@@ -21,7 +21,7 @@
     "cordis": "4.0.0-rc.9",
     "@cordisjs/plugin-loader": "1.0.0-rc.6",
     "@cordisjs/plugin-include": "1.0.5",
-    "@team/gwb-plugin-api": "workspace:*"
+    "@godcreator/gwb-plugin-api": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
