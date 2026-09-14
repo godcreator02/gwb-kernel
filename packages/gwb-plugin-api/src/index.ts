@@ -60,3 +60,13 @@ export interface GwbWindowApi {
 
 /** 外壳模块的默认导出：拿走页面根，回一个可选的拆树句柄 */
 export type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
+
+/**
+ * 页面全局声明：import 本包（哪怕 `import type {}`），TypeScript 就认得 `window.gwb`。
+ * 浏览器半不用再翻别人的产物找 `window.gwb.command` 的形状——它就在这儿。
+ */
+declare global {
+  interface Window {
+    gwb: GwbWindowApi
+  }
+}
