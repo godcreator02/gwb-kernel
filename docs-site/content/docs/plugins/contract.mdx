@@ -1,0 +1,111 @@
+---
+title: 内核契约面
+description: 内核给插件与页面提供什么、认什么、不管什么——契约全部钉在本仓代码上
+---
+
+# 内核契约面
+
+**本页回答**：内核给插件的面有哪些、给页面的面有哪些、清单里哪些字段是内核在读、内核
+明确不认识什么。插件怎么写、怎么发版、怎么装卸——不是内核的事，这页不管。
+
+## 给插件的面：就三样
+
+{/* ref file="../apps/desktop/src/main.ts" lines="203-216" */}
+
+- **`dataDir`**——home 的绝对路径。落盘、找包都用它，**别自己拼**
+- **`emit(payload)`**——把一条消息推给页面（页面的 `window.gwb.on` 收）
+- **`setShell(url)`**——把页面根交出来：页面的 `#root` 从此归 `url` 那个模块的默认导出。
+  返回撤销函数，包在 `ctx.effect` 里就是「卸载即归还」
+
+就这三样——没有自省命令、没有版本号、没有装机。版本号读插件自己包里的 `package.json`。
+这些是运行时值，只走 cordis 服务（`requireKernel(ctx)` 取，**别写进 `inject`**）；说这些话
+用的词（类型）走[词汇表](/docs/plugins/vocab)。
+
+## 命令：内核只透传
+
+**内核一条原生命令都没有**——页面经 `gwb:command` 发来的命令，内核原样派给命令总线
+（`ctx.gwbCommands`，一个插件提供的服务），没人提供总线就回一句带命令名的错。回执的
+收据形状是 `GwbResult`（见[词汇表](/docs/plugins/vocab)）。总线本身的契约归提供它的
+插件。那头有两条登记纪律，生态级、写在这儿：
+
+- **命令原子，编排归 skill。** 一条命令做一件事；把「抬版本→查重号→publish→装机」这类
+  序列写进一条复合命令是反模式——组合逻辑住说明书（skill / 手册），调用方看得见每一步、
+  插得进自己的判断。唯一例外是**共享基线的事务**：判定依赖「这一趟之前」的状态（如
+  devkit.dev 的日志基线、同趟包版本互相钉死），拆成原子守卫就散了——这种才许复合
+- **`plugin` 字段一律填插件名**（`gwb-<短名>`）。登记命令时那个字段是 `/surface` 按插件
+  过滤的依据，条目短名、包名、插件名三套口径混着填，过滤就得猜——2026-09-13 撞过
+  （devkit 自己填过 `devkit`，已正）
+
+## 页面的公共面：`window.gwb`
+
+{/* ref file="../apps/desktop/src/preload.cjs" lines="4-19" */}
+
+| | 是什么 |
+| --- | --- |
+| `command(name, args?)` | 命令通道：`gwb:command` → 命令总线 → `GwbResult` |
+| `on(cb)` | 插件经 `gwbKernel.emit` 推上来的消息，回注销函数 |
+| `onShell(cb)` | 外壳地址与 importmap，回注销函数；**订上先收当前值** |
+
+只有这三个。谁在这页上跑都一样够得着，没有第二层入口。
+
+## 页面根的交接
+
+`index.html` 是内核的一部分，它要做的全部事情：
+
+{/* ref file="../apps/desktop/src/index.html" lines="66-89" */}
+
+四步：**先注 importmap 再 import 外壳**（注过就盖不掉已解析过的裸名，空表不注）；**拆旧
+外壳**（`dispose()` 失败只 `console.error`，不阻新的上）；**url 是 null 就画只读现状**；
+**校验默认导出是函数再调**（形状就是词汇表的 `ShellBoot`）。
+
+### 没有外壳时那份只读现状
+
+外壳没上来、或起不来时，`#root` 里画的是这个：
+
+{/* ref file="../apps/desktop/src/index.html" lines="34-64" */}
+
+全是 `textContent`，没有一颗按钮、没有一句归因。它画的三样——home 在哪、各条目到了哪
+一步、最近的错误行——都是内核已经攥着的。条目到哪一步那句话是独立的分类器模块
+`src/entry-state.ts`（手造条目就能单测），`report()` 留在 `main.ts` 收现场：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="153-175" */}
+
+{/* ref file="../apps/desktop/src/entry-state.ts" lines="1-15" */}
+
+状态词是 cordis 自己的 `FiberState` 原名：`ACTIVE` / `LOADING` / `UNLOADING` / `DISPOSED`
+照抄；`PENDING` 带上缺哪个服务，`FAILED` 带错误的第一行；没有 fiber（模块 import 失败）
+与 `disabled` 是状态之外两种，另起两个词。推的时机：条目换态与错误行到来都去抖成一次
+`gwb:shell` 重推：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="186-202" */}
+
+## 挂载：三步缺一不可，id 一律手写
+
+**没装包**，loader 按裸名找不到；**没条目**，装了也没人挂它；**没重启**，include 不监听
+文件，改 yml 不热生效——热挂载走条目树 API（见[取址](/docs/kernel/loading)）。条目的
+`id` 必须手写：不写的话 loader 发随机串且首次不写回，它会一直漂。
+
+同一个包可以挂多条条目，各有各的配置（`id` 是身份，`name` 只是装哪个包）。但 **provide
+服务的插件只能挂一条**——服务名在整个工作台里唯一，第二条当场抛，内核只记不退。
+
+## 清单里内核读的字段
+
+`gwb.shared` 是**内核唯一会读的 `gwb` 字段**：「我给页面提供这几个裸名」。内核扫 home
+清单里各包的这段声明拼成 importmap、随 `gwb:shell` 推给页面——先声明先得，撞名只报
+不改（见[取址](/docs/kernel/loading)）。内核怎么消费它，决定了它只能是清单声明而不是
+运行时注册：
+
+{/* ref file="../apps/desktop/src/imports.ts" lines="6-14" */}
+
+node 半入口的取址依据是 `exports`（node 自己的解析认它）；浏览器那半不读任何入口字段，
+地址由插件自己从 `import.meta.url` 算。**给人看的东西别往清单里放**——曾经有个
+`gwb.title`，四个包都写着，从来没有过读者；这种字段死掉时没有任何机制会发现。
+
+## 内核不认识什么
+
+收拢成一段，全是设计而不是还没做：内核不认识窗格、不认识任何包的包名、角色名与导出
+名；不认识 `react`，只搬运提供方的共享声明；没有一条原生命令、没有装机、没有版本号
+检查；插件两半（node 进程内、页面 `file://`）怎么长，内核不替它们定任何契约——
+`ShellBoot` 是内核校验的唯一形状。
+
+真实插件的全部现状在插件仓 `gwb-hello`——**跨仓钉不了码**，那边的论断钉那边的代码。

@@ -117,7 +117,7 @@ cordis 建 fiber 是**同步**的、与 inject 满不满足无关——一个 `i
 
 - `plugin-logger-console` —— **出口归内核自己那个全量 exporter**。它跟全量出口直接冲突：两个都在，同一句 cordis 日志打两遍。页面上要看的日志归 `gwb-logger` 插件，它自己挂第二个 exporter（见[日志](/docs/kernel/logs)）
 - `plugin-hmr` —— **在这个架构下不起作用**：跑的是 home 里那份产物，盯仓内源码盯到变化也没有对应模块可换
-- `plugin-http` / `plugin-server` —— **内核**没有外部访问需求。MCP 那条线真长出来了，但它是**插件**（`@godcreator02/gwb-mcp`），自己起 `node:http`。顺带一处订正：`plugin-http` 是 **HTTP 客户端**（`ctx.http`），本来就收不了请求
+- `plugin-http` / `plugin-server` —— **内核**没有外部访问需求。给 agent 开门那条线真长出来了，但它是**插件**，自己起 `node:http`——先 mcp 后 command-http，内核全程不问门是什么协议。顺带一处订正：`plugin-http` 是 **HTTP 客户端**（`ctx.http`），本来就收不了请求
 - `plugin-config` / `plugin-webui` —— 硬 peer 一个 webui，而 webui 要 `server`——为一个条目编辑器拖进 HTTP＋WebSocket
 - `plugin-database` —— 没有超出「插件自己写文件」的需求
 - `@cordisjs/logger` —— 旧版，cordis 4.x 本体已自带
