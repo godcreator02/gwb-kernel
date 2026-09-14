@@ -57,7 +57,7 @@ home 的完整位置：`%APPDATA%\gwb-kernel\homes\<GWB_HOME ?? default>`——`
 | 什么 | 值 |
 | --- | --- |
 | 文档站 dev | `pnpm --filter gwb-kernel-docs-site dev`，端口 4314 |
-| 本机 Verdaccio | `https://npm.tianshen02.online:28377/`，`@godcreator02` scope 指向它 |
+| 本机 Verdaccio | `https://git.tianshen02.online:28377/api/packages/team/npm/`，`@godcreator02` scope 指向它 |
 | home 选择 | 环境变量 `GWB_HOME`：纯名字 → `homes\<名>`；含 `\` 或 `/` → 就用那个目录；不给是 `default` |
 | 内核原生命令 | **一条都没有**——`gwb:command` 收到什么原样派给 `ctx.gwbCommands`，没人提供总线就报错 |
 | 页面公共面 | `window.gwb` 只有三个函数：`command` / `on` / `onShell` |
