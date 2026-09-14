@@ -1,7 +1,7 @@
 {
   "name": "@godcreator/gwb-kernel-desktop",
   "productName": "gwb-kernel",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {"name": "godcreator"},
   "type": "module",
   "main": "dist/main.js",
@@ -10,8 +10,8 @@
     "dist"
   ],
   "scripts": {
-    "//postinstall": "electron 这个包不带 postinstall，二进制得显式跑 install.js。见文档站",
-    "postinstall": "node node_modules/electron/install.js",
+    "//setup-electron": "postinstall 已拆（0.2.1）：作为依赖装进消费方时它找不到本仓的 electron，必炸。electron 包不带 postinstall，仓内 clone 后跑一次 setup:electron 装二进制",
+    "setup:electron": "node node_modules/electron/install.js",
     "build": "pnpm --filter @godcreator/gwb-plugin-api build && tsc -p tsconfig.build.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "pnpm build",
