@@ -119,9 +119,9 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 ## 干活之前：知识随插件走
 
 本仓不放 skill。说明书住提供能力的那个插件，随包发、经**门**开给 agent（今日的门是
-`gwb-command-http`：`/surface` 清单 + `skill.list` / `skill.read` 命令）。**内核不问门是什么
-协议**——门是插件，换门不惊动内核（mcp 那扇已搁置，换 command-http 时内核零改动）。
-连着 `default` home 的会话直接调；没连着就按包内路径 Read：
+`gwb-mcp`：`surface` / `run` 两枚工具，`skill.list` / `skill.read` 等命令经 `run` 按名调）。
+**内核不问门是什么协议**——门是插件，换门不惊动内核（09-13 换 command-http、09-14 复位换回
+mcp，两次内核零改动）。连着 `default` home 的会话直接调；没连着就按包内路径 Read：
 
 | skill | 住哪 | 什么时候用 |
 | --- | --- | --- |
