@@ -49,7 +49,7 @@ pnpm build        # tsc 直出到 dist/，没有打包器；index.html 与 prelo
 ## 装一个插件：两步，缺一不挂
 
 **一、装包**。在这个目录下跑 `pnpm add <包名>`。`@godcreator02` 这个 scope 指向本机
-Verdaccio（`127.0.0.1:4873`），路标是用户级 `~/.npmrc` 里那行 `@godcreator02:registry=...`；
+Verdaccio（`npm.tianshen02.online:28377`），路标是用户级 `~/.npmrc` 里那行 `@godcreator02:registry=...`；
 刚发的包装不进去，查 pnpm 的 `minimumReleaseAgeExclude` 有没有放行这个 scope。
 
 **二、写条目**。`cordis.yml` 里加一条，`id` 手写短名：
