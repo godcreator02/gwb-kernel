@@ -1,5 +1,5 @@
 {
-  "name": "@godcreator02/gwb-plugin-api",
+  "name": "@team/gwb-plugin-api",
   "version": "0.1.1",
   "author": {"name": "godcreator"},
   "description": "gwb 内核的词汇表：件说话用的那几个名词，只命名不做事。0.1 起对应单进程内核：appVersion 没了，setShell 进来了",
