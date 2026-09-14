@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:api": "pnpm --filter @team/gwb-plugin-api build",
-    "start": "pnpm build:api && pnpm --filter @team/gwb-kernel-desktop start",
+    "build:api": "pnpm --filter @godcreator/gwb-plugin-api build",
+    "start": "pnpm build:api && pnpm --filter @godcreator/gwb-kernel-desktop start",
     "typecheck": "tsc --noEmit -p tsconfig.json && pnpm -r --no-bail typecheck",
     "lint": "oxlint . --type-aware --deny-warnings",
     "test": "vitest run",
