@@ -45,7 +45,7 @@ importmap 归内核不归外壳（判据见[importmap 归内核，不归外壳](
 node 半 `ctx.gwbKernel`：`dataDir`、`emit(payload)`、`setShell(url) → 撤销函数`。
 页面 `window.gwb`：`command(name, args)`、`on(cb)`、`onShell(cb)`。
 外壳模块：默认导出 `(root: HTMLElement) => { dispose?() } | void`。
-正本在 `packages/gwb-plugin-api/src/index.ts`（`@team/gwb-plugin-api` 0.1.0，已发本机 registry）。
+正本在 `packages/gwb-plugin-api/src/index.ts`（`@godcreator/gwb-plugin-api` 0.1.0，已发本机 registry）。
 
 插件的浏览器半地址由插件自己从 `import.meta.url` 算，内核不认识任何包名、角色名、导出名。
 
@@ -82,7 +82,7 @@ node 半 `ctx.gwbKernel`：`dataDir`、`emit(payload)`、`setShell(url) → 撤�
 ## 怎么跑
 
 **日常（自己用、调插件、起 default）：从固定安装位起，不进这个仓。** 内核是发在本机 registry
-上的包（`@team/gwb-kernel-desktop`），住在安装位单元 `D:\unitfolders\26091201qzv\gwb-app`：
+上的包（`@godcreator/gwb-kernel-desktop`），住在安装位单元 `D:\unitfolders\26091201qzv\gwb-app`：
 
 ```powershell
 cd D:\unitfolders\26091201qzv\gwb-app
@@ -127,7 +127,7 @@ mcp、同日面重设计为三枚，三次内核零改动）。连着 `default` 
 | skill | 住哪 | 什么时候用 |
 | --- | --- | --- |
 | `gwb-devkit` | `gwb-devkit` 包 `skills/`（仓 `D:\unitfolders\260908dkv\gwb-devkit`） | 写插件的整条路；**改内核的验机路子在末尾一节**：隔离 home 与命名法、产物是不是新的、四种「看着成了」、怎么从页面取证 |
-| `docfirst-docs` / `trajectory` | `@team/gwb-docfirst-workflow` 插件 `skills/`（仓 `D:\unitfolders\26090315xby\god-live-doc`） | 写或改文档站之前；记轨迹卡之前 |
+| `docfirst-docs` / `trajectory` | `@godcreator/gwb-docfirst-workflow` 插件 `skills/`（仓 `D:\unitfolders\26090315xby\god-live-doc`） | 写或改文档站之前；记轨迹卡之前 |
 | `gwb-decide` | 总控台 `D:\unitfolders\26090520ntn\console\.claude\skills\`（宿主 CLI 的 skill，不随插件发） | 遇到选型、判「进内核还是做成插件」、决定要不要做某个功能之前。推完交给人拍板，拍板后记轨迹卡 |
 
 判据与代价见[知识随件走](/trajectory/2026-09-09-knowledge-rides-package)。
