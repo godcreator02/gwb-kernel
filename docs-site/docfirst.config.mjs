@@ -10,7 +10,7 @@
  * 与 agents.mdx。改 mdx 源，`pnpm docfirst render --target ai` 重摆，一起提交。
  * CLAUDE.md 只有一行 @AGENTS.md，不派生。
  */
-import * as fumadocs from '@godcreator02/docfirst-workflow/fumadocs'
+import * as fumadocs from '@team/docfirst-workflow/fumadocs'
 
 export default {
   formats: [fumadocs],
