@@ -32,7 +32,7 @@ importers:
       '@cordisjs/plugin-loader':
         specifier: 1.0.0-rc.6
         version: 1.0.0-rc.6(cordis@4.0.0-rc.9)
-      '@godcreator02/gwb-plugin-api':
+      '@godcreator/gwb-plugin-api':
         specifier: workspace:*
         version: link:../../packages/gwb-plugin-api
       cordis:
@@ -73,10 +73,10 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
     devDependencies:
-      '@godcreator02/docfirst-trajectory':
+      '@godcreator/docfirst-trajectory':
         specifier: ^0.1.0
         version: 0.1.0(react@19.2.8)
-      '@godcreator02/docfirst-workflow':
+      '@godcreator/docfirst-workflow':
         specifier: ^0.2.0
         version: 0.2.0(ef8ee457e8a99eead132a34a825f9791)
       '@tailwindcss/postcss':
@@ -455,7 +455,7 @@ packages:
   '@fumari/image-size@0.1.0':
     resolution: {integrity: sha512-x2o9u6P8uKUK15B8XgEoRhR3PgLoLSbQKK6FUCd14JzumEw+e8FXZPelij/dZ4VQVMp4r61VD3DcvSo3aEhLAA==}
 
-  '@godcreator02/docfirst-trajectory@0.1.0':
+  '@godcreator/docfirst-trajectory@0.1.0':
     resolution: {integrity: sha512-QHrJLaiYio+w52vNFbUW/vcnGFOwUn23OzUGBGtM9o999mxLXhiJWUmT8WSjkf7u9zi6TDhVaJnkl3kjPL+4CQ==}
     peerDependencies:
       react: '>=19'
@@ -463,7 +463,7 @@ packages:
       react:
         optional: true
 
-  '@godcreator02/docfirst-workflow@0.2.0':
+  '@godcreator/docfirst-workflow@0.2.0':
     resolution: {integrity: sha512-WcWY4r+cDlJd1C5X9lKQhWnp2/TnWhpHO3BuX5ErlsBY1I++cf7N55Ozo6KnCTJSddT8uixJaTqasbXH6gNSqw==}
     hasBin: true
     peerDependencies:
@@ -2955,15 +2955,15 @@ snapshots:
 
   '@fumari/image-size@0.1.0': {}
 
-  '@godcreator02/docfirst-trajectory@0.1.0(react@19.2.8)':
+  '@godcreator/docfirst-trajectory@0.1.0(react@19.2.8)':
     dependencies:
       unist-util-visit: 5.1.0
     optionalDependencies:
       react: 19.2.8
 
-  '@godcreator02/docfirst-workflow@0.2.0(ef8ee457e8a99eead132a34a825f9791)':
+  '@godcreator/docfirst-workflow@0.2.0(ef8ee457e8a99eead132a34a825f9791)':
     dependencies:
-      '@godcreator02/docfirst-trajectory': 0.1.0(react@19.2.8)
+      '@godcreator/docfirst-trajectory': 0.1.0(react@19.2.8)
       remark-frontmatter: 5.0.0
       remark-mdx: 3.1.1
       remark-parse: 11.0.0
