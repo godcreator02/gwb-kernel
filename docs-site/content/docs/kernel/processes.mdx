@@ -18,7 +18,9 @@ description: cordis 为什么住进 Electron 主进程、ready 为什么不能�
 把 cordis 跟 Electron 隔开是条死路：插件真正要的恰恰是 Electron——开窗、菜单、托盘、子进程、
 `electron` 模块本身——隔开的那道墙上只会长出绕墙的机器。cordis 住主进程：**插件跑在主进程里，
 意味着插件拿得到 `electron`**——开窗、菜单、对话框、协议处理、子进程，全是插件的事，内核
-一条都不用代办。两道准入判据因此更好用了。
+一条都不用代办。唯一的例外是开窗时把 Electron 兜底的默认菜单撤成 null（没人订的默认，退它
+不算代办，件要菜单随时自己 `Menu.setApplicationMenu` 盖回来，见[撤默认菜单](/trajectory/2026-09-15-default-menu-null)）。
+两道准入判据因此更好用了。
 
 了断与四个探针的读数见[单进程重构](/trajectory/2026-09-09-single-process)。
 
@@ -28,7 +30,7 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 所以 `await app.whenReady()` 写在模块顶层就是互相等死——模块等 ready、ready 等模块——
 而且**静默挂住**，一个报错都没有。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="263-272" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="266-275" */}
 
 这段就是那堵墙的形状：入口模块里不 `await`，把启动体挂进 `.then(main)`；`main()` 里抛
 什么都在 `.catch` 里走 `say` 落 stderr 与 `<home>/gwb.log`，弹一个 `dialog.showErrorBox`
@@ -45,7 +47,7 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 （home → include → 每个插件）的收尾 effect 递归跑完。插件起的长命子进程（站点插件起的 node
 那种）靠这条路被带走——不然主进程一退，它们就是孤儿占着端口。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="275-302" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="278-305" */}
 
 判据一句话：**谁起了 Context 谁收 Context**。收运行时是「起 cordis」的收尾半，住内核；
 插件各自挂 will-quit 各救各的会是第二份真相——总有插件忘了挂，而忘了的那个插件恰好就是
@@ -67,7 +69,7 @@ Electron 的 ESM 主进程有一堵不起眼的墙：**`app` 的 `ready` 事件�
 即使将来把窗口的尺寸、标题、关窗语义都交出去，`BrowserWindow` 这个动作本身仍留在内核——
 **在插件挂上之前就得有一扇窗让页面加载**（页面加载后先说「没有外壳件」，那句是 `index.html` 里的原话，见[内核契约面](/docs/plugins/contract)）。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="228-249" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="228-252" */}
 
 窗口先于挂载插件：`main()` 开完窗、加载 `index.html`，然后才 `ctx.plugin(Loader)` 去挂
 home 的条目树（见[取址](/docs/kernel/loading)）。窗口里画什么归插件——内核不画外壳，只铺

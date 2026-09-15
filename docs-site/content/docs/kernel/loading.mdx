@@ -30,7 +30,7 @@ description: 内核连 yml 都不认识——挂载归两个官方插件；插�
 
 ## 引导链：顺序全是判据
 
-{/* ref file="../apps/desktop/src/main.ts" lines="251-257" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="254-260" */}
 
 1. **先 provide `gwbKernel`，再动 loader**。这个服务挂在根 fiber 上（根 fiber 生来 ACTIVE）、
    永不撤销，而且 provide 发生在模块顶层（`ctx.provide('gwbKernel', kernel)`）、结构上先于

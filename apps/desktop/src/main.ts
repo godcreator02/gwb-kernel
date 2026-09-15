@@ -17,7 +17,7 @@ import { describeEntry, type EntryStatus } from './entry-state.js'
  * 一条事件口、告诉页面外壳是谁、自己出错时人看得见。其余一律皆件。取舍见文档站
  */
 
-const { app, BrowserWindow, dialog, ipcMain } = electron
+const { app, BrowserWindow, Menu, dialog, ipcMain } = electron
 const here = path.dirname(fileURLToPath(import.meta.url))
 
 declare module 'cordis' {
@@ -226,6 +226,9 @@ ipcMain.handle('gwb:command', (_event, command: unknown, args: unknown) => {
 ipcMain.on('gwb:hello', (event) => event.sender.send('gwb:shell', shellMessage()))
 
 async function main(): Promise<void> {
+  // Electron 在应用没设菜单时兜一套默认菜单（File/Edit/View/Window）：没人订，撤成 null。
+  // 退默认不是代办——菜单归件，谁要谁自己 setApplicationMenu 盖上来（须在 ready 之后调，main 正好）
+  Menu.setApplicationMenu(null)
   win = new BrowserWindow({
     width: 1100,
     height: 720,

@@ -1,0 +1,33 @@
+---
+born-at: 2026-09-15T11:00
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 撤默认菜单
+domain: 内核
+---
+
+## 背景
+
+窗顶一直挂着一排 File / Edit / View / Window 菜单，没人装过它——内核与全部件里都搜不到
+`setApplicationMenu`，那是 Electron 的兜底：应用没设菜单时它自动装一套默认菜单。用户指名去掉。
+
+去哪儿去掉有判据张力：单进程线定了「开窗、菜单、托盘……全是件的事，内核一条都不用代办」。
+当时摆了三条路。内核 `Menu.setApplicationMenu(null)`：一行，窗口出现前生效，无闪烁；窗口级藏
+（`autoHideMenuBar`）：菜单对象与加速键都还在，Ctrl+R、Ctrl+Shift+I 照用，但 Alt 会把菜单唤回，
+是藏不是撤；做成件：内核开窗在前、件加载在后，默认菜单先闪一下才被撤，且为退一个没人订的
+默认去造一个件是仪式。
+
+## 结论与边界
+
+撤默认进内核：`main()` 开窗前一行 `Menu.setApplicationMenu(null)`。判据：默认菜单是「第一个件
+存在之前就发生的事」，撤它是「开窗」的收尾——内核不是在做菜单，是在退一份没人订的默认；件要
+菜单随时自己 `setApplicationMenu` 盖回来，能力面一点没堵。
+
+边界：默认菜单自带的加速键跟着死（Ctrl+R 刷新、Ctrl+Shift+I 开 DevTools、F11 全屏）；
+Ctrl+C/V/X/Z 不受影响——Windows 下编辑快捷键是 Chromium 页面原生的，不走菜单加速键。页面取证
+走 CDP 口，不依赖 DevTools 菜单项。哪天真有件要管菜单/托盘，由它整个接走，这一行随时可撤。
+
+pivots-from:: [单进程重构](2026-09-09-single-process.md)
+
+旧论断「内核一条都不用代办」维持成立，条件划清：代办指替件**做**能力，退掉 Electron 白送的
+默认不是代办。无物证——一处一行代码加一轮三选一的权衡，无可测量。
