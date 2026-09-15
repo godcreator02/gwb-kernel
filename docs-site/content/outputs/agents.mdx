@@ -82,23 +82,20 @@ node 半 `ctx.gwbKernel`：`dataDir`、`emit(payload)`、`setShell(url) → 撤�
 
 ## 怎么跑
 
-**日常（自己用、调插件、起 default）：从固定安装位起，不进这个仓。** 内核是发在本机 registry
-上的包（`@godcreator/gwb-kernel-desktop`），住在安装位单元 `D:\unitfolders\26091201qzv\gwb-app`：
+**日常（自己用、调插件、起 default）：从安装版起，不进这个仓。** 装机线住本仓 `installer/`
+（方案正本 `installer/SPEC.md`，2026-09-15 拍板 C：发版＝发 exe）：`pwsh installer\scripts\build.ps1`
+一条命令出 `installer\build\dist\` 的 `gwb-setup-<版>.exe`（NSIS、per-user）与
+`gwb-portable-<版>.zip`。装一次安装版，日常从开始菜单「gwb-kernel」起；升级＝重跑 setup。
+home 在 `%APPDATA%\gwb-kernel\homes`，与从哪儿起无关（`GWB_HOME` 给名字落 homes\<名>、
+给路径用那个目录，对安装版同样成立）。**别日常直跑 `build\dist\win-unpacked\`**：那是每次
+构建整个重生成的产物目录，构建时会撞在跑的 exe。npm 发 registry 降为内部管道。
 
-```powershell
-cd D:\unitfolders\26091201qzv\gwb-app
-.\run.cmd                            # 落 default home（%APPDATA%\gwb-kernel\homes\default）
-$env:GWB_HOME='x'; .\run.cmd         # 名字 → homes\x；给路径（含 \ 或 /）就用那个目录
-.\run.cmd --remote-debugging-port=9335   # CDP 取证，Chromium 开关命令行上就生效，内核不管它
-# 升级：本目录 pnpm update —— 发完内核版就去升安装位，别攒着
-```
-
-**改内核本身才进这个仓**（探新代码永远在隔离 home，别拿 default 试）：
+**改内核本身才进这个仓**（探新代码永远在隔离 home，别拿 default 试；验机走 `devkit.home.new`，
+它自己会 build、自动挑调试口）：
 
 ```powershell
 pnpm install
-cd apps\desktop; pnpm build          # tsc 直出到 dist/，无打包器（不再有 electron-vite）
-.\run.cmd                            # 与安装位同一个内核，只是代码来自本仓
+cd apps\desktop; pnpm start          # pnpm build（tsc 直出 dist/，无打包器）＋ electron . 起本仓内核
 ```
 
 根上的门禁是 `pnpm check`（`build:api` + `typecheck` + `lint` + `test`）。页面取证的小工具与规矩
@@ -110,12 +107,11 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 
 ## 容器里的邻居
 
-本仓特有的两个；其余单元（基础插件仓、UI 平台、验收仓、registry 等）全表在总控台。
+本仓特有的一个；其余单元全表在总控台。
 
 | 单元 | 是什么 | 这个仓怎么用它 |
 | --- | --- | --- |
 | `26090705ymz\gwb-kernel-min` | 单进程重构的**实验目录**，用完即弃 | 只读，别再往里写；插件迁完就删 |
-| `26091201qzv\gwb-app` | **内核固定安装位**（不是 git 仓） | 日常起工作台从这儿，升级 `pnpm update`（见「怎么跑」） |
 
 ## 干活之前：知识随插件走
 
