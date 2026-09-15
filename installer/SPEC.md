@@ -40,6 +40,15 @@
    tarball，消费端当场 `EUNSUPPORTEDPROTOCOL`——pack 一律走 pnpm
 4. pwsh 对原生命令的非零退出码默认不炸：装配步骤每个 npm/pnpm 后都有退出码断言＋
    产物存在断言（空目录一路出包的事故发生过一次，别拆）
+5. **推 tag 会把同名 draft release 自动转发布**（v0.2.2 实弹：tag 一到、draft 即公开）。
+   要走「draft＋人工确认」就把 tag 留到最后推；不介意直接公开就随手推
+
+## 发行（2026-09-15 实测定稿）
+
+- 发行仓 `godcreator/gwb-kernel`：**公开、源码同仓**（单分支 main）、release 挂 Windows 包；
+  push 走 GCM 凭据，API 走 gwb-gitea 插件的 `gitea.http`（配方在其说明书）
+- **release 只传 exe**：`gwb-setup-<版>.exe`。便携 zip 只在本地构建、不上 release
+- tag 随内核版本打（`v<版>`），与 release 一一对应
 
 ## 验机读数（2026-09-15，B 雏形期 + 迁移后复核）
 
@@ -58,7 +67,8 @@
 ## 待办
 
 - [ ] 真机首启验证（default 缺失 → 铺种子；本机验不了，见上）
-- [ ] `publish-gitea.ps1` 实测（要 `GITEA_TOKEN` 与 gitea 上先建好仓，默认 godcreator/gwb-kernel）
+- [x] 发版实测（2026-09-15）：建仓（公开＋源码）、tag v0.2.2、release 传 exe，全程 gitea.http
+      完成；publish-gitea.ps1 同日删（被插件取代）
 - [ ] kernel 仓记轨迹卡（A/B → B 雏形 → C 的发行形态了断）
 - [ ] 文档收尾：AGENTS（生成物，走 mdx 正本＋render）补「怎么发 exe」、devkit 外循环改口、
       总控台仓表加行
