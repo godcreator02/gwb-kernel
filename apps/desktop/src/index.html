@@ -20,6 +20,8 @@
       const root = document.getElementById('root')
       let current = null
       let injected = false
+      // 在途那次 import 的 url：还没落定的换壳不设 current，靠它认出「同一发正在来」
+      let pending = null
 
       // importmap 只注一次，而且必须赶在第一句裸名 import 之前——注过之后再注盖不掉已经解析过的名字
       function injectImportmap(imports) {
@@ -66,25 +68,32 @@
       window.gwb.onShell(async (shell) => {
         const url = shell?.url ?? null
         injectImportmap(shell?.imports ?? {})
-        if (current?.url === url) return
+        // 同 url 在途也放不得：订阅时问一次与去抖推送各发一次 gwb:shell，两次都落在 import
+        // 落定之前的话守卫双双放行，外壳挂两遍（井影、布局档 EPERM 的向量，见反馈 09-12）
+        if (current?.url === url || pending === url) return
+        pending = url
         try {
-          current?.handle?.dispose?.()
-        } catch (err) {
-          console.error(`旧外壳拆不干净：${String(err)}`)
-        }
-        current = null
-        root.textContent = ''
-        if (url === null) {
-          showReport('没有外壳件（没有件调 setShell）。', shell?.report)
-          return
-        }
-        try {
-          const mod = await import(url)
-          if (typeof mod.default !== 'function') throw new Error(`${url} 的默认导出不是函数`)
-          current = { url, handle: mod.default(root) ?? null }
-        } catch (err) {
-          console.error(`外壳起不来：${String(err)}`)
-          showReport(`外壳起不来：${String(err)}`, shell?.report)
+          try {
+            current?.handle?.dispose?.()
+          } catch (err) {
+            console.error(`旧外壳拆不干净：${String(err)}`)
+          }
+          current = null
+          root.textContent = ''
+          if (url === null) {
+            showReport('没有外壳件（没有件调 setShell）。', shell?.report)
+            return
+          }
+          try {
+            const mod = await import(url)
+            if (typeof mod.default !== 'function') throw new Error(`${url} 的默认导出不是函数`)
+            current = { url, handle: mod.default(root) ?? null }
+          } catch (err) {
+            console.error(`外壳起不来：${String(err)}`)
+            showReport(`外壳起不来：${String(err)}`, shell?.report)
+          }
+        } finally {
+          pending = null
         }
       })
     </script>
