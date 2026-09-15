@@ -1,0 +1,13 @@
+{
+  "name": "gwb-app-shell",
+  "productName": "gwb-kernel",
+  "version": "0.0.0",
+  "private": true,
+  "description": "gwb 应用壳：首启铺 default home 种子，然后起内核。内核零改动；version 与内核依赖两处占位由 build.ps1 渲染",
+  "author": { "name": "godcreator" },
+  "main": "bootstrap.mjs",
+  "type": "module",
+  "dependencies": {
+    "@godcreator/gwb-kernel-desktop": "file:__TGZ__"
+  }
+}

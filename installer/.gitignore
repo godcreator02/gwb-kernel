@@ -1,0 +1,4 @@
+# 装配产物与浮动解析的现场，全不进 git（产物自身就是版本记录：装出去的 home 的
+# package.json 写着这次解析到的精确版本）
+build/
+seed/package-lock.json

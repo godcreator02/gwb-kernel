@@ -1,0 +1,31 @@
+# electron-builder 正本。应用目录是装配出来的 build/app（gitignore），产物落 build/dist。
+# **不写 electronVersion**——单一真源在 apps/desktop 的 devDependencies.electron，
+# build.ps1 现读现经 --config.electronVersion 传进来，别在这里再钉一份。
+# 种子走 extraResources 落 resources/seed-home、不进 asar——壳首启要把它复制到 %APPDATA%。
+# from 指 build/stage（垫高一层的种子），不能直接指 seed/：electron-builder 的复制过滤
+# 硬排 from 根下的 node_modules（filter.js 写死），垫一层绕开——别「简化」回去
+appId: online.tianshen02.gwb
+productName: gwb-kernel
+directories:
+  app: build/app
+  output: build/dist
+files:
+  - package.json
+  - bootstrap.mjs
+  - lib/**
+  - node_modules/**
+win:
+  icon: icons/icon.ico
+  artifactName: gwb-portable-${version}.${ext}
+  target:
+    - nsis
+    - zip
+nsis:
+  oneClick: true
+  perMachine: false
+  artifactName: gwb-setup-${version}.${ext}
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
+extraResources:
+  - from: build/stage
+    to: seed-home
