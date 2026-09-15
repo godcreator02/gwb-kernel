@@ -26,3 +26,22 @@ home（electron.exe 直调，带 `--remote-debugging-port=9337
 （安装位可能没跟上内核仓的最新发版），或 electron 44.1.1 的 userData/cache 状态。
 验收当轮已绕开（用仓内产物），安装位本身没动。
 
+
+## 2026-09-12 页面根 onShell 有在途竞争：同 url 事件连发两遍，外壳双挂载
+
+来源：UI 平台仓 shell 重构轮实机验收（总控台会话，轨迹卡 2026-09-12-shell-refactor-round）。
+
+现象：隔离 home 里外壳浏览器半偶发双挂载——`boot` 日志连打两遍（相距 1ms），第一遍
+React 树的井没卸（ghost），占住全部基名面板 id，此后每格开出来都带「(2)」，新桌面冷挂
+全带「(3)」；两口井还抢写同一份布局档（`EPERM rename layout.json.*.tmp`）。概率触发：
+同一 home 四次加载三中，换个时段四次全不中；0.4.0 与 0.4.2 都撞得到。
+
+向量：页面根的守卫是 `if (current?.url === url) return`，而 `current` 在
+`await import(url)` **落定之后**才赋值。订阅时的「问一次当前值」与
+`internal/status` 触发的 200ms 去抖推送（`pushShell`）各发一次 `gwb:shell`，两次都在
+import 在途时到达 → 守卫两次都放行 → `mountShell` 跑两遍。外壳束 1.1MB，file:// 冷
+import 超过 200ms 的场合就露出来。
+
+建议：给在途 import 加一道守卫（pending url 相同就跳过），一行的事；外壳侧没法自守——
+热换的合法顺序就是「新的先 boot、旧的后 dispose」，外壳看到同 root 的第二次调用分不清
+是竞争还是热换。
