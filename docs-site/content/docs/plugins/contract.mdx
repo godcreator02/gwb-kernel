@@ -52,7 +52,7 @@ description: 内核给插件与页面提供什么、认什么、不管什么—�
 
 `index.html` 是内核的一部分，它要做的全部事情：
 
-{/* ref file="../apps/desktop/src/index.html" lines="66-89" */}
+{/* ref file="../apps/desktop/src/index.html" lines="68-98" */}
 
 四步：**先注 importmap 再 import 外壳**（注过就盖不掉已解析过的裸名，空表不注）；**拆旧
 外壳**（`dispose()` 失败只 `console.error`，不阻新的上）；**url 是 null 就画只读现状**；
@@ -62,7 +62,7 @@ description: 内核给插件与页面提供什么、认什么、不管什么—�
 
 外壳没上来、或起不来时，`#root` 里画的是这个：
 
-{/* ref file="../apps/desktop/src/index.html" lines="34-64" */}
+{/* ref file="../apps/desktop/src/index.html" lines="36-66" */}
 
 全是 `textContent`，没有一颗按钮、没有一句归因。它画的三样——home 在哪、各条目到了哪
 一步、最近的错误行——都是内核已经攥着的。条目到哪一步那句话是独立的分类器模块
