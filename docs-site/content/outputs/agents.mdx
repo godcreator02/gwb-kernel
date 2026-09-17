@@ -90,16 +90,18 @@ home 在 `%APPDATA%\gwb-kernel\homes`，与从哪儿起无关（`GWB_HOME` 给�
 给路径用那个目录，对安装版同样成立）。**别日常直跑 `build\dist\win-unpacked\`**：那是每次
 构建整个重生成的产物目录，构建时会撞在跑的 exe。npm 发 registry 降为内部管道。
 
-**改内核本身才进这个仓**（探新代码永远在隔离 home，别拿 default 试；验机走 `devkit.home.new`，
-它自己会 build、自动挑调试口）：
+**改内核本身才进这个仓**。探新代码永远在隔离 home，别拿 default 试；`devkit.home.new` 起的是
+安装版、不 build 本仓，**内核源码的验机只有下面这条路**——`GWB_HOME` 给一个
+`<这次验什么>-<yyMMddHHmm>` 的名字再起：
 
 ```powershell
 pnpm install
+$env:GWB_HOME = 'boot-2609170700'
 cd apps\desktop; pnpm start          # pnpm build（tsc 直出 dist/，无打包器）＋ electron . 起本仓内核
 ```
 
 根上的门禁是 `pnpm check`（`build:api` + `typecheck` + `lint` + `test`）。页面取证的小工具与规矩
-归 `gwb-devkit` 插件（`cdp-eval` 是它登记的一条 node CLI；表达式放文件不放命令行；起内核带的
+归 `gwb-devkit` 插件（`devkit.cdp` 是它登记的一条 node CLI；表达式放文件不放命令行；起内核带的
 CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人的页面）。日志在 `<home>\gwb.log`：
 内核自己的话、插件的、渲染层 console 转来的，全在这一份里。实验与测量的材料落仓根
 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm workspace、不进

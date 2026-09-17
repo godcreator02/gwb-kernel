@@ -1,14 +1,24 @@
-# 出厂 default home 的条目表：命令总线、数据、设置、插件管理、外壳、MCP 门。
-# 共享包（shared-react、tokens）是库不是件，不落条目——与真 home 的惯例一致
+# 出厂 default home 的条目表：命令总线、数据、设置、说明书、日志、插件管理、外壳、基础窗格皮、
+# node CLI、开发套件、MCP 门。共享包（shared-react、tokens）是库不是件，不落条目——与真 home 的惯例一致
 - id: commands
   name: '@godcreator/gwb-commands'
 - id: data
   name: '@godcreator/gwb-data'
 - id: settings
   name: '@godcreator/gwb-settings'
+- id: skills
+  name: '@godcreator/gwb-skills'
+- id: logger
+  name: '@godcreator/gwb-logger'
 - id: plugin-manager
   name: '@godcreator/gwb-plugin-manager'
 - id: shell
   name: '@godcreator/gwb-shell'
+- id: baseui
+  name: '@godcreator/gwb-baseui'
+- id: node-cli
+  name: '@godcreator/gwb-node-cli'
+- id: devkit
+  name: '@godcreator/gwb-devkit'
 - id: mcp
   name: '@godcreator/gwb-mcp'

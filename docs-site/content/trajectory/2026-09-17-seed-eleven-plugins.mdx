@@ -1,0 +1,40 @@
+---
+born-at: 2026-09-17T22:40
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 种子扩到十一件
+domain: 发版
+---
+
+## 背景
+
+安装版首启往 default 铺的种子（`installer/seed`）09-15 定稿时是六件挂条目：commands、data、settings、
+plugin-manager、shell、mcp，外加 shared-react、tokens 两个共享库。09-17 总控台会话体检时对着这份清单
+看出两处断：
+
+- **说明书够不着**。种子没有 gwb-skills，于是首启 home 上没有 `skill.read`，`index` 回执的 skills 为空，
+  连 gwb-mcp 自己那份说明书也挂不上（mcp 对 skills 是局部可选注入，门照开）。可门的 instructions 第一段
+  就教「读说明书就是 run 调 skill.read」——agent 照着走第一步就撞 isError。
+- **外壳是空的**。种子六件都不登记窗格，插件管理与日志两格住 gwb-baseui；首启的人在界面上装不了件，
+  只能经门或手改 `cordis.yml`。
+
+同时，devkit 的 `devkit.home.new` 给隔离 home 铺的底座早就是七件（commands、shell、data、settings、
+skills、plugin-manager、baseui）——测试现场开箱能用，出厂的 default 反而不能。
+
+## 结论与边界
+
+用户拍板：种子带上 gwb-skills、gwb-baseui、gwb-devkit，并补上让它们的能力真能用的两件：gwb-logger
+（baseui 的日志格读它，baseui 对它是可选 peer，缺了格子是空的）与 gwb-node-cli（devkit 的 `devkit.cdp`
+经它登记，缺了取证那条路没有）。条目表十一件：commands、data、settings、skills、logger、plugin-manager、
+shell、baseui、node-cli、devkit、mcp；共享库不变。
+
+边界：
+
+- theme 仍不进种子。没装 theme 时外壳开机对 `theme.startupCss` 的调用会产一条「不存在的命令」warn，
+  这条的根治归 UI 平台仓的外壳，不靠往种子里塞件来消音。
+- 种子只管出厂那一次；已有 default 的用户不受影响，要这几件走 `plugin-manager.install`。
+- 带 devkit 意味着出厂就能建仓、发版、开隔离 home——跟「这台工作台鼓励 agent 在干活途中完善它自己」
+  对齐；devkit 的命令只动隔离 home 与源，不碰 default。
+- 真机首启（default 缺失 → 铺种子）本机仍验不了，SPEC 待办照旧开着；本次验机按 SPEC 的本机验机法
+  （`GWB_HOME` 指预铺了 payload 的临时目录起 win-unpacked）。
+- 「其余一律皆插件」不变——这是往出厂件集里加件，内核运行时零改动。
