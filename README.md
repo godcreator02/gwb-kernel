@@ -65,4 +65,4 @@ docfirst 钉在对应代码上，代码一改就报黄，得有人复核；[轨�
 不值。单独两条 `pnpm doc` / `pnpm doc:confirm`，改了被钉住的代码就跑一次。
 
 这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`，改完在 `docs-site` 跑
-`pnpm docfirst render --target ai` 重摆，一起提交。
+`pnpm docfirst render` 重摆，一起提交。

@@ -140,7 +140,7 @@ mcp、同日面重设计为三枚，三次内核零改动）。连着 `default` 
 文档站在 `docs-site/`，六区装配（现状 / 轨迹 / 交接 / 未来 / 生成正本 / 反馈），起站
 `pnpm --filter gwb-kernel-docs-site dev`，端口 4314。
 **仓根 `README.md` 与这份 `AGENTS.md` 都是生成物，别手改**——正本分别是 `content/outputs/readme.mdx`
-与 `content/outputs/agents.mdx`，改完在 `docs-site` 跑 `pnpm docfirst render --target ai` 重摆，
+与 `content/outputs/agents.mdx`，改完在 `docs-site` 跑 `pnpm docfirst render` 重摆，
 一起提交。`CLAUDE.md` 只有一行 `@AGENTS.md`，不派生。
 
 **文档检查不在 `pnpm check` 里**——它要起文档站的解析链，太慢，每次跑测试都带上不值。
