@@ -13,7 +13,7 @@
 | electron 版本 | **单一真源** `apps/desktop` 的 `devDependencies.electron`，build.ps1 现读现传 |
 | 种子 | 六件挂条目（commands、data、settings、plugin-manager、shell、mcp）＋两共享库；`^` 范围**浮动解析、不提交 lockfile**——件集常规升版零提交，换血（加减件/挪范围地板）才动本仓 |
 | 壳版本 | app 模板的 version 渲染成内核版：`runtime.json` 与产物名都报内核版 |
-| pnpm 来路 | **用户自装**。不随包带、不代装；plugin-manager 现有查找链（setting → PATH → 明确报错）一行不改 |
+| pnpm 来路 | **用户自装 pnpm 12+**（原生可执行）。不随包带、不代装；plugin-manager 查找链 setting → PATH → 明确报错，版本低于 12 同样明确报错 |
 | 升级 v1 | 重跑安装器。home 数据（`%APPDATA%\gwb-kernel\homes`）不动 |
 | npm publish | 降为内部管道：发版不再以它为终点，但先留着（零成本、退路）；安装位退役后若无消费者再决定停 |
 
@@ -22,8 +22,7 @@
 
 ## 判据（为什么成立）
 
-- 运行时不依赖系统 node：插件装机是 Electron 自当 node 跑 `pnpm.cjs`
-  （`process.execPath` + `ELECTRON_RUN_AS_NODE`）
+- 运行时不依赖系统 node：插件装机是 plugin-manager 直接起 pnpm 12 的原生可执行
 - home 与安装形态解耦：内核自铺 home、不覆盖；home 根在 main.ts 写死
   （`appData/gwb-kernel/homes`），不从包名推
 - registry 匿名读已验（2026-09-15 实测无 token `npm view` 通）——收件人拉件无门槛

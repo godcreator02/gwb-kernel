@@ -26,7 +26,6 @@
   "devDependencies": {
     "@types/node": "^24.0.0",
     "electron": "44.1.1",
-    "typescript": "^7.0.2",
-    "pnpm": "11.21.0"
+    "typescript": "^7.0.2"
   }
 }
