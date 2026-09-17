@@ -46,7 +46,7 @@ description: 内核连 yml 都不认识——挂载归两个官方插件；插�
    pnpm 布局原样造了一遍。解析那两步是其中的 `resolveFromHome(home, 包名, 子路径?)`，浏览器半
    拼 importmap 走的也是它，两半只有一条解析。
 
-{/* ref file="../apps/desktop/src/bare-import.ts" lines="6-16" */}
+{/* ref file="../apps/desktop/src/bare-import.ts" lines="6-27" */}
 
    第一步不是绕路，是**热重挂**的全部要害：Node 的 CJS 解析带进程级缓存，`pnpm add 新版` 之后
    base 与裸名都没变，`createRequire(base).resolve(name)` 仍旧回**旧版本**的真实路径，条目停用
