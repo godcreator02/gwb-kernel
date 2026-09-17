@@ -2,13 +2,13 @@
   "name": "gwb-home",
   "private": true,
   "dependencies": {
-    "@godcreator/gwb-commands": "^0.4.0",
+    "@godcreator/gwb-commands": "^0.4.1",
     "@godcreator/gwb-data": "^0.1.1",
-    "@godcreator/gwb-mcp": "^0.5.1",
-    "@godcreator/gwb-plugin-manager": "^0.3.0",
+    "@godcreator/gwb-mcp": "^0.6.0",
+    "@godcreator/gwb-plugin-manager": "^0.4.0",
     "@godcreator/gwb-settings": "^0.2.0",
-    "@godcreator/gwb-shell": "^0.7.0",
+    "@godcreator/gwb-shell": "^0.7.1",
     "@godcreator/gwb-shared-react": "^0.0.4",
-    "@godcreator/gwb-tokens": "^0.1.2"
+    "@godcreator/gwb-tokens": "^0.1.3"
   }
 }
