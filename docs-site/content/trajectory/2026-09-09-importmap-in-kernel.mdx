@@ -38,8 +38,10 @@ domain: 内核
 
 - 内核多了 `collectImports` 一段（约 38 行）；「撞名只认先到的、解析不到只警告」两条
   宽容规则随它进内核
-- **共享包装了要重启才看得见**：表每次现算，但页面那张 importmap 只注一次——这不是缺陷，
-  是 importmap 的浏览器语义，文档里要说死
+- **共享包装了或升了版，整页重载才看得见**：表每次现算，同一份文档里那张 importmap 只注
+  一次、注过盖不掉——这是 importmap 的浏览器语义；整页重载是新文档，页面根重问一次就注上
+  新表，不必重启（2026-09-17 改口：原文归因「只注一次所以要重启」，实际要重启是解析回了旧版，
+  见 [importmap 解析回旧版](/trajectory/2026-09-17-wall-importmap-resolver-cache)）
 - **连带**：外壳身份从「谁 provide `gwbShell`」改成「谁调 `setShell`」——内核不再认识
   `gwbShell` 这个名字，见
   [外壳身份运行时](/trajectory/2026-09-07-shell-identity-service)末尾的追记

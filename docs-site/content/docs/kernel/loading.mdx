@@ -43,7 +43,8 @@ description: 内核连 yml 都不认识——挂载归两个官方插件；插�
    一处），再从那个真实目录起 `createRequire` 按 CJS 条件解析到入口文件、按 ESM `import` 进来。
    `exports` 表照旧归 `createRequire`，内核自己不认识它。这段是独立的纯函数模块
    `src/bare-import.ts`（副作用只剩磁盘读），单测就在旁边 `tests/`——junction 换版那条把
-   pnpm 布局原样造了一遍。
+   pnpm 布局原样造了一遍。解析那两步是其中的 `resolveFromHome(home, 包名, 子路径?)`，浏览器半
+   拼 importmap 走的也是它，两半只有一条解析。
 
 {/* ref file="../apps/desktop/src/bare-import.ts" lines="6-16" */}
 
@@ -64,20 +65,22 @@ description: 内核连 yml 都不认识——挂载归两个官方插件；插�
 
 插件有两半，浏览器那半也按裸名 import（react 那一族）。页面的裸名解析靠 importmap，而这张表
 **由内核拼**：提供方在自己的 `package.json` 里声明 `gwb.shared`（裸名 → exports 子路径），
-内核扫 home 清单收齐、用 `createRequire(ctx.baseUrl)` 解析成 `file://` 表，随外壳地址推给
+内核扫 home 清单收齐、经 `resolveFromHome`（与 node 半同一条：先 realpath 到真实目录，再从
+那儿起 `createRequire`）解析成 `file://` 表，随外壳地址推给
 页面。内核不认识 react 这个词，只搬运声明；共享包没有 node 半，清单是它唯一能说话的地方。
 这段扫描是独立的纯函数模块 `src/imports.ts`（副作用只剩磁盘读，warn 由调用方注入），
 单测就在旁边 `tests/`。
 
-{/* ref file="../apps/desktop/src/imports.ts" lines="6-14" */}
+{/* ref file="../apps/desktop/src/imports.ts" lines="6-15" */}
 
 两条规则都在这段扫描里：**先声明先得**——撞名只认先到的，后来者报一句警告、不算错；
 **解析不到也是警告不是错**——某个共享包坏了只损失它自己那几个裸名，不连累别的插件。
 
 拼好的表不单独发：`shellMessage()` 把 `{ url, imports }` 打成一份，`setShell`、撤销、
-`gwb:hello` 应答三个时机推的都是它（见[桥](/docs/kernel/bridge)）。**每次现算**——所以共享包
-装了要重启才看得见：就算表更新了，页面那张 importmap 只注一次、注过就盖不掉已解析过的名字
-（见[内核契约面](/docs/plugins/contract)）。
+`gwb:hello` 应答三个时机推的都是它（见[桥](/docs/kernel/bridge)）。**每次现算**，而且从真实
+目录起解析、不吃 Node 的解析缓存——所以共享包装了或升了版，**整页重载**即可拿到新版：新文档
+的页面根订 `onShell` 时重问一次，拿到现算的新表注上。不重载就看不见：同一份文档里那张
+importmap 只注一次、注过就盖不掉已解析过的名字（见[内核契约面](/docs/plugins/contract)）。
 
 ## 热挂载：条目树的 API，不是文件监听
 

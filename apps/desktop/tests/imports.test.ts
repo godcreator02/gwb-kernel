@@ -71,16 +71,16 @@ describe('collectImports', () => {
       ...sharedPackage('shared-a', { react: 'react.js' }, { './react.js': './out.mjs' }),
     })
     const imports = collectImports({ dataDir: home, warn: vi.fn() })
-    expect(imports['react']).toBe(pathToFileURL(path.join(home, 'node_modules', 'shared-a', 'out.mjs')).href)
+    expect(imports['react']).toBe(pathToFileURL(path.join(fs.realpathSync.native(home), 'node_modules', 'shared-a', 'out.mjs')).href)
   })
 
-  it('解析出的地址指向包里那个文件', () => {
+  it('解析出的地址是包里那个文件的真实路径', () => {
     const home = makeHome({
       'package.json': homeManifest(['shared-a']),
       ...sharedPackage('shared-a', { react: './react.js' }, { './react.js': './out.mjs' }),
     })
     const imports = collectImports({ dataDir: home, warn: vi.fn() })
-    expect(imports['react']).toBe(pathToFileURL(path.join(home, 'node_modules', 'shared-a', 'out.mjs')).href)
+    expect(imports['react']).toBe(pathToFileURL(path.join(fs.realpathSync.native(home), 'node_modules', 'shared-a', 'out.mjs')).href)
   })
 
   it('撞名只认先到的，后来那条 warn 一声', () => {
@@ -102,6 +102,32 @@ describe('collectImports', () => {
     expect(imports).toEqual({})
     expect(warn).toHaveBeenCalledTimes(1)
     expect(String(warn.mock.calls[0]?.[0])).toContain('解析不到')
+  })
+
+  it('junction 换指向后再算一遍拿到新版本：同一进程里不吃上一版的解析缓存', () => {
+    // 照 pnpm 的真实布局造：node_modules/shared-v 是 junction，指到
+    // .pnpm/shared-v@<版本>/node_modules/shared-v
+    const layout = (version: string): Record<string, string> => ({
+      [`.pnpm/shared-v@${version}/node_modules/shared-v/package.json`]: JSON.stringify({
+        name: 'shared-v',
+        exports: { './react.js': './out.mjs' },
+        gwb: { shared: { react: './react.js' } },
+      }),
+      [`.pnpm/shared-v@${version}/node_modules/shared-v/out.mjs`]: 'export default 1\n',
+    })
+    const home = makeHome({ 'package.json': homeManifest(['shared-v']), ...layout('1.0.0'), ...layout('2.0.0') })
+    const target = (version: string): string =>
+      path.join(fs.realpathSync.native(home), '.pnpm', `shared-v@${version}`, 'node_modules', 'shared-v')
+    const link = path.join(home, 'node_modules', 'shared-v')
+    fs.mkdirSync(path.dirname(link), { recursive: true })
+    fs.symlinkSync(target('1.0.0'), link, 'junction')
+    const warn = vi.fn()
+    expect(collectImports({ dataDir: home, warn })['react']).toBe(pathToFileURL(path.join(target('1.0.0'), 'out.mjs')).href)
+
+    fs.rmSync(link, { force: true })
+    fs.symlinkSync(target('2.0.0'), link, 'junction')
+    expect(collectImports({ dataDir: home, warn })['react']).toBe(pathToFileURL(path.join(target('2.0.0'), 'out.mjs')).href)
+    expect(warn).not.toHaveBeenCalled()
   })
 
   it('坏形状一律静默忽略：shared 非对象、裸名空串、子路径非字符串或空串、包没声明 gwb、包根本不在', () => {

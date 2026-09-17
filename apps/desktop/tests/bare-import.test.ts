@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { bareImportFromHome } from '../src/bare-import'
+import { bareImportFromHome, resolveFromHome } from '../src/bare-import'
 
 /**
  * 裸名 import 的判据：不起 electron、不起 cordis，只喂一个临时 home 目录看行为。
@@ -70,6 +70,20 @@ describe('bareImportFromHome', () => {
     expect(fs.existsSync(path.join(home, '.pnpm', 'current@1.0.0', 'node_modules', 'current'))).toBe(true) // 删 junction 不伤目标
     fs.symlinkSync(path.join(home, '.pnpm', 'current@2.0.0', 'node_modules', 'current'), link, 'junction')
     expect(((await importBare('current')) as { mark: string }).mark).toBe('v2')
+  })
+
+  it('resolveFromHome 解子路径：scoped 包，./x 与 x 同义，. 与缺省是主入口', () => {
+    const name = '@gwb/shared'
+    const home = makeHome({
+      [`node_modules/${name}/package.json`]: JSON.stringify({ name, exports: { '.': './main.mjs', './sub': './sub.mjs' } }),
+      [`node_modules/${name}/main.mjs`]: '',
+      [`node_modules/${name}/sub.mjs`]: '',
+    })
+    const dir = path.join(fs.realpathSync.native(home), 'node_modules', '@gwb', 'shared')
+    expect(resolveFromHome(home, name, './sub')).toBe(path.join(dir, 'sub.mjs'))
+    expect(resolveFromHome(home, name, 'sub')).toBe(path.join(dir, 'sub.mjs'))
+    expect(resolveFromHome(home, name, '.')).toBe(path.join(dir, 'main.mjs'))
+    expect(resolveFromHome(home, name)).toBe(path.join(dir, 'main.mjs'))
   })
 
   it('裸名不存在时拒绝，ENOENT 带着裸名那条 node_modules 路径', async () => {

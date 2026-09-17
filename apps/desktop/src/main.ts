@@ -183,10 +183,10 @@ app.on('second-instance', () => {
 })
 /** 页面根交给谁。件经 setShell 说，页面经 onShell 听 */
 let shellUrl: string | null = null
-/** 推给页面的那一份：外壳地址加 importmap 加只读现状。每次现算，共享包装了要重启才看得见 */
+/** 推给页面的那一份：外壳地址加 importmap 加只读现状。每次现算：共享包装了或升了版，整页重载时页面重问一次就注上新表 */
 const shellMessage = (): { url: string | null; imports: Record<string, string>; report: Report } => ({
   url: shellUrl,
-  imports: collectImports({ dataDir, baseUrl: ctx.baseUrl, warn: (msg) => kernelLog.warn(msg) }),
+  imports: collectImports({ dataDir, warn: (msg) => kernelLog.warn(msg) }),
   report: report(),
 })
 // 条目换态、错误行到来都会重推，去抖成一次；页面那头外壳在时不看 report

@@ -95,7 +95,7 @@ description: 内核给插件与页面提供什么、认什么、不管什么—�
 不改（见[取址](/docs/kernel/loading)）。内核怎么消费它，决定了它只能是清单声明而不是
 运行时注册：
 
-{/* ref file="../apps/desktop/src/imports.ts" lines="6-14" */}
+{/* ref file="../apps/desktop/src/imports.ts" lines="6-15" */}
 
 node 半入口的取址依据是 `exports`（node 自己的解析认它）；浏览器那半不读任何入口字段，
 地址由插件自己从 `import.meta.url` 算。**给人看的东西别往清单里放**——曾经有个

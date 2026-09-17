@@ -1,0 +1,67 @@
+---
+title: importmap 也撞 Node 解析缓存——共享包升版后整页重载，页面仍跑旧库
+born-at: 2026-09-17T15:20
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 表回旧版
+domain: 取址
+---
+
+## 背景
+
+隔离 home 里 `@godcreator/block-note`（共享包，经 `gwb.shared` 给页面提供裸名）从
+`0.1.1-dev.202609162355` 升到 `0.1.1-dev.202609171159`，整页重载。node 半拿到的是新版；
+页面那张 importmap 仍指向 `.pnpm/@godcreator+block-note@0.1.1-dev.202609162355/…`，页面静默
+跑旧库，零报错。
+
+这是 [Node 的 CJS 解析缓存会回旧版本](2026-09-09-wall-resolver-cache.md) 那堵墙的另一半。
+
+pivots-from:: [2026-09-09-wall-resolver-cache](2026-09-09-wall-resolver-cache.md)
+
+## 根因
+
+浏览器半的取址 `collectImports` 自己建 resolver：`createRequire(home).resolve('<包>/<子路径>')`。
+请求名与起点每次都一样，命中 `Module._pathCache` 与 realpath 缓存，junction 已改指新版、
+回的仍是开机那一版的真实路径。整页重载时内核确实重算了一遍表——算出来的就是旧的。
+
+## 为什么上次只修了一半
+
+- 09-09 修墙时目光在 loader 的 `internal.import` 那一行上，现场是「件停用再启用拿到旧代码」；
+  importmap 那段解析当时还埋在 `main.ts` 里，写法同形却没被当成同一堵墙扫一遍
+- [importmap 归内核](2026-09-09-importmap-in-kernel.md) 那张卡把「共享包装了要重启才看得见」
+  归因于「importmap 只注一次」的浏览器语义。重启确实能好（新进程没有缓存），于是症状有了一个
+  听起来成立的解释，没人去试整页重载、也就没人看到重载后表还是旧的。一个错误归因把 bug
+  包装成了设计约束
+- 两处各自一份解析法：修一处时另一处不会报黄、不会红，没有任何东西提醒
+
+## 结论与边界
+
+**两半只留一条解析**：`bare-import.ts` 抽出纯函数 `resolveFromHome(home, 包名, 子路径?)`——
+先 `fs.realpathSync.native` 把 `<home>/node_modules/<包名>` 解成真实目录，再从
+`<真实目录>/package.json` 起 `createRequire` 解 `<包名>` 或 `<包名>/<子路径>`。node 半的
+`bareImportFromHome` 与浏览器半的 `collectImports` 都走它；`collectImports` 的 `baseUrl`
+参数删掉。
+
+- 解析 `<包名>/<子路径>` 从真实目录起走得通，不依赖包自引用：pnpm 布局下真实目录的上级就是
+  `.pnpm/<包>@<版本>/node_modules`，沿 node_modules 往上第一站就找到自己；平铺布局下上级是
+  `<home>/node_modules`，一样。有 `exports` 时自引用先命中，结果相同。核过当时各 home 里声明了
+  `gwb.shared` 的包（`gwb-shared-react`、`gwb-tokens`、`block-note`），都带 `exports`
+- 缓存键里含版本号目录，升版天然换键；同一版本内照旧命中缓存，本该如此
+- importmap 地址从此是真实路径（Windows 上短名 `GODAME~1` 这类也被展开成长名）
+- 共享包升级后**整页重载即拿新版**，不必重启；同一份文档里不重载仍看不见，那是 importmap
+  的浏览器语义，不在内核管
+- 旧卡「代价与遗留」里那条归因已改口，指向本卡
+
+## 依据
+
+无独立探针；物证是与本卡同提交的单测 `apps/desktop/tests/imports.test.ts` 的
+「junction 换指向后再算一遍拿到新版本」：临时目录仿 pnpm 布局，`node_modules/shared-v` 是
+junction 指向 `.pnpm/shared-v@1.0.0/…`，调一次 `collectImports`；改指 `@2.0.0` 再调一次。
+旧实现下第二次断言红：
+
+```
+Expected: ".../.pnpm/shared-v@2.0.0/node_modules/shared-v/out.mjs"
+Received: ".../.pnpm/shared-v@1.0.0/node_modules/shared-v/out.mjs"
+```
+
+换成 `resolveFromHome` 后绿。
