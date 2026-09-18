@@ -68,6 +68,8 @@ Pop-Location
 Write-Host '== 种子浮动解析（>= 下限现装取最新，不提交 lockfile——件集常规升版零提交）'
 Push-Location "$installer\seed"
 Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
+# 上一次留下的锁一并删：它不进 git，但留在盘上时 npm 照它装，>= 下限满足就不去拿新版
+Remove-Item -Force package-lock.json -ErrorAction SilentlyContinue
 npm install --no-fund --no-audit
 Assert-LastExit '种子浮动解析'
 if (-not (Test-Path "$installer\seed\node_modules\@godcreator\gwb-shell")) {

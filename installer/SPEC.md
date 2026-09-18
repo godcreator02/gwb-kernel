@@ -29,7 +29,7 @@
 - 吃 tarball 而非 registry 钉版：消掉「发完版要另仓 bump pin」的滞后与两处 pin 的错配
   （装机位挂死反馈的嫌疑正是错配类）
 
-## 两堵墙（别「简化」回去）
+## 几堵墙（别「简化」回去）
 
 1. electron-builder 的版本探测只看项目根、不看 `directories.app`——所以版本经
    `--config.electronVersion` 从 CLI 传，yml 里不钉
@@ -41,6 +41,9 @@
    产物存在断言（空目录一路出包的事故发生过一次，别拆）
 5. **推 tag 会把同名 draft release 自动转发布**（v0.2.2 实弹：tag 一到、draft 即公开）。
    要走「draft＋人工确认」就把 tag 留到最后推；不介意直接公开就随手推
+6. **种子的 `package-lock.json` 每次打包前删**：它不进 git，但留在盘上时 npm 照它装，
+   `>=` 下限被旧解析满足就不去拿新版（2026-09-18 实弹：shell 已发 0.9.0，重打的包里仍是 0.8.0）。
+   只删 node_modules 不够
 
 ## 发行（2026-09-15 实测定稿）
 

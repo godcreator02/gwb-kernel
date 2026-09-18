@@ -1,0 +1,31 @@
+---
+born-at: 2026-09-18T11:30
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 种子旧锁钉死解析
+domain: 发版
+---
+
+## 背景
+
+上午把种子范围从 `^` 改成 `>=` 下限，为的是打包时各件自动取 latest、次版本跳变不用回本仓改一笔。
+当时的实测是在一个干净临时目录里 `npm install --package-lock-only`：十三个包与 dist-tags.latest 逐一相同。
+
+中午外壳发了 0.9.0，内核代码没动，重打 0.2.5 的安装包——打包日志里种子解析出来的外壳仍是 **0.8.0**。
+
+## 结论与边界
+
+`installer/scripts/build.ps1` 每次打包只删 `seed/node_modules`，不删 `seed/package-lock.json`。那份锁在
+`.gitignore` 里、不进 git，可它留在盘上：npm install 照锁装，0.8.0 满足 `>=0.8.0`，就不去拿 0.9.0。
+上午的实测绕开了它（换了个干净目录），所以没现形；昨晚 0.2.4 那次能拿到新版，是因为种子里的范围
+本身改了，npm 对改了范围的那几条重新解析。
+
+修法：build.ps1 在 npm install 之前把 `seed/package-lock.json` 一起删掉。SPEC「几堵墙」第 6 条记着，
+别「简化」回只删 node_modules。
+
+边界：锁照样会在每次打包时写出来（`npm ls` 那段读的是 node_modules，跟锁无关），只是不再被下一次读到。
+
+## 依据
+
+同一个内核提交 `f3205df`、同一台机器、外壳 0.9.0 已是 dist-tags.latest：改前打包日志 `+-- @godcreator/gwb-shell@0.8.0`；
+改后重打见本卡同一提交之后的那次打包日志。
