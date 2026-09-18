@@ -10,7 +10,7 @@ description: 内核给插件与页面提供什么、认什么、不管什么—�
 
 ## 给插件的面：就四样
 
-{/* ref file="../apps/desktop/src/main.ts" lines="203-216" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="204-218" */}
 
 - **`dataDir`**——home 的绝对路径。落盘、找包都用它，**别自己拼**
 - **`version`**——内核自己的版本号，读的是内核包的清单（`dist/` 上一级那份），从仓里起、从安装包起
@@ -36,9 +36,9 @@ Electron / Chromium 的版本是运行时自己的事实，`process.versions` �
   序列写进一条复合命令是反模式——组合逻辑住说明书（skill / 手册），调用方看得见每一步、
   插得进自己的判断。唯一例外是**共享基线的事务**：判定依赖「这一趟之前」的状态（如
   devkit.dev 的日志基线、同趟包版本互相钉死），拆成原子守卫就散了——这种才许复合
-- **`plugin` 字段一律填插件名**（`gwb-<短名>`）。登记命令时那个字段是 `/surface` 按插件
-  过滤的依据，条目短名、包名、插件名三套口径混着填，过滤就得猜——2026-09-13 撞过
-  （devkit 自己填过 `devkit`，已正）
+- **`plugin` 字段一律填包名**（`@godcreator/gwb-<短名>`）。它是 agent 侧的操作键：门的
+  `search {plugin}` 按它精确筛，装卸升与跨仓反馈也都认包名；短名只住日志与散文。命令总线
+  对别的写法只 warn 一句、照样挂
 
 ## 页面的公共面：`window.gwb`
 
@@ -72,7 +72,7 @@ Electron / Chromium 的版本是运行时自己的事实，`process.versions` �
 一步、最近的错误行——都是内核已经攥着的。条目到哪一步那句话是独立的分类器模块
 `src/entry-state.ts`（手造条目就能单测），`report()` 留在 `main.ts` 收现场：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="153-175" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="154-176" */}
 
 {/* ref file="../apps/desktop/src/entry-state.ts" lines="1-15" */}
 
@@ -81,7 +81,7 @@ Electron / Chromium 的版本是运行时自己的事实，`process.versions` �
 与 `disabled` 是状态之外两种，另起两个词。推的时机：条目换态与错误行到来都去抖成一次
 `gwb:shell` 重推：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="186-202" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="187-203" */}
 
 ## 挂载：三步缺一不可，id 一律手写
 
