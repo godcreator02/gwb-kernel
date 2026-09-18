@@ -46,6 +46,9 @@ node 半 `ctx.gwbKernel`：`dataDir`、`version`（内核自己的版本号）�
 页面 `window.gwb`：`command(name, args)`、`on(cb)`、`onShell(cb)`。
 外壳模块：默认导出 `(root: HTMLElement) => { dispose?() } | void`。
 正本在 `packages/gwb-plugin-api/src/index.ts`（`@godcreator/gwb-plugin-api` 0.1.2，发在 gitea 个人源）。
+发版：在包里抬号、提交，再 `devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}`——它要的
+仓根 `pnpm build` 构建词汇表与桌面端（文档站不在内）；别在包目录里手敲 `pnpm publish`，那条绕开了
+树干净与产物白名单两道守卫。
 
 插件的浏览器半地址由插件自己从 `import.meta.url` 算，内核不认识任何包名、角色名、导出名。
 
