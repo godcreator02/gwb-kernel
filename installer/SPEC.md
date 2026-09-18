@@ -11,7 +11,7 @@
 | 落地 | 装配线住内核仓 `installer/`（装机单元退役）；**内核运行时零改动**，壳是包外引导层 |
 | 输入源 | 本仓 `apps/desktop` 的构建：build → `pnpm pack` tarball（同源同 files 过滤；workspace 协议替换与发 registry 同规则） |
 | electron 版本 | **单一真源** `apps/desktop` 的 `devDependencies.electron`，build.ps1 现读现传 |
-| 种子 | 十一件挂条目（commands、data、settings、skills、logger、plugin-manager、shell、baseui、node-cli、devkit、mcp）＋两共享库；`^` 范围**浮动解析、不提交 lockfile**——件集常规升版零提交，换血（加减件/挪范围地板）才动本仓。2026-09-17 从六件扩到十一件：门的 instructions 教 `run skill.read` 而种子没有 skills、外壳里没有插件管理格，判据见文档站轨迹卡 |
+| 种子 | 十一件挂条目（commands、data、settings、skills、logger、plugin-manager、shell、baseui、node-cli、devkit、mcp）＋两共享库；`>=` 下限**浮动解析、不提交 lockfile**——打包时各件取 registry 上的 latest，件集常规升版（含 0.x 的次版本跳变）零提交，换血（加减件/抬下限）才动本仓。不写 `^`：0.x 上 `^0.7.1` 只认 0.7.x，每次次版本跳变都得回本仓改一笔（2026-09-18 改）。2026-09-17 从六件扩到十一件：门的 instructions 教 `run skill.read` 而种子没有 skills、外壳里没有插件管理格，判据见文档站轨迹卡 |
 | 壳版本 | app 模板的 version 渲染成内核版：`runtime.json` 与产物名都报内核版 |
 | pnpm 来路 | **用户自装 pnpm 12+**（原生可执行）。不随包带、不代装；plugin-manager 查找链 setting → PATH → 明确报错，版本低于 12 同样明确报错 |
 | 升级 v1 | 重跑安装器。home 数据（`%APPDATA%\gwb-kernel\homes`）不动 |

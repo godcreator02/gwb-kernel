@@ -65,7 +65,7 @@ if (-not (Test-Path "$appdir\node_modules\@godcreator\gwb-kernel-desktop")) {
 }
 Pop-Location
 
-Write-Host '== 种子浮动解析（^ 范围现装取最新，不提交 lockfile——件集常规升版零提交）'
+Write-Host '== 种子浮动解析（>= 下限现装取最新，不提交 lockfile——件集常规升版零提交）'
 Push-Location "$installer\seed"
 Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
 npm install --no-fund --no-audit
