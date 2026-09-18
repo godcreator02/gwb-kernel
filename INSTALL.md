@@ -61,7 +61,6 @@ Start-Process .\gwb-setup-<版>.exe -ArgumentList '/S' -Wait
 $gwbHome = "$env:APPDATA\gwb-kernel\homes\default"
 New-Item -ItemType Directory -Force $gwbHome | Out-Null
 [IO.File]::WriteAllText("$gwbHome\package.json", '{ "name": "gwb-home", "private": true }')
-[IO.File]::WriteAllText("$gwbHome\pnpm-workspace.yaml", "strictPeerDependencies: true`n")
 [IO.File]::WriteAllText("$gwbHome\cordis.yml", @'
 - id: commands
   name: '@godcreator/gwb-commands'
@@ -93,10 +92,8 @@ pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings 
 * `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次起来都换一个随机串）
 * 最后三个（`gwb-shared-react`、`gwb-tokens`、`gwb-plugin-api`）是共享库，不进条目表，但必须是
   home 的直接依赖，否则外壳起不来
-* `pnpm-workspace.yaml` 只写这一行：让这个 home 里的 pnpm 遇到 peer 对不上就报错，而不是只警告。它对
-  第 1 步那份用户级配置是逐项覆盖，**别往里写 `minimumReleaseAgeExclude`**——写了就把用户级那份放行盖掉了
-* 退出码 0 就成。报 `ERR_PNPM_PEER_DEP_ISSUES` 就停下：有插件还没跟上它上游的新版，把 pnpm 那段冲突说明
-  原样告诉用户，别关掉严格检查硬装
+* 退出码 0 就成。输出里有一行 `Issues with peer dependencies found`：有插件还没跟上它上游的新版，
+  包照样装上了，但那个插件可能起不来——在 home 里跑 `pnpm peers check` 拿到明细，原样告诉用户
 
 ## 4. 启动、核对
 
@@ -155,16 +152,16 @@ node $client --url http://127.0.0.1:2870/mcp run skill.list
 
 ## 出了岔子
 
-| 现象                                   | 多半是                          | 怎么办                                                            |
-| ------------------------------------ | ---------------------------- | -------------------------------------------------------------- |
-| `pnpm add` 报 404，找不到 `@godcreator/…` | 第 1 步第 2 条那行没配               | 补上再装                                                           |
-| 报 `ERR_PNPM_PEER_DEP_ISSUES`         | 有插件没跟上上游的新版                  | 停下，把冲突说明告诉用户；以后「插件管理」装件、更新遇到同样的冲突也会这样拒                         |
-| 报版本太新、minimum release age            | 第 1 步第 3 条没配                 | 补上再装                                                           |
-| pnpm 起不来或低于 12                       | 第 1 步第 1 条                   | 装新版 pnpm                                                       |
-| 连 npmjs 超时                           | 网络                           | 第 1 步第 4 条换镜像                                                  |
-| 窗口里只有一张只读清单、没有状态栏                    | 外壳没挂上                        | 看 `gwb.log` 里 `error` 行，多半是第 3 步没装成                            |
-| 门连不上                                 | 台没起，或 2870 被占（default 的门不换口） | 看 `runtime.json` 有没有 `mcp`；`gwb.log` 找 `gwb-mcp` 那行；腾开 2870 再起 |
-| 「插件管理」里装件失败                          | 插件管理找不到 pnpm                 | 让 pnpm 进 PATH，或在设置里填 `pnpm-path`                               |
+| 现象                                         | 多半是                          | 怎么办                                                            |
+| ------------------------------------------ | ---------------------------- | -------------------------------------------------------------- |
+| `pnpm add` 报 404，找不到 `@godcreator/…`       | 第 1 步第 2 条那行没配               | 补上再装                                                           |
+| 装完提示 `Issues with peer dependencies found` | 有插件没跟上上游的新版                  | `pnpm peers check` 看明细告诉用户；以后「插件管理」装件、更新的回执里也会带上这类冲突           |
+| 报版本太新、minimum release age                  | 第 1 步第 3 条没配                 | 补上再装                                                           |
+| pnpm 起不来或低于 12                             | 第 1 步第 1 条                   | 装新版 pnpm                                                       |
+| 连 npmjs 超时                                 | 网络                           | 第 1 步第 4 条换镜像                                                  |
+| 窗口里只有一张只读清单、没有状态栏                          | 外壳没挂上                        | 看 `gwb.log` 里 `error` 行，多半是第 3 步没装成                            |
+| 门连不上                                       | 台没起，或 2870 被占（default 的门不换口） | 看 `runtime.json` 有没有 `mcp`；`gwb.log` 找 `gwb-mcp` 那行；腾开 2870 再起 |
+| 「插件管理」里装件失败                                | 插件管理找不到 pnpm                 | 让 pnpm 进 PATH，或在设置里填 `pnpm-path`                               |
 
 ## 之后
 
