@@ -10,13 +10,13 @@
 | --- | --- |
 | 发版形态 | **发版 = 发 exe**：NSIS 安装器（per-user 免管理员）+ 便携 zip 双目标，传 gitea releases |
 | 落地 | 装配线住内核仓 `installer/`（装机单元退役）；**内核运行时零改动**，壳是包外引导层 |
-| 输入源 | 本仓 `apps/desktop` 的构建：build → `pnpm pack` tarball（同源同 files 过滤；workspace 协议替换与发 registry 同规则） |
+| 输入源 | 本仓 `apps/desktop` 的构建：build → `pnpm pack` tarball（同源同 files 过滤；workspace 协议替换照从前发 registry 那套规则做） |
 | electron 版本 | **单一真源** `apps/desktop` 的 `devDependencies.electron`，build.ps1 现读现传 |
 | 插件 | **安装包不带任何插件**（2026-09-18 起，此前带一份种子）。装机由 agent 照仓根 `INSTALL.md` 做：机器上三样配置 → 装 exe → 往 default home 写 `package.json` 与 `cordis.yml`、`pnpm add` 基础件 → 启动 → 连 MCP 门。同一个版本号的安装包内容唯一；home 从第一秒归 pnpm 管 |
 | 壳版本 | app 模板的 version 渲染成内核版：产物名报内核版（内核自己的版本读内核包清单，不经壳） |
 | pnpm 来路 | **用户自装 pnpm 12+**（原生可执行）。不随包带、不代装；plugin-manager 查找链 setting → PATH → 明确报错，版本低于 12 同样明确报错 |
 | 升级 v1 | 重跑安装器。home 数据（`%APPDATA%\gwb-kernel\homes`）不动 |
-| npm publish | 降为内部管道：发版不再以它为终点，但先留着（零成本、退路）；安装位退役后若无消费者再决定停 |
+| npm publish | **已撤（2026-09-18）**：发版只有 exe 一条路。安装位 09-15 退役、容器里零消费者，源上那三个版本（0.2.0–0.2.2）已删；回退＝从仓里重发一版（判据见轨迹卡 2026-09-18「撤 npm 管道」） |
 
 **插件线不受本形态影响**：插件永远走 registry + update-all 热升，不走安装器——每发一个
 插件版就重打 exe 等于废掉热升架构，禁止。

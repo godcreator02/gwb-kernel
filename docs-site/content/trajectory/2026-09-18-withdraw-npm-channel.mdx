@@ -1,0 +1,37 @@
+---
+born-at: 2026-09-18T21:05
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 撤 npm 管道
+domain: 发版
+---
+
+## 背景
+
+内核有过两条发行道，先有的那条是 2026-09-12 拍的「上架，不打安装包」：把
+`apps/desktop` 发本机 registry（`@godcreator/gwb-kernel-desktop`），日常不走 build，
+从一个固定安装位 `pnpm add` 它来跑（判据见[上架与安装位](2026-09-12-kernel-on-registry.md)）。
+
+2026-09-15 装机器正本（`installer/SPEC.md`，拍板 C：**发版 = 发 exe**）把 npm 那条降为
+「内部管道」：发版不再以它为终点，但**先留着**（零成本、退路），并写明退出条件——
+「安装位退役后若无消费者再决定撤」。同一天安装位单元（`26091201qzv`）退役，SPEC 的清单里
+打了勾。
+
+到 2026-09-18，退出条件已经齐了：安装位不在容器里；全容器 0 个 lockfile 钉这个包，引用
+只剩内核仓自己（而安装器构建走的是**本地 `pnpm pack`**，不碰源）；源上停在 0.2.2，仓里
+已经 0.2.6——那条「退路」自己都旧了四个版本。
+
+## 结论与边界
+
+**撤。** 源上 `@godcreator/gwb-kernel-desktop` 三个版本（0.2.0 / 0.2.1 / 0.2.2）删净，
+复验 packument 404、搜索索引 0 条。
+
+- **发版只有 exe 一条路**：装配线 `installer/`，输入是本仓 `apps/desktop` 的构建产物，
+  包成 NSIS 安装器 + 便携 zip 传 gitea releases。SPEC 那张表里 npm 那行改口为「已撤」。
+- **删除不碰安装器那条线**：构建时 `pnpm pack` 出本地 tarball 装进应用目录，与源无关。
+- **删除不碰插件线**：插件永远走 registry + `update-all` 热升（SPEC 的硬判据，禁止拿重打
+  exe 去发插件）。
+- **回退手段**：从仓里重发一版即可（包还在 `apps/desktop`，`prepublishOnly` 会先 build）。
+- 同名包的源上元数据（下载数、旧版本记录）随之消失——本机自用，无外部消费者，代价为零。
+- 站里跟着改口的三处：`installer/SPEC.md`（npm publish 行、输入源那行的措辞）、
+  [未来区 roadmap](/)「在等前提」两行（安装包 / CLI）、[不做什么](/) 的「到期再选」段。
