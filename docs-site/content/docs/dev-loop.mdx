@@ -53,11 +53,13 @@ program。它本来也不进根 build/test，自己有 `docfirst check` 与 `nex
 
 ## 实机验证怎么做
 
-实机的规矩正本是 `gwb-devkit` 插件带的 skill（`skill://gwb/gwb-devkit/SKILL.md`，末尾
-「你改的是内核」一节）：每次验开自己的隔离 home、开之前确认产物是新的（`dist/` 时间戳）、
-插件进 home 只有「registry 发版 → home 里 `pnpm add` → `cordis.yml` 写条目」这一条路、哪几种
-「看着成了」其实什么都没验。页面取证用它登记的 node CLI `cdp-eval`——
-`run.cmd --remote-debugging-port=9335` 开 CDP，表达式放文件不放命令行。
+实机的规矩正本是本仓 AGENTS「怎么跑」：每次验开自己的隔离 home（`GWB_HOME` 给一个
+`<这次验什么>-<yyMMddHHmm>` 的名字）、别拿 default 试、起法是 `cd apps\desktop; pnpm start`。
+验机纪律的正本在 `skill.read {"name":"gwb-devkit"}`：「验机」一节讲产物是不是新的（`dist/`
+时间戳）、哪几种「看着成了」其实什么都没验，「测试 home」一节讲隔离与命名法。页面取证用
+devkit 登记的 node CLI `devkit.cdp`——只收 home 名（口从那个 home 的 `runtime.json` 里查），
+表达式放文件不放命令行；CDP 是这个 home 起的时候带的开关（源码跑：`electron.exe .
+--remote-debugging-port=<口>`），端口别跟别的会话正在跑的实例撞上。
 
 有个具体例子说明为什么实机不可省：第一次开测试 home 时撞出「全新 home 起不来」——
 `cordis.yml` 不在，include 抛错落在挂载链上，整趟起不来（见
