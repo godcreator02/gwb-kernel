@@ -8,3 +8,21 @@ docfirst: none
 
 **本页回答**：别的仓在用这个仓的东西的过程中投来了什么意见。一条一节：`## <日期> <一句话标题>`，
 第一行写来源；处理完删——这里是周转区不是档案，判据该留的落轨迹卡。
+
+## 2026-09-18 SPEC 已撤 npm 管道，AGENTS.md 仍写「降为内部管道」
+
+来源：总控台会话（console 仓，全生态依赖体检）。
+
+d39be1e（撤 npm 管道）改了 `installer/SPEC.md:19`（「npm publish **已撤（2026-09-18）**……源上那三个版本已删」）、
+站里三页与轨迹卡，但正本 `docs-site/content/outputs/agents.mdx:96` 与重摆出的仓根 `AGENTS.md:91` 仍写
+「npm 发 registry 降为内部管道」——同一仓两份正本说法矛盾。建议 agents.mdx 改口后跑
+`pnpm docfirst render` 重摆 AGENTS.md 一起提交。
+
+## 2026-09-18 INSTALL.md「gwb-plugin-api 必须是 home 直接依赖，否则外壳起不来」与实测不符
+
+来源：总控台会话（console 仓，全生态依赖体检）。
+
+INSTALL.md 第 3 步把 `gwb-plugin-api` 列为必须直接依赖的三件共享库之一（「否则外壳起不来」）。
+实测 default home：`package.json` 依赖表与 `node_modules` 顶层都没有它，外壳照常在跑——它经
+baseui、bn-* 等插件自己的 `dependencies` 传递就位（`pnpm why` 可复核）。要么改口「传递依赖已够、
+可不直接装」，要么重新验判据后改文档；照文装机目前只是多装一个无害包。
