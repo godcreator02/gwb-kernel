@@ -1,0 +1,132 @@
+# 装 gwb（写给 agent）
+
+你是替用户在一台 Windows 机器上装 gwb 的 agent。**安装包只带内核，不带任何插件——插件由你装。**
+照下面做完，用户得到一台带 11 个基础插件、MCP 门开在 `http://127.0.0.1:2870/mcp` 的工作台，
+之后你（或别的 agent）经这扇门干活。命令一律在 PowerShell 里跑。
+
+## 0. 先看装没装过
+
+`%APPDATA%\gwb-kernel\homes\default\cordis.yml` 已经在、里面有条目——**装过了，只升级，别做第 3 步**
+（它会盖掉用户的 home）：
+
+* 升内核：关掉工作台窗口 → 装新版安装器（见第 2 步）→ 再起
+* 升插件：连上门之后 `run plugin-manager.update-all`，或让用户在「插件管理」格点「全部更新」
+
+## 1. 机器上的前置（改的是用户级配置——动手前告诉用户要改什么）
+
+1. **pnpm 12 及以上**：`pnpm --version`。没有或低于 12：`npm i -g pnpm@latest`；机器上连 node 都没有，
+   用 pnpm 官方的独立安装脚本（`https://get.pnpm.io/install.ps1`，先让用户同意）。
+2. **`@godcreator` 的包从哪儿拉**：用户级 `%USERPROFILE%\.npmrc` 里要有这一行（没有就追加，别动别的行）：
+
+   ```
+   @godcreator:registry=https://git.tianshen02.online:28377/api/packages/godcreator/npm/
+   ```
+
+   只读安装不要 token。少了这一行，pnpm 会去 npmjs 找这些包，报 404。
+3. **放行刚发的包**：pnpm 11 起，发布不满一天的包默认不准装，而 gwb 的插件常常当天发。
+   `pnpm config get globalconfig` 报出一个 yaml 文件（通常是 `%LOCALAPPDATA%\pnpm\config\config.yaml`），
+   在里面加上（已有这个键就把这一项并进列表）：
+
+   ```yaml
+   minimumReleaseAgeExclude:
+     - '@godcreator/*'
+   ```
+
+   只放行这一个 scope，别的包照旧受那条保护。
+4. **可选**：连 npmjs 慢，第三方包改走镜像：`pnpm config set registry https://registry.npmmirror.com`
+   （`@godcreator` 仍按第 2 条走自己的源）。这也是用户级配置，先问。
+
+## 2. 装内核
+
+从 `https://git.tianshen02.online:28377/godcreator/gwb-kernel/releases` 下最新的
+`gwb-setup-<版>.exe`（下之前告诉用户文件名与大小），静默装：
+
+```powershell
+Start-Process .\gwb-setup-<版>.exe -ArgumentList '/S' -Wait
+```
+
+装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，按用户装、不要管理员，开始菜单出现「gwb-kernel」。
+**先别启动**——第 3 步要在它起来之前把 home 铺好；已经起了就先关掉窗口。
+
+## 3. 铺 default home
+
+注意 PowerShell 里 `$home` 是保留变量，别拿它当变量名。
+
+```powershell
+$gwbHome = "$env:APPDATA\gwb-kernel\homes\default"
+New-Item -ItemType Directory -Force $gwbHome | Out-Null
+[IO.File]::WriteAllText("$gwbHome\package.json", '{ "name": "gwb-home", "private": true }')
+[IO.File]::WriteAllText("$gwbHome\cordis.yml", @'
+- id: commands
+  name: '@godcreator/gwb-commands'
+- id: data
+  name: '@godcreator/gwb-data'
+- id: settings
+  name: '@godcreator/gwb-settings'
+- id: skills
+  name: '@godcreator/gwb-skills'
+- id: logger
+  name: '@godcreator/gwb-logger'
+- id: plugin-manager
+  name: '@godcreator/gwb-plugin-manager'
+- id: shell
+  name: '@godcreator/gwb-shell'
+- id: baseui
+  name: '@godcreator/gwb-baseui'
+- id: node-cli
+  name: '@godcreator/gwb-node-cli'
+- id: devkit
+  name: '@godcreator/gwb-devkit'
+- id: mcp
+  name: '@godcreator/gwb-mcp'
+'@)
+Set-Location $gwbHome
+pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-logger @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp @godcreator/gwb-shared-react @godcreator/gwb-tokens @godcreator/gwb-plugin-api
+```
+
+* `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次起来都换一个随机串）
+* 最后三个（`gwb-shared-react`、`gwb-tokens`、`gwb-plugin-api`）是共享库，不进条目表，但必须是
+  home 的直接依赖，否则外壳起不来
+* **home 里别建 `pnpm-workspace.yaml`**：它会整份盖掉第 1 步那份用户级 pnpm 配置
+* 退出码 0 就成；带几条 peer 的 WARN 不要紧
+
+## 4. 启动、核对
+
+```powershell
+Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe"
+```
+
+* `%APPDATA%\gwb-kernel\homes\default\runtime.json` 出现，里面有 `version` 与
+  `"mcp": { "url": "http://127.0.0.1:2870/mcp" }`
+* 同目录 `gwb.log` 里有 `kernel up` 与 `MCP 门就绪`，没有 `error` 行
+* 窗口底部状态栏右边写着 `gwb <版>`
+
+## 5. 连 MCP 门
+
+门在 `http://127.0.0.1:2870/mcp`，无鉴权、只绑本机。
+
+* Claude Code：`claude mcp add --transport http gwb http://127.0.0.1:2870/mcp`（要所有项目都能用就加
+  `--scope user`），然后开新会话，或在会话里 `/mcp` 重连
+* 别的客户端：配成 `{ "mcpServers": { "gwb": { "type": "http", "url": "http://127.0.0.1:2870/mcp" } } }`
+  这个形状；连上之后门里的 `mcp.info` 会回一份可照抄的片段
+
+连上**先调 `index`**：它回的 instructions 讲清之后怎么干活。再核两样：`run plugin-manager.list`
+里 11 条条目都是 `active: true`；`run skill.list` 列得出说明书。做完，把第 1 步改过的配置告诉用户。
+
+## 出了岔子
+
+| 现象                                   | 多半是                          | 怎么办                                                            |
+| ------------------------------------ | ---------------------------- | -------------------------------------------------------------- |
+| `pnpm add` 报 404，找不到 `@godcreator/…` | 第 1 步第 2 条那行没配               | 补上再装                                                           |
+| 报版本太新、minimum release age            | 第 1 步第 3 条没配                 | 补上再装                                                           |
+| pnpm 起不来或低于 12                       | 第 1 步第 1 条                   | 装新版 pnpm                                                       |
+| 连 npmjs 超时                           | 网络                           | 第 1 步第 4 条换镜像                                                  |
+| 窗口里只有一张只读清单、没有状态栏                    | 外壳没挂上                        | 看 `gwb.log` 里 `error` 行，多半是第 3 步没装成                            |
+| 门连不上                                 | 台没起，或 2870 被占（default 的门不换口） | 看 `runtime.json` 有没有 `mcp`；`gwb.log` 找 `gwb-mcp` 那行；腾开 2870 再起 |
+| 「插件管理」里装件失败                          | 插件管理找不到 pnpm                 | 让 pnpm 进 PATH，或在设置里填 `pnpm-path`                               |
+
+## 之后
+
+* 装新插件：`run plugin-manager.install {"pkg":"@godcreator/gwb-<名>"}`，装完下一次 `index` 就有它
+* 插件有新版：`run plugin-manager.update-all`（升到 `gwb-mcp` 自己时连接会断一次，重连即可）
+* 内核有新版：关掉窗口 → 装新版安装器 → 再起

@@ -84,6 +84,8 @@ node 半 `ctx.gwbKernel`：`dataDir`、`version`（内核自己的版本号）�
 （方案正本 `installer/SPEC.md`，2026-09-15 拍板 C：发版＝发 exe）：`pwsh installer\scripts\build.ps1`
 一条命令出 `installer\build\dist\` 的 `gwb-setup-<版>.exe`（NSIS、per-user）与
 `gwb-portable-<版>.zip`。装一次安装版，日常从开始菜单「gwb-kernel」起；升级＝重跑 setup。
+**安装包只带内核、不带任何插件**：新机器装机由 agent 照仓根 `INSTALL.md` 做（正本
+`docs-site/content/outputs/install.mdx`）——改了基础件集或装法就改那份，它是发布页上给 agent 的唯一入口。
 home 在 `%APPDATA%\gwb-kernel\homes`，与从哪儿起无关（`GWB_HOME` 给名字落 homes\<名>、
 给路径用那个目录，对安装版同样成立）。**别日常直跑 `build\dist\win-unpacked\`**：那是每次
 构建整个重生成的产物目录，构建时会撞在跑的 exe。npm 发 registry 降为内部管道。

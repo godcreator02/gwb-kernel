@@ -1,5 +1,5 @@
 # 装机器全流程：树干净守卫 → 内核构建 → pnpm pack 出 tarball → 装配应用目录 →
-# 种子浮动解析 → electron-builder 出 NSIS + 便携 zip。产物在 build\dist\
+# electron-builder 出 NSIS + 便携 zip。产物在 build\dist\。安装包只带内核，不带任何插件
 # 输入全是本仓（tarball 与 devDeps.electron 单源），不碰 registry——发版=发 exe
 # （2026-09-15 拍板 C，判据见 SPEC.md）
 param([string]$KernelDir = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent))
@@ -13,7 +13,7 @@ if (-not $env:ELECTRON_BUILDER_BINARIES_MIRROR) {
 }
 
 # 原生命令失败即炸——空着装配目录继续出包这种事发生过一次（npm EUNSUPPORTEDPROTOCOL
-# 静默漏网），不能再有。robocopy 例外：退出码 0-7 都是成，单独判
+# 静默漏网），不能再有
 function Assert-LastExit([string]$what, [int]$ok = 0) {
   if ($LASTEXITCODE -ne $ok) { throw "$what 失败（退出码 $LASTEXITCODE）" }
 }
@@ -48,8 +48,7 @@ $appdir = "$installer\build\app"
 Remove-Item -Recurse -Force $appdir -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $appdir | Out-Null
 Copy-Item "$installer\app-template\package.json", "$installer\app-template\bootstrap.mjs" $appdir
-Copy-Item "$installer\app-template\lib" "$appdir\lib" -Recurse
-# 渲染两处占位：version → 内核版（runtime.json 与产物名都报它）；__TGZ__ → tarball 相对
+# 渲染两处占位：version → 内核版（产物名报它）；__TGZ__ → tarball 相对
 # 路径（appdir 在 build\app，tarball 在 build\ 根）。依赖必须声明进清单——electron-builder
 # 按清单收集 node_modules，--no-save 装的包它不认，打出来的 asar 里没有内核（踩过）
 $tgzRel = '../' + [System.IO.Path]::GetFileName($tgz)
@@ -64,30 +63,6 @@ if (-not (Test-Path "$appdir\node_modules\@godcreator\gwb-kernel-desktop")) {
   throw '装配目录里没有内核包——上一条 npm 八成没成，看输出'
 }
 Pop-Location
-
-Write-Host '== 种子浮动解析（>= 下限现装取最新，不提交 lockfile——件集常规升版零提交）'
-Push-Location "$installer\seed"
-Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
-# 上一次留下的锁一并删：它不进 git，但留在盘上时 npm 照它装，>= 下限满足就不去拿新版
-Remove-Item -Force package-lock.json -ErrorAction SilentlyContinue
-npm install --no-fund --no-audit
-Assert-LastExit '种子浮动解析'
-if (-not (Test-Path "$installer\seed\node_modules\@godcreator\gwb-shell")) {
-  throw '种子里没有 gwb-shell——解析没成，看输出'
-}
-Pop-Location
-Write-Host '这次解析到：'
-Push-Location "$installer\seed"
-npm ls --depth=0
-Pop-Location
-
-Write-Host '== 种子 staging：垫高一层（electron-builder 的复制过滤硬排 from 根下的 node_modules）'
-$stage = "$installer\build\stage"
-Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force "$stage\payload" | Out-Null
-robocopy "$installer\seed" "$stage\payload" /E /NFL /NDL /NJH /NJS /NP | Out-Null
-if ($LASTEXITCODE -ge 8) { throw "robocopy 种子失败（退出码 $LASTEXITCODE）" }
-$LASTEXITCODE = 0
 
 Write-Host '== electron-builder（electronVersion 现读现传）'
 Push-Location $installer

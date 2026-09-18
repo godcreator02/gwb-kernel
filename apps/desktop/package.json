@@ -1,7 +1,7 @@
 {
   "name": "@godcreator/gwb-kernel-desktop",
   "productName": "gwb-kernel",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "author": {"name": "godcreator"},
   "type": "module",
   "main": "dist/main.js",
