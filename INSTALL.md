@@ -6,24 +6,29 @@
 
 ## 0. 先看装没装过
 
-`%APPDATA%\gwb-kernel\homes\default\cordis.yml` 已经在、里面有条目——**装过了，只升级，别做第 3 步**
-（它会盖掉用户的 home）：
+`%APPDATA%\gwb-kernel\homes\default\cordis.yml` 已经在、里面至少有一行 `- id:`——**装过了，只升级，
+别做第 3 步**（它会盖掉用户的 home）。`homes\` 下别的目录是别的 home（测试用的），跟这个判断无关：
 
 * 升内核：关掉工作台窗口 → 装新版安装器（见第 2 步）→ 再起
 * 升插件：连上门之后 `run plugin-manager.update-all`，或让用户在「插件管理」格点「全部更新」
 
 ## 1. 机器上的前置（改的是用户级配置——动手前告诉用户要改什么）
 
-1. **pnpm 12 及以上**：`pnpm --version`。没有或低于 12：`npm i -g pnpm@latest`；机器上连 node 都没有，
-   用 pnpm 官方的独立安装脚本（`https://get.pnpm.io/install.ps1`，先让用户同意）。
-2. **`@godcreator` 的包从哪儿拉**：用户级 `%USERPROFILE%\.npmrc` 里要有这一行（没有就追加，别动别的行）：
+1. **pnpm 12 及以上**：`pnpm --version` 看版本，`(Get-Command pnpm).Source` 看用的是哪一份——插件管理
+   以后装件也用 PATH 上的第一份。没有或低于 12：`npm i -g pnpm@latest`；机器上连 node 都没有，用 pnpm
+   官方的独立安装脚本（`https://get.pnpm.io/install.ps1`，先让用户同意）。用 corepack、volta 之类装的
+   pnpm 也能用来装机，但装完要在工作台的设置里把 `pnpm-path` 填成那份 pnpm 的路径。
+2. **`@godcreator` 的包从哪儿拉**：`pnpm config get @godcreator:registry` 回出下面这个地址就是配好了。
+   没有就往用户级 `%USERPROFILE%\.npmrc` 追加这一行（别的行一律不动，已有的 token 行留着）：
 
    ```
    @godcreator:registry=https://git.tianshen02.online:28377/api/packages/godcreator/npm/
    ```
 
-   只读安装不要 token。少了这一行，pnpm 会去 npmjs 找这些包，报 404。
+   只读安装不要 token。少了这一行，pnpm 会去 npmjs 找这些包，报 404。**别把 `.npmrc` 全文打印出来**
+   ——里面可能有用户的发布 token。
 3. **放行刚发的包**：pnpm 11 起，发布不满一天的包默认不准装，而 gwb 的插件常常当天发。
+   `pnpm config get minimumReleaseAgeExclude` 的回显里有 `@godcreator/*` 就是配好了。没有：
    `pnpm config get globalconfig` 报出一个 yaml 文件（通常是 `%LOCALAPPDATA%\pnpm\config\config.yaml`），
    在里面加上（已有这个键就把这一项并进列表）：
 
@@ -96,22 +101,54 @@ pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings 
 Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe"
 ```
 
-* `%APPDATA%\gwb-kernel\homes\default\runtime.json` 出现，里面有 `version` 与
-  `"mcp": { "url": "http://127.0.0.1:2870/mcp" }`
-* 同目录 `gwb.log` 里有 `kernel up` 与 `MCP 门就绪`，没有 `error` 行
-* 窗口底部状态栏右边写着 `gwb <版>`
+几秒内就绪。轮询到 `runtime.json` 里出现 `mcp` 这一格就算起来了：
+
+```powershell
+$rt = "$env:APPDATA\gwb-kernel\homes\default\runtime.json"
+for ($i = 0; $i -lt 30; $i++) {
+  Start-Sleep 1
+  if ((Test-Path $rt) -and (Get-Content $rt -Raw | ConvertFrom-Json).mcp) { break }
+}
+Get-Content $rt
+```
+
+* `runtime.json` 里有 `version`（内核版本）与 `"mcp": { "url": "http://127.0.0.1:2870/mcp" }`——门的地址
+  **以这一格为准**
+* 同目录 `gwb.log` 一行一条，格式是 `<时间> <级别> <来源> <话>`。有 `kernel up` 与 `MCP 门就绪` 两行；
+  `Select-String "$env:APPDATA\gwb-kernel\homes\default\gwb.log" -Pattern '^\S+ error '` 应当什么都没有
+  （`warn` 行读一读，不算失败）
+* 看得见窗口的话：底部状态栏右边写着 `gwb <版>`，这个版就是 `runtime.json` 里的 `version`
+
+`runtime.json` 在程序退出后也会留着（下一次启动整份重写），所以只凭它在不在判断不了程序还在不在跑——
+要看就核它的 `pid` 是不是活着的进程。
 
 ## 5. 连 MCP 门
 
-门在 `http://127.0.0.1:2870/mcp`，无鉴权、只绑本机。
+门在 `runtime.json` 的 `mcp.url`（default 就是 `http://127.0.0.1:2870/mcp`），无鉴权、只绑本机。
+
+先不改任何客户端配置，用门自带的命令行客户端验一遍门（零依赖，node 18 起就能跑）：
+
+```powershell
+$client = "$env:APPDATA\gwb-kernel\homes\default\node_modules\@godcreator\gwb-mcp\bin\client.mjs"
+node $client --url http://127.0.0.1:2870/mcp index
+node $client --url http://127.0.0.1:2870/mcp run plugin-manager.list
+node $client --url http://127.0.0.1:2870/mcp run skill.list
+```
+
+门通了，再给用户常用的客户端配上：
 
 * Claude Code：`claude mcp add --transport http gwb http://127.0.0.1:2870/mcp`（要所有项目都能用就加
   `--scope user`），然后开新会话，或在会话里 `/mcp` 重连
 * 别的客户端：配成 `{ "mcpServers": { "gwb": { "type": "http", "url": "http://127.0.0.1:2870/mcp" } } }`
   这个形状；连上之后门里的 `mcp.info` 会回一份可照抄的片段
 
-连上**先调 `index`**：它回的 instructions 讲清之后怎么干活。再核两样：`run plugin-manager.list`
-里 11 条条目都是 `active: true`；`run skill.list` 列得出说明书。做完，把第 1 步改过的配置告诉用户。
+连上**先调 `index`**：它回的 instructions 讲清之后怎么干活。再核两样：
+
+* `run plugin-manager.list` 回 14 个包：11 个插件各带一条条目、`active: true`；`gwb-shared-react`、
+  `gwb-tokens`、`gwb-plugin-api` 三个是共享库，条目为空（`entries: []`）属正常
+* `run skill.list` 列得出说明书，至少有 `mcp`、`gwb-plugin-manager`、`gwb-devkit`
+
+做完，把第 1 步改过的配置告诉用户。
 
 ## 出了岔子
 
@@ -127,6 +164,8 @@ Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe"
 
 ## 之后
 
-* 装新插件：`run plugin-manager.install {"pkg":"@godcreator/gwb-<名>"}`，装完下一次 `index` 就有它
+* 装新插件：`run plugin-manager.install {"pkg":"@godcreator/gwb-<名>"}`——回执带新条目的 `entryId`；
+  `run plugin-manager.list` 里它 `active: true` 就成了，下一次 `index` 就有它的命令
 * 插件有新版：`run plugin-manager.update-all`（升到 `gwb-mcp` 自己时连接会断一次，重连即可）
-* 内核有新版：关掉窗口 → 装新版安装器 → 再起
+* 内核有新版：关掉窗口（命令行关就对 `runtime.json` 里那个 pid 调 `(Get-Process -Id <pid>).CloseMainWindow()`）
+  → 装新版安装器 → 再起
