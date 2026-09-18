@@ -20,14 +20,14 @@ description: 两个进程、盘上的目录、四条流——一页看全，细�
 
 {/* tree dir="../apps/desktop/src" depth="1" */}
 
-`apps/desktop/src` 六个文件——内核本体 555 行（`main.ts` 305、`bare-import.ts` 29、
+`apps/desktop/src` 六个文件——内核本体 557 行（`main.ts` 307、`bare-import.ts` 29、
 `entry-state.ts` 40、`imports.ts` 61、`index.html` 101、`preload.cjs` 19；不带 electron 的
 纯函数各自成文件，测试就在旁边 `tests/`）。没有打包器，`tsc` 直出 `dist/`，`index.html` 与
 `preload.cjs` 原样复制。
 
 | 路径 | 是什么 |
 | --- | --- |
-| `packages/gwb-plugin-api` | 词汇表包（62 行，六个名字加一个形状） |
+| `packages/gwb-plugin-api` | 词汇表包（74 行，六个名字加一个形状） |
 | `docs-site/` | 文档站（fumadocs + docfirst），dev 起在 4314 |
 | `<home>/package.json` | 插件的 dependencies。pnpm 维护；内核扫它的依赖收集 `gwb.shared` 拼 importmap |
 | `<home>/cordis.yml` | 条目表。**内核唯一认的配置文件**，但解析归 include |

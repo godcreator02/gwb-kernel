@@ -14,7 +14,7 @@ description: 六个名字加一个形状，零运行时依赖——内核契约�
 | 名字 | 什么时候用 |
 | --- | --- |
 | `GwbResult<T>` | 命令的回执形状 `{ ok, data?, error? }`。提供命令的插件拿它包返回值，消费命令的插件 `await` 到的就是它 |
-| `GwbKernelApi` | 内核服务的形状：`{ dataDir, emit(payload), setShell(url) → 撤销函数 }`。**就这三样**——没有自省、没有版本号、没有装机入口 |
+| `GwbKernelApi` | 内核服务的形状：`{ dataDir, version, emit(payload), setShell(url) → 撤销函数 }`。**就这四样**——`version` 是内核自己的版本号；没有自省、没有装机入口 |
 | `GwbContext` | `apply` 第一参数的类型：cordis `Context` + `gwbKernel` |
 | `requireKernel(ctx)` | 取内核服务；跑在不是 gwb 内核的 cordis 宿主里会当场抛。**别写进 `inject`** |
 | `isRecord(value)` | 把 `unknown` 收窄成 `Record` 的判形——写命令 handler 收参数时用 |

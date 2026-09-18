@@ -24,8 +24,8 @@ cordis 住 Electron 主进程（单进程）：整个应用只有主进程与渲
 | **开窗与桥** | 一扇窗；`gwb:command` 派给命令总线、`gwb:event` 推事件、`gwb:shell` 告诉页面外壳是谁 |
 | **页面根与错误出口** | 页面听 `onShell` 加载外壳，没有外壳时画一份只读现状；日志全量进 stderr 加 `<home>/gwb.log`，出错只记不退 |
 
-src 下六个文件合计 555 行（`main.ts` 305、`bare-import.ts` 29、`entry-state.ts` 40、
-`imports.ts` 61、`index.html` 101、`preload.cjs` 19），外加词汇表 62 行——六个名字加一个
+src 下六个文件合计 557 行（`main.ts` 307、`bare-import.ts` 29、`entry-state.ts` 40、
+`imports.ts` 61、`index.html` 101、`preload.cjs` 19），外加词汇表 74 行——六个名字加一个
 形状，正本在 `packages/gwb-plugin-api`。
 
 准入判据两道关：**一、凡是「第一个插件存在之前必须发生的事」，才进内核，其余一律皆插件。

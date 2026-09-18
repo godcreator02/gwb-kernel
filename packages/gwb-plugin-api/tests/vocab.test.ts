@@ -10,6 +10,7 @@ describe('requireKernel', () => {
   it('服务在就原样返回那一份', () => {
     const api = {
       dataDir: 'x',
+      version: '0.0.0',
       emit: () => {},
       setShell: () => () => {},
     }

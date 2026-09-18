@@ -12,9 +12,9 @@ description: 这条线造的词都在这儿——每个词一句定义，指到�
 | 词 | 是什么 |
 | --- | --- |
 | **正线** | gwb-kernel 自己。母仓与旧插件仓已退役，这条线是接班的那个 |
-| **内核** | `apps/desktop/src` 六个文件，537 行——一个 Electron 应用，只做六件事，其余一切皆插件 |
+| **内核** | `apps/desktop/src` 六个文件，557 行——一个 Electron 应用，只做六件事，其余一切皆插件 |
 | **插件** | 一个普通 npm 包，装在 home 的 `node_modules` 下，由 cordis 挂载，跑在 Electron 主进程里——`import('electron')` 就够得着 |
-| **词汇表** | `@godcreator/gwb-plugin-api`。零运行时依赖，七个名字加一个形状，62 行，只命名不做事 |
+| **词汇表** | `@godcreator/gwb-plugin-api`。零运行时依赖，六个名字加一个形状，74 行，只命名不做事 |
 | **home** | `%APPDATA%\gwb-kernel\homes\<名>`（`GWB_HOME` 也可给绝对路径）。插件住的地方，一个普通的 npm 项目根 |
 | **安家** | 内核保证 home 起得来：每次启动幂等补两个文件（`package.json`＋空 `cordis.yml`），不覆盖。**不是装机**——内核不碰 pnpm |
 | **准入判据** | 两道关：第一个插件之前必须发生的事才进内核；真遇到需求才加 |

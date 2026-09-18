@@ -1,0 +1,41 @@
+---
+born-at: 2026-09-18T11:00
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: gwbKernel 带版本号
+domain: 契约
+---
+
+## 背景
+
+用户要在外壳状态栏上看到内核版本。单进程重构那次契约面换成 0.1，`appVersion` 跟 `kernel.info`、
+`install` 一起拿掉了，契约页写着「没有版本号，版本号读插件自己包里的 `package.json`」。
+
+先想过内核零改动：外壳在主进程里自己调 `app.getVersion()`，内核写 `runtime.json` 用的正是这一行。
+往下查才发现它不是内核在报——安装版里 `app.getVersion()` 读的是 `app.asar` 根上那份**应用壳**的
+清单（`installer/app-template/package.json`，version 占位 `0.0.0`），靠 build.ps1 打包时渲染成内核版；
+直接起 `build/app` 或改了打包那一步，它就静默报 0.0.0 或别的数。`home.mdx` 那句「从内核包自己的清单读」
+在安装版上本来就不准。内核自己的身份，只有内核知道自己的清单在哪（`dist/` 上一级）。
+
+也摆过「内核写进 `runtime.json`、外壳读文件」：记录早就是内核的运行时身份，不长契约名。被用户否掉——
+进程里的东西绕一圈读盘，不如直接拿。
+
+## 结论与边界
+
+`GwbKernelApi` 加一个**必选**字段 `version: string`：内核开机读本包清单一次，同一个值给
+`gwbKernel.version` 与 `runtime.json` 的 `version`，不再经 `app.getVersion()`。词汇表 0.1.2、内核 0.2.5。
+必选不留兼容（用户拍板）：跑在老内核上的新件拿到 `undefined` 是它自己的事，生态随内核一起升。
+
+边界：
+
+- 只报**内核自己的**版本。Node / Electron / Chromium 是运行时自己的事实，`process.versions` 在进程里
+  谁读都是真值，内核转一道不会更准，所以不进契约；`runtime.json` 也不加这几格——给进程外工具用的
+  需求此刻没有，真有了再加。
+- 契约面的「名字」数不变（六个名字加一个形状）：加的是既有形状里的一个字段。
+- 内核仍然没有自省命令、没有版本号检查（不比较件与内核的版本、不拒挂），`version` 只是一个事实。
+
+pivots-from:: [单进程重构](2026-09-09-single-process.md)
+
+0.1 拿掉 `appVersion` 时它是宿主转给件的应用版本；这次回来的是内核读自己清单的版本，出处换了，
+理由是「只有内核报得准」——跟 `dataDir` 同一类：内核那次启动才有答案的事实。无物证——一处读清单、
+一个字段，无可测量。

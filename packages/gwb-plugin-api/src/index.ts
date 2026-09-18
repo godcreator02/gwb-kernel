@@ -2,7 +2,7 @@ import type { Context } from 'cordis'
 
 /**
  * 内核的词汇表：件说话用的那几个名词。它不做事，只命名。零运行时依赖。
- * 这是件与内核之间的全部契约面：node 半三个名字，页面三个函数，外壳一个导出形状。
+ * 这是件与内核之间的全部契约面：node 半四个名字，页面三个函数，外壳一个导出形状。
  */
 
 /** 命令的回执形状 */
@@ -16,6 +16,8 @@ export interface GwbResult<T = unknown> {
 export interface GwbKernelApi {
   /** 这个 home 的目录 */
   dataDir: string
+  /** 内核自己的版本号（内核包清单里那个） */
+  version: string
   /** 往页面推一条事件；页面经 `window.gwb.on` 收 */
   emit(payload: unknown): void
   /**

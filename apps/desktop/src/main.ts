@@ -19,6 +19,8 @@ import { describeEntry, type EntryStatus } from './entry-state.js'
 
 const { app, BrowserWindow, Menu, dialog, ipcMain } = electron
 const here = path.dirname(fileURLToPath(import.meta.url))
+/** 内核自己的版本号：读本包的清单（dist/ 的上一级）。从仓里起、从安装包起都是这一份，不经应用壳的清单 */
+const kernelVersion = (JSON.parse(fs.readFileSync(path.join(here, '..', 'package.json'), 'utf8')) as { version: string }).version
 
 declare module 'cordis' {
   interface Context {
@@ -87,8 +89,7 @@ try {
       {
         pid: process.pid,
         startedAt: Date.now(),
-        // app.getVersion() 读的是内核包自己的清单：从仓里起还是从安装位起，都报得出自己是哪一版
-        version: app.getVersion(),
+        version: kernelVersion,
         appDir: app.getAppPath(),
         // 没开这道口就没有这一格：写 0 或 null 的话，读的人还得再判一次「这个数算不算数」
         ...(Number.isInteger(cdpPort) && cdpPort > 0 && cdpPort < 65536 ? { cdp: cdpPort } : {}),
@@ -202,6 +203,7 @@ ctx.on('internal/status', () => pushShell())
 
 const kernel: GwbKernelApi = {
   dataDir,
+  version: kernelVersion,
   emit: (payload) => win?.webContents.send('gwb:event', payload),
   setShell: (url) => {
     shellUrl = url

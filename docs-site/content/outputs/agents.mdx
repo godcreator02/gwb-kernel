@@ -26,9 +26,9 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 | 页面根 | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳、或外壳起不来时画一份**只读现状**（各条目到哪一步、最近的错误行），没有按钮 | `src/index.html` |
 | 自己出错人看得见 | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退；`main()` 起不来先弹错误框再退 | `src/main.ts` |
 
-（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。src 下六个文件合计 555 行（含空行与注释）：
-`main.ts` 305、`bare-import.ts` 29、`entry-state.ts` 40、`imports.ts` 61、`index.html` 101、
-`preload.cjs` 19，外加词汇表 62。不带 electron 的纯函数都单独成文件、测试就在旁边 `tests/`。）
+（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。src 下六个文件合计 557 行（含空行与注释）：
+`main.ts` 307、`bare-import.ts` 29、`entry-state.ts` 40、`imports.ts` 61、`index.html` 101、
+`preload.cjs` 19，外加词汇表 74。不带 electron 的纯函数都单独成文件、测试就在旁边 `tests/`。）
 
 **没有的**：`gwb://` 协议、exports 解析、`kernel.info`、日志缓冲与轮转、宿主子进程与 fd3 协议、
 README 铺进 home、装机（内核不碰 pnpm），以及旧线阶段页与崩溃页那套机器（轮询、讣告、重试）。
@@ -42,10 +42,10 @@ importmap 归内核不归外壳（判据见[importmap 归内核，不归外壳](
 
 ## 契约面：六个名字加一个形状
 
-node 半 `ctx.gwbKernel`：`dataDir`、`emit(payload)`、`setShell(url) → 撤销函数`。
+node 半 `ctx.gwbKernel`：`dataDir`、`version`（内核自己的版本号）、`emit(payload)`、`setShell(url) → 撤销函数`。
 页面 `window.gwb`：`command(name, args)`、`on(cb)`、`onShell(cb)`。
 外壳模块：默认导出 `(root: HTMLElement) => { dispose?() } | void`。
-正本在 `packages/gwb-plugin-api/src/index.ts`（`@godcreator/gwb-plugin-api` 0.1.0，已发本机 registry）。
+正本在 `packages/gwb-plugin-api/src/index.ts`（`@godcreator/gwb-plugin-api` 0.1.2，发在 gitea 个人源）。
 
 插件的浏览器半地址由插件自己从 `import.meta.url` 算，内核不认识任何包名、角色名、导出名。
 
