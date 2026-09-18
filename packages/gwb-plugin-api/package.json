@@ -2,7 +2,7 @@
   "name": "@godcreator/gwb-plugin-api",
   "version": "0.1.2",
   "author": {"name": "godcreator"},
-  "description": "gwb 内核的词汇表：件说话用的那几个名词，只命名不做事。对应单进程内核：gwbKernel 是 dataDir / version / emit / setShell",
+  "description": "词汇表包（内核契约）：gwbKernel 四个方法（dataDir / version / emit / setShell）与页面上的 window.gwb 类型；对插件只增不减。",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
