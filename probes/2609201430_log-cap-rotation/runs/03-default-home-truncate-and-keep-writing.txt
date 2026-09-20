@@ -1,0 +1,40 @@
+default home 的 gwb.log 回收。清空前内核在跑（安装版 0.2.6，pid 70068，runtime.json 记的），
+它握着这个路径的 append 句柄，所以用 SetLength(0) 而不是删除重建。2026-09-20 14:28:50 执行。
+
+=== 清空前 ===
+gwb.log 真实字节 = 6,666,706,817  (6.209 GiB)
+LastWriteTime    = 9/20/2026 14:28:49
+尾巴文件         = …\default\gwb.log.tail  (52,428,743 bytes)
+同目录别的 gwb.log* ：只有 gwb.log 与 gwb.log.tail（没有 .1 之类）
+
+=== 清空 ===
+[System.IO.File]::Open(…, Open, Write, ReadWrite) → SetLength(0) → Flush(true) → Close
+清空耗时 0.01 s
+清空后真实字节 = 0
+
+=== 清空后轮询：内核还在不在往这个文件写 ===
+T+  0s  真实字节=       0  LastWriteTime=9/20/2026 14:28:50
+T+ 10s  真实字节=     342  LastWriteTime=9/20/2026 14:28:56
+T+ 20s  真实字节=   1,006  LastWriteTime=9/20/2026 14:29:13
+T+ 30s  真实字节=   1,701  LastWriteTime=9/20/2026 14:29:23
+T+ 40s  真实字节=   2,528  LastWriteTime=9/20/2026 14:29:33
+T+ 50s  真实字节=   2,625  LastWriteTime=9/20/2026 14:29:42
+T+ 60s  真实字节=   2,861  LastWriteTime=9/20/2026 14:29:47
+T+ 70s  真实字节=   3,116  LastWriteTime=9/20/2026 14:30:03
+T+ 80s  真实字节=   4,170  LastWriteTime=9/20/2026 14:30:12
+
+=== 有没有冒出第二个同名文件把日志写丢 ===
+Name           Length LastWriteTime
+----           ------ -------------
+gwb.log          4170 9/20/2026 14:30:12
+gwb.log.tail 52428743 9/20/2026 14:23:41
+
+=== 新增的内容头两行（时间戳紧接清空之后）===
+2026-09-20T06:28:56.405Z warn gwb-commands 命令 devkit.dev 回了失败：dsh-2609201323 没在跑…
+2026-09-20T06:29:05.066Z info gwb-commands 命令 windows-backup.status 跑完了
+
+要点：
+* 没有**稀疏回弹**——文件从 0 长起来，不是从原来 6.67 GB 那个偏移接着写。Windows 上这个句柄是
+  以 append-data 语义打开的，写落在当时的文件尾。
+* 从清空到第一条新日志隔了 6 秒（那一刻没东西可记），不是丢行。
+* 内核全程没有察觉，也未重启。0.2.7 的轮转代码此时还没上线（跑的是安装版 0.2.6）。

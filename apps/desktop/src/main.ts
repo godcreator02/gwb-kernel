@@ -9,6 +9,7 @@ import type { GwbKernelApi } from '@godcreator/gwb-plugin-api'
 import { collectImports } from './imports.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
+import { limitFromEnv, openLogFile } from './log-file.js'
 
 /**
  * gwb 内核的主进程入口：载体、宿主、桥都在这个进程里，页面是唯一的另一个进程；不带
@@ -54,12 +55,30 @@ for (const [file, content] of [
   if (!fs.existsSync(target)) fs.writeFileSync(target, content)
 }
 
-/** 内核唯一的日志出口：stderr 加 home 里一个只追加的文件。一个件都没有时人也看得见 */
-const logFd = fs.openSync(path.join(dataDir, 'gwb.log'), 'a')
+/**
+ * 内核唯一的日志出口：stderr 加 home 里一份**带上限与轮转**的文件。一个件都没有时人也看得见。
+ *
+ * 上限的判据：这份日志是拿来事后查错的，不是档案馆——排障要看的是「最近一次开机到此刻」那一段，
+ * 再往前的没人翻。实测 2026-09-20 那份 6.67 GB：常态约 2 MB/h（约 48 MB/日），撞上刷屏的件能到
+ * 约 675 MB/h（约 16 GB/日）——那 6.67 GB 里有 5.8 GB 是一夜之间刷出来的。取 128 MB：常态装得下
+ * 两天半，刷屏时十几分钟滚一次，磁盘总共（现行的加一份旧的）压在 256 MB 以内。6.67 GB 那份之所
+ * 以要命，正是因为它既看不完、又一直在长。
+ */
+const log = openLogFile({
+  file: path.join(dataDir, 'gwb.log'),
+  // 单位 MB，`GWB_LOG_LIMIT_MB` 给；0 = 不轮转（排障时要留全量）。旋钮留在环境变量上、不进
+  // 设置项：改它是排障当场的一次性动作，而加一个设置键要动 settings 件的契约面
+  limitBytes: limitFromEnv(process.env.GWB_LOG_LIMIT_MB),
+  keep: 1,
+  // 轮转与开文件出岔子时说一句。**不走 say**：say 也往这个文件写，绕回来是自己等自己
+  onWarn: (msg) => {
+    process.stderr.write(`${new Date().toISOString()} warn kernel ${msg}\n`)
+  },
+})
 function say(level: string, name: string, msg: string): void {
   const line = `${new Date().toISOString()} ${level} ${name} ${msg}\n`
   process.stderr.write(line)
-  fs.writeSync(logFd, line)
+  log.write(line)
 }
 const stackOf = (e: unknown): string => (e instanceof Error ? (e.stack ?? e.message) : String(e))
 // stderr 对端断了（无终端起）每写一次抛一次 EPIPE，吞掉，文件那投照旧

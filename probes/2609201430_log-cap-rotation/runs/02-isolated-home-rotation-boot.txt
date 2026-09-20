@@ -1,0 +1,36 @@
+隔离 home 起本仓内核（0.2.7）验轮转。GWB_HOME=C:\Users\...\Temp\gwb-rot-2609201427，
+GWB_LOG_LIMIT_MB=1，起机前先铺一份 1,572,846 字节的假日志（每行 66 字节的 JUNK-xxx…）。
+
+预铺 gwb.log = 1572846 bytes
+
+=== 起机后 home 目录 ===
+Name         Length  LastWriteTime
+----         ------  -------------
+electron            9/20/2026 14:27:36
+cordis.yml   3       9/20/2026 14:27:25
+gwb.log      0       9/20/2026 14:27:26     ← 那一刻还是 0（见下面「一个坑」）
+gwb.log.1    1572846 9/20/2026 14:27:22     ← 预铺那份整份滚过来了
+package.json 44      9/20/2026 14:27:25
+runtime.json 146     9/20/2026 14:27:25
+
+=== runtime.json（产物是新的）===
+{
+  "pid": 93488,
+  "startedAt": 1789885645821,
+  "version": "0.2.7",
+  "appDir": "D:\\unitfolders\\igldu-gwbkernel\\gwb-kernel\\apps\\desktop"
+}
+
+=== gwb.log 头 6 行（内核真的在往新文件里写）===
+2026-09-20T06:27:26.188Z warn renderer Electron Security Warning (Insecure Content-Security-Policy) …
+2026-09-20T06:27:26.192Z info kernel up，home=C:\Users\godamericatb14\AppData\Local\Temp\gwb-rot-2609201427，
+外壳=（没有件调 setShell）
+
+=== .1 没被动过（仍是预铺那份）===
+Length 1572846 ; LastWriteTime 9/20/2026 14:27:22
+
+=== 复核：一个坑 ===
+上面那次 `Get-ChildItem` 把 gwb.log 报成 0 字节，而它当时已经有内容了——Windows 对**还被持有
+的打开文件**会把目录项里的长度滞后报出来。隔一会儿再量，两条路（Get-Item / FileStream.Length）
+都是 578 字节、8 行，一致。**验「内核还在写」时不能只信 Get-ChildItem 那一眼**，要么开句柄读
+真实长度，要么多量几次。
