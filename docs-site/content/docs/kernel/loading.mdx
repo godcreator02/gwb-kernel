@@ -1,127 +1,63 @@
 ---
-title: 取址：loader、include 与 importmap
-description: 内核连 yml 都不认识——挂载归两个官方插件；插件的两半各有一套取址，都是内核替「解析裸名」打的底
+title: 挂载
+description: 起 cordis、挂 loader 与 include、node 半的裸名解析、启动与退出的形状
 ---
 
-# 取址：loader、include 与 importmap
+# 挂载
 
-读完这页你能回答：内核自己认识 yml 吗；引导链那几步为什么是这个顺序；node 半与浏览器半
-的裸名分别怎么解析；热挂载到底由什么触发；「fiber 建出来了」和「挂上了」差在哪。
+**本页回答**：cordis 怎么在主进程里起来、件怎么从 home 被找到并挂上、启动与退出各自为什么是这个形状。
 
-**为什么不能是插件**：取址必须在第一个业务插件之前发生。内核把它交给官方插件，不等于这件事
-不存在——只是实现从「自己写」变成「挂一个官方插件」。
+## 管什么
 
-> cordis 本体的能力地图与文档链接，见[底座：cordis](/docs/kernel/cordis)；这页只讲本仓怎么组装它。
+主进程里一个 cordis `Context`，件全挂在它身上。内核只挂两样官方件——`@cordisjs/plugin-loader`（条目树与模块加载）和一条 `cordis:include` 条目（读 `<home>/cordis.yml`），再替 loader 补上 node 半的裸名解析；其余的挂载、热挂卸、条目写回全归这两个官方件。退出时由内核把整棵件树拆完。
 
-## 内核挂两样，其余全归它们
+## 不知道什么
 
-- `@cordisjs/plugin-loader` —— 条目树与模块加载
-- 一条 `cordis:include` 条目 —— 读 `<home>/cordis.yml`
+不认识 `cordis.yml` 的格式（归 include），不认识任何件的包名、服务名、命令名。不监听文件——改 yml 不热生效，热挂卸走 loader 的条目树 API（`create` / `update` / `remove`，归 plugin-manager 这类件去调）。不判断件「挂没挂上」，那是 fiber 的状态（`ACTIVE` 才算，[那面墙](/trajectory/2026-09-07-wall-fiber-not-active)）。
 
-**内核连 yml 都不认识。**
+## 数据结构
 
-## baseUrl 指向 home，而且设在根上下文
+- **条目树**：根下一条 id 固定为 `home` 的 include 条目，`cordis.yml` 里的每一条是它的子条目，完整 id 是 `home:<id>`。`home` 这个 id 一变，所有件的 id 跟着变（[那面墙](/trajectory/2026-09-07-wall-home-entry-id-fixed)）
+- **`loaderFiber`**：挂上的 loader 的 fiber，退出时拆它；`main()` 走到挂载之前是 `undefined`
 
-{/* ref file="../apps/desktop/src/main.ts" lines="124-126" */}
+## 提供的接口
 
-`ctx.baseUrl` = home 目录的 file URL，loader 的模块解析从这儿起步，`<home>/node_modules` 里的插件因此按裸名就找得到。母仓把 baseUrl 设成应用目录，所以它必须自己把每个条目名算成绝对 file URL——那句「裸名包只在 home 位时 loader 会静默挂不上」的血泪注释，根因就在这里。
+**根上下文与 baseUrl**：`ctx.baseUrl` 是 home 的 file URL，设在**根**上下文——include 挂在根、拿根的 `baseUrl` 解析 `cordis.yml`（[那面墙](/trajectory/2026-09-07-wall-baseurl-on-root-ctx)）。
 
-「设在根上下文」是硬的：loader 只把 `config.baseUrl` 应用到自己那个扩展 ctx 上，而 include 挂在根、拿**根的** `baseUrl` 解析 `cordis.yml` 的路径。设错位置，include 拿到 undefined，报 `Invalid URL`（见[那面墙](/trajectory/2026-09-07-wall-baseurl-on-root-ctx)）。
+{/* ref file="../apps/desktop/src/main.ts" lines="124-128" */}
 
-## 引导链：顺序全是判据
+**引导链**：顺序本身就是判据——`gwbKernel` 在模块顶层就已 provide（先于一切挂载，[那面墙](/trajectory/2026-09-07-wall-gwbkernel-provide-early)）；`await ctx.plugin(Loader)` 必须 await（[那面墙](/trajectory/2026-09-07-wall-ctx-plugin-thenable)）；给 `loader.internal` 塞裸名解析（主进程没有 `--expose-internals`，不塞的话件**静默**挂不上）；include 从 loader 的 builtins 取（它住应用依赖树，按 home 解析找不到，[那面墙](/trajectory/2026-09-07-wall-include-via-builtins)）；最后 `loader.await()` 等整棵树收敛。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="275-281" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="275-284" */}
 
-1. **先 provide `gwbKernel`，再动 loader**。这个服务挂在根 fiber 上（根 fiber 生来 ACTIVE）、
-   永不撤销，而且 provide 发生在模块顶层（`ctx.provide('gwbKernel', kernel)`）、结构上先于
-   `main()` 里的一切；晚一步，第一批插件读到 `undefined`（见[那面墙](/trajectory/2026-09-07-wall-gwbkernel-provide-early)）。
-2. **`await ctx.plugin(Loader)`**。`ctx.plugin()` 返回的是 thenable（包着 fiber 的就位等待），不 await，下一行 `ctx.loader` 就是 `undefined`（见[那面墙](/trajectory/2026-09-07-wall-ctx-plugin-thenable)）。
-3. **替 loader 塞一个 `internal.import`**。主进程没有 `--expose-internals`，loader 拿不到 node
-   内部的 ESM loader，`ctx.loader.internal` 是 `undefined`——那时它按 loader 自己的位置解析裸名，
-   插件**静默**挂不上。内核塞的这个 import 分两步走：先 `fs.realpathSync.native` 把
-   `<home>/node_modules/<裸名>` 解成**真实目录**（pnpm 布局下那是 `.pnpm/<包>@<版本>/…` 里的
-   一处），再从那个真实目录起 `createRequire` 按 CJS 条件解析到入口文件、按 ESM `import` 进来。
-   `exports` 表照旧归 `createRequire`，内核自己不认识它。这段是独立的纯函数模块
-   `src/bare-import.ts`（副作用只剩磁盘读），单测就在旁边 `tests/`——junction 换版那条把
-   pnpm 布局原样造了一遍。解析那两步是其中的 `resolveFromHome(home, 包名, 子路径?)`，浏览器半
-   拼 importmap 走的也是它，两半只有一条解析。
+**node 半的裸名解析**：两步——先 `realpathSync.native` 把 `<home>/node_modules/<包名>` 解成真实目录（pnpm 布局里带版本号的那一处），再从那儿起 `createRequire` 按 `exports` 解析到入口文件、按 ESM import 进来。第一步是热重挂的要害：Node 的 CJS 解析缓存按「请求名 + 起点」记，包换了版本、逻辑路径没变时会回旧版本，真实路径天然不跟上一版撞（[那面墙](/trajectory/2026-09-09-wall-resolver-cache)）。浏览器半拼 importmap 用的也是这同一条 `resolveFromHome`。
 
-{/* ref file="../apps/desktop/src/bare-import.ts" lines="6-27" */}
+{/* ref file="../apps/desktop/src/bare-import.ts" lines="17-29" */}
 
-   第一步不是绕路，是**热重挂**的全部要害：Node 的 CJS 解析带进程级缓存，`pnpm add 新版` 之后
-   base 与裸名都没变，`createRequire(base).resolve(name)` 仍旧回**旧版本**的真实路径，条目停用
-   再启用换不到新代码（见[那面墙](/trajectory/2026-09-09-wall-resolver-cache)）。
-   `realpathSync.native` 走系统调用、不经那层缓存；从真实目录起的 `createRequire`，它缓存的键里
-   含着版本号目录，天然不跟上一版撞。裸名找不到时 ENOENT 里带着 home ＋ 裸名那条完整路径。
-4. **include 走 loader 的 builtins**。include 住在应用依赖树里，而 baseUrl 指着 home，按裸名
-   找不到它；`cordis:` 前缀的名字直接从内建表取、不经模块解析。
-5. **做成条目而不是 `ctx.plugin(Include)`，id 写死 `home`**。做成条目，它的子树就挂在 loader
-   树上：条目表、fiber 状态、热挂卸全在一棵树里，外面只认 `ctx.loader` 一个入口。id 有层级
-   （`<父>:<子>`），父 id 一变，所有插件的 id 跟着变，外壳按 panel id 存的布局就全对不上。
+**启动的形状**：入口模块里不能顶层 `await app.whenReady()`——`ready` 要等入口模块求值完才发，互相等死、静默挂住（[那面墙](/trajectory/2026-09-09-wall-esm-await-whenready)）。启动体挂在 `.then(main)` 上；`main()` 里抛出的一切走 `.catch`：写日志、弹错误框、`app.exit(1)`。所有窗关掉即退出。
 
-之后 `ctx.loader.await()`（286 行）等整棵树收敛，`main()` 才算走完。
+{/* ref file="../apps/desktop/src/main.ts" lines="287-297" */}
 
-## 浏览器半的取址：importmap 是内核拼的
+**退出的形状**：`will-quit` 里拦下这一趟，`dispose()` loader 的 fiber 再 `await()` 等整棵树拆完，然后再 `app.quit()`。件起的长命子进程靠这条路被带走。两半缺一不可：`dispose()` 只**启动**拆卸，要补 `await()` 才等得到嵌套的异步收尾；件那半得把真收尾**返回**成 promise，不然等到的是空盒（[退出收尾两半](/trajectory/2026-09-12-quit-dispose-two-halves)）。某个件的收尾挂死时 5 秒超时硬退；收尾出错只记不拦。
 
-插件有两半，浏览器那半也按裸名 import（react 那一族）。页面的裸名解析靠 importmap，而这张表
-**由内核拼**：提供方在自己的 `package.json` 里声明 `gwb.shared`（裸名 → exports 子路径），
-内核扫 home 清单收齐、经 `resolveFromHome`（与 node 半同一条：先 realpath 到真实目录，再从
-那儿起 `createRequire`）解析成 `file://` 表，随外壳地址推给
-页面。内核不认识 react 这个词，只搬运声明；共享包没有 node 半，清单是它唯一能说话的地方。
-这段扫描是独立的纯函数模块 `src/imports.ts`（副作用只剩磁盘读，warn 由调用方注入），
-单测就在旁边 `tests/`。
+{/* ref file="../apps/desktop/src/main.ts" lines="299-326" */}
 
-{/* ref file="../apps/desktop/src/imports.ts" lines="6-15" */}
+## 依赖的接口
 
-两条规则都在这段扫描里：**撞名全部拒绝**——同一个裸名出现多个提供方，这个名字不进
-表、后来者各报一句警告，页面 import 它会直接报解析错误；**解析不到也是警告不是错**——某个共享包坏了只损失它自己那几个裸名，不连累别的插件。
+| 接口 | 用来做什么 | 生产实现 | 测试实现 |
+| --- | --- | --- | --- |
+| cordis `Context` | 件的运行时 | `cordis`（应用依赖树） | — |
+| `@cordisjs/plugin-loader` | 条目树、模块加载、热挂卸 | 应用依赖树 | — |
+| `@cordisjs/plugin-include` | 读写 `cordis.yml` | 应用依赖树，经 builtins 取 | — |
+| 磁盘上的 pnpm 布局 | 裸名解析 | `<home>/node_modules` | 测试里手造的临时 home（含 junction） |
 
-拼好的表不单独发：`shellMessage()` 把 `{ url, imports }` 打成一份，`setShell`、撤销、
-`gwb:hello` 应答三个时机推的都是它（见[桥](/docs/kernel/bridge)）。**每次现算**，而且从真实
-目录起解析、不吃 Node 的解析缓存——所以共享包装了或升了版，**整页重载**即可拿到新版：新文档
-的页面根订 `onShell` 时重问一次，拿到现算的新表注上。不重载就看不见：同一份文档里那张
-importmap 只注一次、注过就盖不掉已解析过的名字（见[内核契约面](/docs/plugins/contract)）。
+## 怎么单独测
 
-## 热挂载：条目树的 API，不是文件监听
+`bare-import.ts` 不碰 electron 与 cordis，副作用只有磁盘读：喂一个手造的临时 home，证明主入口与 scoped 包解析得到、子路径写法等价、junction 换指向后拿到新版本、包不在时 ENOENT 带完整路径（`tests/bare-import.test.ts`）。引导链、热挂卸与退出收尾只在隔离 home 里实机验。
 
-**include 没有文件监听。** 它读 `cordis.yml` 只有两处：挂载时，和 `refresh()`——而 `refresh()` 在这个仓里没有任何人调。所以不是「改文件自动生效」，而是：
+## 代码地图
 
-- 挂一条：`await ctx.loader.create({ id, name, config }, 'home')`
-- 改配置：`ctx.loader.update(id, options)` —— **整卸整重挂**，所有 effect 逆序跑完再重新 `apply`，不是原地补丁
-- 卸一条：`ctx.loader.remove(id)`
-
-树一变，yml 自动写回：include 把变更去抖后写临时文件再改名，原子落盘。设置插件将来走这条——**调条目树的 API，盘上的表自己跟上**，比「编辑文件等监听」合理。
-
-**remove 的收尾顺序**：先 `fiber.dispose()`——所有 disposables 按注册的逆序跑，`provide` 的服务就地撤销、依赖它的插件被通知重估；然后才把条目从树里摘掉、写回 yml。**插件的清理函数是真的会跑的**，这是实机验收过的一条。
-
-还有一条白得的行为：**自己把自己拆掉的插件会被写 `disabled`**。fiber 死了而条目还在时，loader 把那条标成禁用再写回——「人禁的」和「自己灭的」在盘上有区别。
-
-## 「挂上了」是 fiber ACTIVE，不是 fiber 存在
-
-cordis 建 fiber 是**同步**的、与 inject 满不满足无关——一个 `inject` 永远等不到的插件也有 fiber，只是到不了 `ACTIVE`（状态 2）。「挂上了」判的永远是 `fiber.state === ACTIVE`（见[那面墙](/trajectory/2026-09-07-wall-fiber-not-active)），外壳挑插件同样只认 ACTIVE 的提供者，不然渲染层会去 boot 一个跑不起来的外壳。
-
-**一个包挂多条条目**是支持的：同一个模块一个 runtime，多条 fiber 各有各的配置。但 **provide 服务的插件挂不了第二条**——服务撞名当场抛，而且那个 rejection 落在挂载链上。内核对这类 rejection 的处理是：只记不退（见[日志](/docs/kernel/logs)）——一个坏插件不该带走工作台，条目表是真相，哪条挂上了哪条没挂它说了算。
-
-## 失败模式
-
-- **`cordis.yml` 不存在 = 整趟起不来**，不是「一个插件都没装」——include 读不到文件会抛，落进 `main()` 的 catch，写一句「起不来」然后 `app.exit(1)`。所以 `ensureHome` 每次启动幂等地铺一份空表 `[]`（见[安家](/docs/kernel/home)与[那面墙](/trajectory/2026-09-07-wall-fresh-home-no-yml)）
-- **挂载错误要有人听才看得见**：loader 挂不上插件时只 `logger.error`，而 cordis 的日志在没有 exporter 时只缓冲不输出。内核的全量 exporter 在挂 loader **之前**注册，坏插件才报得出 `ERR_MODULE_NOT_FOUND` 带完整路径（见[日志](/docs/kernel/logs)）
-- **不写 `id` 就发随机串，而且首次加载不写回 yml**——它会一直漂到某次写回才固化，在那之前每次启动都是新的。所以 id 一律手写（见[内核契约面](/docs/plugins/contract)）
-
-## 官方插件：开着的与不开的
-
-| 包 | 住哪 | 为什么 |
-| --- | --- | --- |
-| `@cordisjs/plugin-loader` | 应用依赖树，内核挂 | 条目树与模块加载。热挂卸是白得的 |
-| `@cordisjs/plugin-include` | 应用依赖树，内核挂 | 读 yml 成条目。有了它内核连 yml 都不必认识 |
-| `@cordisjs/plugin-timer` | home，走 yml 条目 | `ctx.setTimeout` 随插件卸载自动收——原生的会在插件已卸载后触发 |
-
-**不开的，各有理由**：
-
-- `plugin-logger-console` —— **出口归内核自己那个全量 exporter**。它跟全量出口直接冲突：两个都在，同一句 cordis 日志打两遍。页面上要看的日志归 `gwb-logger` 插件，它自己挂第二个 exporter（见[日志](/docs/kernel/logs)）
-- `plugin-hmr` —— **在这个架构下不起作用**：跑的是 home 里那份产物，盯仓内源码盯到变化也没有对应模块可换
-- `plugin-http` / `plugin-server` —— **内核**没有外部访问需求。给 agent 开门那条线真长出来了，但它是**插件**，自己起 `node:http`——先 mcp 后 command-http，内核全程不问门是什么协议。顺带一处订正：`plugin-http` 是 **HTTP 客户端**（`ctx.http`），本来就收不了请求
-- `plugin-config` / `plugin-webui` —— 硬 peer 一个 webui，而 webui 要 `server`——为一个条目编辑器拖进 HTTP＋WebSocket
-- `plugin-database` —— 没有超出「插件自己写文件」的需求
-- `@cordisjs/logger` —— 旧版，cordis 4.x 本体已自带
-- `@cordisjs/schema` —— cordis 3 遗物、已从官方仓删除；配置校验 cordis 4 本体自带（`plugin.Config` 走 Standard Schema）
+- **在哪**：`apps/desktop/src/main.ts`（根上下文、`main()` 的挂载段、`will-quit`）、`apps/desktop/src/bare-import.ts`
+- **先读**：`main()` 里挂 loader 那几行，再读 `resolveFromHome`
+- **读序**：[home](/docs/kernel/home) → 本页 → [importmap](/docs/kernel/importmap)（复用 `resolveFromHome`）
+- **可跳过**：无

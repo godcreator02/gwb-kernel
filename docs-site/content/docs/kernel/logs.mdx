@@ -1,71 +1,61 @@
 ---
-title: 日志：stderr 加一个文件
-description: 三路都走 ctx.logger，内核只铺一个出口；插件想看，自己挂 exporter
+title: 日志
+description: 内核唯一的出口——stderr 加 home 里一份带上限的 gwb.log；三路都走 ctx.logger，件挂 exporter 自取
 ---
 
-# 日志：stderr 加一个文件
+# 日志
 
-读完这页你能回答：日志有哪些路、出口在哪儿；为什么内核不替窗格铺日志管道；插件仓的
-`gwb-logger` 怎么把三路收齐。
+**本页回答**：日志从哪几路来、出口在哪、文件怎么防写爆、内核与件各管到哪儿。
 
-内核铺的出口**只有一处**：stderr，加 home 里一个只追加的文件。
+## 管什么
+
+内核铺唯一一个出口：stderr 加 `<home>/gwb.log`。cordis 的日志经内核挂的全量 exporter 进这个出口；内核自己的话与页面 console 也走 `ctx.logger`，于是三路汇成一条流。文件有上限、会轮转，出口自己出岔子绝不把内核带走。主进程的未捕获异常与没人接的 rejection 只记不退。
+
+## 不知道什么
+
+不为窗格铺日志管道、不自建缓冲——页面上要看日志的件自己挂第二个 exporter、从 cordis 自带的缓冲补历史、经 `gwbKernel.emit` 推给页面。日志格式不进契约面（[那张卡](/trajectory/2026-09-07-log-shape-not-in-vocab)）。不归因、不告警。
+
+## 数据结构
+
+- **一行**：`<ISO 时间> <级别> <名字> <正文>`，级别与名字照抄 cordis 那边的字符串，正文由 cordis 的 `Logger.format` 渲染
+- **三路的名字**：件用自己的 logger 名；内核是 `kernel`；页面 console 是 `renderer`
+- **文件**：现行一份 `gwb.log` 加滚下来的旧份；上限与留几份见下
+
+## 提供的接口
+
+**出口与上限**：`say` 同时写 stderr 与日志文件。上限走环境变量 `GWB_LOG_LIMIT_MB`（缺省见 `log-file.ts`；`0` = 不轮转、留全量；读不出数就用缺省），只留一份旧的。stderr 对端断了（没有终端起）每写一次抛 EPIPE，吞掉，文件照写（[那面墙](/trajectory/2026-09-08-wall-stderr-epipe)）。
 
 {/* ref file="../apps/desktop/src/main.ts" lines="58-85" */}
 
-一个插件都没有、窗口没起、终端不在——只要这个进程活着，`<home>/gwb.log` 里就有人读得懂的
-一行行。`say` 只给 exporter 本身与「起不来」那一句用；格式是最朴素的 `ISO 时间 级别 名字
-正文`。**只追加、不轮转**——按字节切段的旧机制随日志管道一起退役了（见[轨迹](/trajectory)），
-真到文件要人管的那天，重新过判据。
+**轮转**：按写进去的字节累加判断、不每条 stat；到上限先关句柄再改名、再重开，避免 fd 悬在改过名的文件上；开局就超限的上一轮文件，第一条日志就滚走。任何一步失败只说一句、继续往后写，轮转失败要再长一个上限才重试。
 
-末行那句 `process.stderr.on('error', () => {})` 不是可省的：没有终端起的时候（比如从
-`run.cmd` 双击起），stderr 对端是断的，每写一次抛一次 EPIPE，不吞它进程就死在写日志上
-（见[那面墙](/trajectory/2026-09-08-wall-stderr-epipe)）。
+{/* ref file="../apps/desktop/src/log-file.ts" lines="121-164" */}
 
-## exporter 必须在第一个插件之前
-
-cordis 的日志在没有 exporter 时**只缓冲不输出**。内核的全量 exporter 在模块顶层注册——
-挂 loader、开窗都在它后面，第一个挂不上的插件可能正是要报错的主角，它的报错不能等
-（见[那面墙](/trajectory/2026-09-07-wall-loader-error-swallowed)）。
+**全量 exporter**：在模块顶层、挂 loader 之前注册——cordis 没有 exporter 时只缓冲不输出，第一个挂不上的件的报错不能等（[那面墙](/trajectory/2026-09-07-wall-loader-error-swallowed)）。格式化失败有一层逐参数 `String` 的兜底。warn / error 到来时捅一下页面的只读现状（见[页面与桥](/docs/kernel/bridge)）。
 
 {/* ref file="../apps/desktop/src/main.ts" lines="130-162" */}
 
-三处细节值得看：
-
-- **渲染交给 cordis 自己的 `Logger.format`**——`%s`、`%o`、Error 它都认。类从一个实例的
-  `constructor` 上取，免得 import cordis 的内部；format 失败还有一层把参数逐个 String 的
-  兜底，**日志格式化自己坏了不能把业务调用点炸了**
-- 级别与名字在 cordis 那边就是字符串，`export` 里照抄不加工——真级别在源头就是真的
-- error / warn 到来时**捅一下页面**（`pushShell`，去抖）：没有外壳时页面画的那份只读现状
-  里有「最近的错误行」，它从 cordis 自带的 `buffer` 里筛——内核不自建缓冲，用 cordis 那份
-  （见[内核契约面](/docs/plugins/contract#没有外壳时那份只读现状)）。exporter 里做的仍然
-  只是「通知」，不写任何会进日志的东西
-
-## 三路怎么齐的
-
-| 路 | 名字 | 怎么进来 |
-| --- | --- | --- |
-| `plugin` | 插件自己的 logger 名 | 插件正常用 `ctx.logger`，cordis 分发到 exporter |
-| `kernel` | `kernel` | 内核自己的话也走 `ctx.logger('kernel')`，**不直接 `say`** |
-| `renderer` | `renderer` | 页面 console 经 `console-message` 事件转进来（见[载体](/docs/kernel/processes#渲染层的-console-归流)） |
+**内核的话与只记不退**：内核自己的话走 `ctx.logger('kernel')`，不直接 `say`——这样件挂一个 exporter 就收齐三路。件跑在这个进程里，件的错就是这个进程的错，两个 `process.on` 只记不退。
 
 {/* ref file="../apps/desktop/src/main.ts" lines="164-171" */}
 
-「内核的话也走 logger」是刻意的小绕：不绕的话内核的话只进文件，插件挂 exporter 收不到它。
-走了同一条流，**任何插件挂一个 exporter 就把三路收齐**。插件仓的 `gwb-logger` 就是那个收的
-插件：挂第二个 exporter、从 `ctx.logger.buffer` 补历史段、经 `gwbKernel.emit` 推给页面上的
-日志窗格——内核不为窗格铺任何管道。
+**起不来那一句**：`main()` 抛出时直接 `say`（这时可能谁都没挂上），再弹错误框（见[挂载](/docs/kernel/loading)）。
 
-末尾那两个 `process.on` 是「插件跑在这个进程里」的直接后果：插件的错就是这个进程的错。
-**只记不退**——一个坏插件不该带走工作台。三种坏法（apply 同步抛、没人接的 rejection、
-定时器里抛）实机验过全接得住、主进程活着，读数见
-[单进程重构](/trajectory/2026-09-09-single-process)。
+## 依赖的接口
 
-## 两条纪律
+| 接口 | 用来做什么 | 生产实现 | 测试实现 |
+| --- | --- | --- | --- |
+| cordis logger 工厂（`exporter`、`buffer`、`Logger.format`） | 收流、渲染、给只读现状取最近错误行 | cordis | — |
+| 文件系统 | 写 `gwb.log`、轮转 | `node:fs` | 真 fs 跑临时目录 |
+| `GWB_LOG_LIMIT_MB` | 上限 | 起进程的那只手给 | `limitFromEnv` 直接喂字符串 |
 
-**一、收日志的插件只读不写。** 插件挂 exporter 是正道（日志插件就靠它），但 exporter 里不许再
-碰任何会进日志的东西——再 `console` 或 `logger` 一句，那句又被自己收走，一变二、二变四。
-内核那份 exporter 里 `try/catch` 兜底也是同一个理由。
+## 怎么单独测
 
-**二、渲染层窗格里的 console 是日志的源，不是调试台。** 页面窗格打一句 console → 转成
-`renderer` 路 → 日志插件收走 → 推回窗格 → 路上谁再打一句就是回环，界面当场冻死。取数据
-失败那种非循环路径上的可以留。
+`log-file.ts` 不碰 electron 与 cordis，拿真 fs 跑临时目录：证明没到上限不轮转、超上限滚一份且只留约定的份数、轮转后新写的落进新文件、开局超限第一条就滚、上限 0 不轮转、轮转失败与开不出文件都不致命且只喊一句、`onWarn` 自己抛也不漏出去；`limitFromEnv` 覆盖缺省、正整数、0 与各种坏值（`tests/log-file.test.ts`）。「失败」用「目标位置被目录占着」造，那是 Windows 上真会撞的形态。
+
+## 代码地图
+
+- **在哪**：`apps/desktop/src/log-file.ts`（上限与轮转的机械）、`apps/desktop/src/main.ts`（`say`、exporter、`kernelLog`、`process.on`）
+- **先读**：`main.ts` 的 exporter，再读 `openLogFile` 的 `write`
+- **读序**：本页独立；[页面与桥](/docs/kernel/bridge) 读它的缓冲
+- **可跳过**：无

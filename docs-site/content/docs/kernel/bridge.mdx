@@ -1,81 +1,72 @@
 ---
-title: 桥：三条 IPC 与 file://
-description: 两个执行世界之间的三条通道——命令下行、事件上行、外壳地址推给页面
+title: 页面与桥
+description: 一扇窗、三条 IPC、页面根把 #root 交给外壳，没有外壳时画一份只读现状
 ---
 
-# 桥：三条 IPC 与 file://
+# 页面与桥
 
-读完这页你能回答：页面上一次点击到插件的处理函数要经过几跳；外壳地址与 importmap 是怎么
-到页面的；插件的浏览器那半凭什么不用任何协议就能加载。
+**本页回答**：窗口怎么开、页面与主进程之间有哪几条通道、外壳怎么接管页面、没有外壳时页面画什么。
 
-**为什么不能是插件**：两个执行世界之间的通道，得在任何一边有插件之前就存在。
+## 管什么
 
-三条通道各管一个方向：
+主进程这一头：开一扇窗，挂三条 IPC——命令下行、事件上行、外壳地址（连同 importmap 与只读现状）推给页面。页面这一头：`preload.cjs` 经 `contextBridge` 注一个 `window.gwb`，`index.html` 听外壳是谁、注 importmap、import 外壳模块并把 `#root` 交给它的默认导出；没有外壳或外壳起不来时，画一份只读现状。
 
-| 通道 | 方向 | 走什么 |
-| --- | --- | --- |
-| `gwb:command` | 页面 → 插件 | `ipcMain.handle`，原样派给命令总线，回 `GwbResult` |
-| `gwb:event` | 插件 → 页面 | `webContents.send` 单向推，火过就灭 |
-| `gwb:shell`（＋`gwb:hello`） | 内核 → 页面 | 推 `{ url, imports, report }`：外壳的 `file://` 地址＋importmap＋只读现状（外壳在时页面不看它） |
+## 不知道什么
 
-## 命令：内核不认识任何命令名
+不认识任何命令名——命令原样派给命令总线（某个件提供的 `gwbCommands` 服务），没有总线就回一句错。不挑外壳：谁调 `setShell` 谁是，后调的顶掉先调的。不画任何界面（只读现状除外）、不认识窗格。只读现状不归因、不重试、没有按钮。
 
-全链是三跳：
+## 数据结构
 
-```
-页面 window.gwb.command(name, args)
-→ preload ipcRenderer.invoke('gwb:command')
-→ 主进程 ipcMain.handle：原样派给 ctx.gwbCommands.run → 兑现回页面
-```
+- **`gwb:shell` 消息**：`{ url, imports, report }`——外壳的 `file://` 地址（没有外壳是 `null`）、[importmap](/docs/kernel/importmap)、只读现状
+- **只读现状 `report`**：home 路径、每条条目的 `{ id, name, state }`、cordis 日志缓冲里最近的 warn / error 行
+- **条目状态词**：照 cordis 的 FiberState 原名（`PENDING` 带缺哪个服务、`FAILED` 带错误第一行），另有 `disabled` 与「没有 fiber（import 失败）」两种
 
-{/* ref file="../apps/desktop/src/main.ts" lines="239-245" */}
+## 提供的接口
 
-**内核一条原生命令都没有。** 旧线那条 `kernel.info` 随两进程退役了——自省、装机、版本
-这些需求要么没有了，要么归了插件。`handle` 里只做两件防呆：命令名不是字符串回一句错；
-`ctx.gwbCommands` 是 `undefined`（没装总线插件）回一句带命令名的错。其余原样转发——由某个
-插件提供的命令总线收。「内核不认识插件的命令名」是有意的纪律：内核要用某个插件的能力，正确的
-做法是让那个插件把服务送上来，而不是内核去点名调它。
+**开窗**：一扇窗，`webPreferences` 只设 `preload`，沙箱与 `contextIsolation` 用 Electron 默认（开着）。窗底色与页面底色同一个值，首帧画好再亮窗；开窗时把 Electron 兜底的默认菜单撤成 null（菜单归件，[撤默认菜单](/trajectory/2026-09-15-default-menu-null)）。页面 console 逐条转进 `ctx.logger('renderer')`。开窗先于挂载件。
 
-没有超时计时器，也没有「宿主死了在途命令全废」——命令在**同一个进程**里直达，没有跨进程
-配对这回事；页面等不等得起、等多久，是页面与外壳的事。
+{/* ref file="../apps/desktop/src/main.ts" lines="249-273" */}
 
-## 事件：emit 的那一头是页面
+**三条 IPC**（主进程这一头）：`gwb:command` 派给命令总线；`gwbKernel.emit` 经 `gwb:event` 单向推给页面、火过就灭；`setShell` 与它的撤销函数、页面的 `gwb:hello` 各推一次 `gwb:shell`。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="223-236" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="223-247" */}
 
-插件调 `ctx.gwbKernel.emit(payload)`，主进程 `webContents.send('gwb:event', payload)`，页面的
-`gwb.on(cb)` 收到（见[内核契约面](/docs/plugins/contract)）。**事件是火过就灭的**，没有历史
-段——要历史的是日志，那是日志插件自己张罗的事（见[日志](/docs/kernel/logs)）。
+**去抖重推**：条目换态（cordis 的 `internal/status`）与 warn / error 日志到来时，去抖成一次重推 `gwb:shell`——给只读现状用，外壳在时页面收到也不动。
 
-## 外壳地址：setShell 说，onShell 听
+{/* ref file="../apps/desktop/src/main.ts" lines="204-221" */}
 
-内核不挑外壳：`kernel` 对象里那个 `setShell(url)`，**谁调用、谁是外壳**，后调的顶掉先调的。
-返回的撤销函数把地址收回——插件把 `setShell` 包在 `ctx.effect` 里，fiber 卸载时自动收回，
-这就是「外壳插件被卸了页面要换」的全部机制。
+**`window.gwb`**（页面这一头）：`command` / `on` / `onShell` 三个函数，再没别的；`onShell` 订上就发 `gwb:hello` 问一次当前值。沙箱里跑，所以是 CJS。形状正本在[契约面](/docs/kernel/contract)的 `GwbWindowApi`。
 
-推给页面的不是裸地址，是 `shellMessage()` 现算的一份 `{ url, imports, report }`（importmap
-怎么拼的见[取址](/docs/kernel/loading)，`report` 是什么见[内核契约面](/docs/plugins/contract#没有外壳时那份只读现状)）。
-推的时机有四种：`setShell` 调用时、撤销函数收回时、页面订上时——`gwb:hello` 这条
-`ipcMain.on` 专门应答这种：页面 `onShell` 订上的瞬间先问一次当前值，免得插件在页面起来之前
-就 `setShell` 过了——以及条目换态或错误行到来时的去抖重推（`pushShell`），那是给只读现状
-用的，外壳在时页面收到也不动。
+{/* ref file="../apps/desktop/src/preload.cjs" lines="4-19" */}
 
-## 资产：没有协议，页面直接吃 file://
+**页面根**：先注 importmap 再 import 外壳（importmap 只注一次、空表不注，注过就盖不掉已解析过的名字）；同一个 url 已挂或正在来就不重复挂；拆旧外壳出错只 `console.error`；url 为 `null` 画只读现状；默认导出不是函数、或 import 失败，也画只读现状并带上原因。
 
-插件的浏览器那半住在 home 的 `node_modules` 里，页面要加载它。旧线为此注册了 `gwb://` 协议、
-维护 exports 定址表、管 MIME 白名单——单进程之后**整套退役**：Electron 的页面直接吃
-`file://`。动态 `import`、`<link>` 样式表、fetch、JSON 模块、importmap 指到 `file://` 后
-与直连是同一份实例——探针五项全过，读数见
-[单进程重构](/trajectory/2026-09-09-single-process)。
+{/* ref file="../apps/desktop/src/index.html" lines="68-98" */}
 
-地址由插件**自己算、自己报**：`new URL('./client.js', import.meta.url).href`——dist 下的
-产物互为邻居，从自己的模块地址出发一步就到。注册窗格时报 `client`（与可选 `style`）两个
-字段，内核与外壳都不认识任何包的 exports 表。契约见[内核契约面](/docs/plugins/contract)。
+**只读现状**：全是 `textContent`，没有按钮。数据全是内核已经攥着的——loader 的条目树与 cordis 的日志缓冲。
 
-## preload：桥的浏览器那半
+{/* ref file="../apps/desktop/src/main.ts" lines="173-195" */}
 
-{/* ref file="../apps/desktop/src/preload.cjs" lines="1-19" */}
+{/* ref file="../apps/desktop/src/entry-state.ts" lines="29-40" */}
 
-19 行就完了：`contextBridge.exposeInMainWorld('gwb', …)`，三个函数各对一条通道。沙箱里
-跑不了 ESM，所以它是 CJS——安全位见[载体](/docs/kernel/processes#窗的安全位)。
-形状的正本钉在词汇表包的 `GwbWindowApi`（见[词汇表](/docs/plugins/vocab)）。
+**资产**：没有自定义协议，页面直接吃 `file://`；件的浏览器半地址由件自己从 `import.meta.url` 算、自己报（[单进程](/trajectory/2026-09-09-single-process)）。
+
+## 依赖的接口
+
+| 接口 | 用来做什么 | 生产实现 | 测试实现 |
+| --- | --- | --- | --- |
+| `ctx.gwbCommands.run` | 页面命令的去处 | 命令总线件（commands） | — |
+| `BrowserWindow` / `ipcMain` / `contextBridge` | 窗与桥 | Electron | — |
+| `collectImports` | `gwb:shell` 里的 importmap | [importmap](/docs/kernel/importmap) | — |
+| loader 条目树、cordis 日志缓冲 | 只读现状的数据 | cordis | 手造的 Entry（状态分类器） |
+
+## 怎么单独测
+
+`entry-state.ts` 不碰 electron 与 cordis 实例：手造条目，证明 disabled、没有 fiber、各 FiberState、`PENDING` 缺哪个服务、`FAILED` 取错误第一行、认不出的状态数字各说什么（`tests/entry-state.test.ts`）。窗、IPC、页面根与外壳交接只在隔离 home 里实机验：没有外壳件时看到只读现状，装上外壳后被接管，卸掉外壳后回到只读现状。
+
+## 代码地图
+
+- **在哪**：`apps/desktop/src/main.ts`（开窗、IPC、`report`、推送）、`apps/desktop/src/preload.cjs`、`apps/desktop/src/index.html`、`apps/desktop/src/entry-state.ts`
+- **先读**：`index.html` 里的 `onShell` 回调
+- **读序**：[importmap](/docs/kernel/importmap) → 本页 → [契约面](/docs/kernel/contract)
+- **可跳过**：`index.html` 的样式段（反闪底色与只读现状的排版）

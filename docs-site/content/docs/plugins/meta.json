@@ -1,5 +1,0 @@
-{
-  "title": "插件那边",
-  "description": "内核契约面与词汇表——内核给插件与页面提供什么、认什么、不管什么",
-  "pages": ["contract", "vocab"]
-}

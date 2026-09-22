@@ -1,0 +1,54 @@
+---
+title: importmap
+description: 浏览器半的裸名解析——扫 home 里各包声明的 gwb.shared，拼成 file:// 表推给页面
+---
+
+# importmap
+
+**本页回答**：件的浏览器半写 `import 'react'` 时，页面凭什么解析得到；这张表谁拼、从哪儿读、什么时候算、撞名怎么办。
+
+## 管什么
+
+把「哪个包给页面提供哪几个裸名」的声明收齐，解析成 `裸名 → file://` 的 importmap，随外壳地址一起推给页面（推送与页面注表见[页面与桥](/docs/kernel/bridge)）。判据见[importmap 归内核](/trajectory/2026-09-09-importmap-in-kernel)：它是页面级的运行时服务，没有外壳时别的浏览器半也得解析得到；声明权在提供方。
+
+## 不知道什么
+
+不认识 react 或任何包名，只搬运提供方的声明。不查版本、不比较两个提供方谁更新。不扫传递依赖——只看 home 清单的直接依赖。不知道页面有没有真的 import 某个名字。
+
+## 数据结构
+
+- **声明**：包清单里的 `gwb.shared`，`裸名 → exports 子路径`。这是内核读包清单时唯一认的 `gwb` 字段
+- **表**：`Record<裸名, file:// URL>`，每次调用现算，不缓存
+
+## 提供的接口
+
+`collectImports({ dataDir, warn })`：读 `<home>/package.json` 的 dependencies，逐包读它自己的清单，把 `gwb.shared` 里每一条经 [`resolveFromHome`](/docs/kernel/loading)（与 node 半同一条解析）解成真实文件的 `file://` 地址。
+
+{/* ref file="../apps/desktop/src/imports.ts" lines="25-66" */}
+
+两条规则都在这段里：**撞名全部拒绝**——同一个裸名有两个提供方，这个名字不进表，每个后来者各报一句 warn，页面 import 它直接报解析错误；**解析不到只 warn**——一个提供方坏了只损失它自己那几个名字。形状不对的声明（不是对象、空名、子路径不是非空字符串）静默忽略。
+
+因为从真实路径起解析、每次现算，共享包升了版之后**整页重载**就拿到新版本（[那面墙](/trajectory/2026-09-17-wall-importmap-resolver-cache)）；不重载看不见——页面上的 importmap 只注一次。
+
+调用方是 `shellMessage()`，它在每次往页面推 `gwb:shell` 时现算一遍：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="206-211" */}
+
+## 依赖的接口
+
+| 接口 | 用来做什么 | 生产实现 | 测试实现 |
+| --- | --- | --- | --- |
+| `resolveFromHome` | 子路径解析成真实文件 | `bare-import.ts` | 同一个函数，喂手造的临时 home |
+| `warn` | 撞名与解析失败报一句 | `ctx.logger('kernel').warn` | 收集进数组断言 |
+| 磁盘 | 读 home 清单与各包清单 | 文件系统 | 临时目录 |
+
+## 怎么单独测
+
+`imports.ts` 不碰 electron 与 cordis，warn 由调用方注入：喂手造的临时 home，证明没有清单或没有依赖时是空表、正常声明解析到真实文件、子路径写法等价、撞名全部拒绝且后来者各 warn、解析不到只 warn、junction 换指向后现算拿到新版本、坏形状静默忽略（`tests/imports.test.ts`）。
+
+## 代码地图
+
+- **在哪**：`apps/desktop/src/imports.ts`；调用点在 `main.ts` 的 `shellMessage`
+- **先读**：`collectImports` 的撞名分支
+- **读序**：[挂载](/docs/kernel/loading)（`resolveFromHome`）→ 本页 → [页面与桥](/docs/kernel/bridge)（表怎么到页面、怎么注）
+- **可跳过**：无

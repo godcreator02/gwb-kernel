@@ -21,11 +21,11 @@ description: 这些不是还没做，是决定不做——每条连着它的理�
 
 为什么：装机这台机器的价值在「自动地装」，而自动装的头两件事——判该不该装、装失败怎么
 办——正是自动升级那套麻烦的入口，这两条上面已经判了不做。剩下「手动装」根本不需要内核：
-进 home、`pnpm add`、`cordis.yml` 写条目（全流程见[跑起来](/docs/getting-started/first-run)）；
-图形界面的装件面归件——件仓的 `gwb-plugins` 件，`plugins.install` 命令干这个，件在
+进 home、`pnpm add`、`cordis.yml` 写条目（全流程见[装机说明](/outputs/install)）；
+装件归件——`gwb-plugin-manager` 件的 `plugin-manager.install` 命令干这个，件在
 主进程里有完整的 node，不必经内核转发。
 
-内核为「装」保留的只有[安家](/docs/kernel/home)：home 是个 pnpm 认得的普通 npm 项目根。
+内核为「装」保留的只有[铺 home](/docs/kernel/home)：home 是个 pnpm 认得的普通 npm 项目根。
 
 ## 自动升级
 
@@ -59,7 +59,7 @@ description: 这些不是还没做，是决定不做——每条连着它的理�
 服务 / FAILED 带第一行原话 / LOADING / UNLOADING / DISPOSED，外加没有 fiber 的「import
 失败」与 disabled）和 logger 缓冲里最近的错误行。数据全是内核已经攥着的（loader 的条目树、
 cordis 自带的日志缓冲），随 `gwb:shell` 那条消息一起推，没有新通道；渲染层的 console 也
-转进 `ctx.logger`，所以外壳起不来那句也在里面。怎么画见[内核契约面](/docs/plugins/contract)。
+转进 `ctx.logger`，所以外壳起不来那句也在里面。怎么画见[页面与桥](/docs/kernel/bridge)。
 
 **线划在哪**：只读、只画内核已有的数据、外壳在时不露面、**不归因、不重试、不自动恢复**。
 「归因」是母仓那句「检查 registry 或网络」——它是往界面上爬的第一步，归因一多就想加一颗

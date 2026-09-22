@@ -1,64 +1,46 @@
 ---
 title: 系统地图
-description: 两个进程、盘上的目录、四条流——一页看全，细节指到各章
+description: 两个进程、各模块、四条流——内核全貌与读序，细节指到各模块页
 ---
 
 # 系统地图
 
-读完这页你能回答：一次点击、一句日志、一个插件的浏览器那半，各自经过哪些进程与文件。
+**本页回答**：内核由哪几块组成、各住哪个文件、先读什么、一次命令 / 一条事件 / 一行日志 / 一个外壳各走哪条路。
 
 ## 两个进程
 
-| 进程 | 是什么 | 起法 | 说什么 |
-| --- | --- | --- | --- |
-| **主进程** | Electron 本体。cordis 与所有插件都住这儿——插件 `import('electron')` 就够得着开窗、菜单、托盘、子进程 | 日常从安装位 `run.cmd` 起 `electron.exe <内核包>`；改内核才从仓里起 `electron.exe .`。入口都是 `dist/main.js` | cordis 日志与自己的话走 `ctx.logger('kernel')`，出口是 stderr 加 `<home>/gwb.log` |
-| **渲染层** | 页面。内核只铺一个空 root 和一张 importmap，画的是外壳插件 | `main()` 里开窗，先于挂载插件——外壳没上来时页面自己说「没有外壳件」（`index.html` 里的原话） | `console` 转 `ctx.logger('renderer')`，进同一份 `gwb.log` |
+整个应用只有两个进程。**主进程**是 Electron 本体，cordis 与所有件都住在这里，件 `import('electron')` 就够得着开窗、菜单、子进程（[单进程](/trajectory/2026-09-09-single-process)）。**渲染进程**是那一扇窗里的页面，内核只给它一个空 `#root`、一张 importmap 与一个 `window.gwb`，画什么归外壳件。
 
-先开窗、后挂载插件：窗口起来时页面会先显示占位一句话，等 `gwb:shell` 把外壳地址推过来。
+## 模块
 
-## 盘上有什么
+内核本体是 `apps/desktop/src` 下这几个文件；`main.ts` 是组装者，其余不带 electron 的纯逻辑各自成文件、测试在 `apps/desktop/tests/`：
 
 {/* tree dir="../apps/desktop/src" depth="1" */}
 
-`apps/desktop/src` 六个文件——内核本体 557 行（`main.ts` 307、`bare-import.ts` 29、
-`entry-state.ts` 40、`imports.ts` 61、`index.html` 101、`preload.cjs` 19；不带 electron 的
-纯函数各自成文件，测试就在旁边 `tests/`）。没有打包器，`tsc` 直出 `dist/`，`index.html` 与
-`preload.cjs` 原样复制。
+| 模块 | 管什么 | 住哪 |
+| --- | --- | --- |
+| [home](/docs/kernel/home) | 选 home、铺两个文件、单开锁、`runtime.json` | `main.ts` 顶层 |
+| [挂载](/docs/kernel/loading) | 起 cordis、loader 与 include、node 半裸名解析、启动与退出 | `main.ts`、`bare-import.ts` |
+| [importmap](/docs/kernel/importmap) | 浏览器半裸名：收 `gwb.shared` 拼 `file://` 表 | `imports.ts` |
+| [页面与桥](/docs/kernel/bridge) | 开窗、三条 IPC、页面根、只读现状 | `main.ts`、`preload.cjs`、`index.html`、`entry-state.ts` |
+| [日志](/docs/kernel/logs) | 唯一出口、上限与轮转、只记不退 | `main.ts`、`log-file.ts` |
+| [契约面](/docs/kernel/contract) | 内核与件、页面之间的全部类型 | `packages/gwb-plugin-api` |
 
-| 路径 | 是什么 |
-| --- | --- |
-| `packages/gwb-plugin-api` | 词汇表包（74 行，六个名字加一个形状） |
-| `docs-site/` | 文档站（fumadocs + docfirst），dev 起在 4314 |
-| `<home>/package.json` | 插件的 dependencies。pnpm 维护；内核扫它的依赖收集 `gwb.shared` 拼 importmap |
-| `<home>/cordis.yml` | 条目表。**内核唯一认的配置文件**，但解析归 include |
-| `<home>/node_modules/` | 包本身：插件、共享包都在；loader 解析裸名落到这儿 |
-| `<home>/gwb.log` | 全量日志，只追加不轮转。三路（插件 / 内核 / 渲染层 console）都在这一份里 |
-| `<home>/runtime.json` | 这一轮的运行时身份（pid、起的时刻、版本、应用目录、CDP 端口），每次开机整份重写、退出不删，读的人验活 |
-| `<home>/electron/` | 这一份 home 自己的 Chromium userData（Local Storage、Cache 那些）——每 home 一份，多实例并跑不串味，单开锁的钥匙也是它 |
+**读序**：home → 挂载 → importmap → 页面与桥 → 契约面；日志独立。依赖方向是 `main.ts` 吃其余一切；`imports.ts` 吃 `bare-import.ts`；`entry-state.ts`、`log-file.ts` 谁也不吃；契约面只被 import 类型。
 
-home 的完整位置：`%APPDATA%\gwb-kernel\homes\<GWB_HOME ?? default>`——`GWB_HOME` 给纯
-名字落 `homes\<名>`，给含 `\` 或 `/` 的路径就用那个目录。它是个普通的 npm 项目根——装插件、
-卸插件、配插件都在这儿做。
+**可跳过**：`dist/`（tsc 直出的产物，`index.html` 与 `preload.cjs` 原样复制）、`installer/`（出安装包，见 AGENTS）、`probes/`（实验材料）、`docs-site/`（本站）。
+
+## 开机顺序
+
+模块顶层同步做完 home 那一段（选 home、铺文件、开日志、单开锁、`runtime.json`）并注册日志 exporter、provide `gwbKernel`；`whenReady` 之后 `main()` 先开窗、再挂 loader 与 include、等整棵条目树收敛。开窗先于挂件，所以外壳没上来时页面已经在画只读现状。
 
 ## 四条流
 
-| 流 | 方向 | 路 | 详见 |
-| --- | --- | --- | --- |
-| **命令** | 页面 → 插件 | preload `gwb.command` → IPC `gwb:command` → 内核原样派给 `ctx.gwbCommands.run`，回 `GwbResult`。内核不认识任何命令名 | [桥](/docs/kernel/bridge) |
-| **事件** | 插件 → 页面 | 插件 `gwbKernel.emit(payload)` → 主进程 `gwb:event` 推 → preload `gwb.on` | [桥](/docs/kernel/bridge) |
-| **日志** | 三源 → stderr + 文件 | 插件 / 内核 / 渲染层 console 都走 `ctx.logger`，内核挂的 exporter 全量写 stderr 加 `<home>/gwb.log`；页面上要看的日志归 `gwb-logger` 插件（自己挂第二个 exporter，经 `emit` 推） | [日志](/docs/kernel/logs) |
-| **外壳与资产** | 内核 → 页面 / 盘 → 页面 | `gwb:shell` 推 `{ url, imports, report }`（外壳的 `file://` 地址＋内核拼好的 importmap＋只读现状，外壳在时页面不看最后那格），页面注完表才 `import` 外壳；插件的浏览器半由插件自己从 `import.meta.url` 算成 `file://` 自报 | [桥](/docs/kernel/bridge) |
+| 流 | 方向 | 路 |
+| --- | --- | --- |
+| 命令 | 页面 → 件 | `window.gwb.command` → `gwb:command` → 命令总线 `ctx.gwbCommands.run` → 回执回页面。内核不认识任何命令名 |
+| 事件 | 件 → 页面 | `gwbKernel.emit` → `gwb:event` → `window.gwb.on`，火过就灭 |
+| 外壳 | 内核 → 页面 | `setShell` / 撤销 / `gwb:hello` / 去抖重推 → `gwb:shell` 带 `{ url, imports, report }` → 页面注 importmap、import 外壳 |
+| 日志 | 三路 → 出口 | 件、内核、页面 console 都走 `ctx.logger` → 内核的 exporter → stderr 加 `gwb.log` |
 
-没有 `gwb://` 这类资源协议：Electron 的页面直接吃 `file://`——动态 import、`<link>`
-样式表、fetch、JSON 模块都过（探针五项全过，读数见[单进程重构](/trajectory/2026-09-09-single-process)）。
-
-## 速查
-
-| 什么 | 值 |
-| --- | --- |
-| 文档站 dev | `pnpm --filter gwb-kernel-docs-site dev`，端口 4314 |
-| 本机 Verdaccio | `https://git.tianshen02.online:28377/api/packages/godcreator/npm/`，`@godcreator` scope 指向它 |
-| home 选择 | 环境变量 `GWB_HOME`：纯名字 → `homes\<名>`；含 `\` 或 `/` → 就用那个目录；不给是 `default` |
-| 内核原生命令 | **一条都没有**——`gwb:command` 收到什么原样派给 `ctx.gwbCommands`，没人提供总线就报错 |
-| 页面公共面 | `window.gwb` 只有三个函数：`command` / `on` / `onShell` |
-| 门禁 | `pnpm check`（build:api + typecheck + lint + test）；`pnpm doc`（docfirst，单独跑） |
+没有自定义资源协议：页面直接吃 `file://`，件的浏览器半地址由件自己从 `import.meta.url` 算。

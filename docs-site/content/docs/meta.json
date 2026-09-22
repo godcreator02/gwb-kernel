@@ -1,11 +1,7 @@
 {
   "pages": [
     "system-map",
-    "glossary",
-    "getting-started",
     "kernel",
-    "plugins",
-    "dev-loop",
-    "docfirst"
+    "glossary"
   ]
 }

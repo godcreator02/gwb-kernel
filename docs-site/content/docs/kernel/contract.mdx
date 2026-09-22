@@ -1,0 +1,55 @@
+---
+title: 契约面
+description: 词汇表包 @godcreator/gwb-plugin-api——内核与件、页面之间的全部契约，纯类型
+---
+
+# 契约面
+
+**本页回答**：内核给件、给页面的面各有哪些；这些面的类型住在哪；内核唯一校验的形状是什么。
+
+## 管什么
+
+`@godcreator/gwb-plugin-api` 这个包：给内核与件之间的契约起名字，只命名、不做事，零运行时导出。它与内核同仓（`packages/gwb-plugin-api`），跟内核同号发版。内核自己也是它的第一个消费方（`main.ts` 从它取 `GwbKernelApi` 的类型）。判据见[词汇表独立包](/trajectory/2026-09-07-vocab-package-standalone)。
+
+## 不知道什么
+
+不知道任何件的服务、命令、窗格——那些类型住提供它们的件。没有运行时代码：`requireKernel`、`isRecord` 这类薄 helper 由各件自带。不约束件两半怎么长，`ShellBoot` 是内核校验的唯一形状。
+
+## 数据结构
+
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" */}
+
+整份就是契约：
+- **`GwbKernelApi`**（node 半，`ctx.gwbKernel`）：`dataDir`、`version`、`emit(payload)`、`setShell(url) → 撤销函数`。根上下文 provide、永不撤销，件直接取、不写进 `inject`
+- **`GwbContext`**：cordis 的 `Context` 加上 `gwbKernel`
+- **`GwbWindowApi`**（页面，`window.gwb`，经全局声明挂上）：`command`、`on`、`onShell`
+- **`ShellBoot`**：外壳模块的默认导出，`(root) => { dispose? } | void`
+- **`GwbResult`**：命令回执 `{ ok, data?, error? }`
+
+## 提供的接口
+
+**给件**：`dataDir` 是 home 的绝对路径（见[home](/docs/kernel/home)）；`version` 是内核自己的版本号，读内核包清单，与 `runtime.json` 的 `version` 同一个值（[内核报版本](/trajectory/2026-09-18-kernel-reports-version)）；`emit` 与 `setShell` 的行为见[页面与桥](/docs/kernel/bridge)。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="223-237" */}
+
+**给页面**：`window.gwb` 三个函数，谁在这页上跑都一样够得着，没有第二层入口（见[页面与桥](/docs/kernel/bridge)）。
+
+**校验**：页面根只校验一件事——外壳模块的默认导出是函数，否则画只读现状并说原因。
+
+## 依赖的接口
+
+| 接口 | 用来做什么 | 生产实现 | 测试实现 |
+| --- | --- | --- | --- |
+| cordis 的 `Context` 类型 | `GwbContext` 在它上面扩 | `cordis`（导出的类型面里出现，所以是 peer） | — |
+| DOM 的 `HTMLElement` 类型 | `ShellBoot` 的参数 | 消费方的 lib 配置 | — |
+
+## 怎么单独测
+
+没有运行时代码可测。它的正确性靠仓根 `pnpm check` 里先构建它、再对全仓 typecheck——内核从它取类型，契约写坏了内核的 typecheck 一定跟着坏。
+
+## 代码地图
+
+- **在哪**：`packages/gwb-plugin-api/src/index.ts`
+- **先读**：`GwbKernelApi`
+- **读序**：[页面与桥](/docs/kernel/bridge) → 本页
+- **可跳过**：`dist/`（构建产物）
