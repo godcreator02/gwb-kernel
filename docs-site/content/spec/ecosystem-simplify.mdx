@@ -1,6 +1,6 @@
 ---
-title: 全生态机制定案：件自包含、peer 退役、home 只有件、一个写手
-description: 内核与全套件的配合机制逐个定死——依赖模型（清单只写 dev、两半都打包、peer 在 home 里整体退役）、home 与装卸、开发循环、importmap 与页面边界、契约面、跨件边界、件的收尾、守卫与审计、文档；每节写定法、归属、删掉什么、判据，分四期实施
+title: 全生态机制定案：按「运行时谁提供」写依赖、home 只有件、一个写手
+description: 内核与全套件的配合机制逐个定死——依赖模型（宿主提供的写 peer、导出类型写可选 peer、自用库打进束、件与件不经 import 耦合）、home 与装卸、开发循环、importmap 与页面边界、契约面、跨件边界、件的收尾、守卫与审计、文档；每节写定法、归属、删掉什么、判据，分四期实施
 ---
 
 # 全生态机制定案
@@ -14,52 +14,65 @@ dev 镜像、同一件事实抄在好几处。人的原话：
 
 > 可以都改我觉得，就是保持简洁，除了必要的功能不增加多余的复杂度。我们现在就在重构，应该朝着最干净、最整洁的方向努力。
 
-随后逐条追问到「peer 和可选 peer 是不是完全可以退役」「不是 devdependencies 吗」，定下本页第一节的依赖模型，其余各节建在它上面。
+随后逐条追问：「peer 和可选 peer 是不是完全可以退役」「不是 devdependencies 吗」，最后纠正到「件里的 cordis 打进包
+肯定不对啊，应该区分什么时候用peer什么时候不用啊」——定下本页第一节的依赖模型：**按「运行时这份代码由谁提供」
+决定写法**，其余各节建在它上面。
 
 **它改的是别的件 inject 的那一面**（plugin-manager 的命令面、词汇表包的导出、devkit 的发版检票与模板），也推翻本仓与
-devkit 仓几条写下的判据（见文末「要改写的卡与红线」）。方向人已点头（2026-09-23）；页头「待拍板」三条定了才开第二期。
+devkit 仓几条写下的判据（见文末「要改写的卡与红线」）。方向人已点头（2026-09-23）；第一节那张表人确认后开第二期。
 
 ## 待拍板
 
-- [ ] **件里的 cordis**：推荐「cordis 写 dev、随束打进件里」——现有 `Service` 类一行不改，只多一条「别写
-  `instanceof Service`」；每件约多 54 KB，宿主升 cordis 时回归一遍 Service 协议段。备选「件不按值 import cordis」，
-  服务改成函数式 `ctx.provide`，但要认出调用方的件得手挂 `Symbol.for('cordis.tracker')` 这个内部协议键。
-  依据：`probes/2609231600_cordis-multi-copy/`
-- [ ] **类型面怎么解析**：推荐「作者只写 dev；`devkit.release` 扫发布的 d.ts，把其中出现的外部包自动写成**可选
-  peer**（`peerDependenciesMeta.optional`）」——可选 peer 不装、不警告、不进 home，只让下游的类型解析到位，与 pnpm 的
-  提升设置无关。**这一条要沿 d.ts 的类型链逐包成立**：词汇表包自己引 cordis 也得是可选 peer，链上断一环，那一段就
-  解析不到（探针情形 06 对 07）。备选是全靠 pnpm 默认的隐藏提升、消费方把类型链上的包列在仓根（情形 05）——
-  少列一个就静默变 any（情形 01），所以守卫第三条（关掉 skipLibCheck 检查发布的 d.ts）两条路都要。
-  依据：`probes/2609231600_types-without-peer/`
+- [ ] **第一节那张表**：六种情形各自的写法，尤其「只出现在导出类型里 → 可选 peer，作者写、发版查」这一行
 - [ ] **registry 上存量的开发版**（约五百个 `-dev.*`）：删不删、留哪些。删除不可逆，要人点头；不删也不影响本页其余各节
 
 ## 已拍板（2026-09-23）
 
-- peer 在 home 与件清单里整体退役；件的清单只写 devDependencies；两半都打包（下文第一节）
+- 件里的 cordis **不打进包**：宿主提供的东西写 peer（第一节表第一行）
+- 件的运行时自用库打进束、写 dev；件与件之间不经 import 耦合（第一节、第七节）
 - 词汇表包不改名、不并进内核应用包、不加「运行时内核版本」兼容字段；契约面收窄（第五节）
 - 不做：给命令分权限档（页面边界由第四节的导航锁保证）；跨 home 调命令改走 MCP 门（原候选第 10 条，不做）
 - 不动：importmap 归内核、MCP 门三枚工具封顶、单进程
 
-## 一、依赖模型：件自包含
+## 一、依赖模型：按「运行时谁提供」决定写法
 
-**定法**。件的运行时代码两半都在构建时打成束，**清单里只有 devDependencies**。产物里允许剩下的裸名只有三类：
-node 内置、`electron`、浏览器半的 importmap 名字（今天只有 react 四名）。打不进束的依赖（原生模块、运行时读自己
-文件的包）才写 `dependencies`，并在清单注释里写明为什么——今天一个都没有。类型面见「待拍板」第二条。
+**定法**。一个件引到的每个外部包，先问运行时这份代码由谁提供，写法随之定死：
+
+| 运行时谁提供 | 写法 | 今天的例子 |
+| --- | --- | --- |
+| 宿主提供、件按值 import | **peer**（必选），不打进束 | `cordis`（件 `extends Service`） |
+| 运行环境自带 | 不声明 | node 内置、`electron` |
+| 页面经 importmap 提供 | 浏览器半外置；类型写 dev；提供方在不在由 inject 保证，不声明 peer | react 四名（shell 提供） |
+| 另一个件 | 不 import，经 inject / 命令；在场与联动由 cordis 保证 | `gwbCommands`、`gwbData`… |
+| 只出现在本件**导出的类型**里 | **可选 peer**（`peerDependenciesMeta.optional`）＋ dev | 词汇表包、别件的服务类型、`block-note` 的类型 |
+| 本件运行时自用的库 | dev，**打进束** | `yaml`、`adm-zip`、`block-note`、`mdast-*` |
+
+表的第一行与第五行可以同时命中（`cordis` 既被按值 import、又出现在 `declare module 'cordis'` 里），取必选。打不进束的
+自用库（原生模块、运行时读自己文件的包）才写 `dependencies` 并在清单注释里写明为什么——今天一个都没有。
+
+**可选 peer 作者写、发版查**：清单是所见即所发，`devkit.release` 不改写它，只核对「发布的 d.ts 里出现的每个外部包都有
+peer 声明」，缺了就拒；这一条沿类型链逐包成立——词汇表包自己引 `cordis` 也得声明。
 
 **归属**：规矩与守卫在 devkit（模板、`devkit.release`、写插件手册）；各件照迁。
 
-**删掉**：件清单里全部运行时 peer；依赖三档（红线 3）；「相对 import 带 `.js`、每个裸名都在依赖表里」（红线 4，
-打包器负责）；「cordis 写在 dev 否则第二份实例」（红线 2，改写见文末）；发版检票里 peer 相关的全部规则；
-audit-deps 里 peer 下限那四类发现；home 里的库、共享包与依赖树。
+**删掉**：拿 peer 声明别的件、库、react、旧共享包的全部写法；依赖三档（红线 3，换成这张表）；「相对 import 带
+`.js`、每个裸名都在依赖表里」（红线 4，打包器负责）；发版检票里「peer 下限 = dev 下限」那一族规则与 audit-deps 里
+对应的四类发现；home 里的库、共享包与依赖树——home 里除件之外只剩 pnpm 按必选 peer 补进来的那一份 `cordis`。
 
-**判据**。peer 在这个生态里承担过五个角色，逐个查过都有更简单的替代：类型解析（交给可选 peer 或提升，运行时没人
-import）；宿主单例 cordis（从来没兑现——内核一份 rc.9、home 一份 rc.10 一直这样跑，cordis 自己用 `Symbol.for`
-协议键、跨份安全，实测见探针）；跨件共享库（都是无状态工具，各件私有一份即可）；页面单例 react（本来就走
-importmap）；「库独立热换」（只有 docfirst 件现查 docfirst 库这一个用例，有意放弃，见「放弃的能力」）。peer 从来
-只警告不拦，它守的东西由开发期的 audit-deps 守更准。
+**判据**。peer 的本义是「这个包由运行环境提供，件不自带」，用在宿主真提供的东西上是对的，用在别处就是误用。逐个查过：
+- **宿主提供的 cordis**：件按值 import `Service`，得由环境给，不能各自带一份——打进束会把宿主与件的约定藏进束里，
+  宿主升 cordis 时没有任何声明面报出来。补一条事实：home 里 pnpm 按 peer 补进来的那份（rc.10）与内核打进 app.asar
+  的那份（rc.9）今天就不是同一物理实例，靠 cordis 的 `Symbol.for` 协议键跨份工作，实测 9 组全过、只有跨份
+  `instanceof Service` 为 false（`probes/2609231600_cordis-multi-copy/`）——所以写插件手册加一条「别写
+  `instanceof Service`」。要让两边真是同一份，得内核在 node 半做裸名映射；没有现场故障，按准入判据不做
+- **类型解析**：只写 dev 时，d.ts 里的外部包全靠 pnpm 默认的隐藏提升解析，少列一个就静默变 any；可选 peer 不装、
+  不警告、不进 home，与提升设置无关，但要沿类型链逐包成立（`probes/2609231600_types-without-peer/` 情形 01、06、07）
+- **跨件共享库**：都是无状态工具，各件私有一份即可（第七节）；**页面单例 react**：本来就走 importmap
+- **「库独立热换」**：只有 docfirst 件现查 docfirst 库这一个用例，有意放弃（见「放弃的能力」）
 
-**会失去什么**：装件时的 peer 警告；库单独升级（要重发用到它的件——块笔记一族与 bn-papers 都是同仓同发）；报错
-堆栈指向束（esbuild 不压缩，基本可读；sourcemap 不做，要做得过内核准入判据）。
+**会失去什么**：装件时对库与别件的 peer 警告（从来只警告不拦，由开发期 audit-deps 代替）；库单独升级（要重发用到它的件
+——块笔记一族与 bn-papers 都是同仓同发）；报错堆栈指向束（esbuild 不压缩，基本可读；sourcemap 不做，要做得过内核
+准入判据）。
 
 ## 二、home 与装卸：home 只有件，只有一个写手
 
@@ -69,8 +82,8 @@ importmap）；「库独立热换」（只有 docfirst 件现查 docfirst 库这
 
 **归属**：plugin-manager（被 inject 的一面）；devkit 的 `home.new` 与 `dev` 改为调它。
 
-**删掉**：install 的 peer 提升一步、`pnpm peers check` 与 `peerWarnings`、`peers.ts` / `peer-warnings.ts`、
-「库 / 共享包」分类；`plugin-manager.update`（并进 `update-all {"only":[…]}`）；devkit 里自写清单、读回核对、
+**删掉**：install 的 peer 提升一步（必选 peer 只剩宿主提供的 `cordis`，pnpm 自己补一份给所有件共用，不必进清单）、
+`pnpm peers check` 与 `peerWarnings`、`peers.ts` / `peer-warnings.ts`、「库 / 共享包」分类；`plugin-manager.update`（并进 `update-all {"only":[…]}`）；devkit 里自写清单、读回核对、
 重挂那一套；`home.new` 的裸 `pnpm add`。内核 `INSTALL.md` 的装机法随之改成「装 plugin-manager 与门，其余经
 `plugin-manager.install`」或同一份底座清单（见第九节）。
 
@@ -109,7 +122,8 @@ home**，再取证。registry 只放正式版。「写插件只有一条路：�
 
 ## 五、契约面
 
-**定法**。`@godcreator/gwb-plugin-api` 是纯类型包、只写 dev（类型面按「待拍板」第二条），与内核同仓同号。公共面：
+**定法**。`@godcreator/gwb-plugin-api` 是纯类型包，与内核同仓同号；件照第一节表第五行写它（可选 peer ＋ dev），
+它自己引 `cordis` 也照这一行。公共面：
 `gwbKernel` 四样（`dataDir` / `version` / `emit` / `setShell`）、`window.gwb` 的 `command` / `on`、外壳默认导出
 `ShellBoot`；只增不减。`GwbResult` 挪到 commands 件（它是命令总线的信封，不是内核的词）；`onShell` 退出公共面
 （只有内核自己的页面用，第四节改推送时不再牵动任何件）。
@@ -151,8 +165,9 @@ promise，退出时可能丢数据。
 ## 九、守卫、审计与文档
 
 **定法**。
-- **产物守卫**（`devkit.release` 构建之后、发之前，机械执行）：node 半束的裸名 ⊆ node 内置 ∪ `electron`；浏览器半
-  ⊆ importmap 名；发布的 d.ts 在 `skipLibCheck: false` 下类型检查通过（挡静默 any）
+- **产物守卫**（`devkit.release` 构建之后、发之前，机械执行）：node 半束的裸名 ⊆ node 内置 ∪ `electron` ∪ 必选
+  peer（今天只有 `cordis`）；浏览器半 ⊆ importmap 名；发布的 d.ts 里出现的外部包都有 peer 声明，且在
+  `skipLibCheck: false` 下类型检查通过（挡静默 any）
 - **audit-deps** 只报要动作的（出范围、钉了源上没有的号）；**audit-structure** 只查「装得上所需」（`exports` /
   `files` / `keywords` / 入口可解析），不查目录名派生链；两条都接受无参数调用
 - **底座清单只有一份**：devkit 的底座件集是正本，`INSTALL.md` 由它生成或钉住，不再手抄
@@ -164,19 +179,20 @@ promise，退出时可能丢数据。
 
 - **库的独立热换**（peer 加现查 home 直接依赖，见卡 [依赖热换](/trajectory/2026-09-10-peer-dep-live-swap)）：唯一用例
   是 docfirst 件现查 docfirst 库；改为随件同发
-- **装件时的 peer 警告**：从来只警告不拦，由开发期 audit-deps 代替
+- **装件时对库与别件的 peer 警告**：从来只警告不拦，由开发期 audit-deps 代替
 - **库单独升级**：要重发用到它的件
 
 ## 要改写的卡与红线
 
 拆解归梁时落新卡，用 `supersedes::` 指旧卡，旧卡留档：
 
-- [依赖三档](/trajectory/2026-09-07-deps-three-tiers)——被第一节取代
+- [依赖三档](/trajectory/2026-09-07-deps-three-tiers)——被第一节那张「运行时谁提供」表取代
 - [依赖热换](/trajectory/2026-09-10-peer-dep-live-swap)——能力放弃
-- [cordis 走 peer](/trajectory/2026-09-07-wall-cordis-peer)——墙本身是真的（类型层），但它被读成了「运行时第二份
-  实例会坏」；新卡用 `pivots-from::` 指它，补上多份实测
+- [cordis 走 peer](/trajectory/2026-09-07-wall-cordis-peer)——结论维持（cordis 是宿主提供的，写 peer）；新卡用
+  `pivots-from::` 指它，补上多份实测与「别写 `instanceof Service`」
 - [词汇表独立包](/trajectory/2026-09-07-vocab-package-standalone)——维持，契约面收窄另落卡
-- devkit 写插件手册红线 2、3、4 改写；base-plugins「撞过的墙」里「两份 cordis 会以莫名其妙的方式坏掉」那两处改写
+- devkit 写插件手册红线 2（改成「宿主提供的写 peer，别写 `instanceof Service`」）、3（换成那张表）、4（打包器负责）
+  改写；base-plugins「撞过的墙」里「两份 cordis 会以莫名其妙的方式坏掉」那两处改写成实测结论
 
 ## 分期与验收
 
@@ -192,8 +208,8 @@ promise，退出时可能丢数据。
 **第二期：工具链（devkit 与 shell）**
 
 - [ ] shell 导出外置名 helper
-- [ ] 模板：两半 esbuild 打包、清单只 dev、调 shell helper
-- [ ] `devkit.release`：产物守卫三条；去掉 peer 检票；按「待拍板」第二条生成类型 peer
+- [ ] 模板：两半 esbuild 打包、`cordis` 外置写 peer、其余照第一节那张表写、调 shell helper
+- [ ] `devkit.release`：产物守卫三条（含「d.ts 外部包都有 peer 声明」）；去掉「peer 下限 = dev 下限」那一族检票
 - [ ] `devkit.dev`：pack + `file:`，只带被测包及其依赖构建；装与重挂先临时用现有 plugin-manager 命令，第三期换 `apply`
 - [ ] audit-deps / audit-structure 去噪、接受无参数
 - [ ] 写插件手册与 gwb-release 按本页改写
@@ -203,7 +219,7 @@ promise，退出时可能丢数据。
 - [ ] 先迁 default 里挂不上的 gitea、mineru、docfirst-workflow
 - [ ] commands 导出自己的信封类型；词汇表包收窄契约面（`GwbResult`、`onShell`），并给它的 d.ts 补上 DOM 类型库
   声明——它引了 `HTMLElement`，关掉 skipLibCheck 时自己先报 TS2304（探针 01 的追加段）
-- [ ] 每个件：两半打包、清单只 dev、不 `instanceof` 别件对象、dispose 交回 promise；块笔记一族契约版本不符拒挂；
+- [ ] 每个件：两半打包、清单照第一节那张表、不 `instanceof` 别件对象与 `Service`、dispose 交回 promise；块笔记一族契约版本不符拒挂；
   bn-core 声明块笔记的浏览器共享、block-note 撤掉自己的 `gwb.shared`
 - [ ] 旧共享包 `gwb-shared-react` / `gwb-tokens` 在 registry 上标弃用；cgm-alert、nas-suite 去掉对它们的依赖
 
