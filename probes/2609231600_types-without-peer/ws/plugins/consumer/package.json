@@ -1,0 +1,11 @@
+{
+  "name": "consumer",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@godcreator/gwb-bn-core": "file:../../../vendor/bn-core-nopeer.tgz",
+    "@godcreator/gwb-plugin-api": "file:../../../vendor/plugin-api-nopeer.tgz",
+    "cordis": "4.0.0-rc.9",
+    "typescript": "7.0.2"
+  }
+}

@@ -1,0 +1,80 @@
+dist/provider-bundled10.mjs 54.0KB bare imports: none | Symbol.for("cordis.tracker") in bundle: true
+dist/viewer-bundled10.mjs 53.9KB bare imports: none | Symbol.for("cordis.tracker") in bundle: true
+dist/provider-bundled9.mjs 53.5KB bare imports: none | Symbol.for("cordis.tracker") in bundle: true
+dist/viewer-bundled9.mjs 53.4KB bare imports: none | Symbol.for("cordis.tracker") in bundle: true
+node v24.14.1 | host cordis 4.0.0-rc.9 | cordis10 4.0.0-rc.10 | plugin-loader 1.0.0-rc.6 | esbuild 0.28.2
+
+=== (b) same copy: provider/viewer import host cordis rc.9 ===
+before provider : consumer=PENDING viewer=PENDING leaf=PENDING
+provide/inject  : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1},"consumer":{"n":1,"callerUid":1,"callerName":"consumer","tag":"host-copy rc.9","selfUid":1,"callerMatch":true},"leaf":{"viewerCallerUid":3,"tag":"host-copy rc.9","counterSeenAtCtor":{"n":2,"callerUid":2,"callerName":"Viewer","tag":"host-copy rc.9"},"selfUid":3,"callerMatch":true},"instanceofHost":true,"instanceofB":false}
+provider off    : {"states":"provider=DISPOSED consumer=PENDING viewer=PENDING leaf=PENDING","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"counterGone":true,"store":[]}
+provider back   : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":2,"viewer.ctor":2,"leaf.apply":2,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"consumerN":1}
+all disposed    : {"registryDelta":0,"store":[],"props":["counter","viewer"]}
+probe log       : provider[host-copy rc.9] ctor fiber=4 | provider[host-copy rc.9] effect disposed | provider[host-copy rc.9] ctor fiber=5 | provider[host-copy rc.9] effect disposed
+errors          : none
+
+=== (a) other copy: provider/viewer import cordis10 (rc.10, separate module instance) ===
+before provider : consumer=PENDING viewer=PENDING leaf=PENDING
+provide/inject  : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1},"consumer":{"n":1,"callerUid":1,"callerName":"consumer","tag":"B-copy rc.10","selfUid":1,"callerMatch":true},"leaf":{"viewerCallerUid":3,"tag":"B-copy rc.10","counterSeenAtCtor":{"n":2,"callerUid":2,"callerName":"Viewer","tag":"B-copy rc.10"},"selfUid":3,"callerMatch":true},"instanceofHost":false,"instanceofB":true}
+provider off    : {"states":"provider=DISPOSED consumer=PENDING viewer=PENDING leaf=PENDING","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"counterGone":true,"store":[]}
+provider back   : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":2,"viewer.ctor":2,"leaf.apply":2,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"consumerN":1}
+all disposed    : {"registryDelta":0,"store":[],"props":["counter","viewer"]}
+probe log       : provider[B-copy rc.10] ctor fiber=4 | provider[B-copy rc.10] effect disposed | provider[B-copy rc.10] ctor fiber=5 | provider[B-copy rc.10] effect disposed
+errors          : none
+
+=== (c1) esbuild bundle: cordis rc.10 inlined ===
+before provider : consumer=PENDING viewer=PENDING leaf=PENDING
+provide/inject  : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1},"consumer":{"n":1,"callerUid":1,"callerName":"consumer","tag":"bundled rc.10","selfUid":1,"callerMatch":true},"leaf":{"viewerCallerUid":3,"tag":"bundled rc.10","counterSeenAtCtor":{"n":2,"callerUid":2,"callerName":"Viewer","tag":"bundled rc.10"},"selfUid":3,"callerMatch":true},"instanceofHost":false,"instanceofB":false}
+provider off    : {"states":"provider=DISPOSED consumer=PENDING viewer=PENDING leaf=PENDING","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"counterGone":true,"store":[]}
+provider back   : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":2,"viewer.ctor":2,"leaf.apply":2,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"consumerN":1}
+all disposed    : {"registryDelta":0,"store":[],"props":["counter","viewer"]}
+probe log       : provider[bundled rc.10] ctor fiber=4 | provider[bundled rc.10] effect disposed | provider[bundled rc.10] ctor fiber=5 | provider[bundled rc.10] effect disposed
+errors          : none
+
+=== (c2) esbuild bundle: cordis rc.9 inlined (same version, different instance) ===
+before provider : consumer=PENDING viewer=PENDING leaf=PENDING
+provide/inject  : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1},"consumer":{"n":1,"callerUid":1,"callerName":"consumer","tag":"bundled rc.9","selfUid":1,"callerMatch":true},"leaf":{"viewerCallerUid":3,"tag":"bundled rc.9","counterSeenAtCtor":{"n":2,"callerUid":2,"callerName":"Viewer","tag":"bundled rc.9"},"selfUid":3,"callerMatch":true},"instanceofHost":false,"instanceofB":false}
+provider off    : {"states":"provider=DISPOSED consumer=PENDING viewer=PENDING leaf=PENDING","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"counterGone":true,"store":[]}
+provider back   : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":2,"viewer.ctor":2,"leaf.apply":2,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"consumerN":1}
+all disposed    : {"registryDelta":0,"store":[],"props":["counter","viewer"]}
+probe log       : provider[bundled rc.9] ctor fiber=4 | provider[bundled rc.9] effect disposed | provider[bundled rc.9] ctor fiber=5 | provider[bundled rc.9] effect disposed
+errors          : none
+
+=== (4) functional provider: no cordis import, Symbol.for tracker ===
+before provider : consumer=PENDING viewer=PENDING leaf=PENDING
+provide/inject  : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1},"consumer":{"n":1,"callerUid":1,"callerName":"consumer","tag":"fn(no import)","selfUid":1,"callerMatch":true},"leaf":{"viewerCallerUid":3,"tag":"B-copy rc.10","counterSeenAtCtor":{"n":2,"callerUid":2,"callerName":"Viewer","tag":"fn(no import)"},"selfUid":3,"callerMatch":true},"instanceofHost":false,"instanceofB":false}
+provider off    : {"states":"provider=DISPOSED consumer=PENDING viewer=PENDING leaf=PENDING","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"counterGone":true,"store":[]}
+provider back   : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":2,"viewer.ctor":2,"leaf.apply":2,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"consumerN":1}
+all disposed    : {"registryDelta":0,"store":[],"props":["counter","viewer"]}
+probe log       : provider[fn] apply fiber=4 | provider[fn] effect disposed | provider[fn] apply fiber=5 | provider[fn] effect disposed
+errors          : none
+
+=== (4-control) plain-object provider: no tracker ===
+before provider : consumer=PENDING viewer=PENDING leaf=PENDING
+provide/inject  : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1},"consumer":{"n":1,"tag":"fn-plain(no tracker)","selfUid":1,"callerMatch":false},"leaf":{"viewerCallerUid":3,"tag":"host-copy rc.9","counterSeenAtCtor":{"n":2,"tag":"fn-plain(no tracker)"},"selfUid":3,"callerMatch":true},"instanceofHost":false,"instanceofB":false}
+provider off    : {"states":"provider=DISPOSED consumer=PENDING viewer=PENDING leaf=PENDING","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"counterGone":true,"store":[]}
+provider back   : {"states":"provider=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":2,"viewer.ctor":2,"leaf.apply":2,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1},"consumerN":1}
+all disposed    : {"registryDelta":0,"store":[],"props":["counter","viewer"]}
+probe log       : 
+errors          : none
+
+=== LOADER: (a) cordis10 other copy ===
+provide/inject  : {"states":"counter=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1},"callerMatch":true,"leafMatch":true}
+provider off    : {"states":"consumer=PENDING viewer=PENDING leaf=PENDING","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1}}
+provider back   : {"states":"counter=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":2,"viewer.ctor":2,"leaf.apply":2,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1}}
+all removed     : {"store":[]}
+errors          : none
+
+=== LOADER: (c1) bundled rc.10 ===
+provide/inject  : {"states":"counter=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1},"callerMatch":true,"leafMatch":true}
+provider off    : {"states":"consumer=PENDING viewer=PENDING leaf=PENDING","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1}}
+provider back   : {"states":"counter=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":2,"viewer.ctor":2,"leaf.apply":2,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1}}
+all removed     : {"store":[]}
+errors          : none
+
+=== LOADER: (4) functional ===
+provide/inject  : {"states":"counter=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1},"callerMatch":true,"leafMatch":true}
+provider off    : {"states":"consumer=PENDING viewer=PENDING leaf=PENDING","counts":{"consumer.apply":1,"viewer.ctor":1,"leaf.apply":1,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1}}
+provider back   : {"states":"counter=ACTIVE consumer=ACTIVE viewer=ACTIVE leaf=ACTIVE","counts":{"consumer.apply":2,"viewer.ctor":2,"leaf.apply":2,"consumer.disposed":1,"viewer.disposed":1,"leaf.disposed":1}}
+all removed     : {"store":[]}
+errors          : none

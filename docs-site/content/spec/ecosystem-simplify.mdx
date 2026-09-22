@@ -1,0 +1,215 @@
+---
+title: 全生态机制定案：件自包含、peer 退役、home 只有件、一个写手
+description: 内核与全套件的配合机制逐个定死——依赖模型（清单只写 dev、两半都打包、peer 在 home 里整体退役）、home 与装卸、开发循环、importmap 与页面边界、契约面、跨件边界、件的收尾、守卫与审计、文档；每节写定法、归属、删掉什么、判据，分四期实施
+---
+
+# 全生态机制定案
+
+**本页回答**：内核与全套件之间每一个配合机制最终定成什么样、为什么这么定、删掉什么、分几期做、做到什么算完。
+做完拆解归梁：定法进各仓现状页并钉码，每条了断落一张轨迹卡，然后删掉这一页。
+
+**由来**。2026-09-23 在总控台的会话里审了一遍内核与全套件的配合（dev、peer、importmap），查实内核本身已经很干净
+（七个文件），复杂度沉在 devkit 与 plugin-manager 两个件里，根子有三条：开发与发版都绕 registry、peer 手写还要跟
+dev 镜像、同一件事实抄在好几处。人的原话：
+
+> 可以都改我觉得，就是保持简洁，除了必要的功能不增加多余的复杂度。我们现在就在重构，应该朝着最干净、最整洁的方向努力。
+
+随后逐条追问到「peer 和可选 peer 是不是完全可以退役」「不是 devdependencies 吗」，定下本页第一节的依赖模型，其余各节建在它上面。
+
+**它改的是别的件 inject 的那一面**（plugin-manager 的命令面、词汇表包的导出、devkit 的发版检票与模板），也推翻本仓与
+devkit 仓几条写下的判据（见文末「要改写的卡与红线」）。方向人已点头（2026-09-23）；页头「待拍板」三条定了才开第二期。
+
+## 待拍板
+
+- [ ] **件里的 cordis**：推荐「cordis 写 dev、随束打进件里」——现有 `Service` 类一行不改，只多一条「别写
+  `instanceof Service`」；每件约多 54 KB，宿主升 cordis 时回归一遍 Service 协议段。备选「件不按值 import cordis」，
+  服务改成函数式 `ctx.provide`，但要认出调用方的件得手挂 `Symbol.for('cordis.tracker')` 这个内部协议键。
+  依据：`probes/2609231600_cordis-multi-copy/`
+- [ ] **类型面怎么解析**：推荐「作者只写 dev；`devkit.release` 扫发布的 d.ts，把其中出现的外部包自动写成**可选
+  peer**（`peerDependenciesMeta.optional`）」——可选 peer 不装、不警告、不进 home，只让下游的类型解析到位，与 pnpm 的
+  提升设置无关。**这一条要沿 d.ts 的类型链逐包成立**：词汇表包自己引 cordis 也得是可选 peer，链上断一环，那一段就
+  解析不到（探针情形 06 对 07）。备选是全靠 pnpm 默认的隐藏提升、消费方把类型链上的包列在仓根（情形 05）——
+  少列一个就静默变 any（情形 01），所以守卫第三条（关掉 skipLibCheck 检查发布的 d.ts）两条路都要。
+  依据：`probes/2609231600_types-without-peer/`
+- [ ] **registry 上存量的开发版**（约五百个 `-dev.*`）：删不删、留哪些。删除不可逆，要人点头；不删也不影响本页其余各节
+
+## 已拍板（2026-09-23）
+
+- peer 在 home 与件清单里整体退役；件的清单只写 devDependencies；两半都打包（下文第一节）
+- 词汇表包不改名、不并进内核应用包、不加「运行时内核版本」兼容字段；契约面收窄（第五节）
+- 不做：给命令分权限档（页面边界由第四节的导航锁保证）；跨 home 调命令改走 MCP 门（原候选第 10 条，不做）
+- 不动：importmap 归内核、MCP 门三枚工具封顶、单进程
+
+## 一、依赖模型：件自包含
+
+**定法**。件的运行时代码两半都在构建时打成束，**清单里只有 devDependencies**。产物里允许剩下的裸名只有三类：
+node 内置、`electron`、浏览器半的 importmap 名字（今天只有 react 四名）。打不进束的依赖（原生模块、运行时读自己
+文件的包）才写 `dependencies`，并在清单注释里写明为什么——今天一个都没有。类型面见「待拍板」第二条。
+
+**归属**：规矩与守卫在 devkit（模板、`devkit.release`、写插件手册）；各件照迁。
+
+**删掉**：件清单里全部运行时 peer；依赖三档（红线 3）；「相对 import 带 `.js`、每个裸名都在依赖表里」（红线 4，
+打包器负责）；「cordis 写在 dev 否则第二份实例」（红线 2，改写见文末）；发版检票里 peer 相关的全部规则；
+audit-deps 里 peer 下限那四类发现；home 里的库、共享包与依赖树。
+
+**判据**。peer 在这个生态里承担过五个角色，逐个查过都有更简单的替代：类型解析（交给可选 peer 或提升，运行时没人
+import）；宿主单例 cordis（从来没兑现——内核一份 rc.9、home 一份 rc.10 一直这样跑，cordis 自己用 `Symbol.for`
+协议键、跨份安全，实测见探针）；跨件共享库（都是无状态工具，各件私有一份即可）；页面单例 react（本来就走
+importmap）；「库独立热换」（只有 docfirst 件现查 docfirst 库这一个用例，有意放弃，见「放弃的能力」）。peer 从来
+只警告不拦，它守的东西由开发期的 audit-deps 守更准。
+
+**会失去什么**：装件时的 peer 警告；库单独升级（要重发用到它的件——块笔记一族与 bn-papers 都是同仓同发）；报错
+堆栈指向束（esbuild 不压缩，基本可读；sourcemap 不做，要做得过内核准入判据）。
+
+## 二、home 与装卸：home 只有件，只有一个写手
+
+**定法**。home 的 `package.json` 只列件，一律精确号，锁文件是真相；**唯一写手是 plugin-manager**，一切变更（装、
+升、开发版换装）走同一个 `apply`：定版本 → 一趟 pnpm → 重挂变了的件 → 若 shell 变了整页重载。件之间只经服务交互，
+「依赖它的件跟着重挂」由 cordis 的 inject 自己完成，plugin-manager 不算依赖图。
+
+**归属**：plugin-manager（被 inject 的一面）；devkit 的 `home.new` 与 `dev` 改为调它。
+
+**删掉**：install 的 peer 提升一步、`pnpm peers check` 与 `peerWarnings`、`peers.ts` / `peer-warnings.ts`、
+「库 / 共享包」分类；`plugin-manager.update`（并进 `update-all {"only":[…]}`）；devkit 里自写清单、读回核对、
+重挂那一套；`home.new` 的裸 `pnpm add`。内核 `INSTALL.md` 的装机法随之改成「装 plugin-manager 与门，其余经
+`plugin-manager.install`」或同一份底座清单（见第九节）。
+
+**判据**。今天有六个入口在写 home 清单、写法不一（`^` 与精确号混着，pnpm 沿用首次写法）；三个件在 default 里
+挂不上，正是因为升了一个库而依赖它的件没人重挂。库不进 home，这类事故就没有发生的位置。
+
+## 三、开发循环：开发版不进 registry
+
+**定法**。`devkit.dev` 在仓里构建、`pnpm pack` 出带时间戳的 tgz，经第二节的 `apply` 以 `file:` 装进**隔离
+home**，再取证。registry 只放正式版。「写插件只有一条路：发、装、验」不变——pack 照 `files` 白名单出包，漏导出、
+漏文件照样在装的那一步现形。
+
+**归属**：devkit。
+
+**删掉**：dev tag、暂存发布、每包 `pnpm view` 查重；将来的「清理开发版」命令。构建改成只带上被测包及其依赖
+（`pnpm -r --filter <包>...`），不再全仓构建。
+
+## 四、importmap 与页面边界
+
+**定法**。
+- importmap 只在页面打招呼时算一次（页面本来就只注一次），撞名就拒、说一次；**提供方只能是挂着条目的件**
+  ——今天是 shell 的 react 四名。块笔记的浏览器共享改由 bn-core 这个件声明（见下），`@godcreator/block-note`
+  这个库不再自己声明 `gwb.shared`
+- 只读现状只在没有外壳时推；日志的 warn / error 不再触发推送
+- 页面只可能是本地 `index.html`：主框架跳转、`window.open` 一律拒（`will-navigate` / `will-redirect` /
+  `setWindowOpenHandler`）；`gwb:command` 只收顶层这一帧的调用
+
+**归属**：内核（`main.ts`、`index.html`）；bn-core 与 block-note 各改一处声明。
+
+**删掉**：每条 warn 一次扫盘、日志自激环（warn → 推送 → 重算 → warn）、`setShell` 直推 / 去抖 / hello 三条推送
+路径并成一条、页面里 pending 与 current 的双保险。将来的命令权限档不必设计。
+
+**判据**。importmap 页面只注一次，推送时重算是白算；页面能调整条命令总线，页面边界是唯一需要守的线，守住它
+比给命令分档便宜得多。块笔记的 mdast 一族几百 KB，每件各打一份代价太大，由件（bn-core）提供共享仍守住
+「提供方必然是 home 直接依赖」。
+
+## 五、契约面
+
+**定法**。`@godcreator/gwb-plugin-api` 是纯类型包、只写 dev（类型面按「待拍板」第二条），与内核同仓同号。公共面：
+`gwbKernel` 四样（`dataDir` / `version` / `emit` / `setShell`）、`window.gwb` 的 `command` / `on`、外壳默认导出
+`ShellBoot`；只增不减。`GwbResult` 挪到 commands 件（它是命令总线的信封，不是内核的词）；`onShell` 退出公共面
+（只有内核自己的页面用，第四节改推送时不再牵动任何件）。
+
+**归属**：内核仓 `packages/gwb-plugin-api`；commands 件先导出自己的信封类型。
+
+**判据**。类型必须有一个共用的包（各件内联会让 `window.gwb` 的全局声明互相冲突）；运行中的内核版本与 home 里
+那份类型包版本本来就是两回事，peer 管不到运行时——加兼容字段是新机制，只增不减的契约用不着。
+
+## 六、共享裸名只有一个来源
+
+**定法**。浏览器半外置哪些名字，只从提供方的 `gwb.shared` 读：shell 导出一个构建期 helper，各件的 `build.ts`
+调它，不再抄 react 四名。
+
+**归属**：shell（加一个子路径）；devkit 模板与各件照迁。
+
+**删掉**：十三份手抄的外置名单。
+
+## 七、跨件边界
+
+**定法**。件与件只经 cordis 服务与命令交互；跨边界只传纯数据、函数与 `{ ok, data, error }` 信封，不对来自别件的
+对象做 `instanceof`。同一个库在不同件里各带一份，凡有盘上格式耦合的（块笔记的存储行格式），用契约版本号比对，
+对不上**拒绝挂载**，不只打 warn。
+
+**归属**：写插件手册；块笔记一族（`LIBRARY_CONTRACT` 那一处）。
+
+**判据**。块笔记两个仓里所有 `instanceof CommandError` 接住的都是本件自己造的对象，命令总线只传信封——各件私有
+一份不出错；真正的风险是版本漂开导致写盘格式对不上。
+
+## 八、件的收尾
+
+**定法**。件起的子进程、定时器、监听、在途落盘，一律挂在随卸载撤销的地方，dispose 回收完并**把 promise 交回去**。
+
+**归属**：写插件手册；node-cli、py-cli、windows-backup、bn-core、mcp 各有一处要补。
+
+**判据**。内核退出时只等「交回来的 promise」；今天 restic 可以在 dispose 之后再跑六小时，bn-core 关库落盘没交回
+promise，退出时可能丢数据。
+
+## 九、守卫、审计与文档
+
+**定法**。
+- **产物守卫**（`devkit.release` 构建之后、发之前，机械执行）：node 半束的裸名 ⊆ node 内置 ∪ `electron`；浏览器半
+  ⊆ importmap 名；发布的 d.ts 在 `skipLibCheck: false` 下类型检查通过（挡静默 any）
+- **audit-deps** 只报要动作的（出范围、钉了源上没有的号）；**audit-structure** 只查「装得上所需」（`exports` /
+  `files` / `keywords` / 入口可解析），不查目录名派生链；两条都接受无参数调用
+- **底座清单只有一份**：devkit 的底座件集是正本，`INSTALL.md` 由它生成或钉住，不再手抄
+- **文档不写会变的数**：AGENTS、README、说明书不写版本号、行数、别仓路径、命令条数，写取法
+
+**归属**：devkit；docfirst 规矩（「不写会变的数」可加一条正则检查）。
+
+## 放弃的能力
+
+- **库的独立热换**（peer 加现查 home 直接依赖，见卡 [依赖热换](/trajectory/2026-09-10-peer-dep-live-swap)）：唯一用例
+  是 docfirst 件现查 docfirst 库；改为随件同发
+- **装件时的 peer 警告**：从来只警告不拦，由开发期 audit-deps 代替
+- **库单独升级**：要重发用到它的件
+
+## 要改写的卡与红线
+
+拆解归梁时落新卡，用 `supersedes::` 指旧卡，旧卡留档：
+
+- [依赖三档](/trajectory/2026-09-07-deps-three-tiers)——被第一节取代
+- [依赖热换](/trajectory/2026-09-10-peer-dep-live-swap)——能力放弃
+- [cordis 走 peer](/trajectory/2026-09-07-wall-cordis-peer)——墙本身是真的（类型层），但它被读成了「运行时第二份
+  实例会坏」；新卡用 `pivots-from::` 指它，补上多份实测
+- [词汇表独立包](/trajectory/2026-09-07-vocab-package-standalone)——维持，契约面收窄另落卡
+- devkit 写插件手册红线 2、3、4 改写；base-plugins「撞过的墙」里「两份 cordis 会以莫名其妙的方式坏掉」那两处改写
+
+## 分期与验收
+
+每期开工前读 devkit 的 skill「gwb-release」定版本号（契约面动了的抬次版本号）；每期在隔离 home 验，不拿 default 验。
+
+**第一期：内核（与其余各期独立）**
+
+- [ ] importmap 只在页面打招呼时算；只读现状只在无外壳时推；warn 不触发推送——单测钉住「撞名时不再反复推送」
+- [ ] 导航锁：主框架跳转、开新窗一律拒；`gwb:command` 只收顶层帧——隔离 home 里拖入链接、iframe 里 `window.open`
+  各验一次
+- [ ] 内核发版、装新安装包
+
+**第二期：工具链（devkit 与 shell）**
+
+- [ ] shell 导出外置名 helper
+- [ ] 模板：两半 esbuild 打包、清单只 dev、调 shell helper
+- [ ] `devkit.release`：产物守卫三条；去掉 peer 检票；按「待拍板」第二条生成类型 peer
+- [ ] `devkit.dev`：pack + `file:`，只带被测包及其依赖构建；装与重挂先临时用现有 plugin-manager 命令，第三期换 `apply`
+- [ ] audit-deps / audit-structure 去噪、接受无参数
+- [ ] 写插件手册与 gwb-release 按本页改写
+
+**第三期：各件迁移**
+
+- [ ] 先迁 default 里挂不上的 gitea、mineru、docfirst-workflow
+- [ ] commands 导出自己的信封类型；词汇表包收窄契约面（`GwbResult`、`onShell`），并给它的 d.ts 补上 DOM 类型库
+  声明——它引了 `HTMLElement`，关掉 skipLibCheck 时自己先报 TS2304（探针 01 的追加段）
+- [ ] 每个件：两半打包、清单只 dev、不 `instanceof` 别件对象、dispose 交回 promise；块笔记一族契约版本不符拒挂；
+  bn-core 声明块笔记的浏览器共享、block-note 撤掉自己的 `gwb.shared`
+- [ ] 旧共享包 `gwb-shared-react` / `gwb-tokens` 在 registry 上标弃用；cgm-alert、nas-suite 去掉对它们的依赖
+
+**第四期：plugin-manager 收口**
+
+- [ ] `apply` 成为唯一写手；精确号；删 peer 提升、`peerWarnings`、库分类；`update` 并入 `update-all`；shell 变了整页重载
+- [ ] `devkit.dev` / `home.new` 改调 `apply`；`INSTALL.md` 的底座清单改为从 devkit 正本来
+- [ ] default home 清单里的库与共享包清出去，只剩件
+- [ ] 各仓现状页改写并钉码；落卡；说明书（gwb-release、gwb-devkit、gwb-plugin-manager、gwb-shell）与 AGENTS 重摆；删本页

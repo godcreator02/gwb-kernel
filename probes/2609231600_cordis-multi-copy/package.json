@@ -1,0 +1,14 @@
+{
+  "name": "probe-cordis-multi-copy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "probe": "node gen.mjs && node run.mjs"
+  },
+  "dependencies": {
+    "@cordisjs/plugin-loader": "1.0.0-rc.6",
+    "cordis": "4.0.0-rc.9",
+    "cordis10": "npm:cordis@4.0.0-rc.10",
+    "esbuild": "0.28.2"
+  }
+}

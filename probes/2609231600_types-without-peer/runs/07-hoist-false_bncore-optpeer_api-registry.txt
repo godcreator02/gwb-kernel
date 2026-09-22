@@ -1,0 +1,57 @@
+# 07 hoist-false_bncore-optpeer_api-registry
+情形：hoist:false；bn-core 可选 peer；plugin-api 用 registry 原包（peer cordis 保留）；consumer 列齐四包
+跑于 2026-09-23 02:22；node v24.14.1；pnpm 12.4.2；tsc 7.0.2；工作目录记作 <W>
+
+--- 本情形的清单
+pnpm-workspace hoist: false
+root devDependencies: （无）
+consumer devDependencies: {"@godcreator/gwb-bn-core":"file:../../../vendor/bn-core-optpeer.tgz","@godcreator/gwb-plugin-api":"0.2.7","cordis":"4.0.0-rc.9","typescript":"7.0.2","@godcreator/block-note":"0.5.2"}
+pnpm install: Done in 3.2s using pnpm v12.4.2
+隐藏提升目录 node_modules/.pnpm/node_modules 里有没有：cordis=False plugin-api=False block-note=False
+
+--- tsc -p .（skipLibCheck:true，照 gwb 各仓现行配置）
+src/probe.ts(8,9): error TS2322: Type 'string' is not assignable to type 'number'.
+src/probe.ts(10,9): error TS2322: Type '"block-note." | undefined' is not assignable to type '"nope." | undefined'.
+  Type '"block-note."' is not assignable to type '"nope."'.
+src/probe.ts(12,29): error TS2339: Property 'definitelyNotAMember' does not exist on type 'GwbContext'.
+src/probe.ts(15,18): error TS2345: Argument of type 'number' is not assignable to parameter of type 'LibraryRegistration'.
+src/probe.ts(17,33): error TS2322: Type 'string' is not assignable to type 'number'.
+
+--- 对照 probe.ts 的探测点
+  L8   E1 dataDir 当 number                报 TS2322
+  L10  E2 ctx.blockNote 增强                报 TS2322
+  L12  E3 不存在的名字                          报 TS2339
+  L14  (E4 前置) ctx.blockNoteLibraries 增强  不报
+  L15  E4 register 传错参数                   报 TS2345
+  L17  E5 BlockNoteMark.contract          报 TS2322
+  L19  OK ctx.effect（不该报）                 不报（正确）
+
+--- traceResolution 摘录：cordis / plugin-api / block-note（from＝谁发起，via＝在哪层 node_modules 找到，to＝最终落点）
+[@godcreator/gwb-plugin-api]
+    from: <W>/s07/plugins/consumer/src/probe.ts
+    via : <W>/s07/plugins/consumer/node_modules/@godcreator/gwb-plugin-api
+    to  : <W>/s07/node_modules/.pnpm/@godcreator+gwb-plugin-api@0.2.7_cordis@4.0.0-rc.9/node_modules/@godcreator/gwb-plugin-api/dist/index.d.ts
+[cordis]
+    from: <W>/s07/node_modules/.pnpm/@godcreator+gwb-plugin-api@0.2.7_cordis@4.0.0-rc.9/node_modules/@godcreator/gwb-plugin-api/dist/index.d.ts
+    via : <W>/s07/node_modules/.pnpm/@godcreator+gwb-plugin-api@0.2.7_cordis@4.0.0-rc.9/node_modules/cordis
+    to  : <W>/s07/node_modules/.pnpm/cordis@4.0.0-rc.9/node_modules/cordis/lib/index.d.ts
+[@godcreator/gwb-plugin-api]
+    from: <W>/s07/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_a0dc60c19241a549de0ecff81a4db3dd/node_modules/@godcreator/gwb-bn-core/dist/node/index.d.ts
+    via : <W>/s07/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_a0dc60c19241a549de0ecff81a4db3dd/node_modules/@godcreator/gwb-plugin-api
+    to  : <W>/s07/node_modules/.pnpm/@godcreator+gwb-plugin-api@0.2.7_cordis@4.0.0-rc.9/node_modules/@godcreator/gwb-plugin-api/dist/index.d.ts
+[@godcreator/block-note]
+    from: <W>/s07/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_a0dc60c19241a549de0ecff81a4db3dd/node_modules/@godcreator/gwb-bn-core/dist/node/index.d.ts
+    via : <W>/s07/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_a0dc60c19241a549de0ecff81a4db3dd/node_modules/@godcreator/block-note
+    to  : <W>/s07/node_modules/.pnpm/@godcreator+block-note@0.5._5f2d19d47a51c1f5b0afa71a0b21043c/node_modules/@godcreator/block-note/dist/index.d.ts
+[cordis]
+    from: <W>/s07/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_a0dc60c19241a549de0ecff81a4db3dd/node_modules/@godcreator/gwb-bn-core/dist/node/index.d.ts
+    via : <W>/s07/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_a0dc60c19241a549de0ecff81a4db3dd/node_modules/cordis
+    to  : <W>/s07/node_modules/.pnpm/cordis@4.0.0-rc.9/node_modules/cordis/lib/index.d.ts
+[@godcreator/block-note]
+    from: <W>/s07/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_a0dc60c19241a549de0ecff81a4db3dd/node_modules/@godcreator/gwb-bn-core/dist/shared/recruit.d.ts
+    via : <W>/s07/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_a0dc60c19241a549de0ecff81a4db3dd/node_modules/@godcreator/block-note
+    to  : <W>/s07/node_modules/.pnpm/@godcreator+block-note@0.5._5f2d19d47a51c1f5b0afa71a0b21043c/node_modules/@godcreator/block-note/dist/index.d.ts
+[@godcreator/block-note]
+    from: <W>/s07/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_a0dc60c19241a549de0ecff81a4db3dd/node_modules/@godcreator/gwb-bn-core/dist/node/wire.d.ts
+    via : <W>/s07/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_a0dc60c19241a549de0ecff81a4db3dd/node_modules/@godcreator/block-note
+    to  : <W>/s07/node_modules/.pnpm/@godcreator+block-note@0.5._5f2d19d47a51c1f5b0afa71a0b21043c/node_modules/@godcreator/block-note/dist/index.d.ts

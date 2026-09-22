@@ -1,0 +1,5 @@
+{
+  "name": "probe-root",
+  "private": true,
+  "type": "module"
+}
