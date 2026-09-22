@@ -14,8 +14,7 @@ const config = {
     // 站的入口是现状区的入口页；未来区只剩路线一页
     { source: '/', destination: '/docs', permanent: false },
     { source: '/future', destination: '/future/roadmap', permanent: false },
-    // 愿景与边界归现状（2026-09-23）：系统地图并进入口，总览与刻意不做拆进入口与边界，老 URL 全保
-    { source: '/docs/system-map', destination: '/docs', permanent: true },
+    // 愿景与边界归现状（2026-09-23）：总览与刻意不做拆进入口与边界，老 URL 全保（系统地图见下方 rewrites）
     { source: '/future/overview', destination: '/docs', permanent: true },
     { source: '/future/not-doing', destination: '/docs/boundary', permanent: true },
     // 六区装配（2026-09-12）：轨迹升独立区、生成正本归自己的区，老 URL 全保
@@ -37,6 +36,9 @@ const config = {
     { source: '/docs/dev-loop', destination: '/docs', permanent: true },
     { source: '/docs/docfirst/:path*', destination: '/docs', permanent: true },
   ],
+  // 系统地图并进了入口页，但旧配置曾把 /docs 永久重定向到 /docs/system-map，浏览器缓存着那条 308：
+  // 这里再重定向回 /docs 就成环。改写不发 30x，缓存了旧跳转的浏览器落到这个地址也看得到入口页
+  rewrites: async () => [{ source: '/docs/system-map', destination: '/docs' }],
 }
 
 export default withMDX(config)

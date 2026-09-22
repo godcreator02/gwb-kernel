@@ -14,11 +14,13 @@ god 工作台的内核：一个 Electron 应用，只做**第一个件跑起来�
 整个应用只有两个进程：
 
 ```text
-主进程（Electron）                               渲染进程（一扇窗）
-  内核：home · 挂载 · 日志 · importmap             页面根 index.html
-  cordis ── 所有件都住这里                         window.gwb（preload 注入）
-     ◀── gwb:command ─────────────────────────   外壳件与各窗格（件的浏览器半）
-     ── gwb:event / gwb:shell ─────────────────▶
+主进程（Electron）
+  内核：home · 挂载 · 日志 · importmap
+  cordis ── 所有件都住这里
+        ▲ gwb:command          ▼ gwb:event / gwb:shell
+渲染进程（一扇窗）
+  页面根 index.html · window.gwb（preload 注入）
+  外壳件与各窗格（件的浏览器半）
 ```
 
 件跑在主进程里，`import('electron')` 就够得着开窗、菜单、子进程；页面里画什么全归外壳件，内核只给一个空 `#root`、一张 importmap 与一个 `window.gwb`。
