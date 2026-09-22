@@ -22,7 +22,7 @@ description: 内核连 yml 都不认识——挂载归两个官方插件；插�
 
 ## baseUrl 指向 home，而且设在根上下文
 
-{/* ref file="../apps/desktop/src/main.ts" lines="105-107" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="124-126" */}
 
 `ctx.baseUrl` = home 目录的 file URL，loader 的模块解析从这儿起步，`<home>/node_modules` 里的插件因此按裸名就找得到。母仓把 baseUrl 设成应用目录，所以它必须自己把每个条目名算成绝对 file URL——那句「裸名包只在 home 位时 loader 会静默挂不上」的血泪注释，根因就在这里。
 
@@ -30,7 +30,7 @@ description: 内核连 yml 都不认识——挂载归两个官方插件；插�
 
 ## 引导链：顺序全是判据
 
-{/* ref file="../apps/desktop/src/main.ts" lines="256-262" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="275-281" */}
 
 1. **先 provide `gwbKernel`，再动 loader**。这个服务挂在根 fiber 上（根 fiber 生来 ACTIVE）、
    永不撤销，而且 provide 发生在模块顶层（`ctx.provide('gwbKernel', kernel)`）、结构上先于

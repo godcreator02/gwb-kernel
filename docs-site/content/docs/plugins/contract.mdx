@@ -10,7 +10,7 @@ description: 内核给插件与页面提供什么、认什么、不管什么—�
 
 ## 给插件的面：就四样
 
-{/* ref file="../apps/desktop/src/main.ts" lines="204-218" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="223-237" */}
 
 - **`dataDir`**——home 的绝对路径。落盘、找包都用它，**别自己拼**
 - **`version`**——内核自己的版本号，读的是内核包的清单（`dist/` 上一级那份），从仓里起、从安装包起
@@ -72,7 +72,7 @@ Electron / Chromium 的版本是运行时自己的事实，`process.versions` �
 一步、最近的错误行——都是内核已经攥着的。条目到哪一步那句话是独立的分类器模块
 `src/entry-state.ts`（手造条目就能单测），`report()` 留在 `main.ts` 收现场：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="154-176" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="173-195" */}
 
 {/* ref file="../apps/desktop/src/entry-state.ts" lines="1-15" */}
 
@@ -81,7 +81,7 @@ Electron / Chromium 的版本是运行时自己的事实，`process.versions` �
 与 `disabled` 是状态之外两种，另起两个词。推的时机：条目换态与错误行到来都去抖成一次
 `gwb:shell` 重推：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="187-203" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="206-222" */}
 
 ## 挂载：三步缺一不可，id 一律手写
 

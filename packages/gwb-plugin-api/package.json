@@ -1,7 +1,9 @@
 {
   "name": "@godcreator/gwb-plugin-api",
-  "version": "0.1.2",
-  "author": {"name": "godcreator"},
+  "version": "0.2.7",
+  "author": {
+    "name": "godcreator"
+  },
   "description": "词汇表包（内核契约）：gwbKernel 四个方法（dataDir / version / emit / setShell）与页面上的 window.gwb 类型；对插件只增不减。",
   "type": "module",
   "main": "dist/index.js",
@@ -34,5 +36,7 @@
     "type": "git",
     "url": "https://git.tianshen02.online:28377/godcreator/gwb-kernel.git"
   },
-  "keywords": ["gwb"]
+  "keywords": [
+    "gwb"
+  ]
 }

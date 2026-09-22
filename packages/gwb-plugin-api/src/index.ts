@@ -12,7 +12,7 @@ export interface GwbResult<T = unknown> {
   error?: string
 }
 
-/** 内核挂在根上下文的服务，只有内核提供、永不撤销。用 `requireKernel` 取，不写进 `inject` */
+/** 内核挂在根上下文的服务，只有内核提供、永不撤销。直接取 `ctx.gwbKernel`（不写进 `inject`） */
 export interface GwbKernelApi {
   /** 这个 home 的目录 */
   dataDir: string
@@ -32,19 +32,11 @@ export interface GwbContext extends Context {
   gwbKernel: GwbKernelApi
 }
 
-/** 取内核服务。不要写进 `export const inject` */
-export function requireKernel(ctx: Pick<GwbContext, 'gwbKernel'>): GwbKernelApi {
-  const kernel = ctx.gwbKernel
-  if (kernel === undefined) {
-    throw new Error('ctx.gwbKernel 不在——这个插件跑在一个不是 gwb 内核的 cordis 宿主里')
-  }
-  return kernel
-}
-
-/** 把 unknown 收窄成对象 */
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
+/**
+ * 曾经的两个运行时薄 helper（`requireKernel`、`isRecord`）已于 2026-09-22 移除——各件把这两
+ * 个无状态纯函数内联进自己的 `src/vocab.ts`（实施 Spec D6：本包收敛为纯类型契约面，仅随
+ * kernel 版本发版）。此版本起本包零运行时导出。
+ */
 
 /** 页面的公共面 `window.gwb`。谁在这页上跑都够得着 */
 export interface GwbWindowApi {
