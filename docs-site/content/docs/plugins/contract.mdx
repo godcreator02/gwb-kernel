@@ -95,8 +95,8 @@ Electron / Chromium 的版本是运行时自己的事实，`process.versions` �
 ## 清单里内核读的字段
 
 `gwb.shared` 是**内核唯一会读的 `gwb` 字段**：「我给页面提供这几个裸名」。内核扫 home
-清单里各包的这段声明拼成 importmap、随 `gwb:shell` 推给页面——先声明先得，撞名只报
-不改（见[取址](/docs/kernel/loading)）。内核怎么消费它，决定了它只能是清单声明而不是
+清单里各包的这段声明拼成 importmap、随 `gwb:shell` 推给页面——撞名全部拒绝：该裸名
+不进表，页面 import 它直接报解析错误（见[取址](/docs/kernel/loading)）。内核怎么消费它，决定了它只能是清单声明而不是
 运行时注册：
 
 {/* ref file="../apps/desktop/src/imports.ts" lines="6-15" */}

@@ -8,7 +8,7 @@ import { resolveFromHome } from './bare-import.js'
  * package.json 里声明 `gwb.shared`（裸名 → exports 子路径），这里扫 home 清单收齐、经
  * `resolveFromHome`（与 node 半同一条解析）解成 `file://` importmap。每次调用都现算，共享包
  * 换了版本，下一次调用就指到新版本的真实路径。不认识 react 这个词，只搬运提供方的声明；共享包
- * 没有 node 半，清单是它唯一能说话的地方。撞名只认先到的，warn 一声。
+ * 没有 node 半，清单是它唯一能说话的地方。撞名全部拒绝：该裸名不进表，页面 import 它直接报解析错误。
  *
  * 这个文件不碰 electron、不碰 cordis：副作用只有磁盘读，warn 也由调用方注入——单测直接
  * 喂一个临时 home 目录就能跑
@@ -24,6 +24,7 @@ const stackOf = (e: unknown): string => (e instanceof Error ? (e.stack ?? e.mess
 
 export function collectImports(deps: CollectImportsDeps): Record<string, string> {
   const imports: Record<string, string> = {}
+  const conflicted = new Set<string>()
   let packages: string[] = []
   try {
     const manifest = JSON.parse(fs.readFileSync(path.join(deps.dataDir, 'package.json'), 'utf8')) as {
@@ -46,8 +47,12 @@ export function collectImports(deps: CollectImportsDeps): Record<string, string>
     if (typeof shared !== 'object' || shared === null) continue
     for (const [bare, sub] of Object.entries(shared as Record<string, unknown>)) {
       if (bare === '' || typeof sub !== 'string' || sub === '') continue
-      if (imports[bare] !== undefined) {
-        deps.warn(`裸名 ${bare} 有两个提供方，只认先到的，${pkg} 的那条忽略`)
+      if (imports[bare] !== undefined || conflicted.has(bare)) {
+        if (imports[bare] !== undefined) {
+          delete imports[bare]
+          conflicted.add(bare)
+        }
+        deps.warn(`裸名 ${bare} 有多个提供方，全部拒绝：importmap 不收录这个名字（本次为 ${pkg} 的声明）`)
         continue
       }
       try {

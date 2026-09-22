@@ -28,7 +28,7 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 → 主进程 ipcMain.handle：原样派给 ctx.gwbCommands.run → 兑现回页面
 ```
 
-{/* ref file="../apps/desktop/src/main.ts" lines="220-226" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="239-245" */}
 
 **内核一条原生命令都没有。** 旧线那条 `kernel.info` 随两进程退役了——自省、装机、版本
 这些需求要么没有了，要么归了插件。`handle` 里只做两件防呆：命令名不是字符串回一句错；
@@ -41,7 +41,7 @@ description: 两个执行世界之间的三条通道——命令下行、事件�
 
 ## 事件：emit 的那一头是页面
 
-{/* ref file="../apps/desktop/src/main.ts" lines="204-217" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="223-236" */}
 
 插件调 `ctx.gwbKernel.emit(payload)`，主进程 `webContents.send('gwb:event', payload)`，页面的
 `gwb.on(cb)` 收到（见[内核契约面](/docs/plugins/contract)）。**事件是火过就灭的**，没有历史

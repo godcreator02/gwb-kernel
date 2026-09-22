@@ -45,7 +45,7 @@ program。它本来也不进根 build/test，自己有 `docfirst check` 与 `nex
 判据是**「跑它要不要起一个 Electron」**，不是「这段重不重要」。单进程内核里够得上这个判据的
 是三个纯函数模块——`imports.ts`（扫 `gwb.shared` 拼 importmap）、`bare-import.ts`（裸名两步
 解析）、`entry-state.ts`（条目状态分类），各自的副作用只剩磁盘读，单测就在旁边 `tests/`
-（imports 那份九个用例：空仓、无依赖、正常收进、子路径不带前缀、地址断言、junction 换版后现算、撞名先到先得、
+（imports 那份九个用例：空仓、无依赖、正常收进、子路径不带前缀、地址断言、junction 换版后现算、撞名全部拒绝、
 解析不到只 warn、坏形状静默忽略）。
 
 其余——`BrowserWindow`、IPC、loader、真插件挂载——一律归实机验证。硬凑自动化只会得到

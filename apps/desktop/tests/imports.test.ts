@@ -83,15 +83,17 @@ describe('collectImports', () => {
     expect(imports['react']).toBe(pathToFileURL(path.join(fs.realpathSync.native(home), 'node_modules', 'shared-a', 'out.mjs')).href)
   })
 
-  it('撞名只认先到的，后来那条 warn 一声', () => {
+  it('撞名全部拒绝：该裸名不进表，第三个提供方到来时再 warn 一声', () => {
     const { imports, warn } = run({
-      'package.json': homeManifest(['shared-a', 'shared-b']),
+      'package.json': homeManifest(['shared-a', 'shared-b', 'shared-c']),
       ...sharedPackage('shared-a', { react: './react.js' }, { './react.js': './out.mjs' }),
       ...sharedPackage('shared-b', { react: './react.js' }, { './react.js': './out.mjs' }),
+      ...sharedPackage('shared-c', { react: './react.js' }, { './react.js': './out.mjs' }),
     })
-    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledTimes(2)
     expect(String(warn.mock.calls[0]?.[0])).toContain('shared-b')
-    expect(Object.keys(imports)).toEqual(['react'])
+    expect(String(warn.mock.calls[1]?.[0])).toContain('shared-c')
+    expect(imports).toEqual({})
   })
 
   it('exports 里没有那个子路径：不收，warn 带原话', () => {

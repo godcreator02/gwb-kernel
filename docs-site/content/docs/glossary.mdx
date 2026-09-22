@@ -44,7 +44,7 @@ description: 这条线造的词都在这儿——每个词一句定义，指到�
 | **三条 IPC** | `gwb:command`（页面 → 命令总线）、`gwb:event`（插件 → 页面单向推）、`gwb:shell`（内核 → 页面推外壳地址与 importmap）。见[桥](/docs/kernel/bridge) |
 | **`window.gwb`** | 页面公共面，只有三个函数：`command` / `on` / `onShell`，由 `preload.cjs` 经 contextBridge 暴露 |
 | **importmap** | 裸名 → `file://` URL 的映射表。内核扫 `gwb.shared` 拼、随 `gwb:shell` 推，页面注完表才 import 外壳——赶在第一句裸名 import 之前 |
-| **`gwb.shared`** | 包清单里唯一被内核读的字段：「我给页面提供这几个裸名」。**先声明先得**，撞名只报不改 |
+| **`gwb.shared`** | 包清单里唯一被内核读的字段：「我给页面提供这几个裸名」。**撞名全部拒绝**：该裸名不进表，页面 import 它直接报解析错误 |
 | **命令总线** | `ctx.gwbCommands`，某个插件提供的服务。**内核一条原生命令都没有**——`gwb:command` 收到什么原样派给它，没人提供总线就报错 |
 | **`GwbResult`** | 命令回执形状 `{ ok, data?, error? }` |
 | **外壳** | 调了 `gwbKernel.setShell(url)` 的那个插件。内核不挑外壳：谁调用、谁是，后调的顶掉先调的。页面 `import` 那个 URL，调它的默认导出 |
