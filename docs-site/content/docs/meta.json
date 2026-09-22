@@ -1,6 +1,7 @@
 {
   "pages": [
-    "system-map",
+    "index",
+    "boundary",
     "kernel",
     "glossary"
   ]

@@ -1,9 +1,7 @@
 {
   "title": "未来",
-  "description": "愿景、刻意不做、路线图——现状区一字不写未来",
+  "description": "只放还没发生的事：在等什么前提、哪些决定到期再选",
   "pages": [
-    "overview",
-    "not-doing",
     "roadmap"
   ]
 }
