@@ -19,13 +19,13 @@ god 工作台的**正线**：最小的、能正常运行插件的那个版本。
 | 解析裸名（浏览器半）   | 扫 home 清单里各包声明的 `gwb.shared`，解析成 `file://` importmap，随外壳地址推给页面，页面注完表才 import 外壳。解析与 node 半同一条 `resolveFromHome`，共享包升了版整页重载即拿新版。内核不认识 react，只搬运提供方的声明。这段是纯函数，单独住 `imports.ts`（可单测）                                                                               | `apps/desktop/src/imports.ts`     |
 | 开窗与桥         | 一扇窗；`gwb:command` 派给 `ctx.gwbCommands`；`gwb:event` 推事件；`gwb:shell` 告诉页面外壳是谁                                                                                                                                                                                     | `src/main.ts` `src/preload.cjs`   |
 | 页面根          | 听 `onShell`，`import` 那个 URL，调默认导出；没有外壳、或外壳起不来时画一份**只读现状**（各条目到哪一步、最近的错误行），没有按钮                                                                                                                                                                                  | `src/index.html`                  |
-| 自己出错人看得见     | cordis 日志全量进 stderr 加 `<home>/gwb.log`；两个 `process.on` 只记不退；`main()` 起不来先弹错误框再退                                                                                                                                                                                 | `src/main.ts`                     |
+| 自己出错人看得见     | cordis 日志全量进 stderr 加 `<home>/gwb.log`（单份 128 MB 上限、滚一份旧的，`GWB_LOG_LIMIT_MB` 可调，0＝不滚；失败降级不致命）；两个 `process.on` 只记不退；`main()` 起不来先弹错误框再退                                                                                                                          | `src/main.ts` `src/log-file.ts`   |
 
-（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。src 下六个文件合计 557 行（含空行与注释）：
-`main.ts` 307、`bare-import.ts` 29、`entry-state.ts` 40、`imports.ts` 61、`index.html` 101、
-`preload.cjs` 19，外加词汇表 74。不带 electron 的纯函数都单独成文件、测试就在旁边 `tests/`。）
+（表里七行，「开窗与桥」跟「页面根」是同一件事的两头。src 下七个文件合计 753 行（含空行与注释）：
+`main.ts` 326、`log-file.ts` 172、`bare-import.ts` 29、`entry-state.ts` 40、`imports.ts` 66、
+`index.html` 101、`preload.cjs` 19，外加词汇表 66。不带 electron 的纯函数都单独成文件、测试就在旁边 `tests/`。）
 
-**没有的**：`gwb://` 协议、exports 解析、`kernel.info`、日志缓冲与轮转、宿主子进程与 fd3 协议、
+**没有的**：`gwb://` 协议、exports 解析、`kernel.info`、日志缓冲（轮转自 0.2.7 起有，只管 `gwb.log` 这一份的上限）、宿主子进程与 fd3 协议、
 README 铺进 home、装机（内核不碰 pnpm），以及旧线阶段页与崩溃页那套机器（轮询、讣告、重试）。
 这些全归插件，或者归 Electron 自己（页面直接吃 `file://`）。没有外壳时那份只读现状不是它们的
 回归：只画内核已经攥着的数据（loader 的条目树、logger 的缓冲），**不归因、不重试、不自动恢复**，
@@ -40,7 +40,8 @@ importmap 归内核不归外壳（判据见[importmap 归内核，不归外壳](
 node 半 `ctx.gwbKernel`：`dataDir`、`version`（内核自己的版本号）、`emit(payload)`、`setShell(url) → 撤销函数`。
 页面 `window.gwb`：`command(name, args)`、`on(cb)`、`onShell(cb)`。
 外壳模块：默认导出 `(root: HTMLElement) => { dispose?() } | void`。
-正本在 `packages/gwb-plugin-api/src/index.ts`（`@godcreator/gwb-plugin-api` 0.1.2，发在 gitea 个人源）。
+正本在 `packages/gwb-plugin-api/src/index.ts`（`@godcreator/gwb-plugin-api` 0.2.7，发在 gitea 个人源；0.2 起是
+**纯类型面**——`requireKernel` / `isRecord` 两个值导出已撤，件内自带）。
 发版：在包里抬号、提交，再 `devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}`——它要的
 仓根 `pnpm build` 构建词汇表与桌面端（文档站不在内）；别在包目录里手敲 `pnpm publish`，那条绕开了
 树干净与产物白名单两道守卫。
@@ -109,11 +110,8 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 
 ## 容器里的邻居
 
-本仓特有的一个；其余单元全表在总控台。
-
-| 单元                           | 是什么                 | 这个仓怎么用它         |
-| ---------------------------- | ------------------- | --------------- |
-| `26090705ymz\gwb-kernel-min` | 单进程重构的**实验目录**，用完即弃 | 只读，别再往里写；插件迁完就删 |
+单元清单现扫 `unit-folder.list`（台没起就照各单元 `unit.json` 扫 `D:\unitfolders`）；单进程重构那个
+实验目录（旧 `gwb-kernel-min`）已删。
 
 ## 干活之前：知识随插件走
 
@@ -123,11 +121,11 @@ CDP 端口别跟别的会话正在跑的实例撞上，撞上取到的是别人�
 **内核不问门是什么协议**——门是插件，换门不惊动内核（09-13 换 command-http、09-14 复位换回
 mcp、同日面重设计为三枚，三次内核零改动）。连着 `default` home 的会话直接调；没连着就按包内路径 Read：
 
-| skill                          | 住哪                                                                                            | 什么时候用                                                                                                |
-| ------------------------------ | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `gwb-devkit`                   | `gwb-devkit` 包 `skills/`（仓 `D:\unitfolders\260908dkv\gwb-devkit`）                             | 写插件的整条路；验机纪律在「测试 home」「验机」两节（隔离 home 与命名法、产物是不是新的、四种「看着成了」、怎么从页面取证）；**改内核的验证路子在本仓 AGENTS「怎么跑」** |
-| `docfirst-docs` / `trajectory` | `@godcreator/gwb-docfirst-workflow` 插件 `skills/`（仓 `D:\unitfolders\26090315xby\god-live-doc`） | 写或改文档站之前；记轨迹卡之前                                                                                      |
-| `gwb-decide`                   | 总控台 `D:\unitfolders\26090520ntn\console\.claude\skills\`（宿主 CLI 的 skill，不随插件发）                | 遇到选型、判「进内核还是做成插件」、决定要不要做某个功能之前。推完交给人拍板，拍板后记轨迹卡                                                       |
+| skill                          | 住哪                                                                                              | 什么时候用                                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `gwb-devkit`                   | `gwb-devkit` 包 `skills/`（仓 `D:\unitfolders\s28bv-gwbbase\gwb-devkit`，包在 `plugins/devkit`）       | 写插件的整条路；验机纪律在「测试 home」「验机」两节（隔离 home 与命名法、产物是不是新的、四种「看着成了」、怎么从页面取证）；**改内核的验证路子在本仓 AGENTS「怎么跑」** |
+| `docfirst-docs` / `trajectory` | `@godcreator/gwb-docfirst-workflow` 插件 `skills/`（仓 `D:\unitfolders\s28bv-gwbbase\god-live-doc`） | 写或改文档站之前；记轨迹卡之前                                                                                      |
+| `matt-pocock`（grill 一节）        | `@godcreator/gwb-agent-hooks-skills` 插件 `skills/`（原总控台 `gwb-decide` 已下线）                        | 遇到选型、判「进内核还是做成插件」、决定要不要做某个功能之前先盘问。推完交给人拍板，拍板后记轨迹卡                                                    |
 
 判据与代价见[知识随件走](/trajectory/2026-09-09-knowledge-rides-package)。
 

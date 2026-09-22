@@ -86,12 +86,13 @@ New-Item -ItemType Directory -Force $gwbHome | Out-Null
   name: '@godcreator/gwb-mcp'
 '@)
 Set-Location $gwbHome
-pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-logger @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp @godcreator/gwb-shared-react @godcreator/gwb-tokens @godcreator/gwb-plugin-api
+pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-logger @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp @godcreator/gwb-plugin-api
 ```
 
 * `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次起来都换一个随机串）
-* 最后三个（`gwb-shared-react`、`gwb-tokens`、`gwb-plugin-api`）是共享库，不进条目表，但必须是
-  home 的直接依赖，否则外壳起不来
+* 最后一个（`gwb-plugin-api`，词汇表）是库，不进条目表；react 系与令牌表随 `gwb-shell` 包来。
+  **别再装 `gwb-shared-react` / `gwb-tokens`**：两包已并进 shell、停发，前者跟 shell 声明同一组 react
+  裸名，同时是 home 直接依赖时内核把这组名全拒出 importmap，外壳起不来
 * 退出码 0 就成。输出里有一行 `Issues with peer dependencies found`：有插件还没跟上它上游的新版，
   包照样装上了，但那个插件可能起不来——在 home 里跑 `pnpm peers check` 拿到明细，原样告诉用户
 
@@ -124,9 +125,12 @@ Get-Content $rt
 
 ## 5. 连 MCP 门
 
-门在 `runtime.json` 的 `mcp.url`（default 就是 `http://127.0.0.1:2870/mcp`），无鉴权、只绑本机。
+门在 `runtime.json` 的 `mcp.url`（default 就是 `http://127.0.0.1:2870/mcp`），只绑本机，**要
+`Authorization: Bearer <token>`**：token 每 home 一份、落盘在门那个件的数据目录（`mcp/secret.json`）、重启不换，
+没带或对不上一律回 401。
 
-先不改任何客户端配置，用门自带的命令行客户端验一遍门（零依赖，node 18 起就能跑）：
+先不改任何客户端配置，用门自带的命令行客户端验一遍门（零依赖，node 18 起就能跑；它自己读 default
+home 的凭据文件，不用给 token）：
 
 ```powershell
 $client = "$env:APPDATA\gwb-kernel\homes\default\node_modules\@godcreator\gwb-mcp\bin\client.mjs"
@@ -135,17 +139,18 @@ node $client --url http://127.0.0.1:2870/mcp run plugin-manager.list
 node $client --url http://127.0.0.1:2870/mcp run skill.list
 ```
 
-门通了，再给用户常用的客户端配上：
+门通了，再给用户常用的客户端配上。先拿带好头的片段：`node $client --url http://127.0.0.1:2870/mcp run mcp.token`
+回 `{ token, file, mcpServers }`，`mcpServers` 里已带 `headers`，照抄即连（**回执含明文凭据**，别贴进
+公开的地方）：
 
-* Claude Code：`claude mcp add --transport http gwb http://127.0.0.1:2870/mcp`（要所有项目都能用就加
-  `--scope user`），然后开新会话，或在会话里 `/mcp` 重连
-* 别的客户端：配成 `{ "mcpServers": { "gwb": { "type": "http", "url": "http://127.0.0.1:2870/mcp" } } }`
-  这个形状；连上之后门里的 `mcp.info` 会回一份可照抄的片段
+* Claude Code：`claude mcp add --transport http gwb http://127.0.0.1:2870/mcp --header "Authorization: Bearer <token>"`
+  （要所有项目都能用就加 `--scope user`），然后开新会话，或在会话里 `/mcp` 重连
+* 别的客户端：照抄上面 `mcpServers` 那一段（形状是 `{ "gwb": { "type": "http", "url": …, "headers": { "Authorization": "Bearer <token>" } } }`）
 
 连上**先调 `index`**：它回的 instructions 讲清之后怎么干活。再核两样：
 
-* `run plugin-manager.list` 回 14 个包：11 个插件各带一条条目、`active: true`；`gwb-shared-react`、
-  `gwb-tokens`、`gwb-plugin-api` 三个是共享库，条目为空（`entries: []`）属正常
+* `run plugin-manager.list` 回 12 个包：11 个插件各带一条条目、`active: true`；`gwb-plugin-api`
+  是库，条目为空（`entries: []`）属正常
 * `run skill.list` 列得出说明书，至少有 `mcp`、`gwb-plugin-manager`、`gwb-devkit`
 
 做完，把第 1 步改过的配置告诉用户。

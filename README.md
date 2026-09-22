@@ -9,7 +9,8 @@ god 工作台的正线：**最小的、能正常运行插件的那个版本**。
 标准，插件得真能干活。
 
 cordis 住 Electron 主进程（单进程）：整个应用只有主进程与渲染进程两个。母仓
-`god-workbench` 已退役、只作参考；插件在插件仓 `26090709qzp/gwb-base-plugins` 重做。
+`god-workbench` 已退役、只作参考；插件在插件仓 `s28bv-gwbbase/gwb-base-plugins`（无头基础件）与
+`s28bv-gwbbase/gwb-ui-plugins`（外壳等 UI 平台）重做。
 
 ## 内核只做六件事
 
