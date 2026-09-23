@@ -1,0 +1,111 @@
+---
+title: 命令插件
+description: gwb-commands 提供命令总线 ctx.gwbCommands：插件把能力登记成命令，页面、agent、别的插件都经这一张命令表调用；撞名后登记的生效并告警，注销只删自己那条，处理函数抛错也回成失败回执
+---
+
+**本页回答**：命令插件是什么、为什么放在内核仓；登记、注销、执行三件事各有什么规则、为什么这样定；怎么测；代码从哪读。页面怎么把命令交到这里，见接缝页[命令与事件](/docs/seams/commands)。
+
+## 是什么
+
+一个插件，源码在内核仓 `plugins/commands/`，包名 `@godcreator/gwb-commands`，由 `cordis.yml` 的条目加载。它提供服务 `ctx.gwbCommands`：一张「命令名 → 处理函数」的表。插件把自己的能力登记成命令；页面经 `window.gwb.command`、agent 经 MCP 入口的 `run`、别的插件直接调 `run`，用的都是这一张表。
+
+没有它，页面调不到任何命令：内核一个命令名都不认识，收到的命令原样交给 `ctx.gwbCommands`，这个服务不存在时直接回 `ok: false`。
+
+**放在内核仓**，是因为内核直接依赖它：页面发来的命令一律交给 `ctx.gwbCommands.run`。它和插件管理一起随安装包预装，新 home 第一次启动时就装好（见交接区[随安装包预装](/spec/platform-plugins)）。它仍然是一个普通插件，能停用、卸载、单独升级。
+
+它对外的全部接口：
+
+{/* ref file="../plugins/commands/src/registry.ts" lines="3-19" */}
+
+它不运行命令行程序：处理函数就是普通的 JS 函数，在主进程里执行。启动子进程运行命令行程序的是基础插件仓的 `gwb-node-cli` 与 `gwb-py-cli`，它们把自己的命令也登记到这张表上。
+
+## 登记与注销
+
+**是什么**：`register(def, handler)` 登记一条命令，返回注销函数。调用方要用 `ctx.effect` 包住它，插件卸载时命令自动注销。
+
+**规则与理由**：
+- **同名命令，后登记的生效，但要告警**：插件之间平等，换掉一条命令是允许的；但不告警的话，调用方从此调到另一个插件的处理函数上，两边都不报错。告警里写明原来是哪个插件、现在是哪个
+- **注销只删自己那条**：同名命令被后来者替换后，先登记的那个插件卸载时，不能把接手的那条一起删掉。所以注销函数先确认表里还是自己那条记录，才删除
+- **`plugin` 写包名**：它是 agent 按插件操作的依据（装卸、升级、按插件筛选命令都用包名）。写成短名的，告警一句但照常登记，不当成失败
+- **`description` 与 `usage` 分开写**：`description` 是一句话介绍，出现在 MCP 入口 `index` 返回的清单里；`usage` 写参数形状与注意事项，只在 `search` 命中时返回。无参数的命令在 usage 里写「无参数」。都挤进 description 的话，`index` 的清单会被撑得很长
+
+**怎么做**：
+
+{/* ref file="../plugins/commands/src/registry.ts" lines="37-57" */}
+
+登记一条命令的写法：
+
+```ts
+export const inject = ['gwbCommands']
+
+export function apply(ctx: GwbContext) {
+  ctx.effect(() =>
+    ctx.gwbCommands.register(
+      { name: 'mine.hello', description: '回一句话', usage: '参数 { n }', plugin: '@scope/mine' },
+      (args) => ({ got: args }),
+    ),
+  )
+}
+```
+
+`plugin` 由登记方自己写，不从 `ctx.name` 读：那是 cordis 的追踪属性，没写 `inject` 时读它会抛错。
+
+<Callout type="warn" title="登记命令一定要包 ctx.effect">
+不包的话注销函数没人调：条目停用后插件已经卸载，命令名却还留在表里，调用时报的是「服务不在」这类和停用无关的错误。
+</Callout>
+
+## 执行
+
+**是什么**：`run(name, args)` 找到处理函数并执行，回执只有两种形状：`{ ok: true, data }` 或 `{ ok: false, error }`。
+
+**规则与理由**：
+- **处理函数自己返回了带 `ok` 的对象，原样返回**；返回别的值，一律包成 `{ ok: true, data: 值 }`。命令行运行插件的回执带 `stdout`、`exitCode` 等字段，要和 `ok` 在同一层
+- **处理函数抛错，回成失败回执，不把异常抛给调用方**：调用方可能是页面上的一次点击
+- **没有这条命令，回失败回执，原因里带命令名**
+- **每次登记、执行都写日志**：以前执行时的异常全部收进回执，调用方看得到，日志里却没有记录。现在成功写 info，失败与找不到命令写 warn
+
+**怎么做**：
+
+{/* ref file="../plugins/commands/src/registry.ts" lines="63-85" */}
+
+## 服务与说明书
+
+服务用 `ctx.effect` 包住 `provide`：本插件卸载时服务自动撤销，不会留下一张没人维护的命令表。
+
+{/* ref file="../plugins/commands/src/index.ts" lines="31-39" */}
+
+插件自带的说明书（`skills/gwb-commands`）用 `ctx.inject(['gwbSkills'], …)` 登记，**不写进 `export const inject`**：没装说明书插件的 home 里，命令总线也必须能加载，说明书不是它工作的前提。写进 `inject` 的话，少了说明书插件整个命令总线就一直等待。
+
+{/* ref file="../plugins/commands/src/index.ts" lines="41-47" */}
+
+本插件不 import 说明书插件的类型，只按形状取它用到的 `register(dir)`：说明书插件反过来依赖本插件（`inject` 命令总线、引用本包的类型），这样包之间的依赖是单向的。pnpm 12 的 `pnpm -r` 遇到工作区里的依赖环会直接报错退出。
+
+{/* ref file="../plugins/commands/src/index.ts" lines="7-13" */}
+
+## 怎么测
+
+测试在 `plugins/commands/tests/`，在仓根运行 `pnpm check` 时和内核、插件管理的测试一起跑：
+
+{/* tree dir="../plugins/commands/tests" depth="1" */}
+
+- `registry.test.ts`：命令表的全部规则，传入假的日志函数，不需要 cordis
+- `artifact.test.ts`：构建产物里相对 import 带扩展名、除 node 内置模块外没有包名 import（没构建时跳过）
+- `self-report.test.ts`：`package.json` 里的自我描述（提供的服务等）与文档一致
+
+守住上面几条规则的测试：
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="撞名是后来者赢" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="注销只收自己那份" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="handler 抛出来不许炸到调用方" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="handler 自己带了 ok 就原样透传" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="plugin 写短名 warn 一句" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="登记与执行都出声" */}
+
+## 代码从哪读
+
+先读 `src/registry.ts`（命令表本身，不依赖 cordis），再读 `src/index.ts`（把命令表作为服务提供出去、登记说明书）。给 agent 的用法说明在说明书 [gwb-commands](/outputs/skills/gwb-commands)，生成到包里的 `SKILL.md`。

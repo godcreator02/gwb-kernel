@@ -7,7 +7,7 @@
  * 轨迹、交接、未来、反馈四个区不参与检查，轨迹卡里不许引用代码。
  *
  * outputs：仓根 README.md、AGENTS.md、INSTALL.md、CLAUDE.md 都是生成物，正本是 content/outputs/ 下
- * 同名的 mdx；plugin-manager 包里的 SKILL.md 也是，正本是 content/outputs/skills/gwb-plugin-manager.mdx，
+ * 同名的 mdx；本仓插件包里的 SKILL.md 也是，正本是 content/outputs/skills/<说明书名>.mdx，
  * 生成时保留 frontmatter 的 name 与 description（说明书插件登记时读这两项）。改 mdx 正本后在站目录运行
  * `pnpm docfirst render` 重新生成，正本与生成物放进同一个提交。
  */
@@ -26,6 +26,9 @@ export default {
     'content/outputs/claude.mdx': ['../CLAUDE.md'],
     'content/outputs/skills/gwb-plugin-manager.mdx': [
       { to: '../plugins/plugin-manager/skills/gwb-plugin-manager/SKILL.md', frontmatter: ['name', 'description'] },
+    ],
+    'content/outputs/skills/gwb-commands.mdx': [
+      { to: '../plugins/commands/skills/gwb-commands/SKILL.md', frontmatter: ['name', 'description'] },
     ],
   },
   components: {

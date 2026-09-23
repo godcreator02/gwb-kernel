@@ -23,7 +23,7 @@ description: 这个仓里有特定含义的词，每个一句定义并指到详�
 | **共享声明** | 包清单里的 `gwb.shared` 字段：「把我的这几个文件放进页面的 importmap」。见[页面上的包名](/docs/seams/shared) |
 | **外壳（shell）** | 调用了 `setShell` 的那个插件，页面的 `#root` 交给它的默认导出来渲染。见[外壳接管页面](/docs/seams/shell) |
 | **只读状态页** | 没有外壳、或外壳启动失败时页面显示的内容：各条目的加载状态和最近的错误日志，没有按钮。见[外壳接管页面](/docs/seams/shell#没有外壳时) |
-| **命令总线** | `gwbCommands` 服务，由 commands 插件提供；页面、MCP 入口和其他插件都经它按名字调用命令。见[命令与事件](/docs/seams/commands) |
+| **命令总线** | `gwbCommands` 服务，由本仓的命令插件（commands）提供；页面、MCP 入口和其他插件都经它按名字调用命令。见[命令插件](/docs/commands)、[命令与事件](/docs/seams/commands) |
 | **服务** | 插件通过 cordis 提供、别的插件在 `inject` 里写上名字再从 `ctx` 上读的对象。提供有两种写法：继承 cordis 的 `Service` 类，或 `ctx.provide`（只表示存在、不需要认出调用方时） |
 | **扩展点** | 让别的插件往里注册东西的服务方法，比如注册命令、注册窗格、注册工具条按钮；提供扩展点的服务一律继承 `Service`，注册随调用方卸载自动撤销 |
 | **存在标记服务** | 只用来表示「某个插件已经加载」的服务，可以带一个契约版本号；依赖它的插件会随它一起重新加载。插件管理的 `gwbPluginManager` 就是一个，见[插件管理](/docs/plugin-manager/commands#服务只表示装了) |

@@ -2,7 +2,7 @@
 
 god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只做第一个插件运行前必须完成的事，其余都做成插件。
 现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：只做什么、刻意不做什么见同目录 `design.mdx`，
-内核和插件、页面之间的五条接缝见 `seams/`，每个文件对外提供什么见 `map.mdx`，插件管理靠哪几个机制工作见 `plugin-manager/`
+内核和插件、页面之间的五条接缝见 `seams/`，每个文件对外提供什么见 `map.mdx`，命令插件见 `commands.mdx`，插件管理靠哪几个机制工作见 `plugin-manager/`
 （每页讲一个机制：是什么、为什么这么做、怎么做的——peer 怎么写、服务还是命令、契约归谁、卸载时清理什么、版本号怎么升都在里面）。
 
 ## 准入判据：两条都要满足
@@ -26,12 +26,16 @@ god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只�
 
 ## 和内核同仓的插件：plugins/
 
-`plugins/plugin-manager` 是一个插件，不是内核应用的一部分：它依赖内核的内部约定（loader 条目树的结构、home 的文件布局、
-按真实路径解析包名），所以放在这里和内核一起测试。它对外只有命令，服务 `gwbPluginManager` 只表示装了，不要往上面加方法。
-它的版本号独立于内核，改了就按 gwb-release 升自己的号，发版用
-`devkit.release {"dir":"<本仓>","packages":["plugins/plugin-manager"]}`；验证照插件的流程，在隔离 home 里用
-`devkit.dev {"home":"<隔离 home>","dir":"<本仓>","packages":["plugins/plugin-manager"]}`。
-内核升级 `@cordisjs/plugin-loader` 或改包名解析时，先运行 `pnpm check`，它的测试会一起跑。
+这里的两个都是插件，不是内核应用的一部分，和内核一起测试：
+
+* `plugins/commands`：命令总线，服务 `gwbCommands`。内核直接依赖它——页面发来的命令一律交给 `ctx.gwbCommands.run`
+* `plugins/plugin-manager`：它依赖内核的内部约定（loader 条目树的结构、home 的文件布局、按真实路径解析包名）。
+  它对外只有命令，服务 `gwbPluginManager` 只表示装了，不要往上面加方法
+
+两个的版本号都独立于内核，改了就按 gwb-release 升自己的号，发版用
+`devkit.release {"dir":"<本仓>","packages":["plugins/<目录名>"]}`；验证照插件的流程，在隔离 home 里用
+`devkit.dev {"home":"<隔离 home>","dir":"<本仓>","packages":["plugins/<目录名>"]}`。
+内核升级 `@cordisjs/plugin-loader` 或改包名解析时，先运行 `pnpm check`，插件管理的测试会一起跑。
 
 ## 怎么跑
 
@@ -51,6 +55,6 @@ cd apps\desktop; pnpm start
 
 ## 文档与注释
 
-* **知识随插件发布**：本仓只有 `plugins/plugin-manager` 带说明书（`gwb-plugin-manager`），内核本身不带，那份 `SKILL.md` 是生成物（见下面最后一条）；写插件读 `gwb-devkit`，写文档、轨迹卡读 `docfirst-docs` / `trajectory`，选型先盘问（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
+* **知识随插件发布**：本仓的说明书随 `plugins/` 下的两个插件发布（`gwb-commands`、`gwb-plugin-manager`），内核本身不带，那两份 `SKILL.md` 是生成物（见下面最后一条）；写插件读 `gwb-devkit`，写文档、轨迹卡读 `docfirst-docs` / `trajectory`，选型先把需求逐条问清楚（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
 * 这份 AGENTS 只放硬约束；为什么、遇到过什么问题写在文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
-* 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 与 `plugins/plugin-manager/skills/gwb-plugin-manager/SKILL.md` 是生成物，正本在 `docs-site/content/outputs/`（说明书在 `outputs/skills/`），改完在 `docs-site` 运行 `pnpm docfirst render`，一起提交；`CLAUDE.md` 第一行固定是 `@AGENTS.md`，只给 Claude 的指令写在它后面
+* 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 与 `plugins/*/skills/*/SKILL.md` 是生成物，正本在 `docs-site/content/outputs/`（说明书在 `outputs/skills/`），改完在 `docs-site` 运行 `pnpm docfirst render`，一起提交；`CLAUDE.md` 第一行固定是 `@AGENTS.md`，只给 Claude 的指令写在它后面

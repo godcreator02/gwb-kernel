@@ -25,6 +25,7 @@ description: 内核由哪几个文件组成、每个文件对外提供什么、�
 | `preload.cjs` | 页面上的 `window.gwb` | [命令与事件](/docs/seams/commands)、[外壳接管页面](/docs/seams/shell) |
 | `index.html` | 页面入口 | [外壳接管页面](/docs/seams/shell) |
 | `packages/gwb-plugin-api` | 只有类型：`GwbKernelApi`、`GwbContext`、`GwbWindowApi`、`ShellBoot`、`GwbResult` | 全部接缝的类型 |
+| `plugins/commands` | 一个插件，不属于内核应用：服务 `gwbCommands`，命令表；`main.ts` 把页面发来的命令交给它 | [命令与事件](/docs/seams/commands)，见[命令插件](/docs/commands) |
 | `plugins/plugin-manager` | 一个插件，不属于内核应用：服务 `gwbPluginManager` 与 `plugin-manager.*` 命令，管 home 里的包与条目 | [插件与内核](/docs/seams/plugins)（写 home、改条目树），见[插件管理](/docs/plugin-manager)、[home 与插件管理](/docs/seams/home) |
 
 各模块导出的函数：

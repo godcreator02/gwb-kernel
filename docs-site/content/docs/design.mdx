@@ -67,15 +67,20 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：装了�
 
 所以换掉任何一个插件（包括命令总线和外壳）都不用改内核。
 
-## 依赖内核内部约定的插件，和内核放在同一个仓
+## 内核直接依赖的插件、依赖内核内部约定的插件，和内核放在同一个仓
 
 插件放在哪个仓，看它和内核之间是什么关系：
 
-- **只通过 `ctx.gwbKernel` 和命令与内核打交道**的插件，独立成仓——命令总线、外壳、数据、设置都是这样
-- **依赖内核内部约定**的插件，放在本仓 `plugins/` 下，和内核一起开发、一起测试。内部约定指的是不在
-  `gwbKernel` 接口里、却由内核决定的东西：loader 条目树的结构、home 的文件布局、按真实路径解析包名
+- **只通过 `ctx.gwbKernel` 和命令与内核打交道**的插件，独立成仓——外壳、数据、设置都是这样
+- **内核直接依赖**的插件，放在本仓 `plugins/` 下：内核要调用它提供的服务，服务的类型由它的包提供
+- **依赖内核内部约定**的插件，也放在本仓 `plugins/` 下。内部约定指的是不在 `gwbKernel` 接口里、却由内核决定的东西：
+  loader 条目树的结构、home 的文件布局、按真实路径解析包名
 
-今天只有 [plugin-manager](/docs/plugin-manager) 一个：它经 `ctx.fiber.entry.parent.tree` 改条目树，写 home 的
-`package.json` 与 `cordis.yml`，热升级能生效靠的是内核按真实路径解析。内核升级 loader 或改解析方式时，在同一个仓里
-就能跑它的测试。它仍然是插件：由 `cordis.yml` 的条目加载，版本号独立于内核，单独发版
-（[plugin-manager 搬进内核仓](/trajectory/2026-09-23-plugin-manager-into-kernel-repo)）。
+今天有两个：
+- [命令插件](/docs/commands)（commands）：页面发来的命令，内核一律交给它提供的 `ctx.gwbCommands.run`
+- [插件管理](/docs/plugin-manager)（plugin-manager）：它经 `ctx.fiber.entry.parent.tree` 改条目树，写 home 的 `package.json`
+  与 `cordis.yml`，热升级能生效靠的是内核按真实路径解析。内核升级 loader 或改解析方式时，在同一个仓里就能跑它的测试
+
+这两个没有它们工作台就用不起来，所以随安装包预装，新 home 第一次启动时就装好（见交接区[随安装包预装](/spec/platform-plugins)）。
+它们仍然是普通插件：由 `cordis.yml` 的条目加载，能停用、卸载，版本号独立于内核，单独发版
+（[plugin-manager 搬进内核仓](/trajectory/2026-09-23-plugin-manager-into-kernel-repo)、[平台插件随安装包](/trajectory/2026-09-23-platform-plugins-in-installer)）。
