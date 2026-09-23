@@ -536,63 +536,23 @@
   "content/docs/commands.mdx": {
     "../plugins/commands/src/registry.ts:3-19": {
       "kind": "git",
-      "blob": "ad00e1ad016311604d8b7afcf802a7d8d8004857",
-      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
+      "blob": "e9b2387ae5542c73331e3c6e9ff748533c8e1e75",
+      "commit": "3ae5742db398fa127b090dcebafc34f85ceeba2e",
       "lines": [
         3,
         19
       ],
-      "hash": "7b889316d3f89370638a99e400230e136561cccef0033efd986dc2517d483c6a"
-    },
-    "../plugins/commands/src/registry.ts:37-57": {
-      "kind": "git",
-      "blob": "ad00e1ad016311604d8b7afcf802a7d8d8004857",
-      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
-      "lines": [
-        37,
-        57
-      ],
-      "hash": "11130be94f9f28133e8c6dcb52b2a38f0d63ead71f7c6b5453871754047746bd"
-    },
-    "../plugins/commands/src/registry.ts:63-85": {
-      "kind": "git",
-      "blob": "ad00e1ad016311604d8b7afcf802a7d8d8004857",
-      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
-      "lines": [
-        63,
-        85
-      ],
-      "hash": "01dc27b7b29f591a12900bbe1251c18d3e44061f2ac308045b5c653d7ea61db6"
-    },
-    "../plugins/commands/src/index.ts:31-39": {
-      "kind": "git",
-      "blob": "61dd55457919350feaa4c2e6f0c2728c1caa9e01",
-      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
-      "lines": [
-        31,
-        39
-      ],
-      "hash": "becb4328e43df526dde2931c33377f0d796db4b46e588f6a493b9e3c1438709a"
-    },
-    "../plugins/commands/src/index.ts:41-47": {
-      "kind": "git",
-      "blob": "61dd55457919350feaa4c2e6f0c2728c1caa9e01",
-      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
-      "lines": [
-        41,
-        47
-      ],
-      "hash": "2d54e50d681a3cb2be0d75d78c30a4cef9cd191ec2f0445b3b0c554ef1ca89da"
+      "hash": "b575ed496167bd71b763a8e4673a159ff062da750cbcbeb93aa23ad3e249b871"
     },
     "../plugins/commands/src/index.ts:7-13": {
       "kind": "git",
-      "blob": "61dd55457919350feaa4c2e6f0c2728c1caa9e01",
-      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
+      "blob": "d07c274e17254856126c1f36a81fb27d8893082a",
+      "commit": "3ae5742db398fa127b090dcebafc34f85ceeba2e",
       "lines": [
         7,
         13
       ],
-      "hash": "28aab65ebca1606e832adea6498ae4f7634c93b91c9f69124cac00099f2feb54"
+      "hash": "e9d6cb05b56f8629a5e2dee34523b8061e62f20cf729de0e921d361bf8c09aab"
     },
     "tree ../plugins/commands/tests depth=1": {
       "kind": "tree",
@@ -602,22 +562,62 @@
         "self-report.test.ts"
       ]
     },
-    "has ../plugins/commands/tests/registry.test.ts \"撞名是后来者赢\"": {
+    "../plugins/commands/src/registry.ts:37-56": {
+      "kind": "git",
+      "blob": "e9b2387ae5542c73331e3c6e9ff748533c8e1e75",
+      "commit": "3ae5742db398fa127b090dcebafc34f85ceeba2e",
+      "lines": [
+        37,
+        56
+      ],
+      "hash": "6e8dc63694b93c3c526c924796e9d75eff2525a0ade3d168ada50eead4c4fbc7"
+    },
+    "../plugins/commands/src/registry.ts:62-84": {
+      "kind": "git",
+      "blob": "e9b2387ae5542c73331e3c6e9ff748533c8e1e75",
+      "commit": "3ae5742db398fa127b090dcebafc34f85ceeba2e",
+      "lines": [
+        62,
+        84
+      ],
+      "hash": "7ac3e59e8f359c38384795ea39e34e7003ac524221dd62acbb57ad9e6c5765ed"
+    },
+    "../plugins/commands/src/index.ts:30-37": {
+      "kind": "git",
+      "blob": "d07c274e17254856126c1f36a81fb27d8893082a",
+      "commit": "3ae5742db398fa127b090dcebafc34f85ceeba2e",
+      "lines": [
+        30,
+        37
+      ],
+      "hash": "b7489616ce4522aa04306d0bdffff9a79e892c220bd53eb2ef0699e3d83c951c"
+    },
+    "../plugins/commands/src/index.ts:39-44": {
+      "kind": "git",
+      "blob": "d07c274e17254856126c1f36a81fb27d8893082a",
+      "commit": "3ae5742db398fa127b090dcebafc34f85ceeba2e",
+      "lines": [
+        39,
+        44
+      ],
+      "hash": "f72ce416aa5c98eae432ecd1aa613c61530d4678ecb540543076528391dcaf7c"
+    },
+    "has ../plugins/commands/tests/registry.test.ts \"同名时后登记的生效\"": {
       "kind": "has"
     },
-    "has ../plugins/commands/tests/registry.test.ts \"注销只收自己那份\"": {
+    "has ../plugins/commands/tests/registry.test.ts \"注销只删自己那条\"": {
       "kind": "has"
     },
-    "has ../plugins/commands/tests/registry.test.ts \"handler 抛出来不许炸到调用方\"": {
+    "has ../plugins/commands/tests/registry.test.ts \"处理函数抛错不抛给调用方\"": {
       "kind": "has"
     },
-    "has ../plugins/commands/tests/registry.test.ts \"handler 自己带了 ok 就原样透传\"": {
+    "has ../plugins/commands/tests/registry.test.ts \"处理函数返回带 ok 的对象就原样返回\"": {
       "kind": "has"
     },
-    "has ../plugins/commands/tests/registry.test.ts \"plugin 写短名 warn 一句\"": {
+    "has ../plugins/commands/tests/registry.test.ts \"plugin 写成短名时告警一句\"": {
       "kind": "has"
     },
-    "has ../plugins/commands/tests/registry.test.ts \"登记与执行都出声\"": {
+    "has ../plugins/commands/tests/registry.test.ts \"登记与执行都写日志\"": {
       "kind": "has"
     }
   }
