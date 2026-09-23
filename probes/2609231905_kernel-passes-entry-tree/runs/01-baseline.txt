@@ -1,0 +1,8 @@
+{"step":"1-after-root-update","homeEntryState":"LOADING","subtreeDefined":true,"subtreeIsInclude":true,"storeKeys":[]}
+{"step":"2-after-loader-await","storeKeys":["alpha"],"alpha":"ACTIVE","alphaEntryId":"home:alpha","sameTreeAsAlphaSees":true,"builtinGotSameTree":true,"builtinHasOwnEntry":false,"subtreeStillSame":true}
+{"step":"3a-create","createdId":"home:gamma","gamma":"ACTIVE","yml":"- id: alpha\n  name: alpha\n- id: gamma\n  name: gamma\n"}
+{"step":"3b-disable","alpha":"DISPOSED","yml":"- id: alpha\n  name: alpha\n  disabled: true\n- id: gamma\n  name: gamma\n"}
+{"step":"3c-enable","alpha":"ACTIVE","yml":"- id: alpha\n  name: alpha\n- id: gamma\n  name: gamma\n"}
+{"step":"3d-remove","storeKeys":["alpha"],"yml":"- id: alpha\n  name: alpha\n"}
+{"step":"4-after-refresh","subtreeStillSame":true,"storeKeys":["alpha","gamma"],"gamma":"ACTIVE"}
+{"step":"done","home":"C:\\Users\\GODAME~1\\AppData\\Local\\Temp\\gwb-tree-probe-Rbyp2h","errors":[]}
