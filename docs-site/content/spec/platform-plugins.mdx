@@ -18,8 +18,9 @@ docfirst: none
 - [x] 插件管理不再依赖 `@pnpm/exe.win32-x64`；pnpm 在安装包的资源目录里，从源码运行时用内核仓依赖里的那份
 - [x] 从源码启动内核、全新的隔离 home（`package.json` 与 `cordis.yml` 都是空的）：`plugin-manager.*` 命令都在，能装一个插件并加载成功；显示名能改；`skill.list` 里有两个内置插件的说明书，`plugin` 是包名（2026-09-23 实测）
 - [x] 从源码启动内核、留着旧条目的隔离 home：旧的两条 FAILED（插件管理那条报「旧版留下的，删掉它」），其余插件 ACTIVE，外壳正常（2026-09-23 实测）
-- [ ] 打出的安装包装好后同样通过上两条；default 迁移步骤照 `INSTALL.md` 走一遍能成功
-- [ ] `INSTALL.md`、安装包 SPEC、文档站现状页都改完
+- [x] 打出的安装包（`build\dist\win-unpacked\`，带 `GWB_HOME` 启动隔离 home）：插件管理用 `resources\pnpm\pnpm.exe` 装插件成功，两个内置插件的说明书登记上、`plugin` 是包名（2026-09-23 实测）
+- [ ] 发版时：NSIS 安装包装到本机后照 `INSTALL.md` 第 0 步清理 default 里的两条旧条目（只发开发版期间不动 default）
+- [x] `INSTALL.md`、安装包 SPEC、文档站现状页都改完
 
 ## 两个插件怎么内置
 
@@ -43,8 +44,9 @@ docfirst: none
 2. 词汇表包：做完
 3. 插件管理：做完（config `{ home, pnpm }`、用到时取树、删掉处理自己的逻辑、检查 config 是不是内核给的）
 4. 内核：做完，从源码启动在两个隔离 home 里实测通过
-5. 安装包：`build.ps1` 与 electron-builder 配置已改，**还没打包验证**
-6. 文档与说明：做完；安装包实测后按结果补
+5. 安装包：做完，打包并用 `win-unpacked` 实测通过；本机 `build\dist\` 里的 `gwb-setup-0.2.7.exe` 是这次的测试产物，内核版本号还没升，别上传
+6. 文档与说明：做完
+7. 剩下的都在发版时做：按 gwb-release 升内核与词汇表包的版本号、发版、装到本机、清理 default 的旧条目，然后删掉本页
 
 ## 还没定的
 
