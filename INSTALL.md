@@ -1,7 +1,7 @@
 # 安装 gwb（写给 agent）
 
 你是替用户在一台 Windows 机器上安装 gwb 的 agent。**安装包只带内核，不带任何插件——插件由你安装。**
-照下面做完，用户得到一个装好 11 个基础插件、MCP 入口开在 `http://127.0.0.1:2870/mcp` 的工作台，
+照下面做完，用户得到一个装好 12 个基础插件、MCP 入口开在 `http://127.0.0.1:2870/mcp` 的工作台，
 之后你（或别的 agent）通过这个 MCP 入口干活。命令一律在 PowerShell 里运行。
 
 ## 0. 先确认装没装过
@@ -74,6 +74,8 @@ New-Item -ItemType Directory -Force $gwbHome | Out-Null
   name: '@godcreator/gwb-logger'
 - id: plugin-manager
   name: '@godcreator/gwb-plugin-manager'
+- id: plugin-sources
+  name: '@godcreator/gwb-plugin-sources'
 - id: shell
   name: '@godcreator/gwb-shell'
 - id: baseui
@@ -86,7 +88,7 @@ New-Item -ItemType Directory -Force $gwbHome | Out-Null
   name: '@godcreator/gwb-mcp'
 '@)
 Set-Location $gwbHome
-pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-logger @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp @godcreator/gwb-plugin-api
+pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-logger @godcreator/gwb-plugin-manager @godcreator/gwb-plugin-sources @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp @godcreator/gwb-plugin-api
 ```
 
 * `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次启动都会换一个随机字符串）
@@ -149,9 +151,10 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 
 连上后**先调 `index`**：它返回的 instructions 讲清楚之后怎么干活。再核对两项：
 
-* `run plugin-manager.list` 返回 12 个包：11 个插件各带一个条目、`active: true`；`gwb-plugin-api`
+* `run plugin-manager.list` 返回 13 个包：12 个插件各带一个条目、`active: true`；`gwb-plugin-api`
   是库，条目为空（`entries: []`）属正常
-* `run skill.list` 能列出说明书，至少有 `mcp`、`gwb-plugin-manager`、`gwb-devkit`
+* `run skill.list` 能列出说明书，至少有 `mcp`、`gwb-plugin-manager`、`gwb-plugin-sources`、`gwb-devkit`
+* `run plugin-sources.search` 能列出源上可装的插件——「插件管理」窗格的「可装」栏用的就是它
 
 做完，把第 1 步改过的配置告诉用户。
 
@@ -170,6 +173,7 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 
 ## 之后
 
+* 找可装的插件：`run plugin-sources.search`；装第三方源（比如 `@j`）上的插件，先 `run plugin-sources.add {"scope":"@j","owner":"J"}`
 * 安装新插件：`run plugin-manager.install {"pkg":"@godcreator/gwb-<名>"}`——返回内容里带新条目的 `entryId`；
   `run plugin-manager.list` 里它是 `active: true` 就成功了，下一次调 `index` 就能看到它的命令
 * 插件有新版本：`run plugin-manager.update-all`（升级到 `gwb-mcp` 自己时连接会断一次，重连即可）
