@@ -1,0 +1,54 @@
+---
+title: 词汇表包
+description: "@godcreator/gwb-plugin-api 是内核对插件和页面的全部契约：只有类型、没有运行时代码；对插件只增不减，与内核同版本号，经 devkit.release 发到团队包源"
+---
+
+**本页回答**：词汇表包里有什么、每个名字属于哪条接缝；插件怎么用它；改它的规则——什么算补丁、什么算破坏；它和内核的版本号怎么走、怎么发版。
+
+## 是什么
+
+`packages/gwb-plugin-api`，包名 `@godcreator/gwb-plugin-api`。内核与插件、页面之间的全部契约都写在这一个文件里：主进程一侧是 `gwbKernel` 与命令总线 `gwbCommands`，页面一侧是 `window.gwb` 的三个函数，外壳是一个默认导出的形状。
+
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" */}
+
+| 名字 | 是什么 | 接缝 |
+| --- | --- | --- |
+| `GwbResult` | 命令的回执形状 | [命令总线](/docs/seams/command-bus) |
+| `GwbKernelApi` | 内核服务 `gwbKernel` | [内核服务](/docs/seams/kernel) |
+| `GwbCommandDef`、`GwbCommands` | 一条命令的说明、命令总线 | [命令总线](/docs/seams/command-bus) |
+| `GwbContext` | 插件 `apply` 拿到的上下文：cordis 的 `Context` 加上面两个服务 | [内核服务](/docs/seams/kernel) |
+| `GwbWindowApi`，以及 `Window.gwb` 的全局声明 | 页面上的 `window.gwb` | [IPC 通道](/docs/seams/ipc) |
+| `ShellBoot` | 外壳模块默认导出的形状 | [外壳接管](/docs/seams/shell) |
+
+## 只有类型
+
+包里没有运行时代码，也没有一条运行时依赖。`cordis` 写在 peer 里，因为 `Context` 出现在导出的类型里，使用方必须解析得到它（[cordis 写在 peer 里](/trajectory/2026-09-07-wall-cordis-peer)）。
+
+{/* ref file="../packages/gwb-plugin-api/package.json" lines="27-33" */}
+
+插件在 devDependencies 里列它，只用 `import type`。类型给的是形状，拿不到值：`dataDir` 这类值是内核那一次运行算出来的，只能从 `ctx.gwbKernel` 取。内核自己也只 import 它的类型。
+
+它是独立的包、和内核放在同一个仓：类型只在编译时存在，cordis 服务只能传递运行时的值，插件在别的仓里编译时要能装到一个带类型的包；契约由提供服务的一方定义，放在插件仓里就等于调用方持有契约，内核改实现时没有东西拦着（[词汇表是独立包、与内核同仓](/trajectory/2026-09-07-vocab-package-standalone)、[它就这么大](/trajectory/2026-09-07-wall-vocab-just-size)）。
+
+## 改它的规则
+
+- **对插件只增不减**：加一个可选字段、加一个方法、加一个类型，是补丁版本。删名字、改形状（参数、返回值、回执字段的类型或含义）、改调用方依赖的语义，是破坏，升次版本号，并照 devkit 说明书 `gwb-release` 的「发破坏版多做两步」先通知下游
+- **契约之外的东西不放进来**：日志行的格式、插件管理的回执类型都不在这里——前者见[日志](/docs/seams/log)，后者由插件管理自己导出
+- **改完先让内核跟上**：本仓 `pnpm check` 先构建它，再对内核和两个内置插件做类型检查
+
+## 版本号与发版
+
+**与内核同版本号**：`packages/gwb-plugin-api/package.json` 和 `apps/desktop/package.json` 的 `version` 一起升、写同一个号。升哪一位照 devkit 的说明书 `gwb-release`，每次升之前都读。
+
+两者发到不同的地方：
+
+- **词汇表包发到团队包源**，插件从那里装：
+
+  ```
+  devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}
+  ```
+
+  别在包目录手动 `pnpm publish`：那会跳过 git 工作区干净检查与构建产物白名单检查
+- **内核发 exe**，见[安装包](/docs/installer)
+
+改了契约时先装新内核，再发用到新契约的插件：插件先到、内核还是旧的，插件拿到的 `gwbKernel` 就缺它要的东西。完整步骤见[开发](/docs/develop#发版)。

@@ -1,0 +1,91 @@
+---
+title: 安装包
+description: 内核发版就是发 exe——installer/ 把本仓的内核构建、打成 NSIS 安装包与便携 zip；安装包带内核（含两个内置插件）和一份 pnpm，不带其他插件；打包流程、踩过的坑、怎么验证、怎么传到 gitea releases
+---
+
+**本页回答**：安装包里带什么、不带什么；`installer/scripts/build.ps1` 一步步做了什么，哪几道检查不能删；装好之后是什么样、怎么升级；怎么验证；怎么发布到 gitea releases。
+
+## 带什么
+
+**内核发版就是发 exe**：NSIS 安装包（按当前用户安装、不需要管理员权限）和便携 zip 两种产物。内核不发 npm 包（[撤掉 npm 发布](/trajectory/2026-09-18-withdraw-npm-channel)）。
+
+- **内核**：本仓 `apps/desktop` 的构建产物，里面带着两个内置插件（命令插件与插件管理，构建时复制进 `dist/builtin/`，随内核版本发布）
+- **一份固定版本的 pnpm**：放在安装目录的 `resources\pnpm\`，内核在打包运行时把这个路径交给插件管理，用户不需要自己装 node 或 pnpm
+- **不带其他插件**：`cordis.yml` 里的插件一律从包源装、经插件管理一键热升级。装机由 agent 照仓根 `INSTALL.md` 做：配用户级 pnpm 配置 → 装 exe → 往 default home 写 `package.json` 与 `cordis.yml`、用安装包里的 pnpm 装基础插件 → 启动 → 连 MCP 入口。这样同一个版本号的安装包内容唯一，home 从一开始就由 pnpm 管理（[不带插件，装机交给 agent](/trajectory/2026-09-18-no-seed-agent-installs)）
+
+每发一个插件版本就重打 exe，等于废掉热升级，所以插件不进安装包。两个内置插件是例外：它们没有替换的必要，随内核发版（[核心插件内置](/trajectory/2026-09-23-core-plugins-built-in)）。
+
+## 目录
+
+`installer/` 下：
+
+- `scripts/build.ps1`：打包的全流程
+- `electron-builder.yml`：electron-builder 的配置
+- `app-template/`：外层应用的模板，一份 `package.json` 和一个只负责启动内核的引导脚本；**不改内核运行时**
+- `icons/`：图标，`scripts/make-icon.ps1` 生成
+- `build/`：组装目录与产物，不进 git
+
+外层应用的引导脚本只 import 内核包，内核自己在 Electron ready 之后运行；import 失败时弹错误框、退出码 1：
+
+{/* ref file="../installer/app-template/bootstrap.mjs" */}
+
+## 打包流程
+
+在仓根运行 `pwsh installer\scripts\build.ps1`，产物在 `installer\build\dist\`。输入全部来自本仓（内核的 tarball、`apps/desktop` 开发依赖里的 electron 与 pnpm），不从包源下载内核。
+
+**1. 检查工作区**：已跟踪的文件有未提交的改动就停下——打包用的是仓里的代码，有改动时打出来的 exe 说不清装了什么。未跟踪的新文件不拦。
+
+{/* ref file="../installer/scripts/build.ps1" lines="22-24" */}
+
+**2. 构建内核并 `pnpm pack`**：`pnpm build` 构建词汇表包、两个内置插件和内核；`pnpm pack` 按 `files` 过滤打出 tarball。**必须用 pnpm 打包**：内核清单里的 `workspace:*` 只有 pnpm pack 会替换成实际版本，npm pack 原样打进去，安装时报 `EUNSUPPORTEDPROTOCOL`。
+
+{/* ref file="../installer/scripts/build.ps1" lines="32-40" */}
+
+**3. 读版本号**：内核版本与 electron 版本都从 `apps/desktop/package.json` 读。electron 的版本只写在它的 `devDependencies.electron` 这一处，经命令行传给 electron-builder——electron-builder 只在项目根找 electron 版本、不看 `directories.app`，所以 `electron-builder.yml` 里不写。
+
+{/* ref file="../installer/scripts/build.ps1" lines="42-45" */}
+
+**4. 组装应用目录**：把模板复制到 `build\app`，把 `version` 换成内核版本（产物文件名带它；内核报的版本读内核包自己的清单，不读外层），把内核依赖指向刚打出的 tarball，再 `npm install`。依赖必须写进清单：electron-builder 按清单收集 `node_modules`，`--no-save` 装的包它不收。装完检查内核包和内置插件管理的入口文件都在。
+
+{/* ref file="../installer/scripts/build.ps1" lines="47-69" */}
+
+**5. 复制 pnpm**：从 `@pnpm/exe.win32-x64` 复制 `pnpm.exe` 和它的清单（清单只用来在日志里报版本）到 `build\pnpm\`，electron-builder 再放进 `resources\pnpm\`。
+
+{/* ref file="../installer/scripts/build.ps1" lines="71-78" */}
+
+内核那一侧怎么找到它：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="266-271" */}
+
+**6. electron-builder**：按下面的配置打出 `gwb-setup-<版>.exe` 与 `gwb-portable-<版>.zip`。
+
+{/* ref file="../installer/electron-builder.yml" */}
+
+## 不能删的检查
+
+- **每条 npm / pnpm 之后检查退出码**：pwsh 对原生命令的非零退出码默认不停，出过一次组装目录是空的、却一路打出安装包的事故
+- **检查产物存在**：tarball、组装目录里的内核包、内置插件管理的入口文件、`pnpm.exe`，缺一样就停
+- **内置插件不写成内核包的依赖**：组装时要从包源装内核 tarball 的依赖，写成依赖就得单独发布它们。所以构建时复制进 `dist/builtin/`，打包脚本检查它们在
+
+## 装好之后
+
+安装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，开始菜单出现「gwb-kernel」。home 在 `%APPDATA%\gwb-kernel\homes\` 下，和安装目录分开：内核启动时只补 home 缺的文件、不覆盖（[home 的准备与单实例锁](/docs/desktop/home)）。
+
+**升级内核**就是重新运行新版安装包：home 不动，两个内置插件随内核一起升级。
+
+别日常直接运行 `installer\build\dist\win-unpacked\`：每次打包整个重新生成，会和运行中的 exe 冲突；不设 `GWB_HOME` 运行它还会打开真正的 default home。
+
+## 验证
+
+- **打包形态能启动**：设一个临时的 `GWB_HOME`（给路径）运行 `win-unpacked` 里的 exe，引导脚本能从 asar 里 import 内核，内核能从 `dist/builtin/` 加载两个内置插件，`gwb.log` 里没有 error
+- **单实例锁**：同一个 home 再启动一次，退出码 1、`runtime.json` 不变
+- **安装说明**：派一个没有上下文的子代理，只给它 `INSTALL.md`，让它往一个临时 home（`GWB_HOME` 给路径）里照做一遍、启动 `win-unpacked` 的内核，MCP 入口能调通、条目全部 ACTIVE 才算通过；它不得不问的每个问题都是说明的漏洞
+
+## 发布
+
+- 发布仓 `godcreator/gwb-kernel`：公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包。push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
+- **release 只上传 `gwb-setup-<版>.exe`**：便携 zip 只在本地构建、不上传
+- tag 跟内核版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
+- **推送 tag 会让同名的草稿 release 自动公开**：要先存草稿、人工确认后再公开，就最后推 tag
+
+升版本号、发词汇表包的顺序见[开发](/docs/develop#发版)。

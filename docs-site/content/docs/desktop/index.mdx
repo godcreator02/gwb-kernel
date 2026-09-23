@@ -1,0 +1,131 @@
+---
+title: 内核应用
+description: apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口；它管什么、不知道什么、由哪几个文件组成、对外提供哪几条接缝、依赖什么、怎么单独测、代码从哪读
+---
+
+**本页回答**：内核应用（`apps/desktop`）管什么、刻意不知道什么；它由哪几个文件组成、谁依赖谁；对外提供哪几条接缝、依赖哪些接口；怎么单独测；代码从哪读。
+
+<Diagram name="module-map" title="内核的文件、依赖方向与 IPC 通道">
+- 灰色箭头表示依赖，从 import 的一方指向被 import 的一方：`main.ts` 把各部分组装起来，是唯一依赖 electron 的文件，它依赖其余所有文件；`imports.ts` 依赖 `bare-import.ts`（两侧用同一个解析函数）；`entry-state.ts`、`log-file.ts` 不依赖任何其他文件
+- 这四个文件不依赖 electron 与 cordis 实例，各有单元测试
+- 页面一侧：`preload.cjs` 注入 `window.gwb`，`index.html` 注入 importmap、交出 `#root`，没有外壳时显示只读状态页
+- `main.ts` 与 `preload.cjs` 之间的两根强调色箭头表示 IPC 消息的方向：主进程 → 页面推送 `gwb:shell`、`gwb:event`；页面 → 主进程调用 `gwb:command`，回执原路返回
+- 词汇表包 `@godcreator/gwb-plugin-api` 只有类型，`main.ts` 和插件都只 import 类型
+</Diagram>
+
+## 管什么
+
+内核应用只做第一个插件运行之前必须完成的事，全部在 `main.ts` 里组装：
+
+- 选定 home、补齐它能启动的最小形态、同一个 home 只允许一个实例——[home 的准备与单实例锁](/docs/desktop/home)
+- 唯一的日志输出：stderr 加 home 里带上限与轮转的 `gwb.log`——[日志文件](/docs/desktop/log-file)
+- 创建 cordis 实例、提供 `gwbKernel`、加载两个内置插件与 `cordis.yml` 里的插件，退出时卸载整棵插件树——[启动与退出](/docs/desktop/boot)
+- 唯一的窗口与三个 IPC 通道；没有外壳时页面上的只读状态页——[只读状态页](/docs/desktop/status-page)
+- 主进程与页面两侧的包名解析（`bare-import.ts`、`imports.ts`）
+- 启动失败时弹错误框、退出码 1；插件抛出的未捕获异常只记录、不退出
+
+| 文件 | 管什么 | 在哪一页讲 |
+| --- | --- | --- |
+| `main.ts` | 不导出任何东西。按顺序组装下面各部分：home、日志、单实例锁、`runtime.json`、cordis 实例与 `gwbKernel`、窗口、IPC、加载插件、退出清理 | [启动与退出](/docs/desktop/boot) |
+| `bare-import.ts` | 按 home 的真实路径解析包名，主进程与页面两侧共用 | [插件加载](/docs/seams/loading) |
+| `imports.ts` | 扫描 home 里各包的 `gwb.shared`，拼成页面的 importmap | [页面上的包名](/docs/seams/shared) |
+| `entry-state.ts` | 一个条目加载到哪一步，说成一句话 | [只读状态页](/docs/desktop/status-page) |
+| `log-file.ts` | 带大小上限与轮转的日志文件，写入永不抛错 | [日志文件](/docs/desktop/log-file) |
+| `preload.cjs` | 页面上的 `window.gwb` | [IPC 通道](/docs/seams/ipc) |
+| `index.html` | 页面入口：注入 importmap、把 `#root` 交给外壳，没有外壳时画只读状态页 | [外壳接管](/docs/seams/shell) |
+
+四个纯逻辑文件对外导出的函数：
+
+{/* has file="../apps/desktop/src/bare-import.ts" text="export function resolveFromHome" */}
+
+{/* has file="../apps/desktop/src/bare-import.ts" text="export function bareImportFromHome" */}
+
+{/* has file="../apps/desktop/src/imports.ts" text="export function collectImports" */}
+
+{/* has file="../apps/desktop/src/entry-state.ts" text="export function describeEntry" */}
+
+{/* has file="../apps/desktop/src/log-file.ts" text="export function openLogFile" */}
+
+{/* has file="../apps/desktop/src/log-file.ts" text="export function limitFromEnv" */}
+
+## 不知道什么
+
+- **不认识 `cordis.yml` 里任何插件、服务、命令的名字**：加载哪些插件由 `cordis.yml` 决定，页面发来的命令原样交给命令总线，包清单里只读 `gwb.shared` 一个字段。认识的名字只有自己提供的 `gwbKernel`，和两个内置插件带来的 `gwbCommands`、`gwbPluginManager`
+- **不知道命令插件与插件管理内部怎么工作**：只知道它们的包名、构建产物在 `dist/builtin/` 的位置，以及插件管理要的 config 形状
+- **不知道插件之间怎么交互**：服务、命令、契约版本都在插件之间，不经过内核
+- **不写 home**：只在缺文件时补 `package.json` 与 `cordis.yml` 的最小形态；装包、改条目只由插件管理做
+- **不渲染界面**：只读状态页之外，页面显示什么全由外壳决定；不认识窗格，不替插件做菜单
+
+## 数据结构
+
+内核自己的数据只有几份推给页面或写进 home 的形状，字段见钉住的代码。
+
+推给页面的每一条 `gwb:shell` 都是整份当前状态：外壳地址、importmap、只读状态页的数据，每次重新计算，不发增量。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="206-213" */}
+
+只读状态页的数据：home 路径、每个条目一行、最近的错误行。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="179-183" */}
+
+{/* ref file="../apps/desktop/src/entry-state.ts" lines="11-16" */}
+
+日志文件的选项与句柄：
+
+{/* ref file="../apps/desktop/src/log-file.ts" lines="38-55" */}
+
+`runtime.json` 的内容见接缝页 [runtime.json](/docs/seams/runtime)；交给插件管理的 config 见[内置插件的加载](/docs/seams/builtin)。
+
+## 提供的接口
+
+内核应用是下面这些接缝的一侧，每条接缝交换什么、两边各保证什么写在接缝页：
+
+| 接缝 | 另一侧 | 内核这一侧提供什么 |
+| --- | --- | --- |
+| [插件加载](/docs/seams/loading) | `cordis.yml` 里的插件 | 注册 loader 与 include，按 home 的真实路径解析包名 |
+| [内核服务](/docs/seams/kernel) | 任何插件 | 根上下文上的 `gwbKernel`：`dataDir`、`version`、`emit`、`setShell` |
+| [IPC 通道](/docs/seams/ipc) | 页面 | `window.gwb` 与 `gwb:command`、`gwb:event`、`gwb:shell`、`gwb:hello` 四个通道 |
+| [外壳接管](/docs/seams/shell) | 调用 `setShell` 的插件 | 把页面的 `#root` 交给外壳；没有外壳时显示只读状态页 |
+| [页面上的包名](/docs/seams/shared) | 声明 `gwb.shared` 的包 | 把声明拼成 importmap 推给页面 |
+| [内置插件的加载](/docs/seams/builtin) | 命令插件、插件管理 | 作为 loader 根层条目排在 `cordis.yml` 之前加载，经 config 交给插件管理 include 条目的 id 与 pnpm 路径 |
+| [条目树与 home 布局](/docs/seams/home) | 插件管理 | home 的文件布局、loader 的条目树 |
+| [runtime.json](/docs/seams/runtime) | devkit 等外部工具 | 每次启动重写的本次运行记录 |
+| [日志](/docs/seams/log) | 任何插件 | 汇成一条的 cordis 日志流，插件注册 exporter 就能收到 |
+
+## 依赖的接口
+
+| 接口 | 用来做什么 | 生产实现 | 测试实现 |
+| --- | --- | --- | --- |
+| electron 的 `app`、`BrowserWindow`、`ipcMain`、`dialog`、`Menu` | 单实例锁、userData、窗口、IPC、启动失败时的错误框 | `electron`（版本写在 `apps/desktop/package.json`） | 没有替身：`main.ts` 只在隔离 home 里实机验证 |
+| cordis 的 `Context`、logger 与它的环形缓冲 | cordis 实例、提供 `gwbKernel`、日志流、只读状态页的错误行 | `cordis` | `entry-state.test.ts` 手工构造条目，不创建 cordis 实例 |
+| `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` | 按条目加载插件、读 `cordis.yml` | 两个官方包 | 插件管理的 `loader.test.ts` 用同样的版本、照内核的加载顺序搭 home |
+| 命令总线 `ctx.gwbCommands` | 页面发来的命令一律交给它 | 内置的命令插件 `plugins/commands` | 命令插件自己的测试；转交这一步只在实机验证 |
+| 插件管理的 config 类型 `PluginManagerConfig` | 交给插件管理的 config 形状 | 内置的插件管理 `plugins/plugin-manager` | 仓根 `pnpm check` 的类型检查；插件管理的 `config.test.ts` |
+| pnpm 可执行文件 | 路径交给插件管理 | 打包运行时是安装包里的 `resources\pnpm\pnpm.exe`，从源码运行时是开发依赖 `@pnpm/exe.win32-x64` | 插件管理的 `pnpm.test.ts`、`pnpm-path.test.ts` |
+| 文件系统（home 目录） | 读包清单、解析包名、写日志与 `runtime.json` | `node:fs` | 测试传入临时目录，走真的文件系统 |
+| 词汇表包 `@godcreator/gwb-plugin-api` | `GwbKernelApi`、`GwbCommands` 的类型 | 本仓 `packages/gwb-plugin-api`，见[词汇表包](/docs/vocab) | 只有类型，类型检查守着 |
+
+## 怎么单独测
+
+四个纯逻辑文件各有单元测试，传入手工构造的临时 home 或条目就能跑，不需要 electron：
+
+{/* tree dir="../apps/desktop/tests" depth="1" */}
+
+- `bare-import.test.ts`：主入口与带 scope 的包都能解析到、子路径写法等价、链接改指向新版本后拿到新版本、包不存在时报错并带完整路径
+- `imports.test.ts`：声明正确的收进 importmap、同一个名字有多个提供方全部不收、解析不到时告警、链接换版本后再算一遍拿到新版本
+- `entry-state.test.ts`：停用、没有加载出来、各种加载状态、等待时缺哪个服务、失败时取错误第一行各显示什么
+- `log-file.test.ts`：没到上限不轮转、超了只留一份旧的、轮转后写进新文件、轮转失败与文件打不开都不抛错
+
+`main.ts` 的组装——启动顺序、窗口、IPC、只读状态页的推送、单实例锁、退出清理——只能从源码启动、在隔离 home 里实机验证，做法见[开发](/docs/develop)。仓根的 `pnpm check` 先构建词汇表包与两个内置插件，再对全仓做类型检查、lint 和测试：词汇表包的类型、插件管理的 config 类型写坏了，内核的类型检查一定跟着失败。
+
+## 代码地图
+
+**在哪**：`apps/desktop/src/`，测试在 `apps/desktop/tests/`，构建脚本在 `apps/desktop/scripts/`。
+
+{/* tree dir="../apps/desktop/src" depth="1" */}
+
+**先读**：`main.ts` 顶部的注释，然后从头读到 `ctx.provide('gwbKernel', kernel)`（模块求值时就做完的部分），再读 `main()`（窗口与加载插件）和最后的 `will-quit`。
+
+**读序**：`main.ts` 依赖其余所有文件；`imports.ts` 依赖 `bare-import.ts`；`entry-state.ts`、`log-file.ts` 不依赖任何本地文件。页面一侧先读 `preload.cjs`（三个函数），再读 `index.html` 的 `onShell` 回调。
+
+**可跳过**：`dist/`（构建产物，`pnpm build` 生成，内置插件也复制在 `dist/builtin/` 下）、`scripts/copy-assets.mjs`（构建最后一步的文件复制，见[开发](/docs/develop)）、`installer/`（生成安装包，见[安装包](/docs/installer)）、`probes/`（实验材料）、`docs-site/`（本站）。
