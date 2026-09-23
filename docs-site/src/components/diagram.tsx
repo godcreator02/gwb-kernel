@@ -13,6 +13,12 @@ import { KernelBoot } from './diagrams/kernel-boot'
 import { ModuleMap } from './diagrams/module-map'
 import { PluginHome } from './diagrams/plugin-home'
 import { PluginSeam } from './diagrams/plugin-seam'
+import { PmBusy } from './diagrams/pm-busy'
+import { PmInstall } from './diagrams/pm-install'
+import { PmModules } from './diagrams/pm-modules'
+import { PmPickId } from './diagrams/pm-pick-id'
+import { PmUpgrade } from './diagrams/pm-upgrade'
+import { PmUpgradeGap } from './diagrams/pm-upgrade-gap'
 import { RuntimeProviders } from './diagrams/runtime-providers'
 import { SharedNames } from './diagrams/shared-names'
 import { ShellHandover } from './diagrams/shell-handover'
@@ -22,8 +28,12 @@ const drawings: Record<string, () => ReactNode> = {
   'module-map': () => <ModuleMap />,
   'plugin-seam': () => <PluginSeam />,
   'plugin-home': () => <PluginHome />,
-  'plugin-home-install': () => <PluginHome flow="install" />,
-  'plugin-home-upgrade': () => <PluginHome flow="upgrade" />,
+  'pm-modules': () => <PmModules />,
+  'pm-install': () => <PmInstall />,
+  'pm-upgrade': () => <PmUpgrade />,
+  'pm-upgrade-gap': () => <PmUpgradeGap />,
+  'pm-pick-id': () => <PmPickId />,
+  'pm-busy': () => <PmBusy />,
   'shell-handover': () => <ShellHandover />,
   'shared-names': () => <SharedNames />,
   'command-relay': () => <CommandRelay />,

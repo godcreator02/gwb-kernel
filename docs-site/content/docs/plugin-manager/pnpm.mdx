@@ -38,6 +38,13 @@ description: 只用 pnpm 12 起的原生可执行文件，设置项 pnpm-path �
 
 BUSY 只加在命令上，服务方法不经过它；服务方法调到 pnpm 时仍然经过串行队列，不会并发改 home。
 
+<Diagram name="pm-busy" title="两道关：命令过 BUSY，所有 pnpm 过串行队列">
+- 命令 A（`install`）通过 BUSY 检查、占住标志，它的 `pnpm add` 进队列开始运行
+- 命令 B（`update`）进来时标志被占着，不排队，马上得到 `{ ok: false, error: "BUSY…" }`
+- 服务方法 C 不经过 BUSY，但它的 pnpm 排在 A 后面等
+- A 返回回执时释放标志（抛错也会释放），队列里 C 的 pnpm 开始运行
+</Diagram>
+
 ## 卸载时不结束 pnpm
 
 插件管理卸载时（包括内核退出），正在运行的 pnpm 不结束。pnpm 正在改 home 的 `package.json` 与 `node_modules`，中途结束会留下装了一半的 home，比让它跑完更难收拾；它跑完之后回执没人接，改动照样生效。这是[关键判据 K7](/docs/criteria/k7) 的例外，理由写在 `runPnpm` 的注释里。

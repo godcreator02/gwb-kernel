@@ -1,73 +1,51 @@
-'use client'
-
 /**
- * home 与插件管理：左边是调用方（agent 或插件管理窗格），中间是 plugin-manager，右边上半是 home 里的文件，
- * 右边下半是内核（loader 条目树与按真实路径解析）。分步走一遍安装与一键热升级；`flow` 只放其中一段
+ * home 与插件管理的分界：左边是 plugin-manager 用到内核的两样东西，右边是内核里对应的两样，
+ * 下面是 home 里的三个文件。只画两边交换什么，不画安装、升级的步骤（那两段在插件管理的功能页各有一张图）。
  */
 
-import { Arrow, Box, BORDER, FG, MUTED, Note, StepCaption } from './parts'
-import { StepControls, useSteps } from './steps'
+import { Arrow, Box, BORDER, FG, MUTED, Note, SeamLine } from './parts'
 
-type Part = 'caller' | 'manager' | 'queue' | 'package' | 'modules' | 'yml' | 'tree' | 'resolve' | 'shell'
-
-type Flow = 'install' | 'upgrade'
-
-const ALL_STEPS: { title: string; detail: string; lit: Part[]; arrow?: 'call' | 'pnpm' | 'tree' | 'reload'; flow?: Flow }[] = [
-  { title: '全貌', detail: '只有 plugin-manager 写 home：pnpm 改 package.json 与 node_modules，loader 的条目树改 cordis.yml。它用到的 loader 结构与解析规则由内核决定。', lit: [] },
-  { title: '安装 1：调用 plugin-manager.install', detail: 'agent 或插件管理窗格按包名调用；同一时刻只允许一个改动，重入的直接返回 BUSY。', lit: ['caller', 'manager'], arrow: 'call', flow: 'install' },
-  { title: '安装 2：一次 pnpm add', detail: '经 applyToHome 排进串行队列，把包写进 home 的 package.json 与 node_modules。过渡期里，该进 home 的 peer 也装成直接依赖。', lit: ['queue', 'package', 'modules'], arrow: 'pnpm', flow: 'install' },
-  { title: '安装 3：加一条条目', detail: '经 loader 条目树 create：写回 cordis.yml 并当场加载。loader 要 import 包名时由内核按真实路径解析。', lit: ['tree', 'yml', 'resolve'], arrow: 'tree', flow: 'install' },
-  { title: '热升级 1：一次 pnpm add 精确版本', detail: 'outdated 查出过期包，一次 pnpm add 把它们都升到精确版本；旧版本目录随即被 pnpm 删除。', lit: ['queue', 'package', 'modules'], arrow: 'pnpm', flow: 'upgrade' },
-  { title: '热升级 2：逐条停用再启用', detail: '同一条命令里每条条目停用再启用。真实路径带版本号，内核重新解析就拿到新版本；plugin-manager 自己排最后、回执之后才动。', lit: ['tree', 'resolve'], arrow: 'tree', flow: 'upgrade' },
-  { title: '热升级 3：整页重新加载', detail: '调用命令 shell.reload，页面重新加载，窗格拿到新版本的页面代码。', lit: ['shell'], arrow: 'reload', flow: 'upgrade' },
-]
-
-export function PluginHome({ flow }: { flow?: Flow }) {
-  const STEPS = ALL_STEPS.filter((step) => flow === undefined || step.flow === undefined || step.flow === flow)
-  const state = useSteps(STEPS.length, 3000)
-  const current = STEPS[state.step]!
-  const lit = (part: Part) => (current.lit.includes(part) ? 'a' : undefined)
-  const arrowTone = (name: string) => (current.arrow === name ? 'a' : undefined)
-
+export function PluginHome() {
   return (
-    <>
-      <svg viewBox="0 0 760 360" role="img" aria-label="plugin-manager 怎么安装与热升级插件">
-        <Box x={14} y={60} w={140} h={60} lines={['调用方', 'agent 或插件管理窗格']} tone={lit('caller')} />
+    <svg viewBox="0 0 760 330" role="img" aria-label="plugin-manager 与内核之间交换什么">
+      <Note x={22} y={26} size={12} color={FG} weight={600}>
+        plugin-manager（插件，源码在内核仓 plugins/）
+      </Note>
+      <rect x={14} y={36} width={246} height={152} rx={10} fill="none" stroke={BORDER} />
+      <Box x={26} y={56} w={222} h={50} lines={['EntryTreeLike', '从自己的条目上取条目树']} />
+      <Box x={26} y={124} w={222} h={50} lines={['applyToHome', '唯一运行 pnpm 的入口，串行排队']} />
 
-        <Note x={186} y={26} size={12} color={FG} weight={600}>
-          plugin-manager（插件）
-        </Note>
-        <rect x={178} y={36} width={230} height={196} rx={10} fill="none" stroke={BORDER} />
-        <Box x={192} y={50} w={202} h={56} lines={['命令 plugin-manager.*', '同一时刻只允许一个改动']} tone={lit('manager')} />
-        <Box x={192} y={118} w={202} h={50} lines={['applyToHome', '唯一运行 pnpm 的入口，串行排队']} tone={lit('queue')} />
-        <Box x={192} y={176} w={202} h={44} lines={['条目树（从自己的条目上取）']} tone={lit('tree')} />
+      <Note x={508} y={26} size={12} color={FG} weight={600}>
+        内核
+      </Note>
+      <rect x={500} y={36} width={246} height={100} rx={10} fill="none" stroke={BORDER} />
+      <Box x={512} y={52} w={106} h={68} lines={['loader + include', '条目树的结构', '读写 cordis.yml']} />
+      <Box x={628} y={52} w={106} h={68} lines={['按真实路径解析', '包名 →', '带版本号的目录']} />
 
-        <Note x={440} y={26} size={12} color={FG} weight={600}>
-          home（磁盘）
-        </Note>
-        <rect x={432} y={36} width={314} height={100} rx={10} fill="none" stroke={BORDER} />
-        <Box x={444} y={50} w={92} h={70} lines={['package.json', '装了哪些包']} tone={lit('package')} />
-        <Box x={546} y={50} w={92} h={70} lines={['node_modules/', '包本体']} tone={lit('modules')} />
-        <Box x={648} y={50} w={88} h={70} lines={['cordis.yml', '条目']} tone={lit('yml')} />
+      <SeamLine x1={380} y1={40} x2={380} y2={186} label="接缝" labelX={386} labelY={184} anchor="start" />
+      <Arrow from={[248, 81]} to={[512, 81]} label="create / update / remove / resolve" />
 
-        <Note x={440} y={166} size={12} color={FG} weight={600}>
-          内核
-        </Note>
-        <rect x={432} y={176} width={314} height={100} rx={10} fill="none" stroke={BORDER} />
-        <Box x={444} y={190} w={140} h={72} lines={['loader + include', '条目树的结构', '读写 cordis.yml']} tone={lit('tree')} />
-        <Box x={596} y={190} w={140} h={72} lines={['按真实路径解析', '包名 → 带版本号的目录']} tone={lit('resolve')} />
+      <Note x={22} y={216} size={12} color={FG} weight={600}>
+        home（磁盘上的目录）
+      </Note>
+      <rect x={14} y={224} width={732} height={70} rx={10} fill="none" stroke={BORDER} />
+      <Box x={26} y={234} w={222} h={50} lines={['package.json + node_modules/', 'pnpm 一起改']} />
+      <Box x={512} y={234} w={106} h={50} lines={['cordis.yml', '条目']} />
+      <Box x={628} y={234} w={106} h={50} lines={['node_modules/', '按真实路径读']} />
 
-        <Box x={192} y={250} w={202} h={40} lines={['shell.reload（外壳的命令）']} tone={lit('shell')} dashed={current.arrow !== 'reload'} />
+      <Arrow from={[137, 174]} to={[137, 234]} label="pnpm add / remove" />
+      <Arrow from={[565, 120]} to={[565, 234]} label="写回并当场加载" />
+      <Arrow from={[681, 120]} to={[681, 234]} label="import 时解析" />
 
-        <Arrow from={[154, 90]} to={[192, 78]} tone={arrowTone('call')} />
-        <Arrow from={[394, 143]} to={[444, 100]} tone={arrowTone('pnpm')} />
-        <Arrow from={[394, 198]} to={[444, 222]} tone={arrowTone('tree')} />
-        <Arrow from={[293, 220]} to={[293, 250]} tone={arrowTone('reload')} />
-        <line x1={690} y1={120} x2={690} y2={190} stroke={MUTED} strokeDasharray="3 3" />
-
-        <StepCaption x={20} y={308} w={720} title={current.title} detail={current.detail} />
-      </svg>
-      <StepControls count={STEPS.length} state={state} />
-    </>
+      <Note x={270} y={256} size={11} color={MUTED}>
+        plugin-manager 只经这两条路改 home：
+      </Note>
+      <Note x={270} y={272} size={11} color={MUTED}>
+        包经 pnpm，条目经 loader 的条目树
+      </Note>
+      <Note x={380} y={318} anchor="middle" size={11.5} color={MUTED}>
+        条目树的结构、home 的布局、解析规则都由内核决定——所以 plugin-manager 和内核放在同一个仓，测试一起跑
+      </Note>
+    </svg>
   )
 }

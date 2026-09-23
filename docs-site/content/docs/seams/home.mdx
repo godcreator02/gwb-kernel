@@ -5,12 +5,12 @@ description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_
 
 **本页回答**：内核和 plugin-manager 之间交换什么、各保证什么；为什么这条接缝的另一边放在内核仓；过渡期里还留着哪些做法。plugin-manager 自己怎么分块、每块功能怎么工作，见[插件管理](/docs/plugin-manager)。
 
-<Diagram name="plugin-home" title="只有 plugin-manager 写 home：一次 pnpm，再经 loader 条目树改 cordis.yml">
-- 两侧：内核决定 home 的布局、注册 loader 与 include、按真实路径解析包名；plugin-manager 是唯一写 home 的插件
-- 交换的东西：loader 条目树（`create` / `update` / `remove` / `resolve` 与 `store`，loader 没写进文档的内部结构）、home 里的 `package.json` / `node_modules` / `cordis.yml`
-- 安装：调用 `plugin-manager.install` → 经 `applyToHome` 一次 `pnpm add` → 经条目树 `create` 写回 `cordis.yml` 并当场加载，loader import 包名时由内核按真实路径解析
-- 热升级：`outdated` 查出过期包 → 一次 `pnpm add` 精确版本 → 同一条命令里逐条停用再启用（真实路径换了，重新解析就是新版本；plugin-manager 自己最后）→ `shell.reload` 整页重新加载
-- 换这一边：plugin-manager 的源码在内核仓 `plugins/plugin-manager/`，内核升级 loader 或改解析方式时，它的测试一起跑
+<Diagram name="plugin-home" title="只有 plugin-manager 写 home：包经 pnpm，条目经 loader 的条目树">
+- 左边是 plugin-manager 用到的两样：从自己的条目上取的条目树（`EntryTreeLike`）、唯一运行 pnpm 的入口 `applyToHome`
+- 右边是内核里对应的两样：loader 与 include（条目树的结构、读写 `cordis.yml`）、按真实路径解析包名
+- 跨过接缝的是条目树的 `create` / `update` / `remove` / `resolve`——loader 没写进文档的内部结构
+- 下面是 home：`applyToHome` 经 pnpm 改 `package.json` 与 `node_modules`；条目树写回 `cordis.yml` 并当场加载；loader import 包名时按真实路径读 `node_modules`
+- 条目树的结构、home 的布局、解析规则都由内核决定，所以 plugin-manager 和内核放在同一个仓，测试一起跑
 </Diagram>
 
 ## 接口

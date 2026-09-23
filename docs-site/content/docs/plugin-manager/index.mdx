@@ -32,6 +32,13 @@ home 里有两层东西，插件管理的工作是让两层对应上：
 
 十五个文件。读磁盘与启动进程只在 `home.ts` 与 `pnpm.ts`，其余的纯逻辑文件不 import `node:fs`，单元测试传入构造的数据就能跑；`index.ts` 把它们组装起来，依赖其余所有文件。
 
+<Diagram name="pm-modules" title="源码分三层：组装、纯逻辑、读磁盘与启动进程">
+- 顶层 `index.ts`：服务类与 14 条命令，按顺序调用下面各块，依赖其余所有文件
+- 中间十二个纯逻辑文件，不读磁盘、不启动进程；其中 `peers.ts`、`peer-warnings.ts` 是过渡期的做法，关键判据 K2、K3 执行完就删
+- 底层两个：`home.ts` 读 home 与已装包的清单，`pnpm.ts` 找 pnpm、启动进程
+- 插件管理外面：home 目录、loader 提供的条目树、四个可选插件（commands、data、settings、skills）
+</Diagram>
+
 | 文件 | 管什么 | 功能页 |
 | --- | --- | --- |
 | `index.ts` | 服务类与 14 条命令，按顺序调用下面各块 | 全部 |

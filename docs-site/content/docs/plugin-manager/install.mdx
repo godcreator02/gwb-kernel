@@ -5,19 +5,15 @@ description: install 一次 pnpm add，过渡期再装 peer、查 peer 版本，
 
 **本页回答**：装一个包要经过哪几步、每一步失败时回执是什么样；为什么库不加条目；为什么建条目只等写入、不等加载；卸载为什么先删条目、失败不回滚、不动 peer。
 
-<Diagram name="plugin-home-install" title="安装：一次 pnpm add，再经条目树加一条条目">
-- 调用方（agent 或插件管理窗格）调用 `plugin-manager.install`，同一时刻只允许一个改动，重入的直接返回 BUSY
-- 经 `applyToHome` 排进串行队列，运行一次 `pnpm add`，包写进 home 的 `package.json` 与 `node_modules`；过渡期里，该进 home 的 peer 也装成直接依赖
-- 经 loader 条目树 `create` 加一条条目：写回 `cordis.yml` 并当场加载，loader 要 import 包名时由内核按真实路径解析
-</Diagram>
-
 ## 安装的五步
 
+<Diagram name="pm-install" title="安装一个包：五步依次做，每一步失败时回执是什么样，回执里逐步多出哪几行">
 1. **校验参数**：包名与版本范围不合规就抛错——拦的是 `-r` 这类会被 pnpm 当成命令行选项的参数。参数全程以数组传给 pnpm、不经过 shell。只有调用方写错才抛，下面每一种失败都转成 `ok: false` 的回执
 2. **一次 `pnpm add`**：先[找 pnpm](/docs/plugin-manager/pnpm)，再经 `applyToHome` 运行。失败时回执带 pnpm 输出的最后几行
-3. **peer 那一步**（过渡期）：见下一节。排在建条目之前——条目一加进去 loader 就加载插件，插件启动时要找的 peer 得已经在
+3. **peer 那一步**（过渡期）：见[下一节](#过渡期的-peer-那一步)。排在建条目之前——条目一加进去 loader 就加载插件，插件启动时要找的 peer 得已经在；peer 装不上不让安装失败，写进回执的 `peers` 与 `note`
 4. **查 peer 版本**（过渡期）：运行一次 `pnpm peers check`，home 里每一处版本对不上的写进回执的 `peerWarnings`，只提醒、不拦
-5. **建条目**：装的是库就不建；否则选一个 id（规则见[条目、id 与归属](/docs/plugin-manager/entries#选-id)），经条目树 `create` 加进 `cordis.yml`
+5. **是库还是插件**：是库就不加条目，回执里没有 `entryId`、`note` 说明原因；是插件就选一个 id（规则见[条目、id 与归属](/docs/plugin-manager/entries#选-id)），经条目树 `create` 加进 `cordis.yml`，回执带 `entryId`。加载在后台继续，命令不等它；写不进 `cordis.yml` 时回执 `ok: false`，包留在 home 里
+</Diagram>
 
 同一个包 install 两次会得到两条条目（第二条的 id 带数字后缀）：一个包对应几条条目本来就合法，不替调用方猜「是不是装过了」。
 
