@@ -1,5 +1,7 @@
 {
   "name": "@godcreator/gwb-commands",
+  "//private": "内核内置：构建时复制进 apps/desktop 的 dist/builtin/，不单独发布",
+  "private": true,
   "version": "0.4.6",
   "author": {
     "name": "godcreator"
@@ -22,9 +24,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "//prepublishOnly": "发版前强制构建一次：pnpm check 只跑类型检查、lint 和测试，不构建，少了这条会把上一版的 dist 原样发出去，而且不报错",
-    "prepublishOnly": "pnpm build"
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
     "@godcreator/gwb-plugin-api": "workspace:*",
@@ -47,8 +47,5 @@
   "keywords": [
     "gwb",
     "gwb-plugin"
-  ],
-  "peerDependencies": {
-    "@godcreator/gwb-plugin-api": "^0.2.7"
-  }
+  ]
 }

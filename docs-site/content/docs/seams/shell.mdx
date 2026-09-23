@@ -26,9 +26,9 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 ```
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="23-27" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="24-28" */}
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="55-56" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="69-70" */}
 
 页面收到的每一条 `gwb:shell` 都是整份当前状态 `{ url, imports, report }`，不是增量：importmap 与只读状态页的数据每次都重新计算。
 

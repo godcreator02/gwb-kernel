@@ -32,7 +32,6 @@
   "devDependencies": {
     "@cordisjs/plugin-include": "1.0.5",
     "@cordisjs/plugin-loader": "1.0.0-rc.6",
-    "@godcreator/gwb-commands": "^0.4.6",
     "@godcreator/gwb-data": "^0.1.6",
     "@godcreator/gwb-plugin-api": "workspace:*",
     "@godcreator/gwb-repo-kit": "0.3.0",

@@ -13,9 +13,9 @@ description: gwb-commands 提供命令总线 ctx.gwbCommands：插件把能力�
 
 **放在内核仓**，是因为内核直接依赖它：页面发来的命令一律交给 `ctx.gwbCommands.run`。它和插件管理一起随安装包预装，新 home 第一次启动时就装好（见交接区[随安装包预装](/spec/platform-plugins)）。它仍然是一个普通插件，能停用、卸载、单独升级。
 
-它对外的全部接口：
+它对外的全部接口，类型在词汇表包 `@godcreator/gwb-plugin-api` 里，插件从那里引用，`GwbContext` 上的 `gwbCommands` 就是它：
 
-{/* ref file="../plugins/commands/src/registry.ts" lines="3-19" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="31-47" */}
 
 它不运行命令行程序：处理函数就是普通的 JS 函数，在主进程里执行。启动子进程运行命令行程序的是基础插件仓的 `gwb-node-cli` 与 `gwb-py-cli`，它们把自己的命令也登记到这张表上。
 
@@ -31,7 +31,7 @@ description: gwb-commands 提供命令总线 ctx.gwbCommands：插件把能力�
 
 **怎么做**：
 
-{/* ref file="../plugins/commands/src/registry.ts" lines="37-56" */}
+{/* ref file="../plugins/commands/src/registry.ts" lines="19-38" */}
 
 登记一条命令的写法：
 
@@ -66,21 +66,21 @@ export function apply(ctx: GwbContext) {
 
 **怎么做**：
 
-{/* ref file="../plugins/commands/src/registry.ts" lines="62-84" */}
+{/* ref file="../plugins/commands/src/registry.ts" lines="44-66" */}
 
 ## 服务与说明书
 
 服务用 `ctx.effect` 包住 `provide`：本插件卸载时服务自动撤销，不会留下一张没人维护的命令表。
 
-{/* ref file="../plugins/commands/src/index.ts" lines="30-37" */}
+{/* ref file="../plugins/commands/src/index.ts" lines="23-30" */}
 
 插件自带的说明书（`skills/gwb-commands`）用 `ctx.inject(['gwbSkills'], …)` 登记，**不写进 `export const inject`**：没装说明书插件的 home 里，命令总线也必须能加载，说明书不是它工作的前提。写进 `inject` 的话，少了说明书插件整个命令总线就一直等待。
 
-{/* ref file="../plugins/commands/src/index.ts" lines="39-44" */}
+{/* ref file="../plugins/commands/src/index.ts" lines="32-37" */}
 
-本插件不 import 说明书插件的类型，只按形状取它用到的 `register(dir)`：说明书插件反过来依赖本插件（`inject` 命令总线、引用本包的类型），这样包之间的依赖是单向的。pnpm 12 的 `pnpm -r` 遇到工作区里的依赖环会直接报错退出。
+本插件不 import 说明书插件的类型，只按形状取它用到的 `register(dir)`：说明书插件反过来依赖命令总线，这样包之间的依赖是单向的。pnpm 12 的 `pnpm -r` 遇到工作区里的依赖环会直接报错退出。
 
-{/* ref file="../plugins/commands/src/index.ts" lines="7-13" */}
+{/* ref file="../plugins/commands/src/index.ts" lines="5-11" */}
 
 ## 怎么测
 

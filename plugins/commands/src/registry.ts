@@ -1,22 +1,4 @@
-import type { GwbResult } from '@godcreator/gwb-plugin-api'
-
-/** 一条命令的说明。`plugin` 由登记方自己填写 */
-export interface GwbCommandDef {
-  name: string
-  /** 一句话介绍，出现在 MCP 入口 index 的清单里，作用与说明书的 description 相同 */
-  description?: string
-  /** 用法：参数形状、注意事项。search 命中的那一行带它，调用之前看它（无参数的命令可以不给） */
-  usage?: string
-  plugin: string
-}
-
-/** 命令总线对外的接口。插件之间的契约，放在提供方这个包里 */
-export interface GwbCommands {
-  /** 登记一条命令，返回注销函数；调用方用 ctx.effect 包住，卸载时自动注销 */
-  register(def: GwbCommandDef, handler: (args?: unknown) => unknown): () => void
-  list(): Required<GwbCommandDef>[]
-  run(name: string, args?: unknown): Promise<GwbResult>
-}
+import type { GwbCommandDef, GwbCommands, GwbResult } from '@godcreator/gwb-plugin-api'
 
 /** 命令表写日志用的两个级别。运行时传入 cordis 的 logger，它有这两个级别 */
 export interface RegistryLog {

@@ -1,9 +1,7 @@
-import type { GwbContext, GwbResult } from '@godcreator/gwb-plugin-api'
+import type { GwbCommands, GwbContext, GwbResult } from '@godcreator/gwb-plugin-api'
 import { isRecord, requireKernel } from './vocab.js'
-// 这几条 type import 只为引入对方的 `declare module 'cordis'`，让 ctx 上有那几个服务名
-// （commands 那条另带一个类型：一键热升级要持有命令插件的引用）。这些插件在这里**都是可选的**，
-// 所以都用嵌套注入、都写进 devDependencies
-import type { GwbCommands } from '@godcreator/gwb-commands'
+// 这几条 type import 只为引入对方的 `declare module 'cordis'`，让 ctx 上有那几个服务名。
+// 这些插件在这里**都是可选的**，所以都用嵌套注入、都写进 devDependencies
 import type {} from '@godcreator/gwb-data'
 import type {} from '@godcreator/gwb-settings'
 import type {} from '@godcreator/gwb-skills'
@@ -264,9 +262,7 @@ class PluginManager {
   /** 命令插件是可选的，但没有它插件管理就没有任何对外接口 */
   private wireCommands(): void {
     this.ctx.inject(['gwbCommands'], (ctx) => {
-      const cli = ctx.gwbCommands
-      // inject 保证了它在，这句只是把类型收窄
-      if (cli === undefined) return
+      const cli = (ctx as GwbContext).gwbCommands
       this.cli = cli
       ctx.effect(() => () => {
         this.cli = undefined

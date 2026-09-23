@@ -14,12 +14,12 @@ description: 插件从 cordis.yml 进来、按 home 解析包名、由 cordis �
 
 ## 接口
 
-插件是一个 npm 包，入口导出 cordis 认识的形状；内核给它的只有 `ctx.gwbKernel` 这一个服务：
+插件是一个 npm 包，入口导出 cordis 认识的形状；内核给它两个服务：`ctx.gwbKernel`，和内置的命令插件提供的命令总线 `ctx.gwbCommands`：
 
 ```ts
 // 插件的入口（函数式写法；也可以默认导出一个继承 Service 的类）
 export const name = '@godcreator/gwb-demo'
-export const inject = ['gwbCommands']       // 依赖的服务都在了，cordis 才调用 apply
+export const inject = ['gwbData']           // 依赖的服务都在了，cordis 才调用 apply
 export function apply(ctx: GwbContext): void { /* … */ }
 
 // 内核提供的服务：在根上下文上，早于任何插件，永不撤销，不用写进 inject
@@ -32,10 +32,11 @@ interface GwbKernelApi {
 
 interface GwbContext extends Context {
   gwbKernel: GwbKernelApi
+  gwbCommands: GwbCommands            // 命令总线，见命令插件
 }
 ```
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="15-33" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="16-53" */}
 
 `emit` 与 `setShell` 的另一头在页面上，见[命令与事件](/docs/seams/commands)与[外壳接管页面](/docs/seams/shell)。这些类型都在词汇表包 `@godcreator/gwb-plugin-api` 里：只有类型、没有运行时代码，插件在 dev 里列它、只用 `import type`。
 

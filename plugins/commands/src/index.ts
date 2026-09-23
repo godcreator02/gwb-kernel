@@ -1,31 +1,24 @@
 import type { GwbContext } from '@godcreator/gwb-plugin-api'
 // 相对 import 必须带 .js：构建产物由 node 直接加载，ESM 不补扩展名
-import { createRegistry, type GwbCommands } from './registry.js'
-
-export type { GwbCommands, GwbCommandDef } from './registry.js'
+import { createRegistry } from './registry.js'
 
 /**
- * 只用到说明书服务的 `register(dir)`，按形状声明、不 import `@godcreator/gwb-skills`：说明书插件依赖本插件
- * （inject 命令总线、引用本包的类型），本插件反过来不依赖它，包之间没有依赖环
+ * 只用到说明书服务的 `register(dir)`，按形状声明、不 import `@godcreator/gwb-skills`：说明书插件依赖命令总线，
+ * 本插件反过来不依赖它，包之间没有依赖环
  */
 interface SkillMount {
   register(dir: URL): () => void
 }
 
 /**
- * 命令总线：插件把能力登记成命令，所有调用方用同一张命令表。
+ * 命令总线：插件把能力登记成命令，所有调用方用同一张命令表。由内核在加载 cordis.yml 之前直接加载，
+ * 接口的类型在词汇表包里（`GwbContext.gwbCommands`）。
  *
  * 它不运行命令行程序：处理函数是普通 JS 函数，在主进程里执行。启动子进程的是 `gwb-node-cli` /
  * `gwb-py-cli`，它们的命令也登记在这张表上。
  */
 
 export const name = 'gwb-commands'
-
-declare module 'cordis' {
-  interface Context {
-    gwbCommands?: GwbCommands
-  }
-}
 
 export function apply(ctx: GwbContext): void {
   const api = createRegistry(ctx.logger(name))
