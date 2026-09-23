@@ -1,9 +1,11 @@
 ---
-title: 外壳接管页面
-description: 谁调用 setShell，页面的 #root 就交给谁的默认导出；外壳换了、没了、起不来时页面怎么办
+title: 外壳接管
+description: 谁调用 setShell，页面的 #root 就交给谁的默认导出；外壳换了、卸载了、启动失败时页面回到只读状态页
 ---
 
 **本页回答**：页面怎么交给一个插件来渲染；外壳换了、卸载了、启动失败时页面显示什么；两边各保证什么。
+
+两侧：一侧是[内核应用](/docs/desktop)的页面入口 `index.html`（加上主进程里记着当前外壳的 `setShell`），另一侧是调用 `setShell` 的插件——目前是 `gwb-shell`。外壳状态经 IPC 通道 `gwb:shell` 推给页面，通道本身见 [IPC 通道](/docs/seams/ipc)；`setShell` 在内核服务里的语义见[内核服务](/docs/seams/kernel)。
 
 <Diagram name="shell-handover" title="页面先问外壳是谁，外壳就位后把 #root 交出去，外壳卸载后回到只读状态页">
 - 页面订阅 `onShell`，订阅时发一次 `gwb:hello` 问当前外壳是谁；内核每次都回一条 `gwb:shell`：外壳地址（没有时是 `null`）、importmap、只读状态页的数据
@@ -13,7 +15,7 @@ description: 谁调用 setShell，页面的 #root 就交给谁的默认导出；
 - 后调用 `setShell` 的替换先调用的
 </Diagram>
 
-## 接口
+## 交换什么
 
 插件一侧（主进程）只有一个调用，页面一侧只认外壳模块默认导出的形状：
 
@@ -30,50 +32,51 @@ type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 
 {/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="69-70" */}
 
-页面收到的每一条 `gwb:shell` 都是整份当前状态 `{ url, imports, report }`，不是增量：importmap 与只读状态页的数据每次都重新计算。
+内核记下地址，每次变化都把整份当前状态推给页面；撤销函数只在自己仍是当前外壳时才清空：
 
-## 页面怎么接管
+{/* ref file="../apps/desktop/src/main.ts" lines="229-237" */}
+
+### 页面入口怎么接管
 
 页面入口 `index.html` 收到 `gwb:shell` 后：
 
-1. 注入 importmap——只注入一次、而且必须在第一句包名 import 之前，注入之后已经解析过的名字无法再改
+1. 注入 importmap——只注入一次、而且必须在第一句包名 import 之前，注入之后已经解析过的名字无法再改（importmap 从哪来见[页面上的包名](/docs/seams/shared)）
 2. 地址和当前外壳相同、或同一个地址正在加载，就什么都不做
 3. 调用旧外壳的 `dispose`（出错只打印），清空 `#root`
 4. 地址是 `null`，显示只读状态页；否则 import 这个地址，把 `#root` 交给默认导出
 
 {/* ref file="../apps/desktop/src/index.html" lines="68-98" */}
 
-## 没有外壳时
+### 没有外壳时
 
-只读状态页显示三样内核已经有的数据：home 路径、`cordis.yml` 每个条目加载到哪一步（比如等待哪个服务、失败的第一行错误）、最近的错误与警告日志。全部是纯文本，没有按钮。外壳启动失败（import 失败、默认导出不是函数）也显示它，并写明原因。条目状态变化或有新的错误日志时，内核会重新推送，只读状态页随之更新。
-
-{/* ref file="../apps/desktop/src/entry-state.ts" lines="30-41" */}
+地址是 `null`、或外壳启动失败（import 失败、默认导出不是函数）时，页面显示只读状态页：纯文本、没有按钮，启动失败时第一行写明原因。页面上画什么、数据从哪来、什么时候重新推送，见[只读状态页的数据](/docs/desktop/status-page)。
 
 ## 两边各保证什么
 
 内核与页面入口保证：
 - 页面一订阅就能拿到当前外壳，不会因为外壳插件比页面先就位而错过
 - 同一时刻只有一个外壳；换外壳时旧外壳先 `dispose` 再清空 `#root`
+- 同一个地址连续推来两次，外壳只加载一次
 - 外壳出任何问题，页面都回到只读状态页，不会白屏
 
 外壳插件保证：
 - 把 `setShell` 返回的撤销函数交给 `ctx.effect`，插件卸载时交还页面
-- `dispose` 里拆掉自己在页面上建的一切
+- 页面一侧的模块默认导出一个 `ShellBoot`；`dispose` 里拆掉自己在页面上建的一切
+- 页面一侧的代码用到 react 这类共享包名时，构建时外置、留给 importmap
 
-## 内核不管什么
+## 一侧不管什么
 
-- 不挑外壳：谁调用 `setShell` 谁就是
-- 不渲染任何界面（只读状态页除外），不认识窗格
+- 内核不挑外壳：谁调用 `setShell` 谁就是
+- 内核与页面入口不渲染任何界面（只读状态页除外），不认识窗格
 - 只读状态页不分析失败原因、不重试
+- 外壳不管页面入口怎么拿到它的地址，也不直接接触 IPC 通道
 
 ## 怎么单独测
 
-`entry-state.ts` 不依赖 electron 与 cordis 实例：手工构造条目，验证停用、没有加载出来、各种加载状态、等待时缺哪个服务、失败时取错误第一行各显示什么（`tests/entry-state.test.ts`）。页面接管只能在隔离 home 里实机验证：没有外壳插件时看到只读状态页，装上外壳后页面被接管，卸载外壳后回到只读状态页。
+页面接管的逻辑写在 `index.html` 里，依赖窗口，没有单元测试。在隔离 home 里实机验证（怎么启动见[开发](/docs/develop)）：没有外壳插件时看到只读状态页，装上外壳后页面被接管，停用外壳后回到只读状态页，再启用又被接管。外壳模块的形状由类型检查守住：外壳从词汇表包取 `ShellBoot`。
 
 ## 代码从哪读
 
 - `setShell` 的实现：`main.ts` 里的 `kernel` 对象与 `shellMessage`
-- 页面一侧：`preload.cjs` 的 `onShell`、`index.html` 的 `onShell` 回调
-- 只读状态页的数据：`main.ts` 的 `report()`、`entry-state.ts`
-
-{/* ref file="../apps/desktop/src/preload.cjs" lines="11-18" */}
+- 页面一侧：`index.html` 的 `onShell` 回调（订阅怎么接到 IPC 通道见 [IPC 通道](/docs/seams/ipc)）
+- 类型：词汇表包的 `GwbKernelApi.setShell` 与 `ShellBoot`

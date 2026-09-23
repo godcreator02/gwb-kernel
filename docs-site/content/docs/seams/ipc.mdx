@@ -1,0 +1,80 @@
+---
+title: IPC 通道
+description: 页面上只有 window.gwb 的三个函数，背后是四个 IPC 通道——gwb:command 调命令、gwb:event 推事件、gwb:shell 推外壳状态、gwb:hello 请求当前外壳状态；内核只转交，不认识命令名
+---
+
+**本页回答**：页面上的代码怎么调命令、收事件、知道外壳是谁；主进程和页面之间有哪几个通道、各传什么；内核在中间做什么、不做什么。
+
+两侧：一侧是页面（内核的页面入口 `index.html`，以及外壳和页面上运行的任何代码），另一侧是[内核应用](/docs/desktop)的主进程。页面一侧由 `preload.cjs` 注入 `window.gwb`，主进程一侧的处理在 `main.ts`。命令最终由命令总线执行，见[命令总线](/docs/seams/command-bus)。
+
+<Diagram name="command-relay" title="内核只转交，不认识任何命令名">
+- 命令：页面调用 `window.gwb.command(名字, 参数)`，经 IPC 通道 `gwb:command` 到内核，内核原样交给 `ctx.gwbCommands.run`；回执 `{ ok, data, error }` 原路返回
+- 命令总线由内核内置的[命令插件](/docs/commands)提供，在加载 `cordis.yml` 之前就在；万一它加载失败、`gwbCommands` 不存在，内核直接回 `ok: false`
+- 事件：插件调用 `ctx.gwbKernel.emit(payload)`，经 `gwb:event` 推到页面，页面用 `window.gwb.on(cb)` 接收；只推送、不保留
+- 页面这边只有 `window.gwb` 的三个函数
+</Diagram>
+
+## 交换什么
+
+页面上只有 `window.gwb`，页面上运行的任何代码都能直接调用：
+
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="55-67" */}
+
+`command` 的 promise 兑现的是命令的回执：
+
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="9-14" */}
+
+`preload.cjs` 把这三个函数接到四个 IPC 通道上，整个文件就是这些：
+
+{/* ref file="../apps/desktop/src/preload.cjs" */}
+
+| 通道 | 方向 | 传什么 |
+| --- | --- | --- |
+| `gwb:command` | 页面 → 主进程，回执原路返回 | 命令名与参数；回执 `GwbResult` |
+| `gwb:event` | 主进程 → 页面 | 插件经 `gwbKernel.emit` 发出的 payload，原样 |
+| `gwb:shell` | 主进程 → 页面 | 整份外壳状态 `{ url, imports, report }`：外壳地址、importmap、只读状态页的数据 |
+| `gwb:hello` | 页面 → 主进程 | 不带内容；主进程向发来的那个页面回一条 `gwb:shell` |
+
+主进程一侧：`gwb:command` 原样交给命令总线，`gwb:hello` 回当前的外壳状态：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="241-249" */}
+
+`gwb:event` 由 `gwbKernel.emit` 直接发出（见[内核服务](/docs/seams/kernel)）：
+
+{/* has file="../apps/desktop/src/main.ts" text="emit: (payload) => win?.webContents.send('gwb:event', payload)" */}
+
+`gwb:shell` 在三种时候发：页面发来 `gwb:hello`、插件调用 `setShell` 或撤销、条目状态变化或有新的错误与警告日志。最后一种去抖成 200 毫秒内一次：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="214-223" */}
+
+`GwbWindowApi` 里 `onShell` 的参数只写了 `url` 与 `imports`：`report` 只给内核自己的页面入口画只读状态页用，不在契约里（数据从哪来见[只读状态页的数据](/docs/desktop/status-page)）。`url` 与 `imports` 怎么用见[外壳接管](/docs/seams/shell)与[页面上的包名](/docs/seams/shared)。
+
+## 两边各保证什么
+
+内核保证：
+- 命令名和参数原样交给命令总线，回执原样返回；内核自己不注册任何命令。命令名不是字符串、或命令总线不存在时，直接回 `ok: false` 和一句原因
+- 事件原样推给页面；窗口不在时事件就丢了，不补发
+- 每条 `gwb:shell` 都是整份当前状态，不是增量；页面一订阅 `onShell` 就会先请求一次，所以外壳插件比页面先就位也不会错过
+
+命令总线保证（内置的[命令插件](/docs/commands)）：任何命令都返回 `{ ok, data, error }`，命令抛错也收成 `ok: false`，页面不会收到异常。
+
+页面保证：
+- 参数能经 Electron 的 IPC 传过去（结构化克隆：函数、DOM 节点传不过去）
+- 不再需要时调用 `on`、`onShell` 返回的取消订阅函数
+- `onShell` 只由内核的页面入口订阅；外壳和别的页面代码用 `command` 与 `on`
+
+## 内核不管什么
+
+- 不认识任何命令名，不校验参数，不给命令分权限
+- 不保留事件，也不知道谁在听
+- 页面上除了 `window.gwb` 什么都不注入：没有 Node、没有 `ipcRenderer`，新的通道只能由内核加
+
+## 怎么单独测
+
+这条接缝的两侧都只有转交，没有可以单独抽出来测的逻辑。形状由类型检查守住：外壳与插件的页面代码从词汇表包取 `GwbWindowApi`、`GwbResult`（内核的页面入口 `index.html` 是不经类型检查的纯脚本）。在隔离 home 里实机验证（怎么启动见[开发](/docs/develop)；查看页面用 devkit 的 `devkit.cdp`）：页面能调到插件注册的命令，调不存在的命令收到 `ok: false`；插件 `emit` 的事件页面收得到；页面整页重新加载后立刻收到当前外壳状态。命令总线自己的行为由命令插件的测试守住（`plugins/commands/tests/`，见[命令插件](/docs/commands)）。
+
+## 代码从哪读
+
+- 页面一侧：`preload.cjs`（整个文件）
+- 主进程一侧：`main.ts` 的 `ipcMain.handle('gwb:command', …)`、`ipcMain.on('gwb:hello', …)`、`kernel.emit`、`pushShell`
+- 类型：`packages/gwb-plugin-api/src/index.ts` 的 `GwbWindowApi`、`GwbResult`

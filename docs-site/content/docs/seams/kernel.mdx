@@ -1,0 +1,68 @@
+---
+title: 内核服务
+description: 内核在 cordis 的根上下文提供 gwbKernel——dataDir、version、emit、setShell 四样，类型在词汇表包；早于任何插件、永不撤销，插件直接从 ctx 取
+---
+
+**本页回答**：内核直接给插件的服务 `gwbKernel` 有哪几样、各自的语义；内核和插件在使用它时各保证什么。
+
+两侧：一侧是[内核应用](/docs/desktop)（`main.ts` 里的 `kernel` 对象），另一侧是任何插件。类型在[词汇表包](/docs/vocab) `@godcreator/gwb-plugin-api` 里：只有类型、没有运行时代码，插件在开发依赖里列它、只用 `import type`。同样在上下文上提供的命令总线 `gwbCommands` 由内置的命令插件提供，见[命令总线](/docs/seams/command-bus)。
+
+## 交换什么
+
+`gwbKernel` 的四样：
+
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="16-29" */}
+
+插件的 `apply` 拿到的上下文类型把两个服务都写上：
+
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="49-53" */}
+
+内核一侧的实现就是一个对象，在根上下文上提供：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="225-239" */}
+
+- `dataDir`：这个 home 目录的真实路径（大小写、链接、斜杠写法都已统一），home 怎么选定见 [home 的准备](/docs/desktop/home)
+- `version`：内核自己的版本号，读的是内核包的清单，不是应用外层的
+- `emit(payload)`：往页面推一条事件，页面用 `window.gwb.on` 收，通道见 [IPC 通道](/docs/seams/ipc)
+- `setShell(url)`：把页面交给这个地址指向的模块，返回撤销函数；页面怎么接管见[外壳接管](/docs/seams/shell)
+
+{/* ref file="../apps/desktop/src/main.ts" lines="42-44" */}
+
+{/* ref file="../apps/desktop/src/main.ts" lines="26-27" */}
+
+内核在自己这边对 cordis 的 `Context` 做了同样的类型声明，只是把 `gwbCommands` 写成可选的：命令插件加载失败时它不存在，内核转交命令前要判断这一点。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="29-36" */}
+
+## 两边各保证什么
+
+内核保证：
+- `gwbKernel` 在注册 loader 之前就在根上下文上提供，任何插件加载时都已存在；永不撤销，所以插件不用写进 `inject`
+- `dataDir` 在一次运行中不变，而且同一个 home 的不同写法得到同一个字符串
+- `emit` 只转交、不保留：窗口不在时事件就丢了
+- `setShell` 后调用的替换先调用的；撤销函数只在自己仍是当前外壳时才清空，已被别人替换就什么都不做。每次变化都向页面推一次整份状态
+
+插件保证：
+- 数据写在 `dataDir` 下自己的目录里，不碰别的插件的目录，也不改 home 根上的 `package.json`、`cordis.yml`（那两份归插件管理）
+- `emit` 的 payload 能经 Electron 的 IPC 传过去（结构化克隆：函数、Promise 传不过去）
+- 把 `setShell` 返回的撤销函数交给 `ctx.effect`，插件卸载时把页面交还
+
+## 内核不管什么
+
+- 不给每个插件分数据目录，也不检查插件写了哪里
+- `emit` 不知道谁在听，不区分事件类型，不给事件编号
+- `setShell` 不挑外壳：谁调用谁就是；不检查地址指向的模块能不能加载
+- `version` 只是内核的版本号，不管插件的版本（插件的版本在 home 的 `node_modules` 里，由插件管理报告）
+
+## 怎么单独测
+
+`kernel` 对象写在 `main.ts` 里、依赖窗口，没有单元测试。它的形状由类型检查守住：对象的类型标成词汇表包的 `GwbKernelApi`，仓根 `pnpm check` 先构建词汇表包再做类型检查，两边对不上就失败。
+
+{/* has file="../apps/desktop/src/main.ts" text="const kernel: GwbKernelApi = {" */}
+
+行为只能在隔离 home 里实机验证（怎么启动见[开发](/docs/develop)）：插件读到的 `dataDir` 是 home 的真实路径；`emit` 的事件页面收得到；装上外壳插件后页面被接管、卸载后回到只读状态页。
+
+## 代码从哪读
+
+- 契约：`packages/gwb-plugin-api/src/index.ts` 的 `GwbKernelApi` 与 `GwbContext`
+- 实现：`main.ts` 里的 `kernel` 对象与它上面的 `shellMessage`、`pushShell`

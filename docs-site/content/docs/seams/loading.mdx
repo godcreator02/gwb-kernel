@@ -1,0 +1,94 @@
+---
+title: 插件加载
+description: 插件是 home 里的一个 npm 包，由 cordis.yml 的一条条目点名；内核注册 cordis 的 loader，替它把包名按 home 的真实路径解析成文件，cordis 调用插件的 apply 或实例化它的 Service 类
+---
+
+**本页回答**：`cordis.yml` 里的一个插件怎么被找到、加载、卸载；内核和插件在这一步各保证什么；在哪里换插件。
+
+两侧：一侧是[内核应用](/docs/desktop)（`apps/desktop`，注册 loader、解析包名），另一侧是 `cordis.yml` 里点名的任何插件。插件拿到之后能用的内核服务见[内核服务](/docs/seams/kernel)；两个内置插件不经 `cordis.yml`，见[内置插件的加载](/docs/seams/builtin)。
+
+<Diagram name="plugin-seam" title="内核不认识任何插件，插件只从 ctx 拿内核的东西">
+- 内核在 cordis 的根上下文提供 `gwbKernel`：`dataDir`、`version`、`emit`、`setShell`；内置的命令插件提供命令总线 `gwbCommands`
+- 分界线上面是内核（连同内置的命令插件与插件管理），不认识 `cordis.yml` 里任何插件、服务、命令的名字；下面是插件，每个都是 home 里的一个 npm 包
+- 换插件的地方：`cordis.yml` 里的条目（一条写一个包名），包从 home 的 `node_modules` 按真实路径找到
+- 插件之间通过 cordis 的服务和命令交互，不经过内核
+</Diagram>
+
+## 交换什么
+
+**插件一侧交出的**是一个 npm 包，入口导出 cordis 认识的形状：
+
+```ts
+// 插件的入口（函数式写法；也可以默认导出一个继承 Service 的类）
+export const name = '@godcreator/gwb-demo'
+export const inject = ['gwbData']           // 依赖的服务都在了，cordis 才调用 apply
+export function apply(ctx: GwbContext): void { /* … */ }
+```
+
+**`cordis.yml` 里的一条条目**写这个包名（`name`）、一个手写的 `id`、可选的 `config`。内核注册 cordis 官方的 loader，把承载 `cordis.yml` 的 include 条目作为 loader 根层的条目交给它（排在两个内置插件之后）；include 读这个文件，loader 按条目加载。loader 要 import 一个包名时，内核替它解析：内置插件的包名直接给模块，其余交给 `bareImportFromHome`：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="302-324" */}
+
+`bareImportFromHome` 先把 `<home>/node_modules/<包名>` 解析成磁盘上的真实路径，再从那里按包的 `exports` 找到入口文件：
+
+{/* ref file="../apps/desktop/src/bare-import.ts" lines="17-29" */}
+
+从真实路径开始，是为了运行中换了版本能拿到新版本：pnpm 布局里真实路径带版本号，不会命中 Node 为上一版记下的解析缓存。页面上的包名用的是同一个 `resolveFromHome`（见[页面上的包名](/docs/seams/shared)）。
+
+加载之后，cordis 调用插件的 `apply(ctx)`（或实例化它的 `Service` 类）；`inject` 里的服务缺一个，插件就停在等待状态，补齐后自动加载。
+
+## home 里和加载有关的文件
+
+| 文件 | 谁写 |
+| --- | --- |
+| `package.json` | 缺了内核补一份最小清单，之后归 pnpm 和插件管理 |
+| `cordis.yml` | 缺了内核补一个空表，之后归 include 和插件管理 |
+| `node_modules/` | pnpm |
+
+home 怎么选定、另外几个文件（`gwb.log`、`runtime.json`、插件的数据目录）见 [home 的准备](/docs/desktop/home)。写 home 的只有插件管理，见[条目树与 home 布局](/docs/seams/home)。
+
+## 两边各保证什么
+
+内核保证：
+- `gwbKernel` 与命令总线 `gwbCommands` 在 `cordis.yml` 里的任何插件加载之前就已提供
+- 包名一律从 home 的 `node_modules` 按真实路径解析，不从内核自己的目录找
+- 一个插件抛错只让它自己进入失败状态；没被处理的异常只记一条 error 日志，内核不退出
+- 退出时卸载整棵插件树，等各插件的清理结束，最多等 5 秒，超时就强制退出（见[启动与退出](/docs/desktop/boot)）
+
+{/* ref file="../apps/desktop/src/main.ts" lines="171-173" */}
+
+{/* ref file="../apps/desktop/src/main.ts" lines="355-367" */}
+
+插件保证：
+- 入口在包的 `exports` 里写明，`import` 这个包名能拿到上面那种形状
+- 依赖的服务写进 `inject`；要 home 路径只从 `gwbKernel.dataDir` 取
+- 自己启动、创建的东西在卸载时清理掉，并把清理返回成 promise——内核退出时等的就是这个 promise
+- 和别的插件只通过服务和命令交互
+
+## 内核不管什么
+
+- 不给插件提供安装接口：装插件、升级插件只经内置插件管理的 `plugin-manager.*` 命令；插件之间的依赖齐不齐不核对
+- 不监听 `cordis.yml`：运行中加载、卸载插件要调用 loader 的条目接口（插件管理在调）
+- 不判断插件是否加载成功：看 cordis 给这个插件的状态，`ACTIVE` 才算；没有外壳时只读状态页会列出每个条目加载到哪一步（见[只读状态页的数据](/docs/desktop/status-page)）
+
+## 怎么单独测
+
+`bare-import.ts` 不依赖 electron 与 cordis：传入一个手工构造的临时 home（`apps/desktop/tests/bare-import.test.ts`），证明主入口能解析并 import、带 scope 的包也能、链接改指向新版本后拿到新版本、子路径几种写法等价、包不存在时报错并带完整路径：
+
+{/* has file="../apps/desktop/tests/bare-import.test.ts" text="裸名解析并 import 成功" */}
+
+{/* has file="../apps/desktop/tests/bare-import.test.ts" text="scoped 名字落在 node_modules 的 scope 层目录里" */}
+
+{/* has file="../apps/desktop/tests/bare-import.test.ts" text="junction 换指向后拿到新版本" */}
+
+{/* has file="../apps/desktop/tests/bare-import.test.ts" text="resolveFromHome 解子路径" */}
+
+{/* has file="../apps/desktop/tests/bare-import.test.ts" text="裸名不存在时拒绝" */}
+
+加载顺序、运行中重新加载、退出清理只能在隔离 home 里实机验证（怎么启动见[开发](/docs/develop)）；loader 条目树的行为由插件管理的 `tests/loader.test.ts` 守住（见[条目树与 home 布局](/docs/seams/home)）。
+
+## 代码从哪读
+
+- 注册 loader、交出 import：`main.ts` 的 `main()` 里 `ctx.plugin(Loader, {})` 到 `ctx.loader.await()` 那几行
+- 包名解析：`bare-import.ts`（整个文件就这两个函数）
+- 插件入口的类型：词汇表包的 `GwbContext`（见[词汇表包](/docs/vocab)）
