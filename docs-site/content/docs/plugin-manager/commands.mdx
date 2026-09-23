@@ -61,7 +61,7 @@ description: 12 条命令是插件管理唯一的调用方式；服务 gwbPlugin
 
 **为什么**：谁提供接口，谁定义类型。类型放在调用方那边，就等于调用方持有契约，插件管理改了回执也没人拦得住。
 
-**怎么做**：调用方 `import type` 引插件管理的包，不手写回执的形状、不用 `as` 强制转换。反过来，内核交给插件管理的 config 也由插件管理定义类型（`PluginManagerConfig`）。插件管理自己用到 loader 的条目树时照这条做：按 loader 导出的 `EntryTree` 类型取，再赋给收窄后的 `EntryTreeLike`，由类型检查核对（见[home 与插件管理](/docs/seams/home#接口)）。
+**怎么做**：调用方 `import type` 引插件管理的包，不手写回执的形状、不用 `as` 强制转换。反过来，内核交给插件管理的 config 也由插件管理定义类型（`PluginManagerConfig`）。插件管理自己用到 loader 的条目树时照这条做：按 loader 导出的 `EntryTree` 类型取，再赋给收窄后的 `EntryTreeLike`，由类型检查核对（见[条目树与 home 布局](/docs/seams/home#交换什么)）。
 
 ## 改了命令形状就升 x
 

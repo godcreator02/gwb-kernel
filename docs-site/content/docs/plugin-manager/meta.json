@@ -1,5 +1,5 @@
 {
   "title": "插件管理",
-  "description": "唯一写 home 的插件：每页讲一个机制——两层与唯一写入者、对外只有命令、安装与卸载、重新加载、热升级、id 与归属、pnpm",
-  "pages": ["index", "home", "commands", "install", "remount", "upgrade", "ids", "pnpm"]
+  "description": "唯一写 home 的插件：每页讲一个机制——两层与唯一写入者、对外只有命令、安装与卸载、重新加载、热升级、id 与归属",
+  "pages": ["index", "home", "commands", "install", "remount", "upgrade", "ids"]
 }

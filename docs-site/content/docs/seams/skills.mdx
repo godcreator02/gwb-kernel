@@ -1,0 +1,76 @@
+---
+title: 说明书
+description: 两个内置插件各带一份说明书（SKILL.md，文档站正本生成），经说明书插件 gwbSkills 登记，agent 经 MCP 入口的 skill.read 读；没有代码接口，两侧靠约定对上——登记表里的 plugin 是包名，所以和命令表对得上
+---
+
+**本页回答**：两个内置插件的说明书怎么到 agent 手里；这条接缝没有代码接口，两侧靠哪几条约定对上、约定写在哪；怎么确认两侧对上了。
+
+## 两侧
+
+- 一侧是两个内置插件带的说明书：[命令插件](/docs/commands)的 `gwb-commands`、[插件管理](/docs/plugin-manager)的 `gwb-plugin-manager`，都在插件包的 `skills/<说明书名>/SKILL.md`
+- 另一侧是 agent：经 MCP 入口的 `run` 调说明书插件的 `skill.read` 读说明书，`index` 的清单里列出每份说明书的名字与 description
+
+中间经过的说明书插件 `@godcreator/gwb-skills`、MCP 入口都是 `cordis.yml` 里的普通插件，不在本仓。
+
+## 交换什么
+
+这条接缝没有函数或类型，交换的是下面几条约定。
+
+**说明书是生成物**：正本是文档站 `content/outputs/skills/<说明书名>.mdx`，在 `docs-site` 运行 `docfirst render` 生成到插件包里，frontmatter 只保留 `name` 与 `description`——说明书插件登记时读这两项。改说明书改正本，不改 `SKILL.md`：
+
+{/* ref file="docfirst.config.mjs" lines="27-32" */}
+
+**说明书随插件包走**：`skills/` 列进插件的 `package.json` 的 `files`（下面两段登记代码的注释里写着这一条），构建时和 `dist/` 一起复制进内核的 `dist/builtin/<目录名>/`，保持同级（见[内置插件的加载](/docs/seams/builtin)）：
+
+{/* has file="../apps/desktop/scripts/copy-assets.mjs" text="path.join(to, 'skills')" */}
+
+**经说明书插件 `gwbSkills` 登记**：每个内置插件用局部注入 `ctx.inject(['gwbSkills'], …)` 取到说明书插件，把包根的 `skills/` 目录交给它的 `register(dir)`；登记包在 `effect` 里，任何一方卸载时自动撤销。命令插件的写法：
+
+{/* ref file="../plugins/commands/src/index.ts" lines="32-37" */}
+
+插件管理的写法：
+
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="250-255" */}
+
+**登记表里的 `plugin` 是包名**：说明书插件按调用方的条目认身份，把条目的 `name` 记成「登记这份说明书的插件」。内核把两个内置插件的条目 `name` 写成包名：
+
+{/* has file="../apps/desktop/src/main.ts" text="{ id: 'commands', name: commands.name }" */}
+
+{/* has file="../apps/desktop/src/main.ts" text="{ id: 'plugin-manager', name: pluginManager.name, config: pluginManagerConfig }" */}
+
+命令表里 `plugin` 也是登记方写的包名（见[命令总线](/docs/seams/command-bus)）：
+
+{/* has file="../plugins/plugin-manager/src/index.ts" text="const PKG = '@godcreator/gwb-plugin-manager'" */}
+
+两张表用的是同一个名字，agent 在 MCP 入口按包名筛（`search {"plugin": "@godcreator/gwb-plugin-manager"}`），就能一次拿到一个插件的命令与说明书。
+
+**agent 怎么读**：`run skill.read {"name": "gwb-plugin-manager"}`。说明书的 `description` 写成「什么时候读」的触发条件，因为 agent 只看 `index` 清单里这一句决定读不读。
+
+## 两边各保证什么
+
+内置插件一侧（本仓）保证：
+- 每份说明书在 `skills/<说明书名>/SKILL.md`，frontmatter 带 `name` 与 `description`
+- 正本改了就运行 `docfirst render`，正本与生成的 `SKILL.md` 放进同一个提交
+- 内核把条目 `name` 写成包名、说明书目录随构建产物复制进 `dist/builtin/`
+
+说明书插件一侧保证（规则由它自己的仓定，这里只列本仓依赖的）：
+- 读登记目录下每个子目录的 `SKILL.md`，按调用方条目的 `name` 记下所属插件
+- 经 `skill.list`、`skill.read` 两条命令把说明书交给 agent
+
+## 一侧不管什么
+
+- 内置插件不依赖说明书插件：没装它的 home 里照常加载，只是没有说明书（所以是局部注入，不写进 `export const inject`）。命令插件不 import 说明书插件的类型，只按形状取 `register(dir)`，包之间的依赖是单向的
+- 内置插件不管说明书怎么列出、agent 读没读
+- 说明书插件不看说明书的内容，也不核对 `plugin` 和命令表对不对得上——对得上全靠两边都写包名
+
+## 怎么单独测
+
+两侧对上没有自动测试守着。本仓这一侧能查的：
+- `pnpm doc`：docfirst 的检查包括 `outputs` 区，生成的 `SKILL.md` 和正本不一致会报出来
+- 两个插件的 `self-report.test.ts`（检查逻辑在 `@godcreator/gwb-repo-kit`）：`package.json` 的 description 里写的「skill N 份」要和 `skills/` 下带 `SKILL.md` 的目录数一致
+
+两侧对上要实机验证：从源码启动内核、用隔离 home 装上说明书插件与 MCP 入口，调 `skill.list`，看 `gwb-commands`、`gwb-plugin-manager` 两份都在、`plugin` 是包名；再按包名 `search`，命令与说明书一起出现（见[开发](/docs/develop)）。
+
+## 代码从哪读
+
+约定的这一侧散在四处：`docs-site/docfirst.config.mjs` 的 `outputs`（生成到哪）、`content/outputs/skills/`（正本）、两个插件 `src/index.ts` 里登记说明书的那几行、`apps/desktop/src/main.ts` 的 `root.update`（条目名写包名）。说明书的正文：[gwb-commands](/outputs/skills/gwb-commands)、[gwb-plugin-manager](/outputs/skills/gwb-plugin-manager)。

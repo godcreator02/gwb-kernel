@@ -1,54 +1,63 @@
 ---
-title: home 与插件管理
-description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_modules，loader 条目树改 cordis.yml；它内置在内核里，作为 loader 根层的条目加载，用到条目树时从自己条目所在的那一层取
+title: 条目树与 home 布局
+description: 插件管理从自己条目所在的那一层按 config 给的 id 取出承载 cordis.yml 的条目树，只用它的 create / update / remove / resolve 与 store 改条目；包的一层读 home 的 package.json、经 pnpm 改；这些都是 loader 与内核没写进文档的内部结构，由同仓测试守住
 ---
 
-**本页回答**：内核和 plugin-manager 之间交换什么、各保证什么。plugin-manager 自己怎么分块、每块功能怎么工作，见[插件管理](/docs/plugin-manager)。
+**本页回答**：插件管理和 loader、include 之间交换什么——条目树的哪几个方法、从哪一层取、什么时候取；它依赖 home 的哪些文件布局；两边各保证什么；怎么单独测。插件管理自己怎么分块、每个机制怎么工作，见[插件管理](/docs/plugin-manager)。
 
-<Diagram name="plugin-home" title="只有 plugin-manager 写 home：包经 pnpm，条目经 loader 的条目树">
-- 左边是 plugin-manager 用到的两样：从自己条目所在的那一层取出的条目树（`EntryTreeLike`）、唯一运行 pnpm 的入口 `applyToHome`
+## 两侧
+
+- 一侧是[插件管理](/docs/plugin-manager)：唯一写 home 的插件
+- 另一侧是[内核应用](/docs/desktop)里的 loader 与 include（`@cordisjs/plugin-loader`、`@cordisjs/plugin-include`，版本固定在 `apps/desktop/package.json`）：条目树的结构、读写 `cordis.yml`；以及内核决定的 home 布局与包名解析规则
+
+<Diagram name="plugin-home" title="只有插件管理写 home：包经 pnpm，条目经 loader 的条目树">
+- 左边是插件管理用到的两样：从自己条目所在的那一层取出的条目树（`EntryTreeLike`）、唯一运行 pnpm 的入口 `applyToHome`
 - 右边是内核里对应的两样：loader 与 include（条目树的结构、读写 `cordis.yml`）、按真实路径解析包名
 - 跨过接缝的是条目树的 `create` / `update` / `remove` / `resolve`——loader 没写进文档的内部结构
 - 下面是 home：`applyToHome` 经 pnpm 改 `package.json` 与 `node_modules`；条目树写回 `cordis.yml` 并当场加载；loader import 包名时按真实路径读 `node_modules`
-- 条目树的结构、home 的布局、解析规则都由内核决定；plugin-manager 内置在内核里，和内核同仓、测试一起跑
+- 条目树的结构、home 的布局、解析规则都由内核决定；插件管理内置在内核里，和内核同仓、测试一起跑
 </Diagram>
 
-## 接口
+## 交换什么
 
-对调用方，plugin-manager 是 12 条命令，参数与回执见[对外只有命令](/docs/plugin-manager/commands)。
-
-对内核，plugin-manager 是一个内置插件：内核把它作为 loader **根层的条目**加载（和命令插件一样，都排在承载 `cordis.yml` 的 include 条目之前），它不是 `cordis.yml` 里的条目。有了自己的条目，数据插件、说明书插件这类按调用方条目认身份的服务才认得出它。内核经 config 告诉它两个字符串——那条 include 条目的 id 与 pnpm 可执行文件的路径：
-
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="170-179" */}
-
-config 只能是字符串这类纯数据：loader 会深拷贝条目的 config，带方法的对象（比如条目树本身）传过去就丢了方法（实验见 `probes/2609232050_builtin-as-root-entry/`）。
-
-条目树是一份**没有写进 `gwbKernel` 的约定**——plugin-manager 用到 loader 条目树的这几样：
+**条目树的几个方法**：这是一份没有写进 `gwbKernel` 的约定。插件管理只用 loader 条目树的这几样：
 
 {/* ref file="../plugins/plugin-manager/src/tree.ts" lines="19-34" */}
 
-**用到时再取**：plugin-manager 从自己条目所在的那一层（loader 根层）按 config 给的 id 找到 include 条目，取它的子树。它加载时 include 条目排在后面、子树还没建好，所以不在构造时取；取的时候用构造时保存的它自己的 ctx，用调用方的会取到别人条目所在的那一层。按 loader 自己的类型 `EntryTree` 取，再赋给上面的收窄接口：loader 改了这几个方法的签名，类型检查就在这里失败。
+**从哪一层取、什么时候取**：内核经 config 的 `home` 告诉插件管理那条 include 条目的 id（config 怎么交见[内置插件的加载](/docs/seams/builtin)）。插件管理从自己条目所在的那一层（loader 根层）按这个 id 找到 include 条目，取它的子树。它加载时 include 条目排在后面、子树还没建好，所以不在构造时取；取的时候用构造时保存的它自己的 ctx，用调用方的会取到别人条目所在的那一层。按 loader 自己的类型 `EntryTree` 取，再赋给上面的收窄接口：loader 改了这几个方法的签名，类型检查就在这里失败。
 
 {/* ref file="../plugins/plugin-manager/src/tree.ts" lines="49-64" */}
 
 {/* ref file="../plugins/plugin-manager/src/index.ts" lines="238-241" */}
 
-条目 id 的前缀（`home`）也不用猜：plugin-manager 要条目的完整 id 时，读 loader 条目对象上已经拼好前缀的 `id`。
+**条目的完整 id**：条目树的方法只认不带前缀的 id；要完整 id 时，读 loader 条目对象上已经拼好前缀（`home:`）的 `id`，不自己拼：
 
-改 `cordis.yml` 只走这棵树：它把写回文件和当场加载一起做；绕过它直接写文件，内存里的条目不知道，下一次写回会把磁盘上的改动覆盖掉。
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="680-688" */}
+
+**home 的文件布局**：`package.json` 列出装了哪些包（pnpm 维护），`cordis.yml` 列出条目（loader 维护），包在 `node_modules`。插件管理读 `package.json` 的依赖表，读不到当空表；它不直接读写 `cordis.yml`：
+
+{/* ref file="../plugins/plugin-manager/src/home.ts" lines="29-37" */}
 
 ## 两边各保证什么
 
-内核保证：
-- 命令插件与 plugin-manager 作为 loader 根层的条目、排在承载 `cordis.yml` 的 include 条目之前加载；plugin-manager 的 config 是 `{ home, pnpm }`
-- home 的布局：`package.json` 列出装了哪些包，`cordis.yml` 列出条目，包在 `node_modules`（见[插件与内核](/docs/seams/plugins)）
-- loader 与 include 的版本固定在 `apps/desktop/package.json`；升级它们时先运行 plugin-manager 的测试
+内核一侧保证：
+- 承载 `cordis.yml` 的 include 条目和插件管理在 loader 的同一层（根层），id 经 config 交来
+- `create` / `update` / `remove` 把写回 `cordis.yml` 与当场加载、卸载一起做；`update` 的值给 `null` 是删掉那个字段
+- home 的布局如上；布局与 home 里有什么的全貌见[插件加载](/docs/seams/loading)
 - 包名按真实路径解析：包换了版本、真实路径跟着换，停用再启用就能拿到新版本
+- loader 与 include 的版本固定在 `apps/desktop/package.json`；升级它们时先运行插件管理的测试
 
-plugin-manager 保证：
-- **只有它写 home**：所有 `pnpm add` / `pnpm remove` 都经同一个入口 `applyToHome` 排进串行队列（见[唯一写入者](/docs/plugin-manager/home#只有插件管理写-home)）
+插件管理保证：
+- **改 `cordis.yml` 只走条目树**：它把写回文件和当场加载一起做；绕过它直接写文件，内存里的条目不知道，下一次写回会把磁盘上的改动覆盖掉
+- **只有它写 home**：所有 `pnpm add` / `pnpm remove` 都经同一个入口 `applyToHome` 排进串行队列（见[唯一写入者](/docs/plugin-manager/home#只有插件管理写-home)，pnpm 这一侧见 [pnpm](/docs/seams/pnpm)）
 - 升级与重新加载在**同一条命令**里做完（见[热升级](/docs/plugin-manager/upgrade)、[重新加载一条条目](/docs/plugin-manager/remount)）；它自己与命令插件不在 home 里，不在它升级、重新加载的范围内
 - 卸载先删条目、后卸包，pnpm 失败不回滚；数据与设置留在磁盘上（见[卸载](/docs/plugin-manager/install#卸载先删条目后卸包)）
+
+## 一侧不管什么
+
+- loader 与 include 不知道插件管理的存在：它们照常读写 `cordis.yml`、加载条目，不为插件管理留任何接口
+- 插件管理不猜 include 条目叫什么、不自己拼完整 id，都从内核给的 config 和条目对象上读
+- 插件管理不管条目加载成没成功：`create` 只等写入、不等加载，成没成功看 `list` 的 `active`（见[安装与卸载](/docs/plugin-manager/install#建条目只等写入不等加载)）
 
 ## 怎么单独测
 
@@ -62,8 +71,12 @@ plugin-manager 保证：
 
 {/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="停用再启用会重新加载，最后是 ACTIVE" */}
 
+条目树缺了哪个方法时报错说清楚缺的是哪个：
+
+{/* has file="../plugins/plugin-manager/tests/tree.test.ts" text="少一样当场说清楚少的是哪个" */}
+
 其余测试见[插件管理](/docs/plugin-manager#怎么测)。
 
 ## 代码从哪读
 
-`plugins/plugin-manager/src/tree.ts` 是条目树这份约定的全部；`index.ts` 的 `PluginManagerConfig` 是内核交来的全部；用条目树的地方在 `index.ts` 与 `remount.ts`。
+`plugins/plugin-manager/src/tree.ts` 是条目树这份约定的全部；`index.ts` 的 `tree` 取值器与 `fullId` 是用到它的入口，用条目树的地方在 `index.ts` 与 `remount.ts`；读 home 清单在 `home.ts`。内核一侧的顺序与 config 在 `apps/desktop/src/main.ts` 的 `root.update`。

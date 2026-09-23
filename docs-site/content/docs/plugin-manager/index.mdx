@@ -3,13 +3,13 @@ title: 插件管理
 description: plugin-manager 是内核内置、唯一写 home 的插件——装卸包、增删条目、查新版本与热升级；本页是索引：它靠哪几个机制工作、源码怎么分块、有哪些命令、怎么测
 ---
 
-**本页回答**：插件管理是什么、不管什么；它靠哪几个机制工作，各在哪一页；源码怎么分块；有哪些命令；怎么测。它和内核之间交换什么、各保证什么，在接缝页[home 与插件管理](/docs/seams/home)。
+**本页回答**：插件管理是什么、不管什么；它靠哪几个机制工作，各在哪一页；源码怎么分块；有哪些命令；怎么测。它和内核之间交换什么、各保证什么，在接缝页[内置插件的加载](/docs/seams/builtin)、[条目树与 home 布局](/docs/seams/home)、[pnpm](/docs/seams/pnpm)。
 
 ## 是什么
 
 一个按 cordis 插件写法写的插件，源码在内核仓 `plugins/plugin-manager/`，**内置在内核里**：内核把它作为 loader 根层的条目、排在承载 `cordis.yml` 的 include 条目之前加载，经 config 告诉它那条 include 条目的 id 与 pnpm 的路径；它用到条目树时，从自己条目所在的那一层取出承载 `cordis.yml` 的那棵。它不是 `cordis.yml` 里的条目、不在 home 里，所以不出现在 `list` 里，`update-all` 不升级它，也不能停用、卸载、重新加载，随内核一起升级（为什么内置见轨迹卡[核心插件内置](/trajectory/2026-09-23-core-plugins-built-in)）。
 
-它管 home 里的两层东西：pnpm 装进来的**包**，和 `cordis.yml` 里指向包的**条目**——只装包、不加条目，插件不会运行。它依赖内核没写进文档的内部结构（loader 条目树、home 的布局、包名的解析规则），见[home 与插件管理](/docs/seams/home)。
+它管 home 里的两层东西：pnpm 装进来的**包**，和 `cordis.yml` 里指向包的**条目**——只装包、不加条目，插件不会运行。它依赖内核没写进文档的内部结构（loader 条目树、home 的布局、包名的解析规则），见[条目树与 home 布局](/docs/seams/home)。
 
 ## 靠哪几个机制工作
 
@@ -23,7 +23,7 @@ description: plugin-manager 是内核内置、唯一写 home 的插件——装�
 | 重新加载一条条目 | 停用 → 等旧的卸载完 → 启用，一条命令做完 | [重新加载一条条目](/docs/plugin-manager/remount) |
 | 热升级 | 升级与重新加载在同一条命令里；精确版本、每条条目各自重新加载 | [热升级](/docs/plugin-manager/upgrade) |
 | id 与归属 | id 是身份不能改；选 id 时看磁盘上的归属记录，不读到别的包的数据 | [id 与归属](/docs/plugin-manager/ids) |
-| 找 pnpm 与运行 pnpm | 用内核交来的那份固定版本的 pnpm；直接启动、不设超时；卸载时不结束 pnpm | [找 pnpm 与运行 pnpm](/docs/plugin-manager/pnpm) |
+| 找 pnpm 与运行 pnpm | 用内核交来的那份固定版本的 pnpm；直接启动、不设超时；卸载时不结束 pnpm | [找 pnpm 与运行 pnpm](/docs/seams/pnpm) |
 
 ## 不管什么
 
@@ -56,8 +56,8 @@ description: plugin-manager 是内核内置、唯一写 home 的插件——装�
 | `outdated.ts` | 解析 `pnpm outdated` 的输出 | [热升级](/docs/plugin-manager/upgrade) |
 | `update-all.ts` | 一键热升级的计划；条目状态名 | [热升级](/docs/plugin-manager/upgrade) |
 | `ids.ts` | id 规则、默认 id、选 id；包名与版本范围的校验 | [id 与归属](/docs/plugin-manager/ids) |
-| `pnpm-path.ts` | 启动 pnpm 的参数与环境、日志里怎么描述它 | [pnpm](/docs/plugin-manager/pnpm) |
-| `pnpm.ts` | 核对内核交来的 pnpm、启动它、收集输出（启动进程） | [pnpm](/docs/plugin-manager/pnpm) |
+| `pnpm-path.ts` | 启动 pnpm 的参数与环境、日志里怎么描述它 | [pnpm](/docs/seams/pnpm) |
+| `pnpm.ts` | 核对内核交来的 pnpm、启动它、收集输出（启动进程） | [pnpm](/docs/seams/pnpm) |
 | `vocab.ts` | 取内核服务、判断是不是对象 | — |
 
 ## 命令一览

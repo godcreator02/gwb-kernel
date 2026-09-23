@@ -1,0 +1,100 @@
+---
+title: 命令总线
+description: 命令插件提供 ctx.gwbCommands：register 登记命令、返回注销函数，run 按名字执行、回执只有两种形状，list 列出全部；同名时后登记的生效并告警，注销只删自己那条，处理函数抛错也回成失败回执
+---
+
+**本页回答**：命令插件和登记、调用命令的一方之间交换什么；登记、注销、执行三件事各有什么规则、为什么这样定；登记方要做到什么；怎么单独测。
+
+## 两侧
+
+- 一侧是[命令插件](/docs/commands)：提供服务 `ctx.gwbCommands`，一张「命令名 → 处理函数」的表
+- 另一侧是任何插件：登记命令的（插件管理、说明书插件、外壳……），和调用命令的（MCP 入口经它的 `run` 工具、别的插件直接调）。页面发来的命令由[内核应用](/docs/desktop)原样转交到这里，那一段见 [IPC 通道](/docs/seams/ipc)
+
+接口的类型在[词汇表包](/docs/vocab)里，两侧都从那里 `import type`。
+
+## 交换什么
+
+三个方法，`GwbContext` 上的 `gwbCommands` 就是它：
+
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="31-53" */}
+
+回执的形状：
+
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="9-14" */}
+
+登记一条命令的写法：
+
+```ts
+// 命令总线由内核内置、一定存在，不必写进 inject
+export function apply(ctx: GwbContext) {
+  ctx.effect(() =>
+    ctx.gwbCommands.register(
+      { name: 'mine.hello', description: '回一句话', usage: '参数 { n }', plugin: '@scope/mine' },
+      (args) => ({ got: args }),
+    ),
+  )
+}
+```
+
+## 两边各保证什么
+
+### 命令插件保证：登记与注销
+
+- **一定存在**：它由内核内置、先于 `cordis.yml` 加载（见[内置插件的加载](/docs/seams/builtin)），`cordis.yml` 里的插件不必把 `gwbCommands` 写进 `inject`
+- **同名命令，后登记的生效，但要告警**：插件之间平等，换掉一条命令是允许的；但不告警的话，调用方从此调到另一个插件的处理函数上，两边都不报错。告警里写明原来是哪个插件、现在是哪个
+- **注销只删自己那条**：同名命令被后来者替换后，先登记的那个插件卸载时，不能把接手的那条一起删掉。所以注销函数先确认表里还是自己那条记录，才删除
+- **`plugin` 写成短名只告警**：照常登记，不当成失败
+
+{/* ref file="../plugins/commands/src/registry.ts" lines="19-38" */}
+
+### 命令插件保证：执行
+
+- **回执只有两种形状**：`{ ok: true, data }` 或 `{ ok: false, error }`。处理函数自己返回了带 `ok` 的对象，原样返回（命令行运行插件的回执带 `stdout`、`exitCode` 等字段，要和 `ok` 在同一层）；返回别的值，一律包成 `{ ok: true, data: 值 }`
+- **`run` 不抛错**：处理函数抛错，回成失败回执，不把异常抛给调用方——调用方可能是页面上的一次点击
+- **没有这条命令，回失败回执，原因里带命令名**
+- **每次登记、执行都写日志**：执行时的异常会转成回执交给调用方，不写日志的话，日志里查不到谁在什么时候调了哪条命令、结果如何。成功写 info，失败与找不到命令写 warn
+
+{/* ref file="../plugins/commands/src/registry.ts" lines="44-66" */}
+
+### 登记方保证
+
+- **登记包在 `ctx.effect` 里**：插件卸载时注销函数被调用，命令跟着注销
+- **`plugin` 写包名**，由登记方自己写，不从 `ctx.name` 读（那是 cordis 的追踪属性，没写 `inject` 时读它会抛错）。它是 agent 按插件操作的依据：装卸、升级、按插件筛选命令都用包名，说明书表也按包名和它对上（见[说明书](/docs/seams/skills)）
+- **`description` 与 `usage` 分开写**：`description` 是一句话介绍，出现在 MCP 入口 `index` 返回的清单里；`usage` 写参数形状与注意事项，只在 `search` 命中时返回。无参数的命令在 usage 里写「无参数」。都挤进 description 的话，`index` 的清单会被撑得很长
+- **参数由处理函数自己校验**：校验不过就抛错，命令总线把它转成失败回执，原因原样给调用方
+
+<Callout type="warn" title="登记命令一定要包 ctx.effect">
+不包的话注销函数没人调：条目停用后插件已经卸载，命令名却还留在表里，调用时报的是「服务不在」这类和停用无关的错误。
+</Callout>
+
+## 命令插件不管什么
+
+- 不校验参数、不给命令分权限
+- 不知道调用方是谁：页面、agent、插件调的是同一张表，`run` 不带调用方身份
+- 不运行命令行程序：处理函数就是普通的 JS 函数，在主进程里执行。启动子进程运行命令行程序的是基础插件仓的 `gwb-node-cli` 与 `gwb-py-cli`，它们把自己的命令也登记到这张表上
+- 不管命令怎么展示给 agent：`index` / `search` 的格式由 MCP 入口决定
+- 不保存命令表：它只在内存里，登记方卸载时各自注销
+
+## 怎么单独测
+
+`plugins/commands/tests/registry.test.ts` 直接调 `createRegistry`，传入假的日志函数（要检查告警的用例传 `vi.fn()`），不需要 cordis。守住上面几条规则的测试：
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="同名时后登记的生效" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="注销只删自己那条" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="处理函数抛错不抛给调用方" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="处理函数返回带 ok 的对象就原样返回" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="没登记的命令回 ok: false，原因里带命令名" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="plugin 写成短名时告警一句" */}
+
+{/* has file="../plugins/commands/tests/registry.test.ts" text="登记与执行都写日志" */}
+
+登记方一侧（包没包 `ctx.effect`、`plugin` 写没写包名）由各插件自己的测试或实机验证守着：从源码启动内核、用隔离 home，经 MCP 入口的 `search` 看命令的 `plugin` 字段，停用一条条目后确认它的命令从 `index` 里消失。
+
+## 代码从哪读
+
+类型在 `packages/gwb-plugin-api/src/index.ts` 的 `GwbCommands`、`GwbCommandDef`、`GwbResult`；实现在 `plugins/commands/src/registry.ts`（命令表本身，不依赖 cordis），`plugins/commands/src/index.ts` 把它作为服务提供出去。一个完整的登记方例子是插件管理 `plugins/plugin-manager/src/index.ts` 的 `wireCommands`。

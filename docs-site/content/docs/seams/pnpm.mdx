@@ -1,0 +1,93 @@
+---
+title: pnpm
+description: 插件管理用内核经 config 交来的那份 pnpm（安装包里固定版本的原生可执行文件），不看设置、不看 PATH；直接启动、环境原样传下去、不设超时；只读退出码与输出的最后几行，outdated 另读 stdout 上的 JSON
+---
+
+**本页回答**：插件管理和它运行的 pnpm 之间交换什么——用的是哪个可执行文件、带什么参数、什么环境、读回什么；两边各保证什么；卸载时正在运行的 pnpm 为什么不结束。pnpm 什么时候运行、为什么排队，见[唯一写入者](/docs/plugin-manager/home#包只经-applytohome排进一个串行队列)。
+
+## 两侧
+
+- 一侧是[插件管理](/docs/plugin-manager)：唯一运行 pnpm 的插件，经 `applyToHome` 改 home 的 `package.json` 与 `node_modules`
+- 另一侧是[安装包](/docs/installer)带的一份 pnpm：`@pnpm/exe.win32-x64` 包里的原生可执行文件 `pnpm.exe`。从源码运行内核时，用的是[内核应用](/docs/desktop) `apps/desktop` 开发依赖里的同一个包
+
+## 交换什么
+
+<Diagram name="pm-pnpm-lookup" title="内核把 pnpm 的路径交给插件管理">
+- 打包运行时，pnpm 在安装包的 `resources/pnpm/pnpm.exe`；从源码运行时，是 `apps/desktop` 开发依赖 `@pnpm/exe.win32-x64` 里那一份
+- 内核加载插件管理时经 config（`{ home, pnpm }` 里的 `pnpm`）把路径交过去
+- 插件管理直接启动这个文件，工作目录是 home
+- 文件不在：报错，原因里带内核给的路径
+</Diagram>
+
+**可执行文件的路径**：内核按运行方式选出路径，经 config 的 `pnpm` 交给插件管理（config 怎么交见[内置插件的加载](/docs/seams/builtin)）：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="266-271" */}
+
+安装包构建时从 `apps/desktop` 的依赖里复制可执行文件和它的清单，electron-builder 把它们放进资源目录：
+
+{/* ref file="../installer/scripts/build.ps1" lines="71-78" */}
+
+{/* ref file="../installer/electron-builder.yml" lines="14-17" */}
+
+插件管理每次运行前核对这个文件，版本号读旁边的 `package.json`（`@pnpm/exe.win32-x64` 包的清单），只用于日志，没有就是 `?`：
+
+{/* ref file="../plugins/plugin-manager/src/pnpm.ts" lines="47-59" */}
+
+**命令行参数与工作目录**：改 home 只有 `add <spec…>` 与 `remove <包名>` 两种，都经 `applyToHome` 排进同一个串行队列；只读的是 `outdated --json`。工作目录一律是 home：
+
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="694-697" */}
+
+**环境**：原样传下去，只去掉 `ELECTRON_RUN_AS_NODE`；直接启动这个文件，不开 shell：
+
+{/* ref file="../plugins/plugin-manager/src/pnpm-path.ts" lines="17-25" */}
+
+**读回什么**：`add` / `remove` 只看退出码，0 是成功；失败时回执带 stdout 与 stderr 合起来的最后 12 行，pnpm 把原因写在最后：
+
+{/* ref file="../plugins/plugin-manager/src/pnpm.ts" lines="11-23" */}
+
+`outdated` 另用 `runPnpmCapture` 完整保留 stdout，JSON 在那里；退出码 1 表示「有过期的包」，是结果不是失败：
+
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="438-447" */}
+
+两种运行方式对输出的取舍相反——改 home 时成功不留输出（几十行进度没人看），`outdated` 要全文——所以是两个函数，不合成一个。
+
+## 两边各保证什么
+
+内核与安装包保证：
+- 交来的是一份**固定版本**的 pnpm：各人机器上装的 pnpm 版本不同，出过兼容问题；固定一份，所有 home 改动时用的都是同一个版本。升级 pnpm 就是升级内核，它随安装包发布
+- 交的是可执行文件包，不是 `pnpm` 包：`pnpm` 包带安装脚本，pnpm 默认不运行依赖的安装脚本；`@pnpm/exe.win32-x64` 的包里只有一个 `pnpm.exe`，单独复制出来就能用（实验见[pnpm.exe 装新 home](/trajectory/2026-09-23-pnpm-exe-home-install-probe)）。原生可执行文件可以直接启动，不用开 shell，也就没有参数引号转义的问题
+
+插件管理保证：
+- 只用交来的那份：不读设置、不找 PATH；文件不在就报错，原因里带内核给的路径
+- 同一时刻只运行一个 pnpm：`add`、`remove`、`outdated` 都排进同一个串行队列（见[唯一写入者](/docs/plugin-manager/home#包只经-applytohome排进一个串行队列)）
+- 环境原样传下去，用户的 `~/.npmrc`、pnpm 配置（`@godcreator` 的包源、包龄豁免）照常读到；去掉的 `ELECTRON_RUN_AS_NODE` 只对 electron 有意义，留着会传给 pnpm 启动的依赖构建脚本
+- **不设超时**：装一个大包本来就可能要几分钟，定一个时限只会在慢网络上错误地结束正常的安装；网络层的超时 pnpm 自己有。真卡住了，由人去结束进程
+- **卸载时不结束正在运行的 pnpm**：插件管理只在内核退出时卸载，这时 pnpm 可能正在改 home 的 `package.json` 与 `node_modules`，中途结束会留下装了一半的 home，比让它运行完更难收拾；它运行完之后回执没人接收，改动照样生效。插件启动的子进程，卸载时本该结束整个进程树、等它真正退出——这是允许的例外，理由写在 `runPnpm` 的注释里：
+
+{/* ref file="../plugins/plugin-manager/src/pnpm.ts" lines="67-77" */}
+
+插件管理依赖 pnpm 的几件事：失败原因写在输出的最后几行；`outdated --json` 的 JSON 在 stdout 上、退出码 1 表示有过期的包。pnpm 升大版本时输出格式可能变，`outdated` 解析不了就回失败，原因里说明这一点。
+
+## 一侧不管什么
+
+- 插件管理不管机器上装没装 pnpm、装的哪个版本
+- 插件管理不解析 `add` / `remove` 的输出，只看退出码；失败的原因原样转给调用方
+- pnpm 不知道 `cordis.yml`：它只改包，条目由插件管理经 loader 的条目树改（见[条目树与 home 布局](/docs/seams/home)）
+
+## 怎么单独测
+
+核对文件、启动参数与环境、输出只留最后几行有单元测试，传入临时目录与构造的输出，不启动进程：
+
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="文件在、旁边有 @pnpm/exe 的 package.json" */}
+
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="文件不在：报错，原因里带内核给的路径" */}
+
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="只去掉 ELECTRON_RUN_AS_NODE" */}
+
+{/* has file="../plugins/plugin-manager/tests/pnpm.test.ts" text="只留最后几行，去掉首尾空行" */}
+
+真正启动进程、收集输出只能实机验证：从源码启动内核、用隔离 home，调 `plugin-manager.install` / `outdated`（见[开发](/docs/develop)）。安装包里那份能不能用，打包后用 `win-unpacked` 实测（见[安装包](/docs/installer)）。
+
+## 代码从哪读
+
+先读 `plugins/plugin-manager/src/pnpm-path.ts`（启动参数与环境，纯逻辑），再读 `pnpm.ts`（核对文件、启动进程、收集输出），用它们的地方是 `index.ts` 的 `applyToHome` 与 `outdated`。路径从哪来看 `apps/desktop/src/main.ts` 的 `pnpmFile`，安装包怎么带上它看 `installer/scripts/build.ps1`。

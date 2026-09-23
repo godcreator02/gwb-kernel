@@ -48,7 +48,7 @@ home 里的插件分两层：**包**是 pnpm 装进 `package.json` 与 `node_mod
 
 ### 条目：只经 loader 的条目树
 
-**怎么做**：条目的增删改只用条目树的 `create` / `update` / `remove`——它们把写回 `cordis.yml` 与当场加载、卸载一起做。启用传 `{ disabled: null }`（loader 把 null 当作删掉这个字段），停用传 `{ disabled: true }`；`remove-entry` 只删条目，包留在 home 里。条目树从哪一层取、有哪几个方法，是内核和插件管理之间的约定，见[home 与插件管理](/docs/seams/home#接口)。
+**怎么做**：条目的增删改只用条目树的 `create` / `update` / `remove`——它们把写回 `cordis.yml` 与当场加载、卸载一起做。启用传 `{ disabled: null }`（loader 把 null 当作删掉这个字段），停用传 `{ disabled: true }`；`remove-entry` 只删条目，包留在 home 里。条目树从哪一层取、有哪几个方法，是内核和插件管理之间的约定，见[条目树与 home 布局](/docs/seams/home#交换什么)。
 
 {/* ref file="../plugins/plugin-manager/src/index.ts" lines="589-600" */}
 
