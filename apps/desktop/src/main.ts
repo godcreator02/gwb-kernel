@@ -6,6 +6,8 @@ import { Context, type Fiber } from 'cordis'
 import Loader, { type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator/gwb-plugin-api'
+// 只为引入命令插件对 ctx.gwbCommands 的类型声明（可选：没装命令插件时是 undefined）；编译后不留 import
+import type {} from '@godcreator/gwb-commands'
 import { collectImports } from './imports.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
@@ -27,8 +29,6 @@ declare module 'cordis' {
   interface Context {
     /** 内核的服务，根上下文 provide、永不撤销 */
     gwbKernel: GwbKernelApi
-    /** 命令总线，由某个件提供；没装那个件就是 undefined */
-    gwbCommands?: { run(command: string, args?: unknown): Promise<unknown> }
   }
 }
 

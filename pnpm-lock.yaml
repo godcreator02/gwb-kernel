@@ -39,6 +39,9 @@ importers:
         specifier: 4.0.0-rc.9
         version: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
     devDependencies:
+      '@godcreator/gwb-commands':
+        specifier: workspace:*
+        version: link:../../plugins/commands
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.4

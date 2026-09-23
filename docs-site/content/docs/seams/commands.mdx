@@ -68,6 +68,6 @@ ipcMain.handle('gwb:command', (_event, command, args) => {
 
 - 页面一侧：`preload.cjs` 的 `command` 与 `on`
 - 主进程一侧：`main.ts` 的 `ipcMain.handle('gwb:command', …)` 与 `kernel.emit`
-- 类型：`packages/gwb-plugin-api/src/index.ts` 的 `GwbWindowApi`、`GwbResult`
+- 类型：`packages/gwb-plugin-api/src/index.ts` 的 `GwbWindowApi`、`GwbResult`；`ctx.gwbCommands` 的类型由命令插件的包声明，`main.ts` 用 `import type {} from '@godcreator/gwb-commands'` 引入，编译后不留 import
 
 {/* ref file="../apps/desktop/src/preload.cjs" lines="4-10" */}
