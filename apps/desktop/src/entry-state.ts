@@ -15,9 +15,10 @@ export interface EntryStatus {
   state: string
 }
 
-// 状态词照 cordis 的 FiberState 原名。它是 const enum，isolatedModules 下引不到，数字照它的定义抄；
-// _error 与 _store 是 cordis 标了 private 的普通字段（失败原因、已就位的 inject）
-const FIBER_STATE = ['PENDING', 'LOADING', 'ACTIVE', 'FAILED', 'DISPOSED', 'UNLOADING'] as const
+// 状态名照 cordis 的 FiberState 原名。它是 const enum，isolatedModules 下引用不到，按它的定义照抄数字顺序；
+// _error 与 _store 是 cordis 标了 private 的普通字段（失败原因、已就绪的 inject）。
+// 导出给 plugin-manager 的测试核对：它自己也有一份，两份必须一致
+export const FIBER_STATE = ['PENDING', 'LOADING', 'ACTIVE', 'FAILED', 'DISPOSED', 'UNLOADING'] as const
 interface FiberPeek {
   state: number
   inject: Record<string, unknown>
