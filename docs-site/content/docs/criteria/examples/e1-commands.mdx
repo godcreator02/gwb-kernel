@@ -19,7 +19,7 @@ description: 最底层的服务提供方——扩展点用服务、不按值 imp
 }
 ```
 
-没有 peer：服务用 `ctx.provide` 提供，只按类型引用 cordis（[K2](/docs/criteria/k2)）。
+没有 peer：服务用 `ctx.provide` 提供，产物里没有一句 `import … from 'cordis'`，运行时不用在 home 里解析 cordis。它的 d.ts 里有 `declare module 'cordis'` 的增强，那是类型——消费方自己在 dev 里列 cordis（[K2](/docs/criteria/k2)）。它照样依赖 cordis 的协议，这份兼容由「宿主换 cordis 大版本是内核的破坏版、所有件同一趟重验」兜住（[K8](/docs/criteria/k8)）。`cordis` 留在 dev 里，给自己的类型检查用。
 
 ## 产物里的裸名
 

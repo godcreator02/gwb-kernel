@@ -25,6 +25,8 @@ description: peer 只写宿主提供、件按值 import 的 cordis；其余一�
 
 判据只看产物，不管手段：tsc 直出也好、esbuild 打包也好，产物里多出一个裸名就是违反。
 
+**peer 的意思是「运行时要从 home 解析到这个包」**，所以只看产物里有没有这个裸名：产物里有 `import … from 'cordis'`（比如 `extends Service`）才写 peer `cordis`；没有就不写——**哪怕 d.ts 里有 `declare module 'cordis'`**，那只是类型，消费方自己在 dev 里列 cordis。件照样依赖 cordis 的协议，但那份兼容不靠 peer 表达：宿主换 cordis 大版本是内核的破坏版，所有件同一趟重验（见 [K8](/docs/criteria/k8)）。这条可以机械检查：产物出现裸名 `cordis` 却没写 peer，或写了 peer 产物里却没有，都拒。
+
 **类型链由消费方自己列齐**：本件的类型检查引到别的包的类型（包括上游 d.ts 里再引到的包），这些包都写进本件的 dev；门禁关掉 `skipLibCheck` 跑一遍类型检查——缺哪个包它会点名报「找不到模块」，不然那段类型会静默变 any。**类型只能用 `import type`**，`import { type X }` 在 `verbatimModuleSyntax` 下会在产物里留一句空 import。
 
 件需要另一个件已装（比如块笔记各件需要 bn-core），不写进清单；没装时它停在「缺某服务」的待命，[只读现状](/docs/kernel/bridge)与 `plugin-manager.list` 里看得见。
