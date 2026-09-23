@@ -74,8 +74,8 @@ importers:
         specifier: 0.1.1
         version: 0.1.1(react@19.3.0)
       '@godcreator/docfirst-workflow':
-        specifier: 0.2.1
-        version: 0.2.1(6b8d909b5eeaf7edde746135dc12c745)
+        specifier: 0.2.2
+        version: 0.2.2(6b8d909b5eeaf7edde746135dc12c745)
       '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
@@ -103,6 +103,36 @@ importers:
 
   packages/gwb-plugin-api:
     devDependencies:
+      cordis:
+        specifier: 4.0.0-rc.9
+        version: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  plugins/plugin-manager:
+    devDependencies:
+      '@godcreator/gwb-commands':
+        specifier: ^0.4.6
+        version: 0.4.6(@godcreator/gwb-plugin-api@packages+gwb-plugin-api)
+      '@godcreator/gwb-data':
+        specifier: ^0.1.6
+        version: 0.1.6(@godcreator/gwb-plugin-api@packages+gwb-plugin-api)(cordis@4.0.0-rc.9)
+      '@godcreator/gwb-plugin-api':
+        specifier: workspace:*
+        version: link:../../packages/gwb-plugin-api
+      '@godcreator/gwb-repo-kit':
+        specifier: 0.3.0
+        version: 0.3.0
+      '@godcreator/gwb-settings':
+        specifier: ^0.3.2
+        version: 0.3.2(@godcreator/gwb-plugin-api@packages+gwb-plugin-api)(cordis@4.0.0-rc.9)
+      '@godcreator/gwb-skills':
+        specifier: ^0.4.4
+        version: 0.4.4(@godcreator/gwb-plugin-api@packages+gwb-plugin-api)(cordis@4.0.0-rc.9)
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.4
       cordis:
         specifier: 4.0.0-rc.9
         version: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
@@ -393,8 +423,8 @@ packages:
       react:
         optional: true
 
-  '@godcreator/docfirst-workflow@0.2.1':
-    resolution: {integrity: sha512-JnC9dCufXT6ykYSGP7ZIhqPGW2cpiikKTC5aysBYThvZGTKNA6Eg3bt8GIfGJO3Z+ab/iuMgFZyZhucc2fhGSQ==, tarball: https://git.tianshen02.online:28377/api/packages/godcreator/npm/%40godcreator%2Fdocfirst-workflow/-/0.2.1/docfirst-workflow-0.2.1.tgz}
+  '@godcreator/docfirst-workflow@0.2.2':
+    resolution: {integrity: sha512-DsjG2IGdqLLPydijjfm6IeBUBTnOaz8RN1u8EFQiIg53tqFfjfbh1q5IOR0D5ZT+bXlV7ZkcVyzX+odEnLi8nA==, tarball: https://git.tianshen02.online:28377/api/packages/godcreator/npm/%40godcreator%2Fdocfirst-workflow/-/0.2.2/docfirst-workflow-0.2.2.tgz}
     hasBin: true
     peerDependencies:
       fumadocs-core: '>=16'
@@ -410,6 +440,32 @@ packages:
         optional: true
       react:
         optional: true
+
+  '@godcreator/gwb-commands@0.4.6':
+    resolution: {integrity: sha512-/tbM7a5+ikX6GwGt1tyAtaDQbPcdoB1yHGM8c3JtoPNRfKw9qINSbcQIVkJ5cdsu58jLFNdCh9hGq6w12n61fg==, tarball: https://git.tianshen02.online:28377/api/packages/godcreator/npm/%40godcreator%2Fgwb-commands/-/0.4.6/gwb-commands-0.4.6.tgz}
+    peerDependencies:
+      '@godcreator/gwb-plugin-api': ^0.2.7
+
+  '@godcreator/gwb-data@0.1.6':
+    resolution: {integrity: sha512-DTwGPjj7+TS8fKjJbQqXVIWRhRG5R3jGPNk/h/GCr8Jz8yCQK54ehVfolxL7LVpCJ5VAJ6LiDTD11/TMpyhdyQ==, tarball: https://git.tianshen02.online:28377/api/packages/godcreator/npm/%40godcreator%2Fgwb-data/-/0.1.6/gwb-data-0.1.6.tgz}
+    peerDependencies:
+      '@godcreator/gwb-plugin-api': ^0.2.7
+      cordis: ^4.0.0-rc.9
+
+  '@godcreator/gwb-repo-kit@0.3.0':
+    resolution: {integrity: sha512-nyjr5TNr2OP66zk/2xkbwGgxR9HFwKJyV/ahbfhSt2VRY2MVH7GP/h+eJ6DMoGMxM1HJ4NxpYafGC6DwPWpPlQ==, tarball: https://git.tianshen02.online:28377/api/packages/godcreator/npm/%40godcreator%2Fgwb-repo-kit/-/0.3.0/gwb-repo-kit-0.3.0.tgz}
+
+  '@godcreator/gwb-settings@0.3.2':
+    resolution: {integrity: sha512-0GA0wYYroQP8pEOY9/1CzcMyI9TEH7E+FOmwTogVYe3scqEq/fYkg00FS3dPLYa9Odwq315QX3l8Eo9LRPiwGw==, tarball: https://git.tianshen02.online:28377/api/packages/godcreator/npm/%40godcreator%2Fgwb-settings/-/0.3.2/gwb-settings-0.3.2.tgz}
+    peerDependencies:
+      '@godcreator/gwb-plugin-api': ^0.2.7
+      cordis: ^4.0.0-rc.9
+
+  '@godcreator/gwb-skills@0.4.4':
+    resolution: {integrity: sha512-7iBg5JdT1od8OmQOE/p2rjpWOzY518JWjXughla28X1XByVflViz0OSd5K/1adHqf4aW7ltEVE5bmdTS5n0LnA==, tarball: https://git.tianshen02.online:28377/api/packages/godcreator/npm/%40godcreator%2Fgwb-skills/-/0.4.4/gwb-skills-0.4.4.tgz}
+    peerDependencies:
+      '@godcreator/gwb-plugin-api': ^0.2.7
+      cordis: ^4.0.0-rc.9
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -2721,7 +2777,7 @@ snapshots:
     optionalDependencies:
       react: 19.3.0
 
-  '@godcreator/docfirst-workflow@0.2.1(6b8d909b5eeaf7edde746135dc12c745)':
+  '@godcreator/docfirst-workflow@0.2.2(6b8d909b5eeaf7edde746135dc12c745)':
     dependencies:
       '@godcreator/docfirst-trajectory': 0.1.1(react@19.3.0)
       remark-frontmatter: 5.0.0
@@ -2735,6 +2791,27 @@ snapshots:
       react: 19.3.0
     transitivePeerDependencies:
       - supports-color
+
+  '@godcreator/gwb-commands@0.4.6(@godcreator/gwb-plugin-api@packages+gwb-plugin-api)':
+    dependencies:
+      '@godcreator/gwb-plugin-api': link:packages/gwb-plugin-api
+
+  '@godcreator/gwb-data@0.1.6(@godcreator/gwb-plugin-api@packages+gwb-plugin-api)(cordis@4.0.0-rc.9)':
+    dependencies:
+      '@godcreator/gwb-plugin-api': link:packages/gwb-plugin-api
+      cordis: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
+
+  '@godcreator/gwb-repo-kit@0.3.0': {}
+
+  '@godcreator/gwb-settings@0.3.2(@godcreator/gwb-plugin-api@packages+gwb-plugin-api)(cordis@4.0.0-rc.9)':
+    dependencies:
+      '@godcreator/gwb-plugin-api': link:packages/gwb-plugin-api
+      cordis: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
+
+  '@godcreator/gwb-skills@0.4.4(@godcreator/gwb-plugin-api@packages+gwb-plugin-api)(cordis@4.0.0-rc.9)':
+    dependencies:
+      '@godcreator/gwb-plugin-api': link:packages/gwb-plugin-api
+      cordis: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
 
   '@img/colour@1.1.0':
     optional: true

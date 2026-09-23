@@ -24,6 +24,14 @@ peer、importmap、服务还是命令这类反复出现的选择按同目录 `cr
 正本 `packages/gwb-plugin-api/src/index.ts`，与内核同版本号。升版本号前读 devkit 的 skill「gwb-release」；发版用
 `devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}`，别在包目录手动 `pnpm publish`（会跳过 git 干净与构建产物白名单检查）。
 
+## 和内核同仓的插件：plugins/
+
+`plugins/plugin-manager` 是一个插件，不是内核应用的一部分：它依赖内核的内部约定（loader 条目树的结构、home 的文件布局、
+按真实路径解析包名），所以放在这里和内核一起测试。它的版本号独立于内核，改了就按 gwb-release 升自己的号，发版用
+`devkit.release {"dir":"<本仓>","packages":["plugins/plugin-manager"]}`；验证照插件的流程，在隔离 home 里用
+`devkit.dev {"home":"<隔离 home>","dir":"<本仓>","packages":["plugins/plugin-manager"]}`。
+内核升级 `@cordisjs/plugin-loader` 或改包名解析时，先跑 `pnpm check`，它的测试会一起跑。
+
 ## 怎么跑
 
 **日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）。安装包：`pwsh installer\scripts\build.ps1`，方案正本 `installer/SPEC.md`；
@@ -42,6 +50,6 @@ cd apps\desktop; pnpm start
 
 ## 文档与注释
 
-* **知识随插件发布**，本仓不放 skill：写插件读 `gwb-devkit`，写文档、轨迹卡读 `docfirst-docs` / `trajectory`，选型先盘问（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
+* **知识随插件发布**：本仓只有 `plugins/plugin-manager` 带说明书（`gwb-plugin-manager`），内核本身不带；写插件读 `gwb-devkit`，写文档、轨迹卡读 `docfirst-docs` / `trajectory`，选型先盘问（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
 * 这份 AGENTS 只放硬约束；为什么、遇到过什么问题写在文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
 * 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 是生成物，正本在 `docs-site/content/outputs/`，改完在 `docs-site` 跑 `pnpm docfirst render`，一起提交；`CLAUDE.md` 第一行固定是 `@AGENTS.md`，只给 Claude 的指令写在它后面

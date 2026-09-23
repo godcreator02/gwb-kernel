@@ -9,7 +9,8 @@ description: 仓根 README.md 由这一页生成——改这里，跑 docfirst r
 
 god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里，只做第一个插件运行之前必须完成的事——初始化 home、创建 cordis 实例并加载插件、
 主进程与页面两侧的包名 import（bare specifier，直接写包名、不带相对路径的 import）解析、创建窗口与 IPC 通道、自身出错时让人看得见——其余功能全部由插件实现。
-插件的源码在各自的仓里，安装进 home 由插件管理插件（plugin-manager）负责。
+插件的源码在各自的仓里；只有插件管理插件 plugin-manager 放在本仓 `plugins/` 下，因为它依赖内核的内部约定，
+安装、升级插件都由它负责。
 
 ## 开发
 
@@ -23,8 +24,8 @@ $env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 在隔离 home 里起�
 
 ## 文档
 
-文档站在 `docs-site/`，从「从这里开始」读起：内核是什么、跟着一次启动走一遍、按你的目的该读哪些页。站上还有边界（只做什么、刻意不做什么）、
-各模块的现状、轨迹（怎么走到今天）与路线图。
+文档站在 `docs-site/`，从「从这里开始」读起：内核是什么、跟着一次启动走一遍、按你的目的该读哪些页。站上还有关键设计（只做什么、刻意不做什么）、
+系统地图、四条接缝、plugin-manager、关键判据、轨迹（怎么走到今天）与路线。
 
 ```powershell
 cd docs-site; pnpm build; pnpm start      # http://localhost:4314
