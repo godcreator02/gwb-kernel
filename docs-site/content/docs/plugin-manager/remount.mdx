@@ -60,4 +60,4 @@ description: 停用 → 等旧的卸载完 → 启用 → 等新的加载完，�
 
 **守住它的测试**：假的命令插件在停用时撤掉全部命令，这条 `await` 链照样把启用做完。
 
-{/* has file="../plugins/plugin-manager/tests/remount.test.ts" text="命令插件停用时全部命令都撤掉（包括 remount），这条 await 链照样做完，条目回到启用" */}
+{/* has file="../plugins/plugin-manager/tests/remount.test.ts" text="这条 await 链照样做完，条目回到启用" */}

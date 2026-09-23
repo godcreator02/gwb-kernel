@@ -29,13 +29,13 @@ description: 只用 pnpm 12 起的原生可执行文件，设置项 pnpm-path �
 
 **守住它的测试**：各平台的目录布局与设置项的几种写法都有测试，下面是和规则直接相关的几条。
 
-{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="填了设置项就不再回退 PATH——填错了要立即看到，而不是悄悄用了另一个" */}
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="填了设置项就不再回退 PATH" */}
 
 {/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="从垫片推出原生 pnpm.exe" */}
 
-{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="第一个垫片推不出 pnpm 包时接着往后找——corepack、volta 的垫片不是这种布局" */}
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="第一个垫片推不出 pnpm 包时接着往后找" */}
 
-{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="版本低于 12 明确报错、说清要装 12 以上，不试着运行" */}
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="版本低于 12 明确报错" */}
 
 ## 直接启动、不设超时
 
@@ -49,7 +49,7 @@ description: 只用 pnpm 12 起的原生可执行文件，设置项 pnpm-path �
 
 **守住它的测试**：启动参数与环境、输出只留最后几行有单元测试；真正启动进程、收集输出只能实机验证（`devkit.dev` 装进隔离 home 后调 `plugin-manager.install` / `outdated`）。
 
-{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="直接启动可执行文件，环境原样传下去，只去掉 ELECTRON_RUN_AS_NODE" */}
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="只去掉 ELECTRON_RUN_AS_NODE" */}
 
 {/* has file="../plugins/plugin-manager/tests/pnpm.test.ts" text="只留最后几行，去掉首尾空行" */}
 

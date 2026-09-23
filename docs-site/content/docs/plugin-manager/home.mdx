@@ -24,13 +24,13 @@ home 里的插件分两层：**包**是 pnpm 装进 `package.json` 与 `node_mod
 
 **守住它的测试**：
 
-{/* has file="../plugins/plugin-manager/tests/inventory.test.ts" text="装了包但一条条目都没有：如实报 0 条，不推断原因" */}
+{/* has file="../plugins/plugin-manager/tests/inventory.test.ts" text="装了包但一条条目都没有" */}
 
-{/* has file="../plugins/plugin-manager/tests/inventory.test.ts" text="条目指向一个没装的包：报 installed false，不丢掉" */}
+{/* has file="../plugins/plugin-manager/tests/inventory.test.ts" text="条目指向一个没装的包" */}
 
-{/* has file="../plugins/plugin-manager/tests/inventory.test.ts" text="是否加载成功看的是 fiber 的状态，不是 fiber 在不在" */}
+{/* has file="../plugins/plugin-manager/tests/inventory.test.ts" text="是否加载成功看的是 fiber 的状态" */}
 
-{/* has file="../plugins/plugin-manager/tests/home.test.ts" text="读得出 dependencies；清单不在、坏了都当空表" */}
+{/* has file="../plugins/plugin-manager/tests/home.test.ts" text="清单不在、坏了都当空表" */}
 
 ## 只有插件管理写 home
 
@@ -54,7 +54,7 @@ home 里的插件分两层：**包**是 pnpm 装进 `package.json` 与 `node_mod
 
 **守住它的测试**：用内核实际使用的 loader 与 include 版本跑一遍条目树。
 
-{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="create、update、remove 改的是内存里的条目，也写回 cordis.yml" */}
+{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="改的是内存里的条目，也写回 cordis.yml" */}
 
 <Callout type="warn" title="别直接写 cordis.yml">
 绕过条目树改文件，内存里的条目不知道：改动要等下次重启才生效，而且中间任何一次写回都会用内存里的旧内容把它覆盖掉。

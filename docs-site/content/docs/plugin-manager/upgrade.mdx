@@ -15,7 +15,7 @@ description: outdated 查过期包；update-all 一次 pnpm add 精确版本，�
 
 {/* has file="../plugins/plugin-manager/tests/outdated.test.ts" text="空串是「全都最新」，不是失败" */}
 
-{/* has file="../plugins/plugin-manager/tests/outdated.test.ts" text="单条缺 current 或 latest 只跳过那一条，其余照收" */}
+{/* has file="../plugins/plugin-manager/tests/outdated.test.ts" text="单条缺 current 或 latest 只跳过那一条" */}
 
 ## 升级与重新加载在同一条命令里
 
@@ -48,11 +48,11 @@ description: outdated 查过期包；update-all 一次 pnpm add 精确版本，�
 
 {/* ref file="../plugins/plugin-manager/tests/update-all.test.ts" lines="63-73" */}
 
-{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="pnpm 参数是一次 add，每个包用 outdated 查到的版本号，不用 @latest 标签" */}
+{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="每个包用 outdated 查到的版本号" */}
 
-{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="停用的条目带 disabled——执行时保持停用，不重新加载" */}
+{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="执行时保持停用，不重新加载" */}
 
-{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="只升点了名的；点了名却不在过期清单里的进 ignored，不进 pnpm 参数" */}
+{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="点了名却不在过期清单里的进 ignored" */}
 
 ## 一次热升级依次发生什么
 
