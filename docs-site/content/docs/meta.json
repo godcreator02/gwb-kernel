@@ -2,6 +2,7 @@
   "pages": [
     "index",
     "boundary",
+    "criteria",
     "kernel",
     "glossary"
   ]

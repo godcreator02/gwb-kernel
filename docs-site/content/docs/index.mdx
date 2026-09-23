@@ -9,7 +9,7 @@ description: 内核是什么、跟着一次开机走一遍、按来意怎么读�
 
 ## 是什么
 
-god 工作台的内核：一个 Electron 应用，只做**第一个件跑起来之前必须发生的事**，其余一切——界面、命令、数据、设置、装卸、给 agent 开的门——全是件。它存在的理由是一个验收标准：用最小的内核把件正常跑起来，件得真能干活。只做什么、刻意不做什么、往内核里加东西要过的两道关，见[边界](/docs/boundary)。
+god 工作台的内核：一个 Electron 应用，只做**第一个件跑起来之前必须发生的事**，其余一切——界面、命令、数据、设置、装卸、给 agent 开的门——全是件。它存在的理由是一个验收标准：用最小的内核把件正常跑起来，件得真能干活。只做什么、刻意不做什么见[边界](/docs/boundary)；往内核里加东西要过的两道关、peer 与 importmap 这几类反复出现的选择怎么判，见[关键判据](/docs/criteria)。
 
 整个应用只有两个进程：
 
@@ -51,8 +51,8 @@ god 工作台的内核：一个 Electron 应用，只做**第一个件跑起来�
 
 ## 按来意读
 
-- **改内核**：先读[边界](/docs/boundary)，再按侧栏顺序读完模块页；仓根 AGENTS 是动手前的硬约束
-- **写件**：读[契约面](/docs/kernel/contract)与[页面与桥](/docs/kernel/bridge)；写件的整条路在 devkit 的说明书 `gwb-devkit`
+- **改内核**：先读[边界](/docs/boundary)与[关键判据](/docs/criteria)，再按侧栏顺序读完模块页；仓根 AGENTS 是动手前的硬约束
+- **写件**：读[关键判据](/docs/criteria)、[契约面](/docs/kernel/contract)与[页面与桥](/docs/kernel/bridge)；写件的整条路在 devkit 的说明书 `gwb-devkit`
 - **排障**：先看[日志](/docs/kernel/logs)（`gwb.log` 在 home 里），外壳起不来时页面上的只读现状见[页面与桥](/docs/kernel/bridge)，进程找不着看 [home](/docs/kernel/home) 的 `runtime.json`
 
 ## 模块索引
