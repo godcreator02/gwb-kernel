@@ -1,0 +1,16 @@
+service "gwbCommands" has been registered at <builtin-commands>
+  调用处: at _Entry.init (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:388:17) <- at async _Entry.update (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:370:7)
+service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+  调用处: at _Entry.init (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:388:17) <- at async _Entry.update (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:370:7)
+service "gwbCommands" has been registered at <builtin-commands>
+  调用处: at _Entry.init (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:388:17) <- at async _Entry.update (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:370:7)
+service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+  调用处: at _Entry.init (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:388:17) <- at async _Entry.update (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:370:7)
+service "gwbCommands" has been registered at <builtin-commands>
+  调用处: at _Entry.init (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:388:17) <- at async _Entry.update (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:370:7)
+service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+  调用处: at _Entry.init (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:388:17) <- at async _Entry.update (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:370:7)
+service "gwbCommands" has been registered at <builtin-commands>
+  调用处: at _Entry.init (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:388:17) <- at async _Entry.update (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:370:7)
+service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+  调用处: at _Entry.init (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:388:17) <- at async _Entry.update (<probe>/node_modules/@cordisjs/plugin-loader/lib/index.js:370:7)

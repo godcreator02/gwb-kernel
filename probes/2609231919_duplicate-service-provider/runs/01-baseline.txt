@@ -1,0 +1,395 @@
+node v24.14.1 | cordis 4.0.0-rc.9 | plugin-loader 1.0.0-rc.6 | plugin-include 1.0.5
+
+=== [fn] 内置先、yml 后；删重复条目用条目树的 remove ===
+temp home      : C:\Users\GODAME~1\AppData\Local\Temp\probe-dup-svc-fn-remove-LPcBWt
+
+--- 1. 内置两份 ctx.plugin 之后、挂 loader 之前
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.apply":1,"builtin-plugin-manager.apply":1}
+consumer saw   : (none)
+logs           :
+  [info] [builtin-commands] gwbCommands 已提供（builtin）
+  -- await ctx.plugin(builtinCommands) 正常返回
+  [info] [builtin-plugin-manager] gwbPluginManager 已提供（builtin）
+  -- await ctx.plugin(builtinPluginManager) 正常返回
+
+--- 2. loader + include 读完 cordis.yml 之后
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"FAILED(service \"gwbCommands\" has been registered at <builtin-commands>)","pm":"FAILED(service \"gwbPluginManager\" has been registered at <builtin-plugin-manager>)","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.apply":1,"builtin-plugin-manager.apply":1,"yml-commands.apply":1,"yml-plugin-manager.apply":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←builtin | use-plugin-manager←builtin
+logs           :
+  [error] [yml-commands] Error: service "gwbCommands" has been registered at <builtin-commands>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at Fiber.<anonymous> (<probe>/plugins/providers.mjs:15:31)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Object.apply [as callback] (<probe>/plugins/providers.mjs:14:11)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:721:28)
+      …（其余 3 行略）
+  [error] [yml-plugin-manager] Error: service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at Fiber.<anonymous> (<probe>/plugins/providers.mjs:15:31)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Object.apply [as callback] (<probe>/plugins/providers.mjs:14:11)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:721:28)
+      …（其余 3 行略）
+  !! unhandledRejection: Error: service "gwbCommands" has been registered at <builtin-commands>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at Fiber.<anonymous> (<probe>/plugins/providers.mjs:15:31)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Object.apply [as callback] (<probe>/plugins/providers.mjs:14:11)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:721:28)
+      …（其余 3 行略）
+  !! unhandledRejection: Error: service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at Fiber.<anonymous> (<probe>/plugins/providers.mjs:15:31)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Object.apply [as callback] (<probe>/plugins/providers.mjs:14:11)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:721:28)
+      …（其余 3 行略）
+
+--- 3a. 在 loader 根树上 ctx.loader.remove("home:cmd") / ("home:pm") 之后（带前缀的 id）
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"FAILED(service \"gwbCommands\" has been registered at <builtin-commands>)","pm":"FAILED(service \"gwbPluginManager\" has been registered at <builtin-plugin-manager>)","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.apply":1,"builtin-plugin-manager.apply":1,"yml-commands.apply":1,"yml-plugin-manager.apply":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←builtin | use-plugin-manager←builtin
+logs           : (none)
+cordis.yml now : - id: cmd ⏎   name: '@godcreator/gwb-commands' ⏎ - id: pm ⏎   name: '@godcreator/gwb-plugin-manager' ⏎ - id: use-cmd ⏎   name: probe-use-commands ⏎ - id: use-pm ⏎   name: probe-use-plugin-manager
+
+--- 3b. 在 include 那棵树上 remove("cmd") / remove("pm") 之后（不带前缀的 id）
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"removed","pm":"removed","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.apply":1,"builtin-plugin-manager.apply":1,"yml-commands.apply":1,"yml-plugin-manager.apply":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←builtin | use-plugin-manager←builtin
+logs           : (none)
+cordis.yml now : - id: use-cmd ⏎   name: probe-use-commands ⏎ - id: use-pm ⏎   name: probe-use-plugin-manager
+
+=== [fn] 内置先、yml 后；删重复条目用改 yml + include.refresh() ===
+temp home      : C:\Users\GODAME~1\AppData\Local\Temp\probe-dup-svc-fn-refresh-gEfYtn
+
+--- 1. 内置 + loader 都挂完
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"FAILED(service \"gwbCommands\" has been registered at <builtin-commands>)","pm":"FAILED(service \"gwbPluginManager\" has been registered at <builtin-plugin-manager>)","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.apply":1,"builtin-plugin-manager.apply":1,"yml-commands.apply":1,"yml-plugin-manager.apply":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←builtin | use-plugin-manager←builtin
+logs           :
+  [info] [builtin-commands] gwbCommands 已提供（builtin）
+  -- await ctx.plugin(builtinCommands) 正常返回
+  [info] [builtin-plugin-manager] gwbPluginManager 已提供（builtin）
+  -- await ctx.plugin(builtinPluginManager) 正常返回
+  [error] [yml-commands] Error: service "gwbCommands" has been registered at <builtin-commands>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at Fiber.<anonymous> (<probe>/plugins/providers.mjs:15:31)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Object.apply [as callback] (<probe>/plugins/providers.mjs:14:11)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:721:28)
+      …（其余 3 行略）
+  [error] [yml-plugin-manager] Error: service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at Fiber.<anonymous> (<probe>/plugins/providers.mjs:15:31)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Object.apply [as callback] (<probe>/plugins/providers.mjs:14:11)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:721:28)
+      …（其余 3 行略）
+  !! unhandledRejection: Error: service "gwbCommands" has been registered at <builtin-commands>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at Fiber.<anonymous> (<probe>/plugins/providers.mjs:15:31)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Object.apply [as callback] (<probe>/plugins/providers.mjs:14:11)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:721:28)
+      …（其余 3 行略）
+  !! unhandledRejection: Error: service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at Fiber.<anonymous> (<probe>/plugins/providers.mjs:15:31)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Object.apply [as callback] (<probe>/plugins/providers.mjs:14:11)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:721:28)
+      …（其余 3 行略）
+refresh() 返回 : undefined
+
+--- 2. 改 yml 去掉 cmd / pm 条目、include.refresh() 之后
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"removed","pm":"removed","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.apply":1,"builtin-plugin-manager.apply":1,"yml-commands.apply":1,"yml-plugin-manager.apply":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←builtin | use-plugin-manager←builtin
+logs           : (none)
+
+=== [fn] yml 先、内置后 ===
+temp home      : C:\Users\GODAME~1\AppData\Local\Temp\probe-dup-svc-fn-reverse-cJ9TuJ
+
+--- 1. loader + include 读完 cordis.yml 之后
+builtin fibers : {"commands":"none","pluginManager":"none"}
+yml entries    : {"cmd":"ACTIVE","pm":"ACTIVE","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"yml","providerFiber":"yml-commands:ACTIVE"},"gwbPluginManager":{"value":"yml","providerFiber":"yml-plugin-manager:ACTIVE"}}
+counts         : {"yml-commands.apply":1,"yml-plugin-manager.apply":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←yml | use-plugin-manager←yml
+logs           :
+  [info] [yml-commands] gwbCommands 已提供（yml）
+  [info] [yml-plugin-manager] gwbPluginManager 已提供（yml）
+
+--- 2. 再 ctx.plugin 内置两份之后
+builtin fibers : {"commands":"FAILED(service \"gwbCommands\" has been registered at <yml-commands>)","pluginManager":"FAILED(service \"gwbPluginManager\" has been registered at <yml-plugin-manager>)"}
+yml entries    : {"cmd":"ACTIVE","pm":"ACTIVE","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"yml","providerFiber":"yml-commands:ACTIVE"},"gwbPluginManager":{"value":"yml","providerFiber":"yml-plugin-manager:ACTIVE"}}
+counts         : {"yml-commands.apply":1,"yml-plugin-manager.apply":1,"use-commands.apply":1,"use-plugin-manager.apply":1,"builtin-commands.apply":1,"builtin-plugin-manager.apply":1}
+consumer saw   : use-commands←yml | use-plugin-manager←yml
+logs           :
+  [error] [builtin-commands] Error: service "gwbCommands" has been registered at <yml-commands>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at Fiber.<anonymous> (<probe>/plugins/providers.mjs:15:31)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Object.apply [as callback] (<probe>/plugins/providers.mjs:14:11)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:721:28)
+      …（其余 4 行略）
+  -- await ctx.plugin(builtinCommands) 抛出：service "gwbCommands" has been registered at <yml-commands>
+  [error] [builtin-plugin-manager] Error: service "gwbPluginManager" has been registered at <yml-plugin-manager>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at Fiber.<anonymous> (<probe>/plugins/providers.mjs:15:31)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Object.apply [as callback] (<probe>/plugins/providers.mjs:14:11)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:721:28)
+      …（其余 4 行略）
+  -- await ctx.plugin(builtinPluginManager) 抛出：service "gwbPluginManager" has been registered at <yml-plugin-manager>
+
+--- 3. 在 include 那棵树上 remove 掉 cmd / pm 之后
+builtin fibers : {"commands":"FAILED(service \"gwbCommands\" has been registered at <yml-commands>)","pluginManager":"FAILED(service \"gwbPluginManager\" has been registered at <yml-plugin-manager>)"}
+yml entries    : {"cmd":"removed","pm":"removed","use-cmd":"PENDING","use-pm":"PENDING"}
+services       : {"gwbCommands":{"value":"undefined","providerFiber":"none"},"gwbPluginManager":{"value":"undefined","providerFiber":"none"}}
+counts         : {"yml-commands.apply":1,"yml-plugin-manager.apply":1,"use-commands.apply":1,"use-plugin-manager.apply":1,"builtin-commands.apply":1,"builtin-plugin-manager.apply":1,"yml-commands.unprovide":1,"use-commands.dispose":1,"yml-plugin-manager.unprovide":1,"use-plugin-manager.dispose":1}
+consumer saw   : use-commands←yml | use-plugin-manager←yml
+logs           : (none)
+
+--- 4. 把 FAILED 的内置 fiber dispose 掉、重新 ctx.plugin 之后
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"removed","pm":"removed","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"yml-commands.apply":1,"yml-plugin-manager.apply":1,"use-commands.apply":2,"use-plugin-manager.apply":2,"builtin-commands.apply":2,"builtin-plugin-manager.apply":2,"yml-commands.unprovide":1,"use-commands.dispose":1,"yml-plugin-manager.unprovide":1,"use-plugin-manager.dispose":1}
+consumer saw   : use-commands←yml | use-plugin-manager←yml | use-commands←builtin | use-plugin-manager←builtin
+logs           :
+  [info] [builtin-commands] gwbCommands 已提供（builtin）
+  -- await ctx.plugin(builtinCommands) 正常返回
+  [info] [builtin-plugin-manager] gwbPluginManager 已提供（builtin）
+  -- await ctx.plugin(builtinPluginManager) 正常返回
+
+=== [class] 内置先、yml 后；删重复条目用条目树的 remove ===
+temp home      : C:\Users\GODAME~1\AppData\Local\Temp\probe-dup-svc-class-remove-LENGzF
+
+--- 1. 内置两份 ctx.plugin 之后、挂 loader 之前
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.ctor":1,"builtin-plugin-manager.ctor":1}
+consumer saw   : (none)
+logs           :
+  [info] [builtin-commands] gwbCommands 已提供（builtin）
+  -- await ctx.plugin(builtinCommands) 正常返回
+  [info] [builtin-plugin-manager] gwbPluginManager 已提供（builtin）
+  -- await ctx.plugin(builtinPluginManager) 正常返回
+
+--- 2. loader + include 读完 cordis.yml 之后
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"FAILED(service \"gwbCommands\" has been registered at <builtin-commands>)","pm":"FAILED(service \"gwbPluginManager\" has been registered at <builtin-plugin-manager>)","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.ctor":1,"builtin-plugin-manager.ctor":1,"yml-commands.ctor":1,"yml-plugin-manager.ctor":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←builtin | use-plugin-manager←builtin
+logs           :
+  [error] [yml-commands] Error: service "gwbCommands" has been registered at <builtin-commands>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at new Service (<probe>/node_modules/cordis/lib/index.js:1450:22)
+      at new yml-commands (<probe>/plugins/providers.mjs:31:7)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:715:30)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      …（其余 2 行略）
+  [error] [yml-plugin-manager] Error: service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at new Service (<probe>/node_modules/cordis/lib/index.js:1450:22)
+      at new yml-plugin-manager (<probe>/plugins/providers.mjs:31:7)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:715:30)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      …（其余 2 行略）
+  !! unhandledRejection: Error: service "gwbCommands" has been registered at <builtin-commands>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at new Service (<probe>/node_modules/cordis/lib/index.js:1450:22)
+      at new yml-commands (<probe>/plugins/providers.mjs:31:7)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:715:30)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      …（其余 2 行略）
+  !! unhandledRejection: Error: service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at new Service (<probe>/node_modules/cordis/lib/index.js:1450:22)
+      at new yml-plugin-manager (<probe>/plugins/providers.mjs:31:7)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:715:30)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      …（其余 2 行略）
+
+--- 3a. 在 loader 根树上 ctx.loader.remove("home:cmd") / ("home:pm") 之后（带前缀的 id）
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"FAILED(service \"gwbCommands\" has been registered at <builtin-commands>)","pm":"FAILED(service \"gwbPluginManager\" has been registered at <builtin-plugin-manager>)","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.ctor":1,"builtin-plugin-manager.ctor":1,"yml-commands.ctor":1,"yml-plugin-manager.ctor":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←builtin | use-plugin-manager←builtin
+logs           : (none)
+cordis.yml now : - id: cmd ⏎   name: '@godcreator/gwb-commands' ⏎ - id: pm ⏎   name: '@godcreator/gwb-plugin-manager' ⏎ - id: use-cmd ⏎   name: probe-use-commands ⏎ - id: use-pm ⏎   name: probe-use-plugin-manager
+
+--- 3b. 在 include 那棵树上 remove("cmd") / remove("pm") 之后（不带前缀的 id）
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"removed","pm":"removed","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.ctor":1,"builtin-plugin-manager.ctor":1,"yml-commands.ctor":1,"yml-plugin-manager.ctor":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←builtin | use-plugin-manager←builtin
+logs           : (none)
+cordis.yml now : - id: use-cmd ⏎   name: probe-use-commands ⏎ - id: use-pm ⏎   name: probe-use-plugin-manager
+
+=== [class] 内置先、yml 后；删重复条目用改 yml + include.refresh() ===
+temp home      : C:\Users\GODAME~1\AppData\Local\Temp\probe-dup-svc-class-refresh-XbxbXu
+
+--- 1. 内置 + loader 都挂完
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"FAILED(service \"gwbCommands\" has been registered at <builtin-commands>)","pm":"FAILED(service \"gwbPluginManager\" has been registered at <builtin-plugin-manager>)","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.ctor":1,"builtin-plugin-manager.ctor":1,"yml-commands.ctor":1,"yml-plugin-manager.ctor":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←builtin | use-plugin-manager←builtin
+logs           :
+  [info] [builtin-commands] gwbCommands 已提供（builtin）
+  -- await ctx.plugin(builtinCommands) 正常返回
+  [info] [builtin-plugin-manager] gwbPluginManager 已提供（builtin）
+  -- await ctx.plugin(builtinPluginManager) 正常返回
+  [error] [yml-commands] Error: service "gwbCommands" has been registered at <builtin-commands>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at new Service (<probe>/node_modules/cordis/lib/index.js:1450:22)
+      at new yml-commands (<probe>/plugins/providers.mjs:31:7)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:715:30)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      …（其余 2 行略）
+  [error] [yml-plugin-manager] Error: service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at new Service (<probe>/node_modules/cordis/lib/index.js:1450:22)
+      at new yml-plugin-manager (<probe>/plugins/providers.mjs:31:7)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:715:30)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      …（其余 2 行略）
+  !! unhandledRejection: Error: service "gwbCommands" has been registered at <builtin-commands>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at new Service (<probe>/node_modules/cordis/lib/index.js:1450:22)
+      at new yml-commands (<probe>/plugins/providers.mjs:31:7)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:715:30)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      …（其余 2 行略）
+  !! unhandledRejection: Error: service "gwbPluginManager" has been registered at <builtin-plugin-manager>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at new Service (<probe>/node_modules/cordis/lib/index.js:1450:22)
+      at new yml-plugin-manager (<probe>/plugins/providers.mjs:31:7)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:715:30)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      …（其余 2 行略）
+refresh() 返回 : undefined
+
+--- 2. 改 yml 去掉 cmd / pm 条目、include.refresh() 之后
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"removed","pm":"removed","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"builtin-commands.ctor":1,"builtin-plugin-manager.ctor":1,"yml-commands.ctor":1,"yml-plugin-manager.ctor":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←builtin | use-plugin-manager←builtin
+logs           : (none)
+
+=== [class] yml 先、内置后 ===
+temp home      : C:\Users\GODAME~1\AppData\Local\Temp\probe-dup-svc-class-reverse-rIIDur
+
+--- 1. loader + include 读完 cordis.yml 之后
+builtin fibers : {"commands":"none","pluginManager":"none"}
+yml entries    : {"cmd":"ACTIVE","pm":"ACTIVE","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"yml","providerFiber":"yml-commands:ACTIVE"},"gwbPluginManager":{"value":"yml","providerFiber":"yml-plugin-manager:ACTIVE"}}
+counts         : {"yml-commands.ctor":1,"yml-plugin-manager.ctor":1,"use-commands.apply":1,"use-plugin-manager.apply":1}
+consumer saw   : use-commands←yml | use-plugin-manager←yml
+logs           :
+  [info] [yml-commands] gwbCommands 已提供（yml）
+  [info] [yml-plugin-manager] gwbPluginManager 已提供（yml）
+
+--- 2. 再 ctx.plugin 内置两份之后
+builtin fibers : {"commands":"FAILED(service \"gwbCommands\" has been registered at <yml-commands>)","pluginManager":"FAILED(service \"gwbPluginManager\" has been registered at <yml-plugin-manager>)"}
+yml entries    : {"cmd":"ACTIVE","pm":"ACTIVE","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"yml","providerFiber":"yml-commands:ACTIVE"},"gwbPluginManager":{"value":"yml","providerFiber":"yml-plugin-manager:ACTIVE"}}
+counts         : {"yml-commands.ctor":1,"yml-plugin-manager.ctor":1,"use-commands.apply":1,"use-plugin-manager.apply":1,"builtin-commands.ctor":1,"builtin-plugin-manager.ctor":1}
+consumer saw   : use-commands←yml | use-plugin-manager←yml
+logs           :
+  [error] [builtin-commands] Error: service "gwbCommands" has been registered at <yml-commands>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at new Service (<probe>/node_modules/cordis/lib/index.js:1450:22)
+      at new builtin-commands (<probe>/plugins/providers.mjs:31:7)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:715:30)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      …（其余 3 行略）
+  -- await ctx.plugin(builtinCommands) 抛出：service "gwbCommands" has been registered at <yml-commands>
+  [error] [builtin-plugin-manager] Error: service "gwbPluginManager" has been registered at <yml-plugin-manager>
+      at Fiber.<anonymous> (<probe>/node_modules/cordis/lib/index.js:1158:15)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      at Proxy.provide (<probe>/node_modules/cordis/lib/index.js:1147:27)
+      at new Service (<probe>/node_modules/cordis/lib/index.js:1450:22)
+      at new builtin-plugin-manager (<probe>/plugins/providers.mjs:31:7)
+      at Fiber.execute (<probe>/node_modules/cordis/lib/index.js:715:30)
+      at <probe>/node_modules/cordis/lib/index.js:811:37
+      …（其余 3 行略）
+  -- await ctx.plugin(builtinPluginManager) 抛出：service "gwbPluginManager" has been registered at <yml-plugin-manager>
+
+--- 3. 在 include 那棵树上 remove 掉 cmd / pm 之后
+builtin fibers : {"commands":"FAILED(service \"gwbCommands\" has been registered at <yml-commands>)","pluginManager":"FAILED(service \"gwbPluginManager\" has been registered at <yml-plugin-manager>)"}
+yml entries    : {"cmd":"removed","pm":"removed","use-cmd":"PENDING","use-pm":"PENDING"}
+services       : {"gwbCommands":{"value":"undefined","providerFiber":"none"},"gwbPluginManager":{"value":"undefined","providerFiber":"none"}}
+counts         : {"yml-commands.ctor":1,"yml-plugin-manager.ctor":1,"use-commands.apply":1,"use-plugin-manager.apply":1,"builtin-commands.ctor":1,"builtin-plugin-manager.ctor":1,"use-commands.dispose":1,"use-plugin-manager.dispose":1}
+consumer saw   : use-commands←yml | use-plugin-manager←yml
+logs           : (none)
+
+--- 4. 把 FAILED 的内置 fiber dispose 掉、重新 ctx.plugin 之后
+builtin fibers : {"commands":"ACTIVE","pluginManager":"ACTIVE"}
+yml entries    : {"cmd":"removed","pm":"removed","use-cmd":"ACTIVE","use-pm":"ACTIVE"}
+services       : {"gwbCommands":{"value":"builtin","providerFiber":"builtin-commands:ACTIVE"},"gwbPluginManager":{"value":"builtin","providerFiber":"builtin-plugin-manager:ACTIVE"}}
+counts         : {"yml-commands.ctor":1,"yml-plugin-manager.ctor":1,"use-commands.apply":2,"use-plugin-manager.apply":2,"builtin-commands.ctor":2,"builtin-plugin-manager.ctor":2,"use-commands.dispose":1,"use-plugin-manager.dispose":1}
+consumer saw   : use-commands←yml | use-plugin-manager←yml | use-commands←builtin | use-plugin-manager←builtin
+logs           :
+  [info] [builtin-commands] gwbCommands 已提供（builtin）
+  -- await ctx.plugin(builtinCommands) 正常返回
+  [info] [builtin-plugin-manager] gwbPluginManager 已提供（builtin）
+  -- await ctx.plugin(builtinPluginManager) 正常返回

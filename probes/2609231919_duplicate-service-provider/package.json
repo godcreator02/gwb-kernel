@@ -1,0 +1,14 @@
+{
+  "name": "probe-duplicate-service-provider",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "probe": "node run.mjs",
+    "where-unhandled": "node where-unhandled.mjs"
+  },
+  "dependencies": {
+    "@cordisjs/plugin-include": "1.0.5",
+    "@cordisjs/plugin-loader": "1.0.0-rc.6",
+    "cordis": "4.0.0-rc.9"
+  }
+}
