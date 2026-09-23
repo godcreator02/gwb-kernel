@@ -4,7 +4,7 @@
   "author": {
     "name": "godcreator"
   },
-  "description": "词汇表包（内核契约）：gwbKernel 四个方法（dataDir / version / emit / setShell）与页面上的 window.gwb 类型；对插件只增不减。",
+  "description": "词汇表包（内核契约）：gwbKernel 四个方法（dataDir / version / emit / setShell）与页面上的 window.gwb 的类型；对插件只增不减。",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

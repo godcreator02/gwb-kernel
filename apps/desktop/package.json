@@ -5,7 +5,7 @@
   "author": {"name": "godcreator"},
   "type": "module",
   "main": "dist/main.js",
-  "description": "gwb 内核：cordis 住 Electron 主进程，整个应用只有主进程与渲染进程。只做第一个件跑起来之前必须发生的事",
+  "description": "gwb 内核：cordis 运行在 Electron 主进程里，整个应用只有主进程与渲染进程。只做第一个插件运行之前必须完成的事",
   "files": [
     "dist"
   ],

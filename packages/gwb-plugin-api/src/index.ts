@@ -1,8 +1,9 @@
 import type { Context } from 'cordis'
 
 /**
- * 内核的词汇表：件说话用的那几个名词。它不做事，只命名。零运行时依赖。
- * 这是件与内核之间的全部契约面：node 半四个名字，页面三个函数，外壳一个导出形状。
+ * 内核的词汇表：插件与页面用到的内核接口的类型。只有类型，没有运行时代码。
+ * 插件与内核之间的全部契约都在这里：主进程一侧是 `gwbKernel`，页面一侧是 `window.gwb` 的三个函数，
+ * 外壳是一个默认导出的形状。
  */
 
 /** 命令的回执形状 */
@@ -22,42 +23,35 @@ export interface GwbKernelApi {
   emit(payload: unknown): void
   /**
    * 把页面根交给这个 URL 指向的模块。模块的默认导出是 `ShellBoot`。
-   * 回撤销函数——包在 `ctx.effect` 里，件卸载时页面根自动收回。后调的顶掉先调的。
+   * 返回撤销函数——包在 `ctx.effect` 里，插件卸载时页面根自动收回。后调用的替换先调用的。
    */
   setShell(url: string): () => void
 }
 
-/** 件的 apply 拿到的上下文：cordis 的 Context 加内核这一个服务 */
+/** 插件的 apply 拿到的上下文：cordis 的 Context 加内核提供的服务 */
 export interface GwbContext extends Context {
   gwbKernel: GwbKernelApi
 }
 
-/**
- * 曾经的两个运行时薄 helper（`requireKernel`、`isRecord`）已于 2026-09-22 移除——各件把这两
- * 个无状态纯函数内联进自己的 `src/vocab.ts`（实施 Spec D6：本包收敛为纯类型契约面，仅随
- * kernel 版本发版）。此版本起本包零运行时导出。
- */
-
-/** 页面的公共面 `window.gwb`。谁在这页上跑都够得着 */
+/** 页面上的 `window.gwb`，页面上运行的任何代码都能调用 */
 export interface GwbWindowApi {
-  /** 调一条命令。除内核自己一条都不认，全派给提供 `gwbCommands` 的件 */
+  /** 调一条命令。内核不认识命令名，一律交给提供 `gwbCommands` 的命令插件 */
   command<T = unknown>(command: string, args?: unknown): Promise<T>
-  /** 收件经 `gwbKernel.emit` 推来的事件，回注销函数 */
+  /** 收插件经 `gwbKernel.emit` 推来的事件，返回取消订阅的函数 */
   on(cb: (payload: unknown) => void): () => void
   /**
-   * 外壳换了。订上就先收到当前值（没有外壳 url 是 null），回注销函数。
-   * `imports` 是页面级 importmap：home 里各包 `gwb.shared` 声明的裸名 → file:// 地址，内核收齐的。
-   * 页面注完它才 import 外壳。这一条只有内核自己的页面在用
+   * 外壳换了。订阅时先收到当前值（没有外壳时 url 是 null），返回取消订阅的函数。
+   * `imports` 是页面的 importmap：home 里各包 `gwb.shared` 声明的包名 → file:// 地址，由内核收集。
+   * 页面先注入它再 import 外壳。只有内核自己的页面用这一条
    */
   onShell(cb: (shell: { url: string | null; imports: Record<string, string> }) => void): () => void
 }
 
-/** 外壳模块的默认导出：拿走页面根，回一个可选的拆树句柄 */
+/** 外壳模块的默认导出：接管页面根，返回一个可选的清理句柄 */
 export type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 
 /**
- * 页面全局声明：import 本包（哪怕 `import type {}`），TypeScript 就认得 `window.gwb`。
- * 浏览器半不用再翻别人的产物找 `window.gwb.command` 的形状——它就在这儿。
+ * 页面的全局声明：import 本包（哪怕只是 `import type {}`），TypeScript 就认得 `window.gwb`。
  */
 declare global {
   interface Window {

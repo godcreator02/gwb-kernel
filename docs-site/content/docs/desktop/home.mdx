@@ -43,4 +43,4 @@ home 里每样东西归谁写，列在 [home 布局与条目树](/docs/seams/hom
 
 ## 怎么验证
 
-这几段都在 `main.ts` 模块求值时执行，没有单元测试，只能实机验证：用同一个 `GWB_HOME` 启动两次，第二次退出码是 1、`gwb.log` 里有「已有实例在跑，本实例退出」一行、`runtime.json` 里仍是第一个实例的 pid；用一个新名字启动，home 目录里出现最小的 `package.json` 与 `cordis.yml`。
+这几段都在 `main.ts` 模块求值时执行，没有单元测试，只能实机验证：用同一个 `GWB_HOME` 启动两次，第二次退出码是 1、`gwb.log` 里有「已有实例在运行，本实例退出」一行、`runtime.json` 里仍是第一个实例的 pid；用一个新名字启动，home 目录里出现最小的 `package.json` 与 `cordis.yml`。

@@ -58,7 +58,7 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 
 内核应用保证：
 - 命令名和参数原样交给 `ctx.gwbCommands.run`，回执原样返回；内核应用自己不注册任何命令
-- 命令名不是字符串时回 `{ ok: false, error: '命令名要是字符串' }`；`ctx.gwbCommands` 不存在时回 `{ ok: false, error: '没有命令服务（ctx.gwbCommands），认不出 <命令名>' }`
+- 命令名不是字符串时回 `{ ok: false, error: '命令名要是字符串' }`；`ctx.gwbCommands` 不存在时回 `{ ok: false, error: '没有命令服务（ctx.gwbCommands），无法执行 <命令名>' }`
 - 事件原样推给页面；窗口不在时事件就丢了，不补发
 - 每条 `gwb:shell` 都是整份当前状态，不是增量；页面一订阅 `onShell` 就会先请求一次，所以外壳插件比页面先就位也不会错过
 

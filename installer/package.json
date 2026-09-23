@@ -2,7 +2,7 @@
   "name": "gwb-installer",
   "version": "0.1.0",
   "private": true,
-  "description": "gwb 装机器：把本仓内核打成 NSIS 安装器 + 便携 zip。发版=发 exe（2026-09-15 拍板 C），方案正本 SPEC.md",
+  "description": "gwb 安装包：把本仓内核打成 NSIS 安装程序与便携 zip，发版就是发 exe。打包步骤见文档站的「开发」页",
   "scripts": {
     "build": "pwsh -NoProfile -File scripts/build.ps1"
   },

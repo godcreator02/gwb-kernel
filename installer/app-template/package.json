@@ -3,7 +3,7 @@
   "productName": "gwb-kernel",
   "version": "0.0.0",
   "private": true,
-  "description": "gwb 应用壳：首启铺 default home 种子，然后起内核。内核零改动；version 与内核依赖两处占位由 build.ps1 渲染",
+  "description": "gwb 安装包的外层应用：启动时加载内核，内核启动失败时弹错误框。version 与内核依赖两处占位由 build.ps1 替换",
   "author": { "name": "godcreator" },
   "main": "bootstrap.mjs",
   "type": "module",
