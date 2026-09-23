@@ -1,38 +1,38 @@
 ---
 title: 找 pnpm 与运行 pnpm
-description: 只用自己依赖里固定版本的 @pnpm/exe.win32-x64，不看设置、不看 PATH；直接启动那个文件、环境原样传下去、不设超时；卸载时不结束正在运行的 pnpm
+description: 用内核经 config 交来的那份 pnpm（安装包里固定版本的原生可执行文件），不看设置、不看 PATH；直接启动那个文件、环境原样传下去、不设超时；卸载时不结束正在运行的 pnpm
 ---
 
-**本页回答**：插件管理用的是哪个 pnpm、怎么找到它；怎么启动它、输出怎么收；卸载时正在运行的 pnpm 为什么不结束。pnpm 什么时候运行、为什么排队，见[唯一写入者](/docs/plugin-manager/home#包只经-applytohome排进一个串行队列)。
+**本页回答**：插件管理用的是哪个 pnpm、从哪来；怎么启动它、输出怎么收；卸载时正在运行的 pnpm 为什么不结束。pnpm 什么时候运行、为什么排队，见[唯一写入者](/docs/plugin-manager/home#包只经-applytohome排进一个串行队列)。
 
-## 只用自己依赖里的那份 pnpm
+## 用内核交来的那份 pnpm
 
-**是什么**：插件管理的 `dependencies` 写固定版本的 `@pnpm/exe.win32-x64`，随插件管理一起装进 home。运行时从插件管理自己的位置解析这个包，启动里面的 `pnpm.exe`。不读设置、不找 PATH，机器上装没装 pnpm、装的哪个版本，都和插件管理无关。
+**是什么**：安装包的资源目录里放一个固定版本的 pnpm 原生可执行文件（`resources/pnpm/pnpm.exe`，来自 `@pnpm/exe.win32-x64`）。内核加载插件管理时，经 config 把它的路径交过去；从源码运行时，交的是内核仓 `apps/desktop` 依赖里那一份。插件管理不读设置、不找 PATH，机器上装没装 pnpm、装的哪个版本，都和它无关。
 
 **为什么**：
 - 各人机器上装的 pnpm 版本不同，出过兼容问题。固定一份，所有 home 改动时用的都是同一个版本
-- 依赖的是可执行文件包，不是 `pnpm` 包：`pnpm` 包带安装脚本，pnpm 默认不运行依赖的安装脚本，每次改 home 都会以 `ERR_PNPM_IGNORED_BUILDS` 退出码 1 结束；`@pnpm/exe.win32-x64` 的包里只有一个 `pnpm.exe`（实验见[pnpm.exe 装新 home](/trajectory/2026-09-23-pnpm-exe-home-install-probe)）
+- 用的是可执行文件包，不是 `pnpm` 包：`pnpm` 包带安装脚本，pnpm 默认不运行依赖的安装脚本；`@pnpm/exe.win32-x64` 的包里只有一个 `pnpm.exe`，单独拷出来就能用（实验见[pnpm.exe 装新 home](/trajectory/2026-09-23-pnpm-exe-home-install-probe)）
 - 原生可执行文件可以直接启动，不用开 shell，也就没有参数引号转义的问题
 
 **怎么做**：
 
-<Diagram name="pm-pnpm-lookup" title="插件管理从自己的依赖里找到 pnpm">
-- home 按 pnpm 的布局存放：插件管理和它依赖的 `@pnpm/exe.win32-x64` 在 `node_modules/.pnpm/` 下同一个目录里
-- 插件管理从自己的位置按 node 的规则解析 `@pnpm/exe.win32-x64/package.json`，旁边的 `pnpm.exe` 就是要启动的文件，工作目录是 home
-- 包或文件找不到：报错，让人重装插件管理
-- 插件管理升级时 pnpm 版本可能跟着变。pnpm 只把链接换到新版本目录，旧目录和正在运行的那个文件留在原处，不会因为文件被占用而失败
+<Diagram name="pm-pnpm-lookup" title="内核把 pnpm 的路径交给插件管理">
+- 打包运行时，pnpm 在安装包的 `resources/pnpm/pnpm.exe`；从源码运行时，是 `apps/desktop` 开发依赖 `@pnpm/exe.win32-x64` 里那一份
+- 内核加载插件管理时经 config（`{ pnpm }`）把路径交过去
+- 插件管理直接启动这个文件，工作目录是 home
+- 文件不在：报错，原因里带内核给的路径
 </Diagram>
 
-{/* ref file="../plugins/plugin-manager/src/pnpm.ts" lines="48-57" */}
+{/* ref file="../plugins/plugin-manager/src/pnpm.ts" lines="47-58" */}
 
-- 包名带平台：现在只依赖了 Windows x64 那份，别的平台上找不到，直接报错
-- 回执与日志里写的是用了哪个版本、哪个文件
+- 版本号读可执行文件旁边的 `package.json`（`@pnpm/exe.win32-x64` 包的清单），只用于日志，没有就是 `?`
+- 升级 pnpm 就是升级内核：它随安装包发布
 
 **守住它的测试**：
 
-{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="从本插件的位置解析到依赖里那个可执行文件" */}
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="文件在、旁边有 @pnpm/exe 的 package.json" */}
 
-{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="依赖里只有 pnpm 的可执行文件包" */}
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="文件不在：报错，原因里带内核给的路径" */}
 
 ## 直接启动、不设超时
 

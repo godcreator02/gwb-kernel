@@ -1,9 +1,8 @@
 import { spawn, type ChildProcessByStdio } from 'node:child_process'
 import fs from 'node:fs'
-import { createRequire } from 'node:module'
 import path from 'node:path'
 import type { Readable } from 'node:stream'
-import { pnpmExecutableOf, spawnPlan, type LookupResult } from './pnpm-path.js'
+import { spawnPlan, type LookupResult } from './pnpm-path.js'
 
 export { describePnpm } from './pnpm-path.js'
 
@@ -42,22 +41,14 @@ export function tailLines(text: string, max = TAIL_LINES): string {
 }
 
 /**
- * 找自己依赖里的那份 pnpm：从本模块所在的位置按 node 的规则解析 `@pnpm/exe.<平台>-<架构>`。
- * 装在 home 里时本模块在 `node_modules/.pnpm/<插件管理>/node_modules/…` 下，解析到的是它旁边那份
+ * 核对内核交来的 pnpm 可执行文件。版本号读它旁边的 `package.json`（`@pnpm/exe.<平台>-<架构>` 包的清单），
+ * 只用于日志，没有就是 `?`
  */
-export function locatePnpm(): LookupResult {
-  const { pkg, bin } = pnpmExecutableOf(process.platform, process.arch)
-  let manifestFile: string
-  try {
-    manifestFile = createRequire(import.meta.url).resolve(`${pkg}/package.json`)
-  } catch {
-    return { ok: false, error: `插件管理的依赖里没有 ${pkg}（本机是 ${process.platform}-${process.arch}，插件管理只依赖了 Windows x64 那份）；是 Windows x64 的话，重装一次插件管理` }
-  }
-  const file = path.join(path.dirname(manifestFile), bin)
-  if (!fs.existsSync(file)) return { ok: false, error: `${pkg} 里没有 ${bin}（找的是 ${file}），重装一次插件管理` }
+export function locatePnpm(file: string): LookupResult {
+  if (!fs.existsSync(file)) return { ok: false, error: `找不到 pnpm：内核给的路径是 ${file}，那里没有文件——重装一次工作台` }
   let version = '?'
   try {
-    const manifest: unknown = JSON.parse(fs.readFileSync(manifestFile, 'utf8'))
+    const manifest: unknown = JSON.parse(fs.readFileSync(path.join(path.dirname(file), 'package.json'), 'utf8'))
     if (typeof manifest === 'object' && manifest !== null && typeof (manifest as { version?: unknown }).version === 'string') {
       version = (manifest as { version: string }).version
     }

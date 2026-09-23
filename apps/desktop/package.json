@@ -24,6 +24,9 @@
     "@godcreator/gwb-plugin-api": "workspace:*"
   },
   "devDependencies": {
+    "@godcreator/gwb-commands": "workspace:*",
+    "@godcreator/gwb-plugin-manager": "workspace:*",
+    "@pnpm/exe.win32-x64": "12.4.2",
     "@types/node": "^24.0.0",
     "electron": "44.1.1",
     "typescript": "^7.0.2"

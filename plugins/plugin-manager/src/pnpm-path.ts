@@ -1,15 +1,9 @@
 /**
- * 用哪个 pnpm、怎么启动——零 I/O 纯逻辑，实际查磁盘、启动进程的部分在 `pnpm.ts`。
+ * 怎么启动 pnpm——零 I/O 纯逻辑，实际查磁盘、启动进程的部分在 `pnpm.ts`。
  *
- * 插件管理只用**自己依赖里的那份 pnpm**：`dependencies` 里固定版本的 `@pnpm/exe.<平台>-<架构>`，
- * 包里只有一个原生可执行文件，直接 spawn。不依赖 `pnpm` 包：它带安装脚本，pnpm 默认不运行依赖的
- * 安装脚本，每次改 home 都会以 `ERR_PNPM_IGNORED_BUILDS` 退出码 1 结束。
+ * 用的 pnpm 由内核经 config 交来：安装包资源目录里那个原生可执行文件（从源码运行时是内核仓依赖里的那份），
+ * 直接 spawn，不开 shell。
  */
-
-/** 本机平台那份原生 pnpm：包名与包里可执行文件的文件名 */
-export function pnpmExecutableOf(platform: string, arch: string): { pkg: string; bin: string } {
-  return { pkg: `@pnpm/exe.${platform}-${arch}`, bin: platform === 'win32' ? 'pnpm.exe' : 'pnpm' }
-}
 
 export type LookupResult = { ok: true; file: string; version: string } | { ok: false; error: string }
 

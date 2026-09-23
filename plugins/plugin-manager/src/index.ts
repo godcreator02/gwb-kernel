@@ -167,8 +167,14 @@ interface OwnerBook {
 
 export const name = NAME
 
-export function apply(ctx: GwbContext): void {
-  const manager = new PluginManager(ctx)
+/** 内核加载插件管理时经 config 交来的东西 */
+export interface PluginManagerConfig {
+  /** pnpm 原生可执行文件的路径：安装包资源目录里那个，从源码运行时是内核仓依赖里那个 */
+  pnpm: string
+}
+
+export function apply(ctx: GwbContext, config: PluginManagerConfig): void {
+  const manager = new PluginManager(ctx, config)
   ctx.effect(() => ctx.provide('gwbPluginManager', PRESENCE))
   manager.wire()
   ctx.logger(NAME).info(`插件管理已就绪，自己那条条目是 ${ownEntryId(ctx)}，查看列表调用 ${LIST_COMMAND}`)
@@ -206,9 +212,12 @@ class PluginManager {
    * `package.json`，后写的会把前一个加进去的依赖覆盖掉——而且没有任何报错。
    */
   private chain: Promise<unknown> = Promise.resolve()
+  /** 内核交来的 pnpm 可执行文件 */
+  private readonly pnpmFile: string
 
-  constructor(ctx: GwbContext) {
+  constructor(ctx: GwbContext, config: PluginManagerConfig) {
     this.ctx = ctx
+    this.pnpmFile = config.pnpm
     this.home = requireKernel(ctx).dataDir
     this.tree = treeOf(ctx)
     this.log = ctx.logger(NAME)
@@ -368,7 +377,7 @@ class PluginManager {
   async install(pkg: string, spec?: string): Promise<InstallResult> {
     const target = installSpec(pkg, spec)
 
-    const found = locatePnpm()
+    const found = locatePnpm(this.pnpmFile)
     if (!found.ok) {
       this.log.warn(`装不了 ${target}：${found.error}`)
       return { ok: false, pkg, error: found.error }
@@ -403,7 +412,7 @@ class PluginManager {
    * 与安装共用同一个串行队列——它只读不写，排队等待无妨，省得另外处理并发。
    */
   async outdated(): Promise<OutdatedReceipt> {
-    const found = locatePnpm()
+    const found = locatePnpm(this.pnpmFile)
     if (!found.ok) return { ok: false, error: found.error }
 
     const run = await this.queue(() =>
@@ -438,7 +447,7 @@ class PluginManager {
       return { ok: true, updated: [], selfDeferred: false, note: ['全都最新', ...notes].join('；') }
     }
 
-    const found = locatePnpm()
+    const found = locatePnpm(this.pnpmFile)
     if (!found.ok) {
       this.log.warn(`升不了：${found.error}`)
       return bare(found.error)
@@ -523,7 +532,7 @@ class PluginManager {
     for (const id of ids) this.tree.remove(id)
 
     // 第二步：卸载包。排进现有的串行队列，与安装、升级共用
-    const found = locatePnpm()
+    const found = locatePnpm(this.pnpmFile)
     if (!found.ok) {
       this.log.warn(`卸不了 ${pkg}：条目已删除（${ids.length} 条），${found.error}`)
       return { ok: false, pkg, removedEntries: ids, error: found.error }

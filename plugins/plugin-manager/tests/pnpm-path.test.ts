@@ -1,29 +1,39 @@
 import fs from 'node:fs'
-import { describe, expect, it } from 'vitest'
-import { describePnpm, pnpmExecutableOf, spawnPlan } from '../src/pnpm-path.js'
+import os from 'node:os'
+import path from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import { describePnpm, spawnPlan } from '../src/pnpm-path.js'
 import { locatePnpm, tailLines } from '../src/pnpm.js'
 
-const EXE = 'C:\\home\\node_modules\\.pnpm\\@pnpm+exe.win32-x64@12.4.2\\node_modules\\@pnpm\\exe.win32-x64\\pnpm.exe'
+const EXE = 'C:\\Program Files\\gwb-kernel\\resources\\pnpm\\pnpm.exe'
 
-describe('用自己依赖里的那份 pnpm', () => {
-  it('Windows 上是 @pnpm/exe.win32-x64 包里的 pnpm.exe', () => {
-    expect(pnpmExecutableOf('win32', 'x64')).toEqual({ pkg: '@pnpm/exe.win32-x64', bin: 'pnpm.exe' })
+describe('用内核交来的那份 pnpm', () => {
+  let dir = ''
+  afterEach(() => {
+    if (dir !== '') fs.rmSync(dir, { recursive: true, force: true })
+    dir = ''
   })
 
-  it('别的平台可执行文件不带 .exe', () => {
-    expect(pnpmExecutableOf('linux', 'arm64')).toEqual({ pkg: '@pnpm/exe.linux-arm64', bin: 'pnpm' })
+  it('文件在、旁边有 @pnpm/exe 的 package.json：版本号从那里读', () => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pm-pnpm-'))
+    const exe = path.join(dir, 'pnpm.exe')
+    fs.writeFileSync(exe, '')
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: '@pnpm/exe.win32-x64', version: '12.4.2' }))
+    expect(locatePnpm(exe)).toEqual({ ok: true, file: exe, version: '12.4.2' })
   })
 
-  it('从本插件的位置解析到依赖里那个可执行文件，版本与 package.json 写的相同', () => {
-    const manifest = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { dependencies: Record<string, string> }
-    const found = locatePnpm()
-    expect(found).toMatchObject({ ok: true, version: manifest.dependencies['@pnpm/exe.win32-x64'] })
-    expect(found.ok && fs.existsSync(found.file)).toBe(true)
+  it('旁边没有 package.json：照常可用，版本号是 ?', () => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pm-pnpm-'))
+    const exe = path.join(dir, 'pnpm.exe')
+    fs.writeFileSync(exe, '')
+    expect(locatePnpm(exe)).toEqual({ ok: true, file: exe, version: '?' })
   })
 
-  it('依赖里只有 pnpm 的可执行文件包，没有带安装脚本的 pnpm 包', () => {
-    const manifest = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { dependencies: Record<string, string> }
-    expect(Object.keys(manifest.dependencies)).toEqual(['@pnpm/exe.win32-x64'])
+  it('文件不在：报错，原因里带内核给的路径', () => {
+    const missing = path.join(os.tmpdir(), 'pm-pnpm-missing', 'pnpm.exe')
+    const found = locatePnpm(missing)
+    expect(found.ok).toBe(false)
+    expect(found.ok ? '' : found.error).toContain(missing)
   })
 })
 

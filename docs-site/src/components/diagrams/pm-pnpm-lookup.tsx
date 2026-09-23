@@ -1,28 +1,25 @@
 /**
- * 插件管理用自己依赖里的 pnpm：在 home 的 pnpm 布局里，本插件与 `@pnpm/exe.win32-x64` 放在同一个目录下，
- * 从本插件的位置解析就找到它，直接启动；找不到就报错。
+ * 插件管理用的 pnpm 由内核交来：打包运行时是安装包资源目录里那个，从源码运行时是内核仓依赖里那个；
+ * 内核经 config 把路径交给插件管理，插件管理直接启动它；文件不在就报错。
  */
 
 import { Arrow, Box, MUTED, Note } from './parts'
 
 export function PmPnpmLookup() {
   return (
-    <svg viewBox="0 0 760 214" role="img" aria-label="插件管理从自己的依赖里找到 pnpm">
-      <rect x={14} y={14} width={500} height={150} rx={8} fill="none" stroke={MUTED} strokeDasharray="6 5" />
-      <Note x={26} y={34} mono>
-        home/node_modules/.pnpm/@godcreator+gwb-plugin-manager@&lt;版&gt;/node_modules/
+    <svg viewBox="0 0 760 214" role="img" aria-label="内核把 pnpm 的路径交给插件管理">
+      <Box x={14} y={20} w={230} h={52} lines={['安装包运行', 'resources/pnpm/pnpm.exe']} mono />
+      <Box x={14} y={92} w={230} h={52} lines={['从源码运行', 'apps/desktop 依赖的 @pnpm/exe.win32-x64']} />
+      <Box x={290} y={52} w={170} h={60} lines={['内核 main.ts', '加载插件管理时经 config 交出路径']} />
+      <Arrow from={[244, 46]} to={[290, 72]} />
+      <Arrow from={[244, 118]} to={[290, 94]} />
+      <Box x={510} y={24} w={236} h={56} lines={['插件管理', '直接启动 pnpm.exe，工作目录是 home']} tone="a" />
+      <Arrow from={[460, 76]} to={[510, 56]} label="{ pnpm }" />
+      <Box x={510} y={120} w={236} h={48} lines={['文件不在', '报错：重装工作台']} tone="b" />
+      <Arrow from={[628, 80]} to={[628, 120]} dashed />
+      <Note x={14} y={194}>
+        机器上装没装 pnpm、装的哪个版本，都和插件管理无关；home 里也没有 pnpm
       </Note>
-      <Box x={30} y={52} w={200} h={56} lines={['@godcreator/gwb-plugin-manager', '插件管理自己的代码']} />
-      <Box x={300} y={52} w={200} h={56} lines={['@pnpm/exe.win32-x64', '固定版本，包里只有 pnpm.exe']} tone="a" />
-      <Arrow from={[230, 80]} to={[300, 80]} label="解析" />
-      <Note x={30} y={144}>
-        升级时连带升级 pnpm：链接换到新版本目录，旧目录和正在运行的文件留在原处
-      </Note>
-
-      <Box x={560} y={52} w={186} h={56} lines={['直接启动 pnpm.exe', '工作目录是 home']} tone="a" />
-      <Arrow from={[500, 80]} to={[560, 80]} />
-      <Box x={560} y={150} w={186} h={48} lines={['包或文件找不到', '报错：重装插件管理']} tone="b" />
-      <Arrow from={[500, 100]} to={[560, 162]} dashed />
     </svg>
   )
 }

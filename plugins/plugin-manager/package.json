@@ -1,5 +1,7 @@
 {
   "name": "@godcreator/gwb-plugin-manager",
+  "//private": "内核内置：构建时复制进 apps/desktop 的 dist/builtin/，不单独发布",
+  "private": true,
   "version": "0.7.1",
   "author": {
     "name": "godcreator"
@@ -22,12 +24,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "//prepublishOnly": "发版前强制构建一次：pnpm check 只跑类型检查、lint 和测试，不构建，少了这条会把上一版的 dist 原样发出去",
-    "prepublishOnly": "pnpm build"
-  },
-  "dependencies": {
-    "@pnpm/exe.win32-x64": "12.4.2"
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
     "@cordisjs/plugin-include": "1.0.5",
