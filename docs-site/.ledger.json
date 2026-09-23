@@ -175,7 +175,7 @@
     "../plugins/plugin-manager/src/tree.ts:23-34": {
       "kind": "git",
       "blob": "64b314881497fe644731300235caf947511bee92",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         23,
         34
@@ -185,23 +185,23 @@
     "../plugins/plugin-manager/src/tree.ts:59-63": {
       "kind": "git",
       "blob": "64b314881497fe644731300235caf947511bee92",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         59,
         63
       ],
       "hash": "00cdf24bd0ec514bcfa5b60cdfcee2e5e00396f5d72d504ec2e714442d07eb3a"
     },
-    "has ../plugins/plugin-manager/tests/loader.test.ts \"plugin-loader、plugin-include、cordis 的版本与 apps/desktop 写的完全相同\"": {
-      "kind": "has"
-    },
     "has ../plugins/plugin-manager/tests/loader.test.ts \"从插件自己的上下文取到条目树与自己的 entryId\"": {
       "kind": "has"
     },
-    "has ../plugins/plugin-manager/tests/loader.test.ts \"create、update、remove 改的是内存里的条目，也写回 cordis.yml\"": {
+    "has ../plugins/plugin-manager/tests/loader.test.ts \"停用再启用会重新加载，最后是 ACTIVE\"": {
       "kind": "has"
     },
-    "has ../plugins/plugin-manager/tests/loader.test.ts \"停用再启用会重新加载，最后是 ACTIVE\"": {
+    "has ../plugins/plugin-manager/tests/loader.test.ts \"的版本与 apps/desktop 写的完全相同\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/loader.test.ts \"改的是内存里的条目，也写回 cordis.yml\"": {
       "kind": "has"
     }
   },
@@ -209,7 +209,7 @@
     "../plugins/plugin-manager/src/index.ts:93-102": {
       "kind": "git",
       "blob": "b8cbc03e10072f43a80e6998bdb490e5bd0f59d4",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         93,
         102
@@ -219,7 +219,7 @@
     "../plugins/plugin-manager/src/index.ts:541-571": {
       "kind": "git",
       "blob": "b8cbc03e10072f43a80e6998bdb490e5bd0f59d4",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         541,
         571
@@ -229,15 +229,12 @@
     "../plugins/plugin-manager/src/index.ts:708-711": {
       "kind": "git",
       "blob": "b8cbc03e10072f43a80e6998bdb490e5bd0f59d4",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         708,
         711
       ],
       "hash": "3ab0e6bbb17b7f0559e2301a8b29e4d2004f5b640323a14bdce21ad8628a5233"
-    },
-    "has ../plugins/plugin-manager/tests/ids.test.ts \"以 - 开头的包名不认——pnpm 会把它当成命令行选项\"": {
-      "kind": "has"
     },
     "has ../plugins/plugin-manager/tests/ids.test.ts \"拼出 pnpm add 的参数\"": {
       "kind": "has"
@@ -245,10 +242,13 @@
     "has ../plugins/plugin-manager/tests/pnpm.test.ts \"退出码与输出的最后几行\"": {
       "kind": "has"
     },
-    "has ../plugins/plugin-manager/tests/uninstall.test.ts \"同一个包的多条条目全部删——漏一条就留下一条指向没装的包的条目\"": {
+    "has ../plugins/plugin-manager/tests/uninstall.test.ts \"停用的、没加载成功的条目也一起删\"": {
       "kind": "has"
     },
-    "has ../plugins/plugin-manager/tests/uninstall.test.ts \"停用的、没加载成功的条目也一起删\"": {
+    "has ../plugins/plugin-manager/tests/ids.test.ts \"以 - 开头的包名不认\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/uninstall.test.ts \"同一个包的多条条目全部删\"": {
       "kind": "has"
     }
   },
@@ -256,7 +256,7 @@
     "../plugins/plugin-manager/src/update-all.ts:63-96": {
       "kind": "git",
       "blob": "5070e044a033d28c4c1e090a6d40dbb1b26e37e1",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         63,
         96
@@ -266,7 +266,7 @@
     "../plugins/plugin-manager/src/index.ts:123-141": {
       "kind": "git",
       "blob": "b8cbc03e10072f43a80e6998bdb490e5bd0f59d4",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         123,
         141
@@ -276,26 +276,26 @@
     "has ../plugins/plugin-manager/tests/outdated.test.ts \"空串是「全都最新」，不是失败\"": {
       "kind": "has"
     },
-    "has ../plugins/plugin-manager/tests/outdated.test.ts \"单条缺 current 或 latest 只跳过那一条，其余照收\"": {
-      "kind": "has"
-    },
     "../plugins/plugin-manager/tests/update-all.test.ts:63-73": {
       "kind": "git",
       "blob": "09636056b08979dfe7e1bc7dd27008d7d60cc3a0",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         63,
         73
       ],
       "hash": "d6b8bb0fe92ef210484399777d7c7dd295b51c6b16a4c1fe6761baf362e46e86"
     },
-    "has ../plugins/plugin-manager/tests/update-all.test.ts \"pnpm 参数是一次 add，每个包用 outdated 查到的版本号，不用 @latest 标签\"": {
+    "has ../plugins/plugin-manager/tests/outdated.test.ts \"单条缺 current 或 latest 只跳过那一条\"": {
       "kind": "has"
     },
-    "has ../plugins/plugin-manager/tests/update-all.test.ts \"停用的条目带 disabled——执行时保持停用，不重新加载\"": {
+    "has ../plugins/plugin-manager/tests/update-all.test.ts \"每个包用 outdated 查到的版本号\"": {
       "kind": "has"
     },
-    "has ../plugins/plugin-manager/tests/update-all.test.ts \"只升点了名的；点了名却不在过期清单里的进 ignored，不进 pnpm 参数\"": {
+    "has ../plugins/plugin-manager/tests/update-all.test.ts \"执行时保持停用，不重新加载\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/update-all.test.ts \"点了名却不在过期清单里的进 ignored\"": {
       "kind": "has"
     }
   },
@@ -303,29 +303,29 @@
     "../plugins/plugin-manager/src/pnpm-path.ts:165-180": {
       "kind": "git",
       "blob": "24988da525416b93c3d959305425f4ec9727f819",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         165,
         180
       ],
       "hash": "24b3d8d1618d23a931bf467c1d2c35e1b02c69d38a9b87dae4521efcbd6a0329"
     },
-    "has ../plugins/plugin-manager/tests/pnpm-path.test.ts \"填了设置项就不再回退 PATH——填错了要立即看到，而不是悄悄用了另一个\"": {
-      "kind": "has"
-    },
     "has ../plugins/plugin-manager/tests/pnpm-path.test.ts \"从垫片推出原生 pnpm.exe\"": {
       "kind": "has"
     },
-    "has ../plugins/plugin-manager/tests/pnpm-path.test.ts \"第一个垫片推不出 pnpm 包时接着往后找——corepack、volta 的垫片不是这种布局\"": {
-      "kind": "has"
-    },
-    "has ../plugins/plugin-manager/tests/pnpm-path.test.ts \"版本低于 12 明确报错、说清要装 12 以上，不试着运行\"": {
-      "kind": "has"
-    },
-    "has ../plugins/plugin-manager/tests/pnpm-path.test.ts \"直接启动可执行文件，环境原样传下去，只去掉 ELECTRON_RUN_AS_NODE\"": {
-      "kind": "has"
-    },
     "has ../plugins/plugin-manager/tests/pnpm.test.ts \"只留最后几行，去掉首尾空行\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/pnpm-path.test.ts \"填了设置项就不再回退 PATH\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/pnpm-path.test.ts \"第一个垫片推不出 pnpm 包时接着往后找\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/pnpm-path.test.ts \"版本低于 12 明确报错\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/pnpm-path.test.ts \"只去掉 ELECTRON_RUN_AS_NODE\"": {
       "kind": "has"
     }
   },
@@ -333,7 +333,7 @@
     "../plugins/plugin-manager/src/inventory.ts:103-130": {
       "kind": "git",
       "blob": "90a5b886b0056ede35bc705de78363edd841f18d",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         103,
         130
@@ -343,7 +343,7 @@
     "../plugins/plugin-manager/src/index.ts:726-733": {
       "kind": "git",
       "blob": "b8cbc03e10072f43a80e6998bdb490e5bd0f59d4",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         726,
         733
@@ -353,7 +353,7 @@
     "../plugins/plugin-manager/src/index.ts:617-628": {
       "kind": "git",
       "blob": "b8cbc03e10072f43a80e6998bdb490e5bd0f59d4",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         617,
         628
@@ -363,32 +363,32 @@
     "../plugins/plugin-manager/src/busy.ts:7-22": {
       "kind": "git",
       "blob": "6ae4a07ae8c75413dd62fbc9954eaa21ada99113",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         7,
         22
       ],
       "hash": "77ccbf1fbbcf2330f06aa969d7ea4884aafc4d738f14adbb0c410270150ec055"
     },
-    "has ../plugins/plugin-manager/tests/inventory.test.ts \"装了包但一条条目都没有：如实报 0 条，不推断原因\"": {
-      "kind": "has"
-    },
-    "has ../plugins/plugin-manager/tests/inventory.test.ts \"条目指向一个没装的包：报 installed false，不丢掉\"": {
-      "kind": "has"
-    },
-    "has ../plugins/plugin-manager/tests/inventory.test.ts \"是否加载成功看的是 fiber 的状态，不是 fiber 在不在\"": {
-      "kind": "has"
-    },
-    "has ../plugins/plugin-manager/tests/home.test.ts \"读得出 dependencies；清单不在、坏了都当空表\"": {
-      "kind": "has"
-    },
-    "has ../plugins/plugin-manager/tests/loader.test.ts \"create、update、remove 改的是内存里的条目，也写回 cordis.yml\"": {
-      "kind": "has"
-    },
     "has ../plugins/plugin-manager/tests/busy.test.ts \"有改动在运行时重入回 BUSY，不执行\"": {
       "kind": "has"
     },
     "has ../plugins/plugin-manager/tests/busy.test.ts \"执行中抛错也释放标志，下一次能执行\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/inventory.test.ts \"装了包但一条条目都没有\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/inventory.test.ts \"条目指向一个没装的包\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/inventory.test.ts \"是否加载成功看的是 fiber 的状态\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/home.test.ts \"清单不在、坏了都当空表\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/loader.test.ts \"改的是内存里的条目，也写回 cordis.yml\"": {
       "kind": "has"
     }
   },
@@ -396,7 +396,7 @@
     "../plugins/plugin-manager/src/index.ts:74-82": {
       "kind": "git",
       "blob": "b8cbc03e10072f43a80e6998bdb490e5bd0f59d4",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         74,
         82
@@ -406,7 +406,7 @@
     "../plugins/plugin-manager/src/index.ts:183-188": {
       "kind": "git",
       "blob": "b8cbc03e10072f43a80e6998bdb490e5bd0f59d4",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         183,
         188
@@ -424,7 +424,7 @@
     "../plugins/plugin-manager/src/remount.ts:52-60": {
       "kind": "git",
       "blob": "70c6edf4c50c0f54143fb5fef89574ec4ac41e99",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         52,
         60
@@ -434,7 +434,7 @@
     "../plugins/plugin-manager/src/remount.ts:74-96": {
       "kind": "git",
       "blob": "70c6edf4c50c0f54143fb5fef89574ec4ac41e99",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         74,
         96
@@ -459,14 +459,14 @@
     "../plugins/plugin-manager/tests/remount.test.ts:99-113": {
       "kind": "git",
       "blob": "d9ae489dae0a8af939c9e85269fa913ae399b7ad",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         99,
         113
       ],
       "hash": "ae0b99bd1914d1a80a7e90fa7da3a591302cebdec975b7d50514c6b153c68b71"
     },
-    "has ../plugins/plugin-manager/tests/remount.test.ts \"命令插件停用时全部命令都撤掉（包括 remount），这条 await 链照样做完，条目回到启用\"": {
+    "has ../plugins/plugin-manager/tests/remount.test.ts \"这条 await 链照样做完，条目回到启用\"": {
       "kind": "has"
     }
   },
@@ -474,7 +474,7 @@
     "../plugins/plugin-manager/src/ids.ts:115-127": {
       "kind": "git",
       "blob": "f9368066db4933beeab98d7b5cf131cb56d5769b",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         115,
         127
@@ -484,15 +484,12 @@
     "../plugins/plugin-manager/src/index.ts:587-597": {
       "kind": "git",
       "blob": "b8cbc03e10072f43a80e6998bdb490e5bd0f59d4",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         587,
         597
       ],
       "hash": "dcd59cb02542793c31fc30ff7dc37710b1b8a18c531532d0a15ac8d6b77e0273"
-    },
-    "has ../plugins/plugin-manager/tests/ids.test.ts \"和 gwb-data、gwb-settings 的校验是同一套——生成的 id 在那边要存得下数据\"": {
-      "kind": "has"
     },
     "has ../plugins/plugin-manager/tests/ids.test.ts \"去掉 scope 与 gwb- 前缀\"": {
       "kind": "has"
@@ -500,20 +497,23 @@
     "../plugins/plugin-manager/tests/ids.test.ts:105-123": {
       "kind": "git",
       "blob": "a8509646217ca4f0736cb772e7b55068c7bc1fb5",
-      "commit": "dfa3ceebc5c28f7476286d2915437c7da270e22a",
+      "commit": "f760a2ba9ad90bb74f70935bc1b3bacaeb53be47",
       "lines": [
         105,
         123
       ],
       "hash": "607e3653093fb86d0c93ca615133781ddc6421e8fbdd5acd6018d50b7dc86cd5"
     },
-    "has ../plugins/plugin-manager/tests/ids.test.ts \"条目树上正被占着的不沿用——那是同一个包正在用的另一条条目\"": {
-      "kind": "has"
-    },
-    "has ../plugins/plugin-manager/tests/ids.test.ts \"磁盘上属于别的包：拒绝，错误里写明属于谁与 transfer-owner\"": {
-      "kind": "has"
-    },
     "has ../plugins/plugin-manager/tests/inventory.test.ts \"格式不对的项丢掉，不作废整份\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/ids.test.ts \"和 gwb-data、gwb-settings 的校验是同一套\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/ids.test.ts \"条目树上正被占着的不沿用\"": {
+      "kind": "has"
+    },
+    "has ../plugins/plugin-manager/tests/ids.test.ts \"磁盘上属于别的包：拒绝\"": {
       "kind": "has"
     }
   },
