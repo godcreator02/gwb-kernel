@@ -1,9 +1,10 @@
 {
   "pages": [
     "index",
-    "boundary",
+    "design",
+    "map",
+    "seams",
     "criteria",
-    "kernel",
     "glossary"
   ]
 }

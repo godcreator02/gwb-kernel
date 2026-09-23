@@ -44,6 +44,13 @@ export default class GwbExample extends Service {
 
 shell 的 `registerPane` 就是这样写的（`gwb-ui-plugins/plugins/shell/src/index.ts`）。
 
+<Diagram name="caller-cleanup" title="注销函数登记在调用方的上下文里，调用方卸载时自动撤销">
+- 插件 A 调用 `ctx.gwbExample.register(item)`；服务方法里的 `this.ctx` 是 A 的上下文
+- 服务执行 `this.ctx.effect(() => unregister)`，这条清理记在 A 身上
+- A 卸载时，cordis 执行 A 上下文里登记的全部清理，`item` 从表里删掉；A 自己不用写清理代码
+- 对照：用 `ctx.provide` 提供普通对象，服务拿不到调用方的上下文，只能把注销函数还给 A；A 忘了包 `ctx.effect`，卸载之后 `item` 还留在表里
+</Diagram>
+
 代价：构建产物里有 `import { Service } from 'cordis'`，按 [K2](/docs/criteria/k2) 要写 peer `cordis`；不要写 `instanceof Service`。
 
 **不需要认出调用方的服务（存在标记服务）用 `ctx.provide`。** 它只是一个普通对象，不用 import cordis：

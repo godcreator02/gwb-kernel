@@ -1,0 +1,5 @@
+{
+  "title": "接缝",
+  "description": "不改这里的代码就能换掉一边实现的位置：两侧各是谁、交换什么、各保证什么、在哪里换",
+  "pages": ["plugins", "shell", "shared", "commands"]
+}

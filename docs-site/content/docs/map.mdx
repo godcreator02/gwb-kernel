@@ -1,0 +1,74 @@
+---
+title: 系统地图
+description: 内核由哪几个文件组成、每个文件对外提供什么、谁依赖谁、接缝在哪、日志怎么输出
+---
+
+**本页回答**：内核拆成哪几个文件，各自对外提供什么接口，谁依赖谁；四条接缝各由哪几个文件实现；日志怎么输出。
+
+<Diagram name="module-map" title="内核的文件与依赖方向">
+- `main.ts` 把各部分组装起来，是唯一依赖 electron 的文件；它依赖其余所有文件
+- `imports.ts` 依赖 `bare-import.ts`（两侧用同一个解析函数）；`entry-state.ts`、`log-file.ts` 不依赖任何其他文件
+- 这四个文件不依赖 electron 与 cordis 实例，各有单元测试
+- 页面一侧：`preload.cjs` 注入 `window.gwb`，`index.html` 注入 importmap、交出 `#root`；和主进程之间是三条 IPC 通道
+- 词汇表包 `@godcreator/gwb-plugin-api` 只有类型，`main.ts` 和插件都只 import 类型
+</Diagram>
+
+## 模块
+
+| 文件 | 对外提供 | 实现哪条接缝 |
+| --- | --- | --- |
+| `main.ts` | 不导出任何东西。选定 home、日志输出、单实例锁、`runtime.json`、cordis 实例与 `gwbKernel`、窗口、三条 IPC、退出清理 | 全部 |
+| `bare-import.ts` | `resolveFromHome`、`bareImportFromHome` | [插件与内核](/docs/seams/plugins)、[页面上的包名](/docs/seams/shared) |
+| `imports.ts` | `collectImports` | [页面上的包名](/docs/seams/shared) |
+| `entry-state.ts` | `describeEntry` | [外壳接管页面](/docs/seams/shell)（只读状态页） |
+| `log-file.ts` | `openLogFile`、`limitFromEnv` | 内核自己的[日志](#日志) |
+| `preload.cjs` | 页面上的 `window.gwb` | [命令与事件](/docs/seams/commands)、[外壳接管页面](/docs/seams/shell) |
+| `index.html` | 页面入口 | [外壳接管页面](/docs/seams/shell) |
+| `packages/gwb-plugin-api` | 只有类型：`GwbKernelApi`、`GwbContext`、`GwbWindowApi`、`ShellBoot`、`GwbResult` | 全部接缝的类型 |
+
+各模块导出的函数：
+
+```ts
+// bare-import.ts：按 home 解析包名，主进程与页面两侧共用
+function resolveFromHome(dataDir: string, pkg: string, sub?: string): string       // 返回文件路径
+function bareImportFromHome(dataDir: string): (name: string) => Promise<unknown>  // 交给 loader 用的 import
+
+// imports.ts：扫描 home 里各包的 gwb.shared，拼成 importmap
+function collectImports(deps: { dataDir: string; warn: (msg: string) => void }): Record<string, string>
+
+// entry-state.ts：一个条目加载到哪一步，一句话
+function describeEntry(entry: Entry): string
+
+// log-file.ts：带大小上限与轮转的日志文件，写入永不抛错
+function openLogFile(options: LogFileOptions): LogFile
+function limitFromEnv(raw: string | undefined, fallback?: number): number    // 读 GWB_LOG_LIMIT_MB
+```
+
+## 接缝
+
+| 接缝 | 两侧 | 一句话 |
+| --- | --- | --- |
+| [插件与内核](/docs/seams/plugins) | 内核 ↔ 任何插件 | 插件从 `cordis.yml` 进来、按 home 解析、由 cordis 加载，从 `ctx.gwbKernel` 拿到内核的全部东西 |
+| [外壳接管页面](/docs/seams/shell) | 页面入口 ↔ 调用 `setShell` 的插件 | 页面的 `#root` 交给外壳模块的默认导出；没有外壳时显示只读状态页 |
+| [页面上的包名](/docs/seams/shared) | 页面 ↔ 声明 `gwb.shared` 的包 | 内核把声明拼成 importmap；同一个名字有两个提供方就都不收录 |
+| [命令与事件](/docs/seams/commands) | 页面 ↔ 提供 `gwbCommands` 的插件 | 内核不认识命令名，原样转交；事件原样推送、不保留 |
+
+插件和插件之间通过 cordis 的服务与命令交互，不经过内核，规矩在[关键判据 K4](/docs/criteria/k4)、[K5](/docs/criteria/k5)。
+
+## 日志
+
+内核只有一个日志输出：stderr 加 home 里的 `gwb.log`。插件、内核、页面 console 三个来源都走 cordis 的 `ctx.logger`，汇成同一条日志流，一行是 `<时间> <级别> <名字> <正文>`。
+
+- 日志文件有大小上限，到了就轮转，只留一份旧的；上限由环境变量 `GWB_LOG_LIMIT_MB` 调，`0` 表示不轮转
+- 写日志出任何问题都只报一句，不会让内核崩溃
+- 页面上要显示日志的插件自己注册一个 cordis exporter，内核不为窗格建日志通道
+
+## 怎么单独测
+
+除 `main.ts` 外的纯逻辑文件都有单元测试（`apps/desktop/tests/`），传入手工构造的临时 home 或条目就能跑，不需要 electron。`main.ts` 的组装——启动顺序、窗口、IPC、退出清理——只能在隔离 home 里实机验证。仓根的 `pnpm check` 先构建词汇表包，再对全仓做类型检查、lint 和测试：词汇表包的类型写坏了，内核的类型检查一定跟着失败。
+
+## 代码从哪读
+
+{/* tree dir="../apps/desktop/src" depth="1" */}
+
+先读 `main.ts` 从头到 `ctx.provide('gwbKernel', kernel)` 那一段，再读 `main()`。**可跳过**：`dist/`（构建产物）、`installer/`（生成安装包）、`probes/`（实验材料）、`docs-site/`（本站）。

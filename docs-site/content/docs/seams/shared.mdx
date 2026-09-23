@@ -1,0 +1,68 @@
+---
+title: 页面上的包名
+description: 包在清单里声明 gwb.shared，内核拼成 importmap；页面上 import 'react' 靠它找到文件，同一个名字有两个提供方就都不收录
+---
+
+**本页回答**：插件在页面里运行的代码写 `import 'react'` 时，页面凭什么能找到文件；谁来声明、内核怎么拼、名字冲突怎么办；换版本之后什么时候生效。
+
+<Diagram name="shared-names" title="提供方在包清单里声明，内核每次推送时拼成 importmap">
+- 提供方在自己的包清单里写 `gwb.shared`：包名 → 包里的导出子路径。今天唯一的提供方是 shell，声明了 react 的四个包名
+- 内核的 `collectImports` 扫描 home 清单里的每个包，把声明按 home 解析成真实文件的 `file://` 地址，随 `gwb:shell` 推给页面
+- 页面按这张表解析包名 import，整个页面只有一份 react
+- 同一个名字有两个提供方：两个都不收录，内核记一条 warn，页面 import 它直接报解析错误；别的名字不受影响
+</Diagram>
+
+## 接口
+
+提供方只写一个清单字段；页面拿到的是一张普通的 importmap：
+
+```jsonc
+// 提供方的 package.json（shell）
+"gwb": {
+  "shared": {
+    "react": "./react",
+    "react/jsx-runtime": "./react-jsx-runtime",
+    "react-dom": "./react-dom",
+    "react-dom/client": "./react-dom-client"
+  }
+}
+```
+
+```ts
+// 内核：每次推送 gwb:shell 时重新计算
+function collectImports(deps: { dataDir: string; warn: (msg: string) => void }): Record<string, string>
+// 结果形如 { "react": "file:///…/node_modules/.pnpm/…/react.js", … }
+```
+
+{/* ref file="../apps/desktop/src/imports.ts" lines="25-66" */}
+
+`gwb.shared` 是内核读包清单时唯一认识的字段。子路径按包的 `exports` 解析，用的是和主进程一侧同一个函数 `resolveFromHome`（见[插件与内核](/docs/seams/plugins)）。
+
+## 规矩
+
+- **一个名字只有一个提供方**：撞名时全部拒绝，不比版本、不挑谁更新
+- **提供方只能是插件**：进 importmap 的只能是整个页面必须只有一份的运行时代码（比如 react），库不声明 `gwb.shared`（[关键判据 K3](/docs/criteria/k3)）
+- **使用方构建时把这些名字外置**：浏览器端代码打包时不打进这几个包名，留给 importmap；外置名单从 shell 取，不手抄
+- **解析不到只报 warn**：一个提供方出问题，只损失它自己声明的那几个名字
+
+## 什么时候生效
+
+内核每次推送都重新计算，而且从真实路径开始解析，所以提供方换了版本，下一次推送的表里就是新地址（[importmap 也会遇到 Node 解析缓存](/trajectory/2026-09-17-wall-importmap-resolver-cache)）。但页面上的 importmap 只注入一次：**整页重新加载**之后才用上新版本。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="206-211" */}
+
+## 内核不管什么
+
+- 不认识 react 或任何包名，只转交提供方的声明
+- 只看 home 清单里的直接依赖，不扫描传递依赖
+- 不知道页面有没有真的 import 某个名字
+
+## 怎么单独测
+
+`imports.ts` 不依赖 electron 与 cordis，warn 由调用方传入：传入手工构造的临时 home，验证没有清单时得到空表、正常声明解析到真实文件、撞名时全部拒绝并报 warn、解析不到只报 warn、链接改指向新版本后重新计算拿到新地址、形状不对的声明被忽略（`tests/imports.test.ts`）。
+
+## 代码从哪读
+
+- 拼表：`imports.ts` 的 `collectImports`，先读处理撞名的那个分支
+- 调用点：`main.ts` 的 `shellMessage`
+- 页面怎么注入：`index.html` 的 `injectImportmap`（见[外壳接管页面](/docs/seams/shell)）

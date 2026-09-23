@@ -1,8 +1,9 @@
 # gwb-kernel
 
 god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只做第一个插件运行前必须完成的事，其余都做成插件。
-现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`），只做什么、刻意不做什么见同目录 `boundary.mdx`；
-peer、importmap、服务还是命令这类反复出现的选择按同目录 `criteria/`（关键判据 K1…K8，一条一页，配标准例子 E1…E5）判断，引用写编号。
+现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：只做什么、刻意不做什么见同目录 `design.mdx`，
+内核和插件、页面之间的四条接缝见 `seams/`，每个文件对外提供什么见 `map.mdx`；
+peer、importmap、服务还是命令这类反复出现的选择按同目录 `criteria/`（关键判据 K1…K8，一条一页，配标准例子 E1…E6）判断，引用写编号。
 
 ## 准入判据（关键判据 K1）：两条都要满足
 
@@ -42,5 +43,5 @@ cd apps\desktop; pnpm start
 ## 文档与注释
 
 * **知识随插件发布**，本仓不放 skill：写插件读 `gwb-devkit`，写文档、轨迹卡读 `docfirst-docs` / `trajectory`，选型先盘问（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
-* 这份 AGENTS 只放硬约束；为什么、遇到过什么问题住文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
+* 这份 AGENTS 只放硬约束；为什么、遇到过什么问题写在文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
 * 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 是生成物，正本在 `docs-site/content/outputs/`，改完在 `docs-site` 跑 `pnpm docfirst render`，一起提交；`CLAUDE.md` 第一行固定是 `@AGENTS.md`，只给 Claude 的指令写在它后面

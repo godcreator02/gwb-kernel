@@ -11,6 +11,13 @@ description: peer 只写由宿主提供、插件按值 import 的 cordis；其�
 
 ## 怎么判
 
+<Diagram name="runtime-providers" title="构建产物里留下的每一句包名 import，运行时由谁提供">
+- `import { Service } from 'cordis'`（主进程代码）：运行时由 home 里的 cordis 提供，写 peer `cordis`
+- `import fs from 'node:fs'`：运行环境自带，不声明
+- `import { createRoot } from 'react-dom/client'`（浏览器端代码）：由页面的 importmap 提供（shell 声明），写 dev，构建时外置
+- `import { parse } from 'yaml'`（自己用的库）：应该在构建时打包进产物，产物里不该留下这一句；写 dev
+</Diagram>
+
 按运行时这份代码由谁提供来决定：
 
 | 运行时由谁提供 | 写法 |
@@ -45,7 +52,7 @@ export function apply(ctx: Context) {
 
 **类型引用到的包由使用方自己列全**：本插件做类型检查时引用到的别的包的类型（包括上游 d.ts 里又引用到的包），这些包都写进本插件的 dev；检查流程里关掉 `skipLibCheck` 跑一遍类型检查——缺哪个包它会点名报「找不到模块」，否则那段类型会不报错地变成 any。**只引类型时必须写 `import type`**，`import { type X }` 在 `verbatimModuleSyntax` 下会在构建产物里留下一句空 import。
 
-插件需要另一个插件已经安装（比如块笔记的各个插件需要 bn-core），这一点不写进清单（package.json）；没装时它停在「等待缺少的某个服务」的状态，在[只读状态页](/docs/kernel/bridge)和 `plugin-manager.list` 里都看得到。
+插件需要另一个插件已经安装（比如块笔记的各个插件需要 bn-core），这一点不写进清单（package.json）；没装时它停在「等待缺少的某个服务」的状态，在[只读状态页](/docs/seams/shell#没有外壳时)和 `plugin-manager.list` 里都看得到。
 
 ## 标准例子
 
