@@ -1,0 +1,6 @@
+{"step":"0-order","order":["commands","plugin-manager","home"]}
+{"step":"1-root-entries","commands":"ACTIVE","pluginManager":"ACTIVE","commandsEntryId":"commands","commandsIdentity":"commands","pmEntryId":"plugin-manager","pmIdentity":"plugin-manager","pmConfigPnpm":"C:\\x\\pnpm.exe","pmConfigHome":"home","markerKeptMethod":false,"treeAtApply":false,"lazyTreeIsIncludeTree":true}
+{"step":"2-leftover-entries","cmd":"FAILED","pm":"FAILED","useCmd":"ACTIVE","plain":"ACTIVE","useCommandsGot":"builtin","gwbCommandsIs":"builtin","gwbPluginManagerIs":"builtin"}
+{"step":"3-edit-cordis-yml","created":"home:gamma","ymlHasGamma":true,"ymlAfterRemove":"- id: cmd\n  name: old-commands\n- id: pm\n  name: old-plugin-manager\n- id: use-cmd\n  name: use-commands\n- id: plain\n  name: plain\n","rootEntriesInYml":false}
+{"step":"4-loader-entries","ids":["commands","plugin-manager","home","home:cmd","home:pm","home:use-cmd","home:plain"]}
+{"step":"done","home":"C:\\Users\\GODAME~1\\AppData\\Local\\Temp\\gwb-root-entry-probe-Il2mPt","errors":["unhandledRejection: Error: service \"gwbCommands\" has been registered at <builtin-commands>","unhandledRejection: Error: service \"gwbPluginManager\" has been registered at <builtin-plugin-manager>"]}
