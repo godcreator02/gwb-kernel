@@ -6,7 +6,7 @@
 import { Arrow, Box, BORDER, FG, MUTED, Note } from './parts'
 
 const PURE: { file: string; what: string }[] = [
-  { file: 'tree.ts', what: '校验条目树' },
+  { file: 'tree.ts', what: '取条目树' },
   { file: 'inventory.ts', what: '包与条目对照' },
   { file: 'ids.ts', what: 'id 规则与选 id' },
   { file: 'uninstall.ts', what: '卸载删哪些条目' },
@@ -51,7 +51,7 @@ export function PmModules() {
       </Note>
       <rect x={380} y={252} width={366} height={70} rx={10} fill="none" stroke={BORDER} />
       <Box x={392} y={264} w={110} h={46} lines={['home 目录', 'package.json 等']} />
-      <Box x={512} y={264} w={110} h={46} lines={['条目树', '内核经 config 交来']} />
+      <Box x={512} y={264} w={110} h={46} lines={['条目树', 'loader 根层上']} />
       <Box x={632} y={264} w={104} h={46} lines={['内置命令插件', 'data 等 3 个可选']} />
       <Arrow from={[356, 287]} to={[392, 287]} />
 

@@ -12,7 +12,7 @@ export function PluginHome() {
         plugin-manager（内核内置的插件，源码在 plugins/）
       </Note>
       <rect x={14} y={36} width={246} height={152} rx={10} fill="none" stroke={BORDER} />
-      <Box x={26} y={56} w={222} h={50} lines={['EntryTreeLike', '内核经 config 交来的条目树']} />
+      <Box x={26} y={56} w={222} h={50} lines={['EntryTreeLike', '从自己条目所在层取条目树']} />
       <Box x={26} y={124} w={222} h={50} lines={['applyToHome', '唯一运行 pnpm 的入口，串行排队']} />
 
       <Note x={508} y={26} size={12} color={FG} weight={600}>

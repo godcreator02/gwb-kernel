@@ -11,7 +11,7 @@ import { readEntries, reconcile, toLabels, type PluginPackageView } from './inve
 import { describeAddFailure, describePnpm, locatePnpm, runPnpm, runPnpmCapture, type PnpmResult } from './pnpm.js'
 import { parseOutdated, type UpdateInfo } from './outdated.js'
 import { entriesForPackage } from './uninstall.js'
-import { asTree, type EntryTreeLike } from './tree.js'
+import { treeOf, type EntryTreeLike } from './tree.js'
 import { BusyGate } from './busy.js'
 import { planUpdateAll, type PlannedEntry } from './update-all.js'
 import { remountNow, type RemountedEntry } from './remount.js'
@@ -23,8 +23,8 @@ export type { RemountedEntry } from './remount.js'
  * 管理 home 里的**包**和 `cordis.yml` 里的**条目**。包由 pnpm 装进 home，条目由 loader 写进 `cordis.yml`
  * ——只装包、不加条目，插件不会运行。
  *
- * **内核内置**：内核在加载 `cordis.yml` 之前直接加载本插件，经 config 交来条目树与 pnpm 路径。本插件不是
- * `cordis.yml` 里的条目，不在自己管理的范围里，随内核一起升级。
+ * **内核内置**：内核把本插件作为 loader 根层的条目、排在承载 `cordis.yml` 的 include 条目之前加载，经 config
+ * 告诉它那条 include 条目的 id 与 pnpm 路径。本插件不是 `cordis.yml` 里的条目，不在自己管理的范围里，随内核一起升级。
  *
  * **对外只有命令**（`plugin-manager.*`）。服务 `gwbPluginManager` 只表示「插件管理装了」，上面没有方法：
  * 同一件事只提供一种调用方式，所有改动都经过命令，也就都经过同一道 BUSY 检查。
@@ -167,10 +167,13 @@ interface OwnerBook {
 
 export const name = NAME
 
-/** 内核加载插件管理时经 config 交来的东西 */
+/**
+ * 内核加载插件管理时经 config 交来的东西。只能是字符串这类纯数据：loader 会深拷贝条目的 config，
+ * 带方法的对象（比如条目树）传过来就丢了方法
+ */
 export interface PluginManagerConfig {
-  /** 承载 `cordis.yml` 的条目树：内核加载 include 之后取 `ctx.loader.resolve('home').subtree` */
-  tree: EntryTreeLike
+  /** 承载 `cordis.yml` 的 include 条目在 loader 根层的 id（内核给的是 `home`） */
+  home: string
   /** pnpm 原生可执行文件的路径：安装包资源目录里那个，从源码运行时是内核仓依赖里那个 */
   pnpm: string
 }
@@ -186,8 +189,8 @@ class PluginManager {
   private readonly ctx: GwbContext
   /** 这个 home 的目录：pnpm 的 cwd，也是 home 的 package.json 所在的目录 */
   private readonly home: string
-  /** cordis.yml 对应的条目树 */
-  private readonly tree: EntryTreeLike
+  /** 承载 cordis.yml 的 include 条目在 loader 根层的 id */
+  private readonly homeEntryId: string
   private readonly log: { info(message: string): void; warn(message: string): void }
 
   /** 装了数据插件才有。没装时只显示 id，`set-label` 返回「没装数据插件」 */
@@ -217,8 +220,13 @@ class PluginManager {
     this.ctx = ctx
     this.pnpmFile = config.pnpm
     this.home = requireKernel(ctx).dataDir
-    this.tree = asTree(config.tree)
+    this.homeEntryId = config.home
     this.log = ctx.logger(NAME)
+  }
+
+  /** cordis.yml 对应的条目树。每次用到时现取（见 `treeOf`），用的是构造时保存的本插件自己的 ctx */
+  private get tree(): EntryTreeLike {
+    return treeOf(this.ctx, this.homeEntryId)
   }
 
   wire(): void {

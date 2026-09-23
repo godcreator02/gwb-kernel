@@ -35,9 +35,9 @@ description: 12 条命令是插件管理唯一的调用方式；服务 gwbPlugin
 
 {/* ref file="../plugins/plugin-manager/src/index.ts" lines="69-77" */}
 
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="178-183" */}
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="181-186" */}
 
-**守住它的测试**：插件管理只取 cordis、词汇表包和三个可选插件的类型，构建产物里一个包名 import 都不该有；注入的四个服务名要在文档里写到。
+**守住它的测试**：插件管理只取 cordis、loader、词汇表包和三个可选插件的类型，构建产物里一个包名 import 都不该有；注入的四个服务名要在文档里写到。
 
 {/* has file="../plugins/plugin-manager/tests/artifact.test.ts" text="除了 node 内置模块，一个包名 import 都没有" */}
 
@@ -47,7 +47,7 @@ description: 12 条命令是插件管理唯一的调用方式；服务 gwbPlugin
 
 <Diagram name="pm-commands" title="页面、agent、别的插件都经命令调用；别的插件只 inject 这个服务来跟着它加载、卸载">
 - 三类调用方——插件管理窗格、经 MCP 入口的 agent、主进程里的别的插件——都经命令插件按名字调用 `plugin-manager.*`
-- 插件管理里是 12 条命令，改动命令都过同一道 BUSY 检查
+- 插件管理里是 12 条命令，改动命令都经过同一道 BUSY 检查
 - 服务 `gwbPluginManager` 的值是 `{ contract: 2 }`，上面没有方法；别的插件 inject 它只为跟着插件管理一起加载、卸载
 </Diagram>
 
@@ -61,7 +61,7 @@ description: 12 条命令是插件管理唯一的调用方式；服务 gwbPlugin
 
 **为什么**：谁提供接口，谁定义类型。类型放在调用方那边，就等于调用方持有契约，插件管理改了回执也没人拦得住。
 
-**怎么做**：调用方 `import type` 引插件管理的包，不手写回执的形状、不用 `as` 强制转换。反过来，内核交给插件管理的 config 也由插件管理定义类型（`PluginManagerConfig`），条目树写成收窄后的 `EntryTreeLike`（见[home 与插件管理](/docs/seams/home#接口)）。
+**怎么做**：调用方 `import type` 引插件管理的包，不手写回执的形状、不用 `as` 强制转换。反过来，内核交给插件管理的 config 也由插件管理定义类型（`PluginManagerConfig`）。插件管理自己用到 loader 的条目树时照这条做：按 loader 导出的 `EntryTree` 类型取，再赋给收窄后的 `EntryTreeLike`，由类型检查核对（见[home 与插件管理](/docs/seams/home#接口)）。
 
 ## 改了命令形状就升 x
 

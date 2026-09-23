@@ -18,7 +18,7 @@ description: 用内核经 config 交来的那份 pnpm（安装包里固定版本
 
 <Diagram name="pm-pnpm-lookup" title="内核把 pnpm 的路径交给插件管理">
 - 打包运行时，pnpm 在安装包的 `resources/pnpm/pnpm.exe`；从源码运行时，是 `apps/desktop` 开发依赖 `@pnpm/exe.win32-x64` 里那一份
-- 内核加载插件管理时经 config（`{ pnpm }`）把路径交过去
+- 内核加载插件管理时经 config（`{ home, pnpm }` 里的 `pnpm`）把路径交过去
 - 插件管理直接启动这个文件，工作目录是 home
 - 文件不在：报错，原因里带内核给的路径
 </Diagram>

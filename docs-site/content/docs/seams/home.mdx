@@ -1,12 +1,12 @@
 ---
 title: home 与插件管理
-description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_modules，loader 条目树改 cordis.yml；它内置在内核里，条目树与 pnpm 路径由内核经 config 交来
+description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_modules，loader 条目树改 cordis.yml；它内置在内核里，作为 loader 根层的条目加载，用到条目树时从自己条目所在的那一层取
 ---
 
 **本页回答**：内核和 plugin-manager 之间交换什么、各保证什么。plugin-manager 自己怎么分块、每块功能怎么工作，见[插件管理](/docs/plugin-manager)。
 
 <Diagram name="plugin-home" title="只有 plugin-manager 写 home：包经 pnpm，条目经 loader 的条目树">
-- 左边是 plugin-manager 用到的两样：内核经 config 交来的条目树（`EntryTreeLike`）、唯一运行 pnpm 的入口 `applyToHome`
+- 左边是 plugin-manager 用到的两样：从自己条目所在的那一层取出的条目树（`EntryTreeLike`）、唯一运行 pnpm 的入口 `applyToHome`
 - 右边是内核里对应的两样：loader 与 include（条目树的结构、读写 `cordis.yml`）、按真实路径解析包名
 - 跨过接缝的是条目树的 `create` / `update` / `remove` / `resolve`——loader 没写进文档的内部结构
 - 下面是 home：`applyToHome` 经 pnpm 改 `package.json` 与 `node_modules`；条目树写回 `cordis.yml` 并当场加载；loader import 包名时按真实路径读 `node_modules`
@@ -17,24 +17,30 @@ description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_
 
 对调用方，plugin-manager 是 12 条命令，参数与回执见[对外只有命令](/docs/plugin-manager/commands)。
 
-对内核，plugin-manager 是一个内置插件：内核在加载 `cordis.yml` 之前直接加载它（它不是 `cordis.yml` 的条目），经 config 交来两样东西——承载 `cordis.yml` 的条目树与 pnpm 可执行文件的路径：
+对内核，plugin-manager 是一个内置插件：内核把它作为 loader **根层的条目**加载（和命令插件一样，都排在承载 `cordis.yml` 的 include 条目之前），它不是 `cordis.yml` 里的条目。有了自己的条目，数据插件、说明书插件这类按调用方条目认身份的服务才认得出它。内核经 config 告诉它两个字符串——那条 include 条目的 id 与 pnpm 可执行文件的路径：
 
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="170-176" */}
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="170-179" */}
+
+config 只能是字符串这类纯数据：loader 会深拷贝条目的 config，带方法的对象（比如条目树本身）传过去就丢了方法（实验见 `probes/2609232050_builtin-as-root-entry/`）。
 
 条目树是一份**没有写进 `gwbKernel` 的约定**——plugin-manager 用到 loader 条目树的这几样：
 
-{/* ref file="../plugins/plugin-manager/src/tree.ts" lines="16-31" */}
+{/* ref file="../plugins/plugin-manager/src/tree.ts" lines="19-34" */}
 
-内核加载 include 之后用 `ctx.loader.resolve('home').subtree` 取到这棵树（实验见 `probes/2609231905_kernel-passes-entry-tree/`），树的前缀 `home` 只有内核知道；plugin-manager 要条目的完整 id 时，读 loader 条目对象上已经拼好前缀的 `id`。交来的树在构造时校验一次，少了哪个方法当场说清楚：
+**用到时再取**：plugin-manager 从自己条目所在的那一层（loader 根层）按 config 给的 id 找到 include 条目，取它的子树。它加载时 include 条目排在后面、子树还没建好，所以不在构造时取；取的时候用构造时保存的它自己的 ctx，用调用方的会取到别人条目所在的那一层。按 loader 自己的类型 `EntryTree` 取，再赋给上面的收窄接口：loader 改了这几个方法的签名，类型检查就在这里失败。
 
-{/* ref file="../plugins/plugin-manager/src/tree.ts" lines="33-44" */}
+{/* ref file="../plugins/plugin-manager/src/tree.ts" lines="49-64" */}
+
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="227-230" */}
+
+条目 id 的前缀（`home`）也不用猜：plugin-manager 要条目的完整 id 时，读 loader 条目对象上已经拼好前缀的 `id`。
 
 改 `cordis.yml` 只走这棵树：它把写回文件和当场加载一起做；绕过它直接写文件，内存里的条目不知道，下一次写回会把磁盘上的改动覆盖掉。
 
 ## 两边各保证什么
 
 内核保证：
-- 在加载 `cordis.yml` 之前加载命令插件与 plugin-manager，经 config 交来条目树与 pnpm 路径
+- 命令插件与 plugin-manager 作为 loader 根层的条目、排在承载 `cordis.yml` 的 include 条目之前加载；plugin-manager 的 config 是 `{ home, pnpm }`
 - home 的布局：`package.json` 列出装了哪些包，`cordis.yml` 列出条目，包在 `node_modules`（见[插件与内核](/docs/seams/plugins)）
 - loader 与 include 的版本固定在 `apps/desktop/package.json`；升级它们时先运行 plugin-manager 的测试
 - 包名按真实路径解析：包换了版本、真实路径跟着换，停用再启用就能拿到新版本
@@ -46,11 +52,11 @@ plugin-manager 保证：
 
 ## 怎么单独测
 
-`plugins/plugin-manager/tests/loader.test.ts` 用内核实际使用的 loader 与 include 版本，照 `main.ts` 的顺序搭一个 home：加载 include、取 `resolve('home').subtree` 经 config 交给直接加载的插件，再把上面这份约定运行一遍；内核升级这两个包、改了条目树的结构，它先失败：
+`plugins/plugin-manager/tests/loader.test.ts` 用内核实际使用的 loader 与 include 版本，照 `main.ts` 的顺序搭一个 home：内置插件作为根层条目排在 include 条目之前、config 传 `{ home, pnpm }`，用到时取树，再把上面这份约定运行一遍；内核升级这两个包、改了条目树的结构，它先失败：
 
 {/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="的版本与 apps/desktop 写的完全相同" */}
 
-{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="内核取到的树经 config 交给直接加载的插件" */}
+{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="用到时取的树就是 include 那棵" */}
 
 {/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="改的是内存里的条目，也写回 cordis.yml" */}
 

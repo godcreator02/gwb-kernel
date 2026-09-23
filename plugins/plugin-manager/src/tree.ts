@@ -1,3 +1,6 @@
+import type { GwbContext } from '@godcreator/gwb-plugin-api'
+// 只取类型：loader 的 EntryTree，以及它给 cordis 的 Fiber 补上的 entry 字段。产物里没有这个包名，d.ts 里也没有
+import type { EntryTree } from '@cordisjs/plugin-loader'
 import { isRecord } from './vocab.js'
 
 /**
@@ -14,8 +17,8 @@ import { isRecord } from './vocab.js'
  */
 
 /**
- * loader 的 `EntryTree` 收窄到用得着的那几样。内核取 `ctx.loader.resolve('home').subtree` 经 config 交来，
- * 交来的就是 loader 的那棵树。对外的类型只用这份收窄，使用方不需要装 loader
+ * loader 的 `EntryTree` 收窄到用得着的那几样。`treeOf` 里把 loader 的树直接赋给它：loader 改了这几个
+ * 方法的签名，类型检查就在那里失败。对外的类型只用这份收窄，使用方不需要装 loader
  */
 export interface EntryTreeLike {
   /** 不带前缀的 id → Entry 的表，不分层。同一棵树里的分组也在这张表上，没有嵌套 */
@@ -33,7 +36,7 @@ export interface EntryTreeLike {
 /** 那四个方法都在才算一棵树。少一个就立即说清楚——比后面某一步莫名其妙地失败好排查 */
 export function asTree(candidate: unknown): EntryTreeLike {
   if (!isRecord(candidate)) {
-    throw new Error('内核没有经 config.tree 交来承载 cordis.yml 的条目树——这个插件由内核在加载 cordis.yml 之前直接加载，树由内核交给它。')
+    throw new Error('取不到承载 cordis.yml 的条目树——config.home 指的那条条目还没加载完，或者它不是 include。')
   }
   for (const key of ['create', 'remove', 'update', 'resolve']) {
     if (typeof candidate[key] !== 'function') {
@@ -41,4 +44,21 @@ export function asTree(candidate: unknown): EntryTreeLike {
     }
   }
   return candidate as unknown as EntryTreeLike
+}
+
+/**
+ * 承载 `cordis.yml` 的那棵树：在本插件自己条目所在的那一层（loader 根层），按 `homeEntryId` 找到那条
+ * include 条目，取它的子树。`homeEntryId` 由内核经 config 给出，本插件不猜它叫什么。
+ *
+ * **用到时再取，不在构造时取**：内核把本插件排在 include 条目之前加载，apply 那一刻子树还没建好。
+ * `ctx` 要用本插件自己的（构造时保存的那个）；用调用方的会取到别人条目所在的那一层。
+ */
+export function treeOf(ctx: GwbContext, homeEntryId: string): EntryTreeLike {
+  const layer: EntryTree | undefined = ctx.fiber.entry?.parent.tree
+  if (layer === undefined) {
+    throw new Error('取不到插件管理自己的条目——它要作为 loader 的条目加载（内核把它放在 loader 根层），不能直接用 ctx.plugin 加载。')
+  }
+  const tree: EntryTree | undefined = layer.resolve(homeEntryId).subtree
+  const narrowed: EntryTreeLike | undefined = tree
+  return asTree(narrowed)
 }

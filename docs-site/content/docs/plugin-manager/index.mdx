@@ -7,7 +7,7 @@ description: plugin-manager 是内核内置、唯一写 home 的插件——装�
 
 ## 是什么
 
-一个按 cordis 插件写法写的插件，源码在内核仓 `plugins/plugin-manager/`，**内置在内核里**：内核在加载 `cordis.yml` 之前直接加载它，经 config 交来承载 `cordis.yml` 的条目树与 pnpm 的路径。它不是 `cordis.yml` 的条目、不在 home 里，所以不出现在 `list` 里，`update-all` 不升级它，也不能停用、卸载、重新加载，随内核一起升级（为什么内置见轨迹卡[核心插件内置](/trajectory/2026-09-23-core-plugins-built-in)）。
+一个按 cordis 插件写法写的插件，源码在内核仓 `plugins/plugin-manager/`，**内置在内核里**：内核把它作为 loader 根层的条目、排在承载 `cordis.yml` 的 include 条目之前加载，经 config 告诉它那条 include 条目的 id 与 pnpm 的路径；它用到条目树时，从自己条目所在的那一层取出承载 `cordis.yml` 的那棵。它不是 `cordis.yml` 里的条目、不在 home 里，所以不出现在 `list` 里，`update-all` 不升级它，也不能停用、卸载、重新加载，随内核一起升级（为什么内置见轨迹卡[核心插件内置](/trajectory/2026-09-23-core-plugins-built-in)）。
 
 它管 home 里的两层东西：pnpm 装进来的**包**，和 `cordis.yml` 里指向包的**条目**——只装包、不加条目，插件不会运行。它依赖内核没写进文档的内部结构（loader 条目树、home 的布局、包名的解析规则），见[home 与插件管理](/docs/seams/home)。
 
@@ -41,13 +41,13 @@ description: plugin-manager 是内核内置、唯一写 home 的插件——装�
 - 顶层 `index.ts`：12 条命令与只表示「装了」的服务，按顺序调用下面各块，依赖其余所有文件
 - 中间十个纯逻辑文件，不读磁盘、不启动进程
 - 底层两个：`home.ts` 读 home 的 `package.json`，`pnpm.ts` 找 pnpm、启动进程
-- 插件管理外面：home 目录、内核经 config 交来的条目树、内核内置的命令插件、三个可选插件（data、settings、skills）
+- 插件管理外面：home 目录、loader 根层上承载 `cordis.yml` 的条目树（按 config 给的 id 取）、内核内置的命令插件、三个可选插件（data、settings、skills）
 </Diagram>
 
 | 文件 | 管什么 | 在哪一页讲 |
 | --- | --- | --- |
 | `index.ts` | 12 条命令与服务，按顺序调用下面各块 | [对外只有命令](/docs/plugin-manager/commands) |
-| `tree.ts` | 条目树用得着的几个方法；校验内核交来的树 | [home 的两层](/docs/plugin-manager/home) |
+| `tree.ts` | 条目树用得着的几个方法；从自己条目所在的那一层取树并校验 | [home 的两层](/docs/plugin-manager/home) |
 | `inventory.ts` | 条目树与 home 清单对照成 `list` 的结果 | [home 的两层](/docs/plugin-manager/home) |
 | `home.ts` | 读 home 的 `package.json`（读磁盘） | [home 的两层](/docs/plugin-manager/home) |
 | `busy.ts` | 同一时刻只允许一个改动，重入返回 BUSY | [home 的两层](/docs/plugin-manager/home) |
@@ -80,7 +80,7 @@ description: plugin-manager 是内核内置、唯一写 home 的插件——装�
 
 - 在仓根运行 `pnpm check`：构建词汇表包，再对全仓做类型检查、lint 和测试。插件管理的测试和内核的一起跑
 - 除 `index.ts`、`vocab.ts` 外，每个源码文件都有同名的测试文件，传入构造的数据或临时目录，不需要 electron
-- `loader.test.ts` 用内核实际使用的 loader 与 include 版本、照内核的加载顺序搭一个 home，取条目树交给直接加载的插件，内核升级这两个包时它先失败；`fiber-state.test.ts` 核对条目状态名和内核的一致
+- `loader.test.ts` 用内核实际使用的 loader 与 include 版本、照内核的加载顺序搭一个 home（内置插件作为根层条目排在 include 条目之前），用到时再取条目树，内核升级这两个包时它先失败；`fiber-state.test.ts` 核对条目状态名和内核的一致
 - 串行队列、建条目不等加载、卸载顺序、转归属、真正启动 pnpm 这些没有单元测试，只能实机验证：从源码启动内核、用隔离 home（仓根 AGENTS 的「怎么跑」），再用 `devkit.cdp` 调命令
 
 ## 代码从哪读
