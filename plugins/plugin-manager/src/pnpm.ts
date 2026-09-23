@@ -67,9 +67,9 @@ function spawnPnpm(file: string, cwd: string, args: readonly string[]): ChildPro
 /**
  * 运行一次 pnpm。**不抛**——启动失败也整理成一份回执，调用方只看 ok。
  *
- * 启动的是自己依赖里那份原生可执行文件（见 `locatePnpm`），不开 shell；环境怎么传见 `spawnPlan`。
+ * 启动的是内核交来的那份原生可执行文件（见 `locatePnpm`），不开 shell；环境怎么传见 `spawnPlan`。
  *
- * **不设超时**：装一个大包本来就可能几分钟，猜一个时限只会在慢网络上误杀一次正常的安装；
+ * **不设超时**：装一个大包本来就可能几分钟，定一个时限只会在慢网络上错误地结束一次正常的安装；
  * 网络层的超时 pnpm 自己有。真卡住了，由用户去结束进程。
  *
  * **本插件卸载时不结束正在运行的 pnpm**（「插件卸载时清理自己启动的子进程」的例外）：pnpm 正在改 home 的 `package.json` 与

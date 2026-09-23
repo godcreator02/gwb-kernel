@@ -1,78 +1,52 @@
 ---
 title: 命令插件与插件管理内置进内核
-description: 内核在加载 cordis.yml 之前直接加载命令插件与插件管理，它们随内核发版、不进 home；命令的类型挪进词汇表包；pnpm 只在安装包里放一份
+description: 内核把命令插件与插件管理作为 loader 根层的条目、排在 cordis.yml 之前加载，它们随内核发版、不进 home；命令的类型挪进词汇表包；pnpm 只在安装包里放一份
 docfirst: none
 ---
 
-**本页回答**：这项工作做完是什么样、怎么验收；两个插件怎么内置、代码放在哪、怎么进安装包；已有 home 怎么迁移；分几步做。决定见轨迹卡[核心插件内置](/trajectory/2026-09-23-core-plugins-built-in)，它作废了之前「预装成普通插件」的两张卡。
+**本页回答**：这项工作做完是什么样、怎么验收；两个插件怎么内置、代码放在哪、怎么进安装包；已有 home 怎么迁移；做到哪儿了。决定见轨迹卡[核心插件内置](/trajectory/2026-09-23-core-plugins-built-in)与[内置插件做成根层条目](/trajectory/2026-09-23-builtin-as-root-entries)。
 
 ## 验收清单
 
 - [x] 实验：只带一个 `pnpm.exe` 就能运行 pnpm 改 home（`probes/2609231950_pnpm-exe-home-install/`）
-- [x] 实验：内核能把 `cordis.yml` 的条目树交给直接加载的插件，插件照常改 `cordis.yml`（`probes/2609231905_kernel-passes-entry-tree/`）
+- [x] 实验：内核能把 `cordis.yml` 的条目树交给内置插件，插件照常改 `cordis.yml`（`probes/2609231905_kernel-passes-entry-tree/`）
 - [x] 实验：同一个服务名有内置与 `cordis.yml` 条目两个提供方时 cordis 怎么表现（`probes/2609231919_duplicate-service-provider/`）
+- [x] 实验：内置插件做成 loader 根层条目后有条目身份、config 怎么传（`probes/2609232050_builtin-as-root-entry/`）
 - [x] 命令插件在内核仓 `plugins/commands/`；基础插件仓不再有它
-- [ ] `GwbCommands`、`GwbCommandDef` 在词汇表包里，`GwbContext` 上 `gwbCommands` 一定存在
-- [ ] 内核在加载 `cordis.yml` 之前加载两个内置插件；插件管理经 config 拿到条目树与 pnpm 路径；插件管理里取自己条目、处理自己的代码删掉
-- [ ] 插件管理不再依赖 `@pnpm/exe.win32-x64`；pnpm 在安装包的资源目录里，从源码运行时用内核仓依赖里的那份
-- [ ] 从源码启动内核、全新的隔离 home（`package.json` 与 `cordis.yml` 都是空的）：`plugin-manager.*` 命令都在，能装一个插件并加载成功
-- [ ] 打出的安装包装好后同样通过上一条；default 迁移步骤照 `INSTALL.md` 走一遍能成功
+- [x] `GwbCommands`、`GwbCommandDef` 在词汇表包里，`GwbContext` 上 `gwbCommands` 一定存在
+- [x] 内核把两个内置插件作为 loader 根层条目、排在 `home` 之前加载，条目名用包名；插件管理经 config 拿到 include 条目的 id 与 pnpm 路径；插件管理里取自己条目、处理自己的代码删掉
+- [x] 插件管理不再依赖 `@pnpm/exe.win32-x64`；pnpm 在安装包的资源目录里，从源码运行时用内核仓依赖里的那份
+- [x] 从源码启动内核、全新的隔离 home（`package.json` 与 `cordis.yml` 都是空的）：`plugin-manager.*` 命令都在，能装一个插件并加载成功；显示名能改；`skill.list` 里有两个内置插件的说明书，`plugin` 是包名（2026-09-23 实测）
+- [x] 从源码启动内核、留着旧条目的隔离 home：旧的两条 FAILED（插件管理那条报「旧版留下的，删掉它」），其余插件 ACTIVE，外壳正常（2026-09-23 实测）
+- [ ] 打出的安装包装好后同样通过上两条；default 迁移步骤照 `INSTALL.md` 走一遍能成功
 - [ ] `INSTALL.md`、安装包 SPEC、文档站现状页都改完
 
 ## 两个插件怎么内置
 
-**代码位置不变**：`plugins/commands`、`plugins/plugin-manager` 仍是两个包，仍按 cordis 插件的写法写，各自的测试照旧在仓根 `pnpm check` 里跑。两个包改成 `private`，不再发布。
+**代码位置不变**：`plugins/commands`、`plugins/plugin-manager` 仍是两个包，仍按 cordis 插件的写法写，各自的测试照旧在仓根 `pnpm check` 里跑。两个包是 `private`，不再发布。
 
-**内核怎么加载**（`main.ts`）：
+**内核怎么加载**（`main.ts`）：两个模块从 `dist/builtin/` import，内核交给 loader 的 import 按包名先查它们；它们和 include 一起放进 `root.update`，顺序是 `commands`、`plugin-manager`、`home`，条目名用包名。做成条目，是因为数据、说明书等插件按调用方的条目认身份；排在 `home` 之前，是为了残留在 `cordis.yml` 里的同名条目只会失败。插件管理的 config 是 `{ home, pnpm }` 两个字符串（loader 会深拷贝 config），条目树由它用到时从自己条目所在那一层取。
 
-1. 创建 cordis 实例、提供 `gwbKernel` 之后，先 `ctx.plugin(命令插件)`
-2. 加载 loader 与 include（今天就有的那几步），取 `ctx.loader.resolve('home').subtree` 得到承载 `cordis.yml` 的条目树
-3. `ctx.plugin(插件管理, { tree, pnpm })`：把条目树和 `pnpm.exe` 的路径经 config 交给它
-4. 等 `cordis.yml` 里的插件加载完
+内置插件不在 `cordis.yml` 里，也不在 home 的 `package.json` 里，所以 `plugin-manager.list` 看不到它们，`update-all` 不会升级它们。
 
-内置插件不在 `cordis.yml` 里，也不在 home 的 `package.json` 里，所以 `plugin-manager.list` 看不到它们，`update-all` 不会升级它们，也没法停用、卸载它们。
+**怎么进安装包**：安装器把 `apps/desktop` 打成 tarball、再从包源安装它的依赖，所以内置插件不能写成运行时依赖（那样就得发布它们）。`apps/desktop` 构建时把两个插件的 `package.json`、`dist/` 与 `skills/` 复制到自己的 `dist/builtin/<目录名>/`。两个插件的构建产物里除 node 内置模块外没有包名 import（各自的 `artifact.test.ts` 守着），复制过去就能运行。
 
-**怎么进安装包**：安装器把 `apps/desktop` 打成 tarball、再从包源安装它的依赖，所以内置插件不能写成工作区依赖（那样就得发布它们）。改为 `apps/desktop` 构建时把两个插件的 `dist/` 与 `skills/` 复制到自己的 `dist/builtin/<目录名>/`，`main.ts` 按相对路径 import。两个插件的构建产物里除 node 内置模块外没有包名 import（各自的 `artifact.test.ts` 守着），复制过去就能运行；说明书按 `new URL('../skills/', import.meta.url)` 找，复制时保持 `dist` 与 `skills` 同级。
-
-**pnpm**：`apps/desktop` 的开发依赖写 `@pnpm/exe.win32-x64`（精确版本）。安装器用 electron-builder 的额外资源把其中的 `pnpm.exe` 放到 `resources/pnpm/pnpm.exe`。`main.ts` 打包运行时用这个路径，从源码运行时用开发依赖里那份，经 config 交给插件管理。
-
-## 插件管理里要改的
-
-- 条目树从 config 取，删掉 `treeOf`、`ownEntryId`（它不再有自己的条目）
-- 删掉处理自己的逻辑：`update-all` 里「升级到自己时排最后、回执之后再重新加载自己」、`selfDeferred`、`remountSelfLater`；删条目、卸载时不再需要判断是不是自己
-- pnpm 路径从 config 取，删掉 `locatePnpm` 从自己依赖里解析的那一段和 `@pnpm/exe.win32-x64` 依赖；本页之前第 2 步的实验结论照旧成立
-- 服务 `gwbPluginManager` 保留（界面插件 `inject` 它，跟着它加载）
-- 显示名、id 归属仍经数据、设置插件可选地存取，服务名只出现在插件管理的包里
-
-## 命令的类型
-
-`GwbCommands`、`GwbCommandDef` 从命令插件挪进词汇表包 `@godcreator/gwb-plugin-api`，`GwbContext` 加上 `gwbCommands: GwbCommands`（和 `gwbKernel` 一样一定存在，插件可以不写 `inject`）。命令插件从词汇表包引用这两个类型，删掉它对 `cordis` 的 `gwbCommands?` 类型声明；`main.ts` 删掉 `import type {} from '@godcreator/gwb-commands'`。词汇表包是新增导出，升 y（先读 gwb-release）。
-
-下游插件现在从 `@godcreator/gwb-commands` 引类型、各自声明 `gwbCommands?`，和词汇表包的新声明会冲突，要跟着改；按「下游慢慢适配」，不在本页范围内。
+**pnpm**：`apps/desktop` 的开发依赖写 `@pnpm/exe.win32-x64`（精确版本）。安装器把其中的 `pnpm.exe` 与清单复制到 `build/pnpm/`，electron-builder 放进 `resources/pnpm/`。`main.ts` 打包运行时用这个路径，从源码运行时用开发依赖里那份。
 
 ## 已有 home 的迁移
 
-内核不为这两个包名写特殊判断。同名服务实验的结论：同一个服务名第二次 provide 一律抛错、不覆盖。内置的先加载，所以已有 home 里残留的两条条目加载失败（`FAILED`，日志里各一条 `service "gwbCommands" has been registered at <…>` 的 error，外加一条 unhandledRejection），依赖这两个服务的插件照常拿到内置那份，工作台照常能用。
+内核不为这两个包名写特殊判断。同一个服务名第二次提供一律报错、不覆盖；内置的先加载，所以已有 home 里残留的两条条目加载失败（`FAILED`，日志里各一条 `service "…" has been registered at <…>` 的 error，外加一条 unhandledRejection），依赖这两个服务的插件照常拿到内置那份。迁移只是清掉这些报错，写在 `INSTALL.md` 第 0 步。
 
-所以迁移只是清掉这些报错，可以在升级之后任何时候做。`INSTALL.md` 的「升级」一节加一步：
+## 做到哪儿了
 
-1. 关掉工作台
-2. 删掉 home 的 `cordis.yml` 里 `@godcreator/gwb-commands` 与 `@godcreator/gwb-plugin-manager` 两条条目
-3. 在 home 里用安装包的 `pnpm.exe` 运行 `pnpm remove @godcreator/gwb-commands @godcreator/gwb-plugin-manager`
-4. 启动
-
-**内置插件必须在 `cordis.yml` 之前加载**：顺序反过来的话，残留条目那份先生效，内置那份加载失败，之后条目删掉了它也不会自己补上（实验第 4 问）。
-
-## 分几步做
-
-1. **实验**（已做完）：条目树交给内置插件、同名服务两个提供方
-2. **词汇表包**：加 `GwbCommands`、`GwbCommandDef`，`GwbContext` 加 `gwbCommands`；命令插件改为从词汇表包引用
-3. **插件管理**：条目树、pnpm 路径改从 config 取；删掉处理自己的逻辑与对应测试；`loader.test.ts` 改成照新顺序搭环境（内核取树、经 config 交给插件管理）
-4. **内核**：`main.ts` 按上面的顺序加载两个内置插件；`apps/desktop` 构建时复制两个插件；开发依赖加 `@pnpm/exe.win32-x64`；从源码启动、全新隔离 home 验收
-5. **安装包**：electron-builder 带上 `pnpm.exe`；装一次按验收清单验
-6. **文档与说明**：关键设计（准入判据、内核认识哪些名字）、系统地图、命令与事件、home 与插件管理、命令插件、插件管理各页、术语表、AGENTS、README、`INSTALL.md`（前提去掉装 pnpm、改用安装包里的 pnpm；加迁移一节）、安装包 SPEC；每步写轨迹卡
+1. 实验：四个都做完
+2. 词汇表包：做完
+3. 插件管理：做完（config `{ home, pnpm }`、用到时取树、删掉处理自己的逻辑、检查 config 是不是内核给的）
+4. 内核：做完，从源码启动在两个隔离 home 里实测通过
+5. 安装包：`build.ps1` 与 electron-builder 配置已改，**还没打包验证**
+6. 文档与说明：做完；安装包实测后按结果补
 
 ## 还没定的
 
-- **发版时两个插件的版本号怎么处理**：不再单独发布后，它们的 `version` 字段只剩标识作用，可以跟内核版本走，也可以删掉；等第 4 步再定
-- **基础插件仓的下游适配**：七个插件依赖 `@godcreator/gwb-commands ^0.4.6` 只为类型，要改为从词汇表包引用；不在本页范围内
+- **两个插件的版本号**：不再单独发布后，`version` 字段只剩标识作用。插件管理的命令回执这次有破坏性变化（`contract` 已从 1 改成 2），但它的包版本号还是 0.7.1；可以跟内核版本走，也可以不再维护，发内核版本时一起定
+- **基础插件仓的下游适配**：七个插件依赖 `@godcreator/gwb-commands ^0.4.6` 只为类型、并各自声明 `gwbCommands?`，要改为从词汇表包引用；devkit 还在调已删的 `plugin-manager.shared`。不在本页范围内

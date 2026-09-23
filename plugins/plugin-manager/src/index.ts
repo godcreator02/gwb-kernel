@@ -178,7 +178,18 @@ export interface PluginManagerConfig {
   pnpm: string
 }
 
+/**
+ * config 是不是内核交来的那份。已有 home 的 `cordis.yml` 里可能还留着升级前指向本包的条目，内核按包名把它也解析到
+ * 内置的这份代码上，那条条目没有 config——明确报错，告诉人删掉它
+ */
+export function assertKernelConfig(config: unknown): asserts config is PluginManagerConfig {
+  if (!isRecord(config) || typeof config['home'] !== 'string' || typeof config['pnpm'] !== 'string') {
+    throw new Error(`插件管理内置在内核里，只能由内核加载；cordis.yml 里指向 ${PKG} 的条目是旧版留下的，删掉它`)
+  }
+}
+
 export function apply(ctx: GwbContext, config: PluginManagerConfig): void {
+  assertKernelConfig(config)
   const manager = new PluginManager(ctx, config)
   ctx.effect(() => ctx.provide('gwbPluginManager', PRESENCE))
   manager.wire()
@@ -613,7 +624,7 @@ class PluginManager {
   /**
    * 完整 entryId 与不带前缀的 id 都接受，返回不带前缀的 id。
    *
-   * 插件从 ctx 上读到的是完整的 `home:commands`，而 `tree` 上的每个方法接受的是不带前缀的 id
+   * 插件从 ctx 上读到的是完整的 `home:shell`，而 `tree` 上的每个方法接受的是不带前缀的 id
    * （见 `ids.ts` 的 `bareId`）。两边不转换的话，`resolve` 会直接报「cannot resolve entry」。
    */
   private locate(entryId: string): string {

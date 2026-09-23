@@ -1,11 +1,13 @@
 import electron from 'electron'
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { Context, type Fiber } from 'cordis'
+import { Context, type Fiber, type Plugin } from 'cordis'
 import Loader, { type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbCommands, GwbKernelApi } from '@godcreator/gwb-plugin-api'
+import type { PluginManagerConfig } from '@godcreator/gwb-plugin-manager'
 import { collectImports } from './imports.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
@@ -14,8 +16,9 @@ import { limitFromEnv, openLogFile } from './log-file.js'
 /**
  * gwb 内核的主进程入口：cordis 实例和所有插件都在这个进程里，页面是唯一的另一个进程；不依赖
  * electron 的纯函数放在旁边几个模块（imports / bare-import / entry-state / log-file），各自有单元测试。
- * 只做第一个插件运行之前必须完成的事：准备 home、创建 cordis 实例、加载插件、创建窗口、转交命令、
- * 推送事件、告诉页面外壳是谁、自己出错时让人看得见。其余都由插件实现。取舍见文档站
+ * 只做第一个插件运行之前必须完成的事：准备 home、创建 cordis 实例、加载内置的命令插件与插件管理、
+ * 加载 cordis.yml 里的插件、创建窗口、转交命令、推送事件、告诉页面外壳是谁、自己出错时让人看得见。
+ * 其余都由插件实现。取舍见文档站
  */
 
 const { app, BrowserWindow, Menu, dialog, ipcMain } = electron
@@ -245,10 +248,35 @@ ipcMain.handle('gwb:command', (_event, command: unknown, args: unknown) => {
 /** 页面订阅 onShell 时请求一次当前值 */
 ipcMain.on('gwb:hello', (event) => event.sender.send('gwb:shell', shellMessage()))
 
+/**
+ * 内置的两个插件：命令插件与插件管理。构建时从仓里的 plugins/ 复制到 dist/builtin/<目录名>/，
+ * 作为 loader 根层的条目、排在承载 cordis.yml 的 include 条目之前加载；不在 cordis.yml 里、随内核一起升级。
+ * 做成条目而不是直接 ctx.plugin：数据、说明书等插件按调用方的条目认身份，没有条目就用不了它们。
+ * 条目的 name 写包名（从它的 package.json 读），说明书、日志里报的就是包名，和命令表对得上
+ */
+async function importBuiltin(dir: string): Promise<{ name: string; plugin: Plugin.Object }> {
+  const root = path.join(here, 'builtin', dir)
+  const { name } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as { name: string }
+  const plugin = (await import(pathToFileURL(path.join(root, 'dist', 'index.js')).href)) as Plugin.Object
+  return { name, plugin }
+}
+/** 承载 cordis.yml 的 include 条目在 loader 根层的 id；插件管理经 config 拿到它，自己取出那棵条目树 */
+const HOME_ENTRY = 'home'
+
+/** 插件管理用的 pnpm：打包运行时在安装包的资源目录，从源码运行时用本包开发依赖里那份 */
+function pnpmFile(): string {
+  if (app.isPackaged) return path.join(process.resourcesPath, 'pnpm', 'pnpm.exe')
+  const manifest = createRequire(import.meta.url).resolve('@pnpm/exe.win32-x64/package.json')
+  return path.join(path.dirname(manifest), 'pnpm.exe')
+}
+
 async function main(): Promise<void> {
   // 应用没设菜单时 Electron 会给一套默认菜单（File/Edit/View/Window），没有用，设成 null。
   // 内核不替插件做菜单：需要菜单的插件自己调 setApplicationMenu（要在 ready 之后调用）
   Menu.setApplicationMenu(null)
+  const commands = await importBuiltin('commands')
+  const pluginManager = await importBuiltin('plugin-manager')
+
   win = new BrowserWindow({
     width: 1100,
     height: 720,
@@ -273,11 +301,26 @@ async function main(): Promise<void> {
 
   loaderFiber = await ctx.plugin(Loader, {})
   // 主进程没有 --expose-internals，loader 拿不到 node 内部的 ESM loader，那时它按自己的位置
-  // 解析包名，插件静默加载失败。内核替它提供一个 import：按 home 把包名解析成真实路径再 import，
-  // 实现在 bare-import.ts（有单元测试）
-  ctx.loader.internal = { import: bareImportFromHome(dataDir) } as unknown as ModuleLoader
+  // 解析包名，插件静默加载失败。内核替它提供一个 import：内置插件的包名直接给模块，其余按 home
+  // 把包名解析成真实路径再 import，实现在 bare-import.ts（有单元测试）
+  const builtinModules = new Map<string, Plugin.Object>([
+    [commands.name, commands.plugin],
+    [pluginManager.name, pluginManager.plugin],
+  ])
+  const importFromHome = bareImportFromHome(dataDir)
+  ctx.loader.internal = {
+    import: async (name: string) => builtinModules.get(name) ?? importFromHome(name),
+  } as unknown as ModuleLoader
   ctx.loader.builtins.include = Include
-  await ctx.loader.root.update([{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }])
+  // loader 会深拷贝条目的 config，只能传字符串：插件管理用到时自己按 HOME_ENTRY 取出条目树
+  const pluginManagerConfig: PluginManagerConfig = { home: HOME_ENTRY, pnpm: pnpmFile() }
+  // 内置的两个排在 include 之前：同一个服务名第二次提供一律报错，内置的先提供，
+  // 已有 home 的 cordis.yml 里残留的同名条目只会加载失败（实验见文档站）
+  await ctx.loader.root.update([
+    { id: 'commands', name: commands.name },
+    { id: 'plugin-manager', name: pluginManager.name, config: pluginManagerConfig },
+    { id: HOME_ENTRY, name: 'cordis:include', config: { path: 'cordis.yml' } },
+  ])
   await ctx.loader.await()
   kernelLog.info(`up，home=${dataDir}，外壳=${shellUrl ?? '（没有插件调用 setShell）'}`)
   pushShell()

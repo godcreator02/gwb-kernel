@@ -1,11 +1,11 @@
 ---
 title: 关键设计
-description: 决定内核长什么样的六条设计——各自是什么、推出了什么、放弃了什么；内核刻意不做的事
+description: 决定内核长什么样的七条设计——各自是什么、推出了什么、放弃了什么；内核刻意不做的事
 ---
 
 **本页回答**：内核为什么这么小、为什么是现在这个形状；往内核里加东西要满足什么；它刻意不做哪些事。
 
-## 内核只做第一个插件运行之前必须做的事
+## 内核只做第一个插件运行之前必须做的事，外加两个平台核心
 
 内核存在的理由是一条验收标准：用尽可能小的内核让插件正常运行，而且插件要真能完成实际工作。所以内核只做插件替代不了的那几件：
 
@@ -14,19 +14,22 @@ description: 决定内核长什么样的六条设计——各自是什么、推�
 - 页面上的包名解析——[页面上的包名](/docs/seams/shared)
 - 页面和插件之间转交命令、推送事件——[命令与事件](/docs/seams/commands)
 - 内核自己出错时人能看到：唯一的日志输出，启动失败时弹错误框——[系统地图](/docs/map#日志)
+- 内置两个平台核心：命令总线（[命令插件](/docs/commands)）与[插件管理](/docs/plugin-manager)，见下面「命令插件与插件管理内置在内核里」
 
 ### 准入判据
 
-往内核里加东西要同时满足两个条件：
+往内核里加东西要满足下面两条中的一条：
 
 1. **第一个插件运行之前必须完成。** 先问这件事能不能由某个插件提供、通过服务交给需要它的地方——能，就做成插件。插件运行在主进程里、能拿到 `electron`，开窗口、菜单、托盘、对话框、子进程都由插件来做
-2. **此刻确实需要。** 说不出此刻是谁、在做什么、因为缺了它卡在哪一步，就不加
+2. **平台核心：没有它工作台就无法操作，而且没有替换的必要。** 目前只有命令总线和插件管理两个；再往里加要重新过这一条（[核心插件内置](/trajectory/2026-09-23-core-plugins-built-in)）
+
+并且**此刻确实需要**：说不出此刻是谁、在做什么、因为缺了它卡在哪一步，就不加。
 
 判断不了就按「不进内核」处理：以后再加进来，永远比加进来之后再拿掉容易。不算理由的：「将来可能要」「顺手做了」「旧版工作台仓 god-workbench 里有这个」；为了方便某个插件，往内核里加只有它用的逻辑。改内核由人来决定（[这个内核的起点](/trajectory/2026-09-07-gwb-kernel)、[另起一个新仓，而不是在旧仓上删减](/trajectory/2026-09-07-fresh-line-over-subtraction)）。
 
-**刻意不做**（要做得先推翻上面两个条件）：
+**刻意不做**（要做得先推翻上面的条件）：
 
-- 安装、升级插件，核对插件之间的依赖——由插件 [plugin-manager](/docs/plugin-manager) 负责（[移除内核的安装接口](/trajectory/2026-09-08-no-install-port)）
+- 给插件提供「安装」接口——装插件只经内置插件管理的 `plugin-manager.*` 命令（[移除内核的安装接口](/trajectory/2026-09-08-no-install-port)）；插件之间的依赖齐不齐也不核对
 - `cordis.yml` 的模板与自动修复——文件缺了只补一个空表（[全新 home 没有 `cordis.yml` 时启动失败](/trajectory/2026-09-07-wall-fresh-home-no-yml)）
 - 界面上的失败处理——除了只读状态页，不分析原因、不重试，也没有按钮（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）
 - 写数据——内核只提供 `dataDir`，写数据由数据插件负责（[数据写盘做成插件](/trajectory/2026-09-07-gwb-data-plugin)）
@@ -58,29 +61,28 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：装了�
 
 内核在页面上只提供三样东西：一个空的 `#root`、一张 importmap、一个 `window.gwb`。页面显示什么全部由外壳决定——谁调用 `setShell`，谁就是外壳，后调用的替换先调用的。没有外壳、或外壳启动失败时，页面显示只读状态页：各条目加载到哪一步、最近的错误日志，没有按钮。见[外壳接管页面](/docs/seams/shell)。
 
-## 内核不认识任何插件、服务、命令的名字
+## 内核不认识 cordis.yml 里任何插件、服务、命令的名字
 
 - 加载哪些插件，由 `cordis.yml` 决定，内核用 cordis 官方的 include 去读
-- 页面发来的命令，内核原样转交给提供 `gwbCommands` 服务的插件（[命令与事件](/docs/seams/commands)）
+- 页面发来的命令，内核原样转交给命令总线 `ctx.gwbCommands`（[命令与事件](/docs/seams/commands)）
 - 包清单里内核只读一个字段 `gwb.shared`（[页面上的包名](/docs/seams/shared)）
 - 插件之间怎么交互——服务、命令、契约版本——内核不参与
 
-所以换掉任何一个插件（包括命令总线和外壳）都不用改内核。
+内核认识的名字只有它自己提供的：`gwbKernel`，和两个内置插件带来的 `gwbCommands`、`gwbPluginManager` 与 `plugin-manager.*` 命令。换掉 `cordis.yml` 里的任何一个插件（包括外壳）都不用改内核。
 
-## 内核直接依赖的插件、依赖内核内部约定的插件，和内核放在同一个仓
+## 命令插件与插件管理内置在内核里
 
-插件放在哪个仓，看它和内核之间是什么关系：
+两个插件的代码在本仓 `plugins/commands`、`plugins/plugin-manager`，仍按 cordis 插件的写法写、各自有测试；构建时复制进内核的 `dist/builtin/`。内核把它们作为 loader 根层的条目（id 是 `commands`、`plugin-manager`），排在承载 `cordis.yml` 的 include 条目 `home` **之前**加载：
 
-- **只通过 `ctx.gwbKernel` 和命令与内核打交道**的插件，独立成仓——外壳、数据、设置都是这样
-- **内核直接依赖**的插件，放在本仓 `plugins/` 下：内核要调用它提供的服务，服务的类型由它的包提供
-- **依赖内核内部约定**的插件，也放在本仓 `plugins/` 下。内部约定指的是不在 `gwbKernel` 接口里、却由内核决定的东西：
-  loader 条目树的结构、home 的文件布局、按真实路径解析包名
+- [命令插件](/docs/commands)：命令总线 `ctx.gwbCommands`，类型在词汇表包里，插件可以直接取
+- [插件管理](/docs/plugin-manager)：内核经 config 告诉它 include 条目的 id 和安装包里那份 pnpm 的路径；它用到时从自己条目所在那一层取出承载 `cordis.yml` 的条目树
 
-今天有两个：
-- [命令插件](/docs/commands)（commands）：页面发来的命令，内核一律交给它提供的 `ctx.gwbCommands.run`
-- [插件管理](/docs/plugin-manager)（plugin-manager）：它经 `ctx.fiber.entry.parent.tree` 改条目树，写 home 的 `package.json`
-  与 `cordis.yml`，热升级能生效靠的是内核按真实路径解析。内核升级 loader 或改解析方式时，在同一个仓里就能跑它的测试
+做成条目而不是用 `ctx.plugin` 直接加载，是因为数据、说明书等插件按调用方的条目认身份：没有条目，内置插件就存不了显示名、登记不了说明书。loader 会深拷贝条目的 config，所以 config 里只放字符串（实验 `probes/2609232050_builtin-as-root-entry/`）。
 
-这两个没有它们工作台就用不起来，所以随安装包预装，新 home 第一次启动时就装好（见交接区[随安装包预装](/spec/platform-plugins)）。
-它们仍然是普通插件：由 `cordis.yml` 的条目加载，能停用、卸载，版本号独立于内核，单独发版
-（[plugin-manager 搬进内核仓](/trajectory/2026-09-23-plugin-manager-into-kernel-repo)、[平台插件随安装包](/trajectory/2026-09-23-platform-plugins-in-installer)）。
+条目的 `name` 写包名（`@godcreator/gwb-commands`、`@godcreator/gwb-plugin-manager`，从复制过来的 `package.json` 读），内核交给 loader 的 import 先按包名查这两个内置模块，查不到再按 home 解析。这样说明书表、日志里报的都是包名，和命令表对得上；数据插件按包名记录数据目录归属，已有 home 里插件管理的显示名照常能读。已有 home 的 `cordis.yml` 里残留的同名条目也会解析到内置的这份代码，它们照旧加载失败：命令插件那条报同名服务，插件管理那条报「……是旧版留下的，删掉它」。
+
+它们不在 `cordis.yml` 里、不在 home 的 `package.json` 里，不能停用、卸载，随内核一起发版、一起升级（重装安装包、重启）。没有它们工作台就无法操作，而它们也没有替换的必要，所以不再做成可以热升级的普通插件（[核心插件内置](/trajectory/2026-09-23-core-plugins-built-in)）。
+
+**必须在 `cordis.yml` 之前加载**：cordis 对同一个服务名第二次提供一律报错、不覆盖。内置的先加载，已有 home 里残留的同名条目只会加载失败，不影响使用；顺序反过来的话内置的那份会失败，而且之后不会自己恢复（实验 `probes/2609231919_duplicate-service-provider/`）。
+
+其余插件放在哪个仓：只通过 `ctx.gwbKernel`、命令与服务和内核打交道的插件，独立成仓——外壳、数据、设置、MCP 入口都是这样。

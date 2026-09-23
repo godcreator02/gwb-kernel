@@ -11,24 +11,25 @@ description: 内核是什么、一次启动依次发生什么、带着不同的�
 - 第 2 步：打开 `gwb.log`；同一个 home 已有实例在运行就退出；把本次运行的 pid、版本写进 `runtime.json`
 - 第 3 步：创建 cordis 实例，根上下文指向 home，并提供 `gwbKernel`——早于任何插件
 - 第 4 步：创建窗口；这时还没有外壳，页面显示只读状态页
-- 第 5 步：loader 按 `cordis.yml` 的条目，从 home 的 `node_modules` 找到插件包并加载
-- 第 6 步：外壳插件调用 `setShell`，页面注入 importmap、把 `#root` 交给外壳
+- 第 5 步：注册 loader，把内置的命令插件与插件管理作为 loader 根层的条目加载——命令总线 `gwbCommands` 在 `cordis.yml` 里的任何插件之前就在
+- 第 6 步：include 读 `cordis.yml`，loader 按条目从 home 的 `node_modules` 找到插件包并加载
+- 第 7 步：外壳插件调用 `setShell`，页面注入 importmap、把 `#root` 交给外壳
 - 退出：所有窗口关闭即退出；退出前卸载整棵插件树，等各插件的清理结束，最多等 5 秒
 </Diagram>
 
 ## 是什么
 
-god 工作台的内核：一个 Electron 应用，只做**第一个插件运行之前必须完成的事**。界面、命令、数据、设置、插件的安装与卸载、给 agent 用的 MCP 入口，全部是插件。内核为什么切成这样、刻意不做哪些事，见[关键设计](/docs/design)。
+god 工作台的内核：一个 Electron 应用，只做**第一个插件运行之前必须完成的事**，外加内置的两个平台核心：命令总线（[命令插件](/docs/commands)）与负责装卸插件的[插件管理](/docs/plugin-manager)。界面、数据、设置、给 agent 用的 MCP 入口，全部是 `cordis.yml` 里的插件。内核为什么切成这样、刻意不做哪些事，见[关键设计](/docs/design)。
 
 内核和插件、页面之间只有五条接缝：
 
 | 接缝 | 一句话 |
 | --- | --- |
-| [插件与内核](/docs/seams/plugins) | 插件从 `cordis.yml` 进来、按 home 解析、由 cordis 加载，从 `ctx.gwbKernel` 拿到内核的全部东西 |
-| [home 与插件管理](/docs/seams/home) | 只有插件 plugin-manager 写 home：一次 pnpm，再经 loader 条目树改 `cordis.yml`；它依赖内核的内部约定，和内核同仓 |
+| [插件与内核](/docs/seams/plugins) | 插件从 `cordis.yml` 进来、按 home 解析、由 cordis 加载，从 `ctx.gwbKernel` 与命令总线 `ctx.gwbCommands` 拿到内核给的东西 |
+| [home 与插件管理](/docs/seams/home) | 只有内置的插件管理写 home：一次 pnpm，再经 loader 条目树改 `cordis.yml`；它是内置在内核里的 loader 根层条目 |
 | [外壳接管页面](/docs/seams/shell) | 谁调用 `setShell`，页面的 `#root` 就交给谁；没有外壳时显示只读状态页 |
 | [页面上的包名](/docs/seams/shared) | 包在清单里声明 `gwb.shared`，内核拼成 importmap，页面上 `import 'react'` 靠它找到文件 |
-| [命令与事件](/docs/seams/commands) | 页面调命令，内核原样转交给提供 `gwbCommands` 的插件；插件发事件，内核原样推给页面 |
+| [命令与事件](/docs/seams/commands) | 页面调命令，内核原样转交给内置的命令总线 `gwbCommands`；插件发事件，内核原样推给页面 |
 
 ## 按要做的事读
 

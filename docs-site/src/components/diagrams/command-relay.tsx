@@ -14,14 +14,14 @@ export function CommandRelay() {
       <Box x={10} y={30} w={140} h={58} lines={['页面里的代码', "gwb.command('x.ping')"]} mono />
       <Box x={180} y={30} w={130} h={58} lines={['gwb:command', 'IPC 通道']} mono />
       <Box x={340} y={30} w={130} h={58} lines={['内核', '原样转交']} />
-      <Box x={500} y={30} w={115} h={58} lines={['gwbCommands', '命令总线插件']} tone="a" />
+      <Box x={500} y={30} w={115} h={58} lines={['gwbCommands', '内置的命令插件']} tone="a" />
       <Box x={640} y={30} w={110} h={58} lines={['注册了', 'x.ping 的插件']} />
       <Arrow from={[150, 52]} to={[180, 52]} />
       <Arrow from={[310, 52]} to={[340, 52]} />
       <Arrow from={[470, 52]} to={[500, 52]} />
       <Arrow from={[615, 52]} to={[640, 52]} />
       <Note x={400} y={114} anchor="middle" size={11}>
-        回执 {'{ ok, data, error }'} 原路返回；没有提供 gwbCommands 的插件时，内核直接回 ok: false
+        回执 {'{ ok, data, error }'} 原路返回；命令插件加载失败、gwbCommands 不在时，内核直接回 ok: false
       </Note>
 
       <Note x={16} y={150} size={12} color="var(--color-fd-foreground)" weight={600}>
@@ -38,7 +38,7 @@ export function CommandRelay() {
       <SeamLine x1={165} y1={14} x2={165} y2={236} label="页面这边只有 window.gwb 的三个函数" labelX={10} labelY={250} anchor="start" />
       <SeamLine x1={485} y1={24} x2={485} y2={94} label="内核不认识任何命令名" labelX={492} labelY={18} anchor="start" />
       <Note x={380} y={290} anchor="middle" size={11}>
-        换命令总线：任何插件提供 gwbCommands 服务即可；内核只认这个服务名
+        命令总线内置在内核里，在加载 cordis.yml 之前就已经在了
       </Note>
     </svg>
   )

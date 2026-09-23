@@ -78,7 +78,7 @@ description: plugin-manager 是内核内置、唯一写 home 的插件——装�
 
 {/* tree dir="../plugins/plugin-manager/tests" depth="1" */}
 
-- 在仓根运行 `pnpm check`：构建词汇表包，再对全仓做类型检查、lint 和测试。插件管理的测试和内核的一起跑
+- 在仓根运行 `pnpm check`：构建词汇表包与两个内置插件，再对全仓做类型检查、lint 和测试。插件管理的测试和内核的一起跑
 - 除 `index.ts`、`vocab.ts` 外，每个源码文件都有同名的测试文件，传入构造的数据或临时目录，不需要 electron
 - `loader.test.ts` 用内核实际使用的 loader 与 include 版本、照内核的加载顺序搭一个 home（内置插件作为根层条目排在 include 条目之前），用到时再取条目树，内核升级这两个包时它先失败；`fiber-state.test.ts` 核对条目状态名和内核的一致
 - 串行队列、建条目不等加载、卸载顺序、转归属、真正启动 pnpm 这些没有单元测试，只能实机验证：从源码启动内核、用隔离 home（仓根 AGENTS 的「怎么跑」），再用 `devkit.cdp` 调命令

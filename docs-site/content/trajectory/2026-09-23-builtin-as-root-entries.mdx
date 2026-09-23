@@ -1,0 +1,43 @@
+---
+title: 内置插件改为 loader 根层的条目加载——直接 ctx.plugin 加载的插件没有条目，按条目认身份的数据、说明书插件用不了
+born-at: 2026-09-23T20:50
+type: choice
+parent: [2026-09-23-core-plugins-built-in]
+label: 内置插件做成根层条目
+domain: 内核
+---
+
+## 背景
+
+[核心插件内置](/trajectory/2026-09-23-core-plugins-built-in)定的做法是内核用 `ctx.plugin` 直接加载命令插件与插件管理，经 config
+把条目树交给插件管理。从源码启动内核、分别用全新 home 和留着旧条目的 home 实测，装插件、加删条目、旧条目失败都符合预期，但有两处坏了：
+
+- 插件管理的显示名读写失败：「取不到调用方的身份——ctx.gwbData 只能在经 cordis.yml 挂上的件里用」
+- 两个内置插件的说明书登记不上：说明书插件同样按调用方的条目认身份，报同样的错
+
+数据插件与说明书插件都靠调用方的 `fiber.entry` 认身份，直接加载的插件没有条目。
+
+## 结论与边界
+
+- 内核把两个内置插件的模块登记进 `ctx.loader.builtins`，作为 loader **根层的条目**加载：`root.update` 里依次是
+  `commands`、`plugin-manager`、承载 `cordis.yml` 的 include 条目 `home`。它们有条目身份，按条目认身份的服务能认出；
+  插件管理的数据目录仍是 `plugin-manager`，已有的显示名不丢
+- loader 会深拷贝条目的 config（实验 `probes/2609232050_builtin-as-root-entry/`），带方法的对象传过去会丢方法。所以插件管理的
+  config 改成两个字符串 `{ home, pnpm }`：`home` 是 include 条目的 id，插件管理用到条目树时从自己条目所在那一层 `resolve(home).subtree` 取
+- 条目的 `name` 写包名（从复制进 `dist/builtin/` 的 `package.json` 读），内核交给 loader 的 import 先按包名查这两个内置模块。
+  先用过 `cordis:gwb-commands` 这种 loader 内置名，实测说明书表里报的 `plugin` 就成了 `cordis:gwb-commands`，和命令表按包名分组对不上；
+  数据插件按包名记录数据目录归属，用内置名还会读不到已有 home 里插件管理的显示名
+- 已有 home 的 `cordis.yml` 里残留的同名条目也按包名解析到内置的这份代码，照旧加载失败；插件管理在 apply 开头检查 config，
+  没有内核给的 config 就报「……是旧版留下的，删掉它」
+- 其余照上一张卡：不在 `cordis.yml` 里、随内核升级、排在 `cordis.yml` 之前（残留同名条目只会失败）；退出时卸载 loader 就连带卸载它们
+
+## 否掉的候选
+
+- **保持直接加载，改下游**：让数据、说明书插件接受没有条目的调用方（比如由调用方自报名字）。要改两个下游插件的认身份规则，而且
+  「自报名字」正是它们当初按条目认身份要堵住的口子
+- **显示名改存 home 里插件管理自己的文件、说明书不登记**：显示名能修，说明书仍然登记不上，而 agent 要靠 `gwb-plugin-manager` 这份说明书干活
+
+## 代价与遗留
+
+- 根层条目会出现在 `ctx.loader.entries()` 里，只读状态页会多列出这两条
+- 插件管理依赖「include 条目与自己在同一层」这一点，由 `loader.test.ts` 照内核的顺序守住

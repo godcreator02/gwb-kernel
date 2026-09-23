@@ -46,7 +46,7 @@ export function assertId(value: string): void {
 /**
  * 完整 entryId → 不带前缀的 id（末段）。
  *
- * **这一步不能省。** 插件从 ctx 上读到的是完整的 `home:commands`，而 loader 的
+ * **这一步不能省。** 插件从 ctx 上读到的是完整的 `home:shell`，而 loader 的
  * `tree.resolve` / `remove` / `update` 在**承载 cordis.yml 的那棵树**上只认不带前缀的 id：
  * `resolve` 内部 `split(':')` 逐段往子树查找，传入完整 id 会直接报「cannot resolve entry」。
  * `home` 那段是内核那条 include 条目的 id，与插件本身无关。

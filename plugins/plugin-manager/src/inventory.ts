@@ -15,7 +15,7 @@ const FIBER_ACTIVE = 2
 export interface EntrySnapshot {
   /** 不带前缀的 id。改这条条目要用它——`tree.resolve` 只认这个 */
   id: string
-  /** 完整 entryId（`home:commands`）。插件从自己的 ctx 上读到的是这个 */
+  /** 完整 entryId（`home:shell`）。插件从自己的 ctx 上读到的是这个 */
   entryId: string
   /** 加载的是哪个包。group 这类内建条目是 `cordis:group` */
   pkg: string

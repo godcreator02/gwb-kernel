@@ -1,15 +1,15 @@
 ---
 title: 命令与事件
-description: 页面调命令，内核原样转交给提供 gwbCommands 的插件；插件发事件，内核原样推给页面
+description: 页面调命令，内核原样转交给内置的命令总线 gwbCommands；插件发事件，内核原样推给页面
 ---
 
-**本页回答**：页面上的代码怎么调用插件的命令、怎么收到插件的事件；内核在中间做什么、不做什么；在哪里换命令总线。
+**本页回答**：页面上的代码怎么调用插件的命令、怎么收到插件的事件；内核在中间做什么、不做什么。
 
 <Diagram name="command-relay" title="内核只转交，不认识任何命令名">
 - 命令：页面调用 `window.gwb.command(名字, 参数)`，经 IPC 通道 `gwb:command` 到内核，内核原样交给 `ctx.gwbCommands.run`；回执 `{ ok, data, error }` 原路返回
-- 没有插件提供 `gwbCommands` 时，内核直接回 `ok: false`
+- 命令总线由内核内置的[命令插件](/docs/commands)提供，在加载 `cordis.yml` 之前就在；万一它加载失败、`gwbCommands` 不存在，内核直接回 `ok: false`
 - 事件：插件调用 `ctx.gwbKernel.emit(payload)`，经 `gwb:event` 推到页面，页面用 `window.gwb.on(cb)` 接收；只推送、不保留
-- 页面这边只有 `window.gwb` 的三个函数；换命令总线只要换一个提供 `gwbCommands` 服务的插件
+- 页面这边只有 `window.gwb` 的三个函数
 </Diagram>
 
 ## 接口
@@ -42,7 +42,7 @@ ipcMain.handle('gwb:command', (_event, command, args) => {
 })
 ```
 
-{/* ref file="../apps/desktop/src/main.ts" lines="238-244" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="241-247" */}
 
 ## 两边各保证什么
 
@@ -50,7 +50,7 @@ ipcMain.handle('gwb:command', (_event, command, args) => {
 - 命令名和参数原样交给命令总线，回执原样返回；内核自己不注册任何命令
 - 事件原样推给页面；页面没打开时事件就丢了，不补发
 
-命令总线保证（今天是本仓的[命令插件](/docs/commands)）：
+命令总线保证（内置的[命令插件](/docs/commands)）：
 - 任何命令都返回 `{ ok, data, error }`，命令抛错也收成 `ok: false`，不会让页面收到异常
 - 页面、agent、插件用的是同一张命令表
 
@@ -62,12 +62,12 @@ ipcMain.handle('gwb:command', (_event, command, args) => {
 
 ## 怎么单独测
 
-这条接缝的内核部分只有转交，没有可以单独抽出来测的逻辑。在隔离 home 里实机验证：没有命令总线插件时，页面调命令收到 `ok: false`；装上之后能调到别的插件注册的命令；插件 `emit` 的事件页面收得到。命令总线自己的行为由命令插件的测试守住（`plugins/commands/tests/`，见[命令插件](/docs/commands#怎么测)）。
+这条接缝的内核部分只有转交，没有可以单独抽出来测的逻辑。在隔离 home 里实机验证：页面能调到插件注册的命令，调不存在的命令收到 `ok: false`；插件 `emit` 的事件页面收得到。命令总线自己的行为由命令插件的测试守住（`plugins/commands/tests/`，见[命令插件](/docs/commands#怎么测)）。
 
 ## 代码从哪读
 
 - 页面一侧：`preload.cjs` 的 `command` 与 `on`
 - 主进程一侧：`main.ts` 的 `ipcMain.handle('gwb:command', …)` 与 `kernel.emit`
-- 类型：`packages/gwb-plugin-api/src/index.ts` 的 `GwbWindowApi`、`GwbResult`；`ctx.gwbCommands` 的类型由命令插件的包声明，`main.ts` 用 `import type {} from '@godcreator/gwb-commands'` 引入，编译后不留 import
+- 类型：`packages/gwb-plugin-api/src/index.ts` 的 `GwbWindowApi`、`GwbResult`；`GwbCommands`（`ctx.gwbCommands` 的类型）也在词汇表包里；`main.ts` 的根上下文把它声明成可选的，命令插件加载失败时是 undefined
 
 {/* ref file="../apps/desktop/src/preload.cjs" lines="4-10" */}

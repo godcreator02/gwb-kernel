@@ -17,16 +17,16 @@ description: 内核由哪几个文件组成、每个文件对外提供什么、�
 
 | 文件 | 对外提供 | 实现哪条接缝 |
 | --- | --- | --- |
-| `main.ts` | 不导出任何东西。选定 home、日志输出、单实例锁、`runtime.json`、cordis 实例与 `gwbKernel`、窗口、三个 IPC 通道、退出清理 | 全部 |
+| `main.ts` | 不导出任何东西。选定 home、日志输出、单实例锁、`runtime.json`、cordis 实例与 `gwbKernel`、加载两个内置插件、窗口、三个 IPC 通道、退出清理 | 全部 |
 | `bare-import.ts` | `resolveFromHome`、`bareImportFromHome` | [插件与内核](/docs/seams/plugins)、[页面上的包名](/docs/seams/shared) |
 | `imports.ts` | `collectImports` | [页面上的包名](/docs/seams/shared) |
 | `entry-state.ts` | `describeEntry` | [外壳接管页面](/docs/seams/shell)（只读状态页） |
 | `log-file.ts` | `openLogFile`、`limitFromEnv` | 内核自己的[日志](#日志) |
 | `preload.cjs` | 页面上的 `window.gwb` | [命令与事件](/docs/seams/commands)、[外壳接管页面](/docs/seams/shell) |
 | `index.html` | 页面入口 | [外壳接管页面](/docs/seams/shell) |
-| `packages/gwb-plugin-api` | 只有类型：`GwbKernelApi`、`GwbContext`、`GwbWindowApi`、`ShellBoot`、`GwbResult` | 全部接缝的类型 |
-| `plugins/commands` | 一个插件，不属于内核应用：服务 `gwbCommands`，命令表；`main.ts` 把页面发来的命令交给它 | [命令与事件](/docs/seams/commands)，见[命令插件](/docs/commands) |
-| `plugins/plugin-manager` | 一个插件，不属于内核应用：服务 `gwbPluginManager` 与 `plugin-manager.*` 命令，管 home 里的包与条目 | [插件与内核](/docs/seams/plugins)（写 home、改条目树），见[插件管理](/docs/plugin-manager)、[home 与插件管理](/docs/seams/home) |
+| `packages/gwb-plugin-api` | 只有类型：`GwbKernelApi`、`GwbCommands`、`GwbCommandDef`、`GwbContext`、`GwbWindowApi`、`ShellBoot`、`GwbResult` | 全部接缝的类型 |
+| `plugins/commands` | 内置插件：服务 `gwbCommands`，命令表；构建时复制进 `dist/builtin/`，`main.ts` 把它作为 loader 根层条目 `commands` 加载，页面发来的命令交给它 | [命令与事件](/docs/seams/commands)，见[命令插件](/docs/commands) |
+| `plugins/plugin-manager` | 内置插件：服务 `gwbPluginManager` 与 `plugin-manager.*` 命令，管 home 里的包与条目；`main.ts` 把它作为 loader 根层条目 `plugin-manager` 加载，经 config 告诉它 include 条目的 id 与 pnpm 路径 | [插件与内核](/docs/seams/plugins)（写 home、改条目树），见[插件管理](/docs/plugin-manager)、[home 与插件管理](/docs/seams/home) |
 
 各模块导出的函数：
 
@@ -58,11 +58,11 @@ function limitFromEnv(raw: string | undefined, fallback?: number): number    // 
 
 | 接缝 | 两侧 | 一句话 |
 | --- | --- | --- |
-| [插件与内核](/docs/seams/plugins) | 内核 ↔ 任何插件 | 插件从 `cordis.yml` 进来、按 home 解析、由 cordis 加载，从 `ctx.gwbKernel` 拿到内核的全部东西 |
-| [home 与插件管理](/docs/seams/home) | 内核 ↔ plugin-manager | 只有 plugin-manager 写 home；它依赖 loader 条目树的结构与按真实路径解析，由同仓测试兜住 |
+| [插件与内核](/docs/seams/plugins) | 内核 ↔ 任何插件 | 插件从 `cordis.yml` 进来、按 home 解析、由 cordis 加载，从 `ctx.gwbKernel` 与命令总线 `ctx.gwbCommands` 拿到内核给的东西 |
+| [home 与插件管理](/docs/seams/home) | 内核 ↔ 内置的插件管理 | 只有插件管理写 home；它从 loader 根层取出 include 那棵条目树，依赖 loader 条目树的结构与按真实路径解析，由同仓测试守住 |
 | [外壳接管页面](/docs/seams/shell) | 页面入口 ↔ 调用 `setShell` 的插件 | 页面的 `#root` 交给外壳模块的默认导出；没有外壳时显示只读状态页 |
 | [页面上的包名](/docs/seams/shared) | 页面 ↔ 声明 `gwb.shared` 的包 | 内核把声明拼成 importmap；同一个名字有两个提供方就都不收录 |
-| [命令与事件](/docs/seams/commands) | 页面 ↔ 提供 `gwbCommands` 的插件 | 内核不认识命令名，原样转交；事件原样推送、不保留 |
+| [命令与事件](/docs/seams/commands) | 页面 ↔ 内置的命令总线 `gwbCommands` | 内核不认识命令名，原样转交；事件原样推送、不保留 |
 
 插件和插件之间通过 cordis 的服务与命令交互，不经过内核。
 
@@ -76,7 +76,7 @@ function limitFromEnv(raw: string | undefined, fallback?: number): number    // 
 
 ## 怎么单独测
 
-除 `main.ts` 外的纯逻辑文件都有单元测试（`apps/desktop/tests/`），传入手工构造的临时 home 或条目就能跑，不需要 electron。`main.ts` 的组装——启动顺序、窗口、IPC、退出清理——只能在隔离 home 里实机验证。仓根的 `pnpm check` 先构建词汇表包，再对全仓做类型检查、lint 和测试：词汇表包的类型写坏了，内核的类型检查一定跟着失败。
+除 `main.ts` 外的纯逻辑文件都有单元测试（`apps/desktop/tests/`），传入手工构造的临时 home 或条目就能跑，不需要 electron。`main.ts` 的组装——启动顺序、窗口、IPC、退出清理——只能在隔离 home 里实机验证。仓根的 `pnpm check` 先构建词汇表包与两个内置插件，再对全仓做类型检查、lint 和测试：词汇表包的类型、插件管理的 config 类型写坏了，内核的类型检查一定跟着失败。
 
 ## 代码从哪读
 

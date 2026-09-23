@@ -7,11 +7,11 @@ description: gwb-commands 提供命令总线 ctx.gwbCommands：插件把能力�
 
 ## 是什么
 
-一个插件，源码在内核仓 `plugins/commands/`，包名 `@godcreator/gwb-commands`，由 `cordis.yml` 的条目加载。它提供服务 `ctx.gwbCommands`：一张「命令名 → 处理函数」的表。插件把自己的能力登记成命令；页面经 `window.gwb.command`、agent 经 MCP 入口的 `run`、别的插件直接调 `run`，用的都是这一张表。
+内核内置的一个插件，源码在内核仓 `plugins/commands/`。它提供服务 `ctx.gwbCommands`：一张「命令名 → 处理函数」的表。插件把自己的能力登记成命令；页面经 `window.gwb.command`、agent 经 MCP 入口的 `run`、别的插件直接调 `run`，用的都是这一张表。
 
-没有它，页面调不到任何命令：内核一个命令名都不认识，收到的命令原样交给 `ctx.gwbCommands`，这个服务不存在时直接回 `ok: false`。
+内核把它作为 loader 根层的条目、排在 `cordis.yml` 之前加载，所以 `cordis.yml` 里的任何插件加载时命令总线都已经在了。它不在 `cordis.yml` 里，不能停用、卸载，随内核一起升级；构建时和插件管理一起复制进内核的 `dist/builtin/`（见[关键设计](/docs/design#命令插件与插件管理内置在内核里)）。包 `@godcreator/gwb-commands` 不单独发布。
 
-**放在内核仓**，是因为内核直接依赖它：页面发来的命令一律交给 `ctx.gwbCommands.run`。它和插件管理一起随安装包预装，新 home 第一次启动时就装好（见交接区[随安装包预装](/spec/platform-plugins)）。它仍然是一个普通插件，能停用、卸载、单独升级。
+页面发来的命令，内核一律交给 `ctx.gwbCommands.run`；万一命令插件加载失败、这个服务不存在，内核直接回 `ok: false`。
 
 它对外的全部接口，类型在词汇表包 `@godcreator/gwb-plugin-api` 里，插件从那里引用，`GwbContext` 上的 `gwbCommands` 就是它：
 
@@ -36,8 +36,7 @@ description: gwb-commands 提供命令总线 ctx.gwbCommands：插件把能力�
 登记一条命令的写法：
 
 ```ts
-export const inject = ['gwbCommands']
-
+// 命令总线由内核内置、一定存在，不必写进 inject
 export function apply(ctx: GwbContext) {
   ctx.effect(() =>
     ctx.gwbCommands.register(

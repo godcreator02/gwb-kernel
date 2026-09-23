@@ -47,7 +47,7 @@ type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 
 只读状态页显示三样内核已经有的数据：home 路径、`cordis.yml` 每个条目加载到哪一步（比如等待哪个服务、失败的第一行错误）、最近的错误与警告日志。全部是纯文本，没有按钮。外壳启动失败（import 失败、默认导出不是函数）也显示它，并写明原因。条目状态变化或有新的错误日志时，内核会重新推送，只读状态页随之更新。
 
-{/* ref file="../apps/desktop/src/entry-state.ts" lines="29-40" */}
+{/* ref file="../apps/desktop/src/entry-state.ts" lines="30-41" */}
 
 ## 两边各保证什么
 

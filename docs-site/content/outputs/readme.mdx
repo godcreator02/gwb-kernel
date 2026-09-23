@@ -5,19 +5,19 @@ description: 仓根 README.md 由这一页生成——改这里，运行 docfirs
 
 # gwb-kernel
 
-> **要在一台机器上安装 gwb？** 见 [INSTALL.md](INSTALL.md)——写给替用户安装的 agent。安装包只带内核，插件按那份说明安装。
+> **要在一台机器上安装 gwb？** 见 [INSTALL.md](INSTALL.md)——写给替用户安装的 agent。安装包带内核（含内置的命令插件与插件管理）和一份 pnpm，其余插件按那份说明安装。
 
 god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里，只做第一个插件运行之前必须完成的事——初始化 home、创建 cordis 实例并加载插件、
-主进程与页面两侧的包名 import（bare specifier，直接写包名、不带相对路径的 import）解析、创建窗口与 IPC 通道、自身出错时让人看得见——其余功能全部由插件实现。
-插件的源码在各自的仓里；只有两个插件放在本仓 `plugins/` 下：命令插件 commands（内核直接依赖它，页面发来的命令都交给它），
-和插件管理 plugin-manager（它依赖内核的内部约定，安装、升级插件都由它负责）。
+主进程与页面两侧的包名 import（bare specifier，直接写包名、不带相对路径的 import）解析、创建窗口与 IPC 通道、自身出错时让人看得见——
+外加内置的两个平台核心：命令插件 commands（命令总线，页面发来的命令都交给它）和插件管理 plugin-manager（安装、升级插件都由它负责）。
+这两个的代码在本仓 `plugins/` 下，构建时复制进内核；其余插件的源码在各自的仓里。
 
 ## 开发
 
 ```powershell
 pnpm install
-pnpm check                              # 构建词汇表 + typecheck + lint + test
-$env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 在隔离 home 里启动本仓内核
+pnpm check                              # 构建词汇表包与两个内置插件 + typecheck + lint + test
+$env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 构建（含两个内置插件）并在隔离 home 里启动本仓内核
 ```
 
 日常使用从安装版启动，不从仓里运行；安装包由 `installer/` 生成。
