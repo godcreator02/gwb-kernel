@@ -1,13 +1,13 @@
 ---
 title: E3 unit-folder
-description: 普通的带窗格件——数据与动作走命令、服务只留扩展点、浏览器半从 shell 取外置名单、回执类型导出
+description: 普通的带窗格插件——数据读写和动作通过命令、服务只留扩展点、浏览器端代码从 shell 取外置名单、导出返回值类型
 ---
 
 # E3 unit-folder（`@godcreator/gwb-unit-folder`）
 
 ## 角色
 
-单元文件夹：扫单元容器根、读出生证，给人一个单元树窗格，给 agent 与别的件一组读写单元的命令。
+单元文件夹：扫描单元容器根目录（存放各个单元目录的那个目录）、读取每个单元的 `unit.json`，给用户一个单元树窗格，给 agent 和别的插件一组读写单元的命令。
 
 ## 清单
 
@@ -25,26 +25,26 @@ description: 普通的带窗格件——数据与动作走命令、服务只留�
 }
 ```
 
-peer 只有 `cordis`（`extends Service`）。shell 写 dev：取类型、构建期调 `@godcreator/gwb-shell/externals`、样式里引 `theme.reference.css`（[K2](/docs/criteria/k2)）。
+peer 只有 `cordis`（`extends Service`）。shell 写 dev：用来取类型、构建时调用 `@godcreator/gwb-shell/externals`、在样式里引用 `theme.reference.css`（[K2](/docs/criteria/k2)）。
 
-## 产物里的裸名
+## 构建产物里的包名 import
 
-node 半：`cordis` 与 node 内置。浏览器半：只有 react 四名，名单从 shell 的 `./externals` 取，不手抄（[K3](/docs/criteria/k3)）。
+构建产物里剩下的包名 import（bare specifier，直接写包名、不带相对路径的 import，比如 `from 'cordis'`）：node 端代码里是 `cordis` 与 node 内置模块；浏览器端代码里只有 react 的四个包名，这份外置名单（构建时不打包、留给 importmap 提供的包名清单）从 shell 的 `./externals` 取，不手抄（[K3](/docs/criteria/k3)）。
 
-## 面
+## 对外接口
 
-- **命令**是全部的数据与动作：`unit-folder.list`、`create`、`listDir`、`readFile`、`open`、`code`、`select`、`current`、`pin`、`unpin`、`toolbarButtons`——页面、agent、别的件都走这一套
-- **服务** `gwbUnitFolder` 只留扩展点：`registerToolbarButton`（往单元树工具条放按钮），外加选中变化事件 `unit-folder/selection`
-- 读当前选中、读置顶只走 `unit-folder.current` 与 `unit-folder.list` 两条命令，服务上不再有同义方法（[K5](/docs/criteria/k5)）
+- **命令**提供全部的数据读写和动作：`unit-folder.list`、`create`、`listDir`、`readFile`、`open`、`code`、`select`、`current`、`pin`、`unpin`、`toolbarButtons`——页面、agent、别的插件都用这一套
+- **服务** `gwbUnitFolder` 只留扩展点：`registerToolbarButton`（往单元树的工具条上加按钮），外加选中项变化的事件 `unit-folder/selection`
+- 读当前选中项、读置顶列表，只通过 `unit-folder.current` 与 `unit-folder.list` 两条命令，服务上没有作用相同的方法（[K5](/docs/criteria/k5)）
 
 ## 契约
 
-导出每条命令的参数与回执类型（比如单元清单的形状）、工具条按钮的形状；调用方 `import type` 取（[K6](/docs/criteria/k6)）。
+导出每条命令的参数与返回值类型（比如单元清单的结构）、工具条按钮的类型；调用方用 `import type` 取（[K6](/docs/criteria/k6)）。
 
-## 收尾
+## 卸载清理
 
-置顶清单落数据件，容器根住设置件；工具条按钮的登记随调用方卸载自动摘；起外部编辑器的进程是有意活过宿主的，detached 并写明（[K7](/docs/criteria/k7)）。
+置顶清单存在数据插件里，容器根目录的配置存在设置插件里；工具条按钮的注册在调用方卸载时自动注销；启动外部编辑器的进程是有意比宿主（内核）活得久的，要 detached，并在代码里写明（[K7](/docs/criteria/k7)）。
 
 ## 现状偏差
 
-待改：构建脚本手抄外置名单；命令回执类型没导出；commands、shell、skills、词汇表包写成了 peer；服务上的 `current()` / `pinned()` 与命令重复。
+待改：构建脚本手抄外置名单；命令的返回值类型没有导出；commands、shell、skills、词汇表包写成了 peer；服务上的 `current()` / `pinned()` 与命令重复。

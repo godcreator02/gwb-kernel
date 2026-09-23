@@ -1,59 +1,59 @@
-# 装 gwb（写给 agent）
+# 安装 gwb（写给 agent）
 
-你是替用户在一台 Windows 机器上装 gwb 的 agent。**安装包只带内核，不带任何插件——插件由你装。**
-照下面做完，用户得到一台带 11 个基础插件、MCP 门开在 `http://127.0.0.1:2870/mcp` 的工作台，
-之后你（或别的 agent）经这扇门干活。命令一律在 PowerShell 里跑。
+你是替用户在一台 Windows 机器上安装 gwb 的 agent。**安装包只带内核，不带任何插件——插件由你安装。**
+照下面做完，用户得到一个装好 11 个基础插件、MCP 入口开在 `http://127.0.0.1:2870/mcp` 的工作台，
+之后你（或别的 agent）通过这个 MCP 入口干活。命令一律在 PowerShell 里运行。
 
-## 0. 先看装没装过
+## 0. 先确认装没装过
 
-`%APPDATA%\gwb-kernel\homes\default\cordis.yml` 已经在、里面至少有一行 `- id:`——**装过了，只升级，
-别做第 3 步**（它会盖掉用户的 home）。`homes\` 下别的目录是别的 home（测试用的），跟这个判断无关：
+`%APPDATA%\gwb-kernel\homes\default\cordis.yml` 已经存在、里面至少有一行 `- id:`——**已经装过，只升级，
+别做第 3 步**（它会覆盖用户的 home）。`homes\` 下的其他目录是别的 home（测试用的），跟这个判断无关：
 
-* 升内核：关掉工作台窗口 → 装新版安装器（见第 2 步）→ 再起
-* 升插件：连上门之后 `run plugin-manager.update-all`，或让用户在「插件管理」格点「全部更新」
+* 升级内核：关掉工作台窗口 → 安装新版安装器（见第 2 步）→ 重新启动
+* 升级插件：连上 MCP 入口之后 `run plugin-manager.update-all`，或让用户在「插件管理」窗格点「全部更新」
 
-## 1. 机器上的前置（改的是用户级配置——动手前告诉用户要改什么）
+## 1. 机器上的前置条件（改的是用户级配置——动手前告诉用户要改什么）
 
-1. **pnpm 12 及以上**：`pnpm --version` 看版本，`(Get-Command pnpm).Source` 看用的是哪一份——插件管理
-   以后装件也用 PATH 上的第一份。没有或低于 12：`npm i -g pnpm@latest`；机器上连 node 都没有，用 pnpm
-   官方的独立安装脚本（`https://get.pnpm.io/install.ps1`，先让用户同意）。用 corepack、volta 之类装的
-   pnpm 也能用来装机，但装完要在工作台的设置里把 `pnpm-path` 填成那份 pnpm 的路径。
-2. **`@godcreator` 的包从哪儿拉**：`pnpm config get @godcreator:registry` 回出下面这个地址就是配好了。
-   没有就往用户级 `%USERPROFILE%\.npmrc` 追加这一行（别的行一律不动，已有的 token 行留着）：
+1. **pnpm 12 及以上**：`pnpm --version` 看版本，`(Get-Command pnpm).Source` 看用的是哪一个——插件管理
+   以后安装插件也用 PATH 上的第一个。没有或低于 12：`npm i -g pnpm@latest`；机器上连 node 都没有，就用 pnpm
+   官方的独立安装脚本（`https://get.pnpm.io/install.ps1`，先征得用户同意）。用 corepack、volta 之类装的
+   pnpm 也能用来安装，但装完要在工作台的设置里把 `pnpm-path` 填成那个 pnpm 的路径。
+2. **`@godcreator` 的包从哪里下载**：`pnpm config get @godcreator:registry` 输出下面这个地址就是配好了。
+   没有就往用户级 `%USERPROFILE%\.npmrc` 追加这一行（其他行一律不动，已有的 token 行保留）：
 
    ```
    @godcreator:registry=https://git.tianshen02.online:28377/api/packages/godcreator/npm/
    ```
 
-   只读安装不要 token。少了这一行，pnpm 会去 npmjs 找这些包，报 404。**别把 `.npmrc` 全文打印出来**
+   只读安装不需要 token。少了这一行，pnpm 会去 npmjs 找这些包，报 404。**别把 `.npmrc` 全文打印出来**
    ——里面可能有用户的发布 token。
-3. **放行刚发的包**：pnpm 11 起，发布不满一天的包默认不准装，而 gwb 的插件常常当天发。
-   `pnpm config get minimumReleaseAgeExclude` 的回显里有 `@godcreator/*` 就是配好了。没有：
-   `pnpm config get globalconfig` 报出一个 yaml 文件（通常是 `%LOCALAPPDATA%\pnpm\config\config.yaml`），
-   在里面加上（已有这个键就把这一项并进列表）：
+3. **放行刚发布的包**：pnpm 11 起，发布不满一天的包默认不允许安装，而 gwb 的插件常常当天发布。
+   `pnpm config get minimumReleaseAgeExclude` 的输出里有 `@godcreator/*` 就是配好了。没有：
+   `pnpm config get globalconfig` 会输出一个 yaml 文件的路径（通常是 `%LOCALAPPDATA%\pnpm\config\config.yaml`），
+   在里面加上（已有这个键就把这一项合并进列表）：
 
    ```yaml
    minimumReleaseAgeExclude:
      - '@godcreator/*'
    ```
 
-   只放行这一个 scope，别的包照旧受那条保护。
-4. **可选**：连 npmjs 慢，第三方包改走镜像：`pnpm config set registry https://registry.npmmirror.com`
-   （`@godcreator` 仍按第 2 条走自己的源）。这也是用户级配置，先问。
+   只放行这一个 scope，其他包仍受这条规则保护。
+4. **可选**：连 npmjs 慢的话，第三方包改走镜像：`pnpm config set registry https://registry.npmmirror.com`
+   （`@godcreator` 仍按第 2 条走自己的源）。这也是用户级配置，先问用户。
 
-## 2. 装内核
+## 2. 安装内核
 
-从 `https://git.tianshen02.online:28377/godcreator/gwb-kernel/releases` 下最新的
-`gwb-setup-<版>.exe`（下之前告诉用户文件名与大小），静默装：
+从 `https://git.tianshen02.online:28377/godcreator/gwb-kernel/releases` 下载最新的
+`gwb-setup-<版>.exe`（下载之前告诉用户文件名与大小），静默安装：
 
 ```powershell
 Start-Process .\gwb-setup-<版>.exe -ArgumentList '/S' -Wait
 ```
 
-装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，按用户装、不要管理员，开始菜单出现「gwb-kernel」。
-**先别启动**——第 3 步要在它起来之前把 home 铺好；已经起了就先关掉窗口。
+安装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，按当前用户安装、不需要管理员权限，开始菜单会出现「gwb-kernel」。
+**先别启动**——第 3 步要在它启动之前把 home 初始化好；已经启动了就先关掉窗口。
 
-## 3. 铺 default home
+## 3. 初始化 default home
 
 注意 PowerShell 里 `$home` 是保留变量，别拿它当变量名。
 
@@ -89,12 +89,12 @@ Set-Location $gwbHome
 pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-logger @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp @godcreator/gwb-plugin-api
 ```
 
-* `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次起来都换一个随机串）
-* 最后一个（`gwb-plugin-api`，词汇表）是库，不进条目表；react 系与令牌表随 `gwb-shell` 包来。
-  **别再装 `gwb-shared-react` / `gwb-tokens`**：两包已并进 shell、停发，前者跟 shell 声明同一组 react
-  裸名，同时是 home 直接依赖时内核把这组名全拒出 importmap，外壳起不来
-* 退出码 0 就成。输出里有一行 `Issues with peer dependencies found`：有插件还没跟上它上游的新版，
-  包照样装上了，但那个插件可能起不来——在 home 里跑 `pnpm peers check` 拿到明细，原样告诉用户
+* `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次启动都会换一个随机字符串）
+* 最后一个（`gwb-plugin-api`，词汇表包）是库，不进条目表；react 相关的包与设计令牌表随 `gwb-shell` 包一起装上。
+  **别再安装 `gwb-shared-react` / `gwb-tokens`**：这两个包已合并进 shell、停止发布；前者和 shell 在共享声明里声明了同一组
+  react 包名，两者同时是 home 的直接依赖时，内核会把这组包名全部排除出 importmap，外壳启动不了
+* 退出码为 0 就成功。输出里如果有一行 `Issues with peer dependencies found`：说明有插件还没适配它上游的新版本，
+  包照样装上了，但那个插件可能启动不了——在 home 里运行 `pnpm peers check` 拿到明细，原样告诉用户
 
 ## 4. 启动、核对
 
@@ -102,7 +102,7 @@ pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings 
 Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe"
 ```
 
-几秒内就绪。轮询到 `runtime.json` 里出现 `mcp` 这一格就算起来了：
+几秒内就绪。轮询到 `runtime.json` 里出现 `mcp` 这个字段就算启动完成：
 
 ```powershell
 $rt = "$env:APPDATA\gwb-kernel\homes\default\runtime.json"
@@ -113,24 +113,24 @@ for ($i = 0; $i -lt 30; $i++) {
 Get-Content $rt
 ```
 
-* `runtime.json` 里有 `version`（内核版本）与 `"mcp": { "url": "http://127.0.0.1:2870/mcp" }`——门的地址
-  **以这一格为准**
-* 同目录 `gwb.log` 一行一条，格式是 `<时间> <级别> <来源> <话>`。有 `kernel up` 与 `MCP 门就绪` 两行；
-  `Select-String "$env:APPDATA\gwb-kernel\homes\default\gwb.log" -Pattern '^\S+ error '` 应当什么都没有
+* `runtime.json` 里有 `version`（内核版本）与 `"mcp": { "url": "http://127.0.0.1:2870/mcp" }`——MCP 入口的地址
+  **以这个字段为准**
+* 同目录的 `gwb.log` 一行一条，格式是 `<时间> <级别> <来源> <内容>`。应该有 `kernel up` 与 `MCP 门就绪` 两行；
+  `Select-String "$env:APPDATA\gwb-kernel\homes\default\gwb.log" -Pattern '^\S+ error '` 应当没有任何输出
   （`warn` 行读一读，不算失败）
-* 看得见窗口的话：底部状态栏右边写着 `gwb <版>`，这个版就是 `runtime.json` 里的 `version`
+* 能看到窗口的话：底部状态栏右边写着 `gwb <版>`，这个版本号就是 `runtime.json` 里的 `version`
 
-`runtime.json` 在程序退出后也会留着（下一次启动整份重写），所以只凭它在不在判断不了程序还在不在跑——
-要看就核它的 `pid` 是不是活着的进程。
+`runtime.json` 在程序退出后也会保留（下一次启动时整份重写），所以只凭它存不存在判断不了程序还在不在运行——
+要确认就检查它的 `pid` 是不是一个活着的进程。
 
-## 5. 连 MCP 门
+## 5. 连接 MCP 入口
 
-门在 `runtime.json` 的 `mcp.url`（default 就是 `http://127.0.0.1:2870/mcp`），只绑本机，**要
-`Authorization: Bearer <token>`**：token 每 home 一份、落盘在门那个件的数据目录（`mcp/secret.json`）、重启不换，
-没带或对不上一律回 401。
+MCP 入口的地址在 `runtime.json` 的 `mcp.url`（default 就是 `http://127.0.0.1:2870/mcp`），只绑定本机，**要求
+`Authorization: Bearer <token>`**：token 每个 home 一份，存在 MCP 入口插件（gwb-mcp）的数据目录里（`mcp/secret.json`），重启不变；
+没带或对不上一律返回 401。
 
-先不改任何客户端配置，用门自带的命令行客户端验一遍门（零依赖，node 18 起就能跑；它自己读 default
-home 的凭据文件，不用给 token）：
+先不改任何客户端配置，用 MCP 入口自带的命令行客户端验证一遍（零依赖，node 18 起就能运行；它自己读 default
+home 的凭据文件，不用提供 token）：
 
 ```powershell
 $client = "$env:APPDATA\gwb-kernel\homes\default\node_modules\@godcreator\gwb-mcp\bin\client.mjs"
@@ -139,39 +139,39 @@ node $client --url http://127.0.0.1:2870/mcp run plugin-manager.list
 node $client --url http://127.0.0.1:2870/mcp run skill.list
 ```
 
-门通了，再给用户常用的客户端配上。先拿带好头的片段：`node $client --url http://127.0.0.1:2870/mcp run mcp.token`
-回 `{ token, file, mcpServers }`，`mcpServers` 里已带 `headers`，照抄即连（**回执含明文凭据**，别贴进
+MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带请求头的配置片段：`node $client --url http://127.0.0.1:2870/mcp run mcp.token`
+返回 `{ token, file, mcpServers }`，`mcpServers` 里已带 `headers`，原样复制就能连上（**返回内容含明文凭据**，别贴到
 公开的地方）：
 
 * Claude Code：`claude mcp add --transport http gwb http://127.0.0.1:2870/mcp --header "Authorization: Bearer <token>"`
   （要所有项目都能用就加 `--scope user`），然后开新会话，或在会话里 `/mcp` 重连
-* 别的客户端：照抄上面 `mcpServers` 那一段（形状是 `{ "gwb": { "type": "http", "url": …, "headers": { "Authorization": "Bearer <token>" } } }`）
+* 其他客户端：原样复制上面 `mcpServers` 那一段（形状是 `{ "gwb": { "type": "http", "url": …, "headers": { "Authorization": "Bearer <token>" } } }`）
 
-连上**先调 `index`**：它回的 instructions 讲清之后怎么干活。再核两样：
+连上后**先调 `index`**：它返回的 instructions 讲清楚之后怎么干活。再核对两项：
 
-* `run plugin-manager.list` 回 12 个包：11 个插件各带一条条目、`active: true`；`gwb-plugin-api`
+* `run plugin-manager.list` 返回 12 个包：11 个插件各带一个条目、`active: true`；`gwb-plugin-api`
   是库，条目为空（`entries: []`）属正常
-* `run skill.list` 列得出说明书，至少有 `mcp`、`gwb-plugin-manager`、`gwb-devkit`
+* `run skill.list` 能列出说明书，至少有 `mcp`、`gwb-plugin-manager`、`gwb-devkit`
 
 做完，把第 1 步改过的配置告诉用户。
 
-## 出了岔子
+## 常见问题
 
-| 现象                                         | 多半是                          | 怎么办                                                            |
-| ------------------------------------------ | ---------------------------- | -------------------------------------------------------------- |
-| `pnpm add` 报 404，找不到 `@godcreator/…`       | 第 1 步第 2 条那行没配               | 补上再装                                                           |
-| 装完提示 `Issues with peer dependencies found` | 有插件没跟上上游的新版                  | `pnpm peers check` 看明细告诉用户；以后「插件管理」装件、更新的回执里也会带上这类冲突           |
-| 报版本太新、minimum release age                  | 第 1 步第 3 条没配                 | 补上再装                                                           |
-| pnpm 起不来或低于 12                             | 第 1 步第 1 条                   | 装新版 pnpm                                                       |
-| 连 npmjs 超时                                 | 网络                           | 第 1 步第 4 条换镜像                                                  |
-| 窗口里只有一张只读清单、没有状态栏                          | 外壳没挂上                        | 看 `gwb.log` 里 `error` 行，多半是第 3 步没装成                            |
-| 门连不上                                       | 台没起，或 2870 被占（default 的门不换口） | 看 `runtime.json` 有没有 `mcp`；`gwb.log` 找 `gwb-mcp` 那行；腾开 2870 再起 |
-| 「插件管理」里装件失败                                | 插件管理找不到 pnpm                 | 让 pnpm 进 PATH，或在设置里填 `pnpm-path`                               |
+| 现象                                         | 多半是                                       | 怎么办                                                                  |
+| ------------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------- |
+| `pnpm add` 报 404，找不到 `@godcreator/…`       | 第 1 步第 2 条那行没配                            | 补上再装                                                                 |
+| 装完提示 `Issues with peer dependencies found` | 有插件没适配上游的新版本                              | `pnpm peers check` 看明细告诉用户；以后「插件管理」安装、更新插件的返回内容里也会带上这类冲突             |
+| 报版本太新、minimum release age                  | 第 1 步第 3 条没配                              | 补上再装                                                                 |
+| pnpm 运行不了或低于 12                            | 第 1 步第 1 条                                | 安装新版 pnpm                                                            |
+| 连 npmjs 超时                                 | 网络                                        | 按第 1 步第 4 条换镜像                                                       |
+| 窗口里只有只读状态页、没有状态栏                           | 外壳没加载成功                                   | 看 `gwb.log` 里的 `error` 行，多半是第 3 步没装成功                                |
+| MCP 入口连不上                                  | 工作台没启动，或 2870 端口被占用（default 的 MCP 入口不换端口） | 看 `runtime.json` 有没有 `mcp`；在 `gwb.log` 里找 `gwb-mcp` 那行；腾出 2870 端口再启动 |
+| 「插件管理」里安装插件失败                              | 插件管理找不到 pnpm                              | 让 pnpm 进 PATH，或在设置里填 `pnpm-path`                                     |
 
 ## 之后
 
-* 装新插件：`run plugin-manager.install {"pkg":"@godcreator/gwb-<名>"}`——回执带新条目的 `entryId`；
-  `run plugin-manager.list` 里它 `active: true` 就成了，下一次 `index` 就有它的命令
-* 插件有新版：`run plugin-manager.update-all`（升到 `gwb-mcp` 自己时连接会断一次，重连即可）
-* 内核有新版：关掉窗口（命令行关就对 `runtime.json` 里那个 pid 调 `(Get-Process -Id <pid>).CloseMainWindow()`）
-  → 装新版安装器 → 再起
+* 安装新插件：`run plugin-manager.install {"pkg":"@godcreator/gwb-<名>"}`——返回内容里带新条目的 `entryId`；
+  `run plugin-manager.list` 里它是 `active: true` 就成功了，下一次调 `index` 就能看到它的命令
+* 插件有新版本：`run plugin-manager.update-all`（升级到 `gwb-mcp` 自己时连接会断一次，重连即可）
+* 内核有新版本：关掉窗口（用命令行关就对 `runtime.json` 里那个 pid 调 `(Get-Process -Id <pid>).CloseMainWindow()`）
+  → 安装新版安装器 → 重新启动

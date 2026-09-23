@@ -1,37 +1,37 @@
 ---
 title: 边界
-description: 内核只做什么、刻意不做什么——每条不做一句话，理由在轨迹
+description: 内核只做什么、刻意不做什么——每条「不做」只写一句，理由在轨迹卡里
 ---
 
 # 边界
 
-**本页回答**：内核此刻只做哪几件事；哪些东西内核刻意没有、理由去哪看。往内核里加东西要过的两道关是[关键判据 K1](/docs/criteria/k1)。
+**本页回答**：内核此刻只做哪几件事；哪些功能内核刻意没有、理由去哪里看。往内核里加东西要满足的两个条件见[关键判据 K1](/docs/criteria/k1)。
 
 ## 只做什么
 
-都是第一个件存在之前必须发生的事：
+都是第一个插件存在之前必须完成的事：
 
-- **铺 home**：选目录、补两个文件、单开锁、写运行时身份——[home](/docs/kernel/home)
-- **起 cordis 并挂件**：根上下文指向 home，挂官方 loader 与 include，补上 node 半的裸名解析，退出时拆树——[挂载](/docs/kernel/loading)
-- **浏览器半的裸名**：收各包的共享声明拼成 importmap——[importmap](/docs/kernel/importmap)
-- **开窗与桥、页面根**：一扇窗、三条 IPC，页面把 `#root` 交给外壳，没有外壳时画只读现状——[页面与桥](/docs/kernel/bridge)
-- **自己出错人看得见**：唯一的日志出口，出错只记不退，起不来弹错误框——[日志](/docs/kernel/logs)
+- **初始化 home**：选定目录、补齐两个文件、获取单实例锁、写下本次运行的进程信息——[home](/docs/kernel/home)
+- **创建 cordis 实例并加载插件**：根上下文指向 home，注册官方的 loader 与 include，补上主进程一侧的包名 import（bare specifier，直接写包名、不带相对路径的 import，比如 `from 'cordis'`）解析，退出时卸载整棵插件树——[加载插件](/docs/kernel/loading)
+- **页面一侧的包名 import**：收集各包的共享声明，拼成 importmap——[importmap](/docs/kernel/importmap)
+- **创建窗口、IPC 通道与页面入口（`index.html`）**：一个窗口、三条 IPC，页面把 `#root` 交给外壳，没有外壳时显示只读状态页——[页面与 IPC](/docs/kernel/bridge)
+- **内核自己出错时人能看到**：唯一的日志输出，出错只记录不退出，启动失败时弹错误框——[日志](/docs/kernel/logs)
 
-说这些事用的名词在[契约面](/docs/kernel/contract)。
+描述这些事用到的类型名在[内核接口](/docs/kernel/contract)。
 
-件跑在主进程里、拿得到 `electron`：开窗、菜单、托盘、对话框、子进程全是件的事，内核不代办。
+插件运行在主进程里、能直接 import `electron`：创建窗口、菜单、托盘、对话框、子进程全部由插件自己做，内核不代劳。
 
 ## 刻意不做
 
-下面这些内核没有，不是还没排到，是决定不做；要做得先推翻[关键判据 K1](/docs/criteria/k1)。
+下面这些内核没有，不是还没排上日程，而是决定不做；要做，得先推翻[关键判据 K1](/docs/criteria/k1)。
 
-- **装机**：内核不碰 pnpm，装卸归件——[装机口移除](/trajectory/2026-09-08-no-install-port)
-- **自动升级、盘上对账、装失败还原**——[另起一条线](/trajectory/2026-09-07-fresh-line-over-subtraction)、[拆页快照](/trajectory/2026-09-23-future-zone-retired)
-- **件之间的准入核对**：件的依赖是件自己的事——[拆页快照](/trajectory/2026-09-23-future-zone-retired)
-- **`cordis.yml` 的模板与自愈**：缺了只补空表，读不动就报错——[那面墙](/trajectory/2026-09-07-wall-fresh-home-no-yml)、[拆页快照](/trajectory/2026-09-23-future-zone-retired)
-- **界面上的失败兜底**：只读现状之外不归因、不重试、不自动恢复，没有按钮——[阶段页](/trajectory/2026-09-08-stage-page)、[拆页快照](/trajectory/2026-09-23-future-zone-retired)
-- **原生命令、宿主子进程、自定义资源协议、日志管道**：内核一条命令都不认，件与页面之间只有三条 IPC 与 `file://`——[单进程重构](/trajectory/2026-09-09-single-process)
-- **数据落盘**：内核只给 `dataDir`，落盘归数据件——[数据件](/trajectory/2026-09-07-gwb-data-plugin)
-- **打包器**：`tsc` 直出，主进程走正常的包解析，不依赖任何依赖被内联进束——[打包器缓选](/trajectory/2026-09-07-bundler-deferred)
+- **安装插件**：内核不碰 pnpm，插件的安装与卸载由插件负责——[移除内核的安装接口](/trajectory/2026-09-08-no-install-port)
+- **自动升级、核对磁盘上装好的包与清单是否一致、安装失败后还原清单**——[新起一个仓而不是在原仓上删减](/trajectory/2026-09-07-fresh-line-over-subtraction)、[未来区删页前的理由快照](/trajectory/2026-09-23-future-zone-retired)
+- **插件之间的依赖核对**：插件依赖什么由插件自己负责——[未来区删页前的理由快照](/trajectory/2026-09-23-future-zone-retired)
+- **`cordis.yml` 的模板与自动修复**：文件缺了只补一个空表，读不了就报错——[全新 home 没有 `cordis.yml` 时启动失败](/trajectory/2026-09-07-wall-fresh-home-no-yml)、[未来区删页前的理由快照](/trajectory/2026-09-23-future-zone-retired)
+- **界面上的失败处理**：除了只读状态页，不分析原因、不重试、不自动恢复，也没有按钮——[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)、[未来区删页前的理由快照](/trajectory/2026-09-23-future-zone-retired)
+- **原生命令、宿主子进程、自定义资源协议、日志管道**：内核不认识任何一条命令，插件与页面之间只有三条 IPC 与 `file://`——[两个进程合并为一个](/trajectory/2026-09-09-single-process)
+- **数据写入磁盘**：内核只提供 `dataDir`，写数据由数据插件负责——[数据写盘做成插件](/trajectory/2026-09-07-gwb-data-plugin)
+- **打包器**：用 `tsc` 直接输出，主进程按正常的包解析加载模块，不依赖任何依赖被内联打包进同一个文件——[打包器以后再选](/trajectory/2026-09-07-bundler-deferred)
 
-还没定、等前提的那些在[路线](/future/roadmap)。
+还没决定、在等前提条件的那些事在[路线](/future/roadmap)。

@@ -1,13 +1,13 @@
 ---
 title: E2 shell
-description: importmap 的唯一提供方与 UI 平台——K3 提供方的全部规矩、服务只留扩展点
+description: importmap 的唯一提供方与 UI 平台——K3 对提供方的全部规矩、服务只留扩展点
 ---
 
 # E2 shell（`@godcreator/gwb-shell`）
 
 ## 角色
 
-UI 平台：接管页面根、管窗格，是 importmap 里 react 的唯一提供方，也带着全局令牌表。
+UI 平台：接管页面的 `#root`、管理窗格，是 importmap 里 react 的唯一提供方，也带着全局的设计令牌（design token）表。
 
 ## 清单
 
@@ -37,23 +37,23 @@ UI 平台：接管页面根、管窗格，是 importmap 里 react 的唯一提�
 
 peer 只有 `cordis`，因为它 `extends Service`；commands、data 只取类型，写 dev（[K2](/docs/criteria/k2)）。
 
-## 产物里的裸名
+## 构建产物里的包名 import
 
-node 半：`cordis` 与 node 内置。浏览器半：react 四名——它自己的外壳模块也按裸名引 react，与各件共用同一份。
+构建产物里剩下的包名 import（bare specifier，直接写包名、不带相对路径的 import，比如 `from 'cordis'`）：node 端代码里是 `cordis` 与 node 内置模块；浏览器端代码里是 react 的四个包名——它自己的外壳模块也用包名 import 引 react，和各插件共用同一份。
 
-## 面
+## 对外接口
 
-- **importmap**（[K3](/docs/criteria/k3)）：唯一提供方；`./externals` 是构建期 helper，读自己的 `gwb.shared` 回外置名单，各件的构建脚本调它；react 升大版本就是 shell 的破坏版（[K8](/docs/criteria/k8)）
+- **importmap**（[K3](/docs/criteria/k3)）：唯一提供方；`./externals` 是构建时用的 helper，读自己的 `gwb.shared`、返回外置名单（构建时不打包、留给 importmap 提供的包名清单），各插件的构建脚本调用它；react 升大版本就是 shell 的破坏性版本（[K8](/docs/criteria/k8)）
 - **服务** `gwbShell` 只留扩展点：`registerPane`、`describeSelf`（[K5](/docs/criteria/k5)）
-- **命令**是数据与动作的唯一面：`shell.panes`、`shell.plugins`、`shell.openPane`、布局与桌面那一组
+- **命令**是读写数据和执行动作的唯一方式：`shell.panes`、`shell.plugins`、`shell.openPane`，以及布局与桌面相关的那一组
 
 ## 契约
 
-导出服务接口、窗格登记的形状、`./client` 下给窗格用的类型（[K6](/docs/criteria/k6)）。
+导出服务接口、窗格注册的类型，以及 `./client` 下给窗格用的类型（[K6](/docs/criteria/k6)）。
 
-## 收尾
+## 卸载清理
 
-登记随调用方卸载自动摘；在途的布局落盘写完再交回 promise（[K7](/docs/criteria/k7)）。
+窗格注册在调用方卸载时自动注销；返回一个等尚未完成的布局写盘写完才 resolve 的 promise（[K7](/docs/criteria/k7)）。
 
 ## 现状偏差
 

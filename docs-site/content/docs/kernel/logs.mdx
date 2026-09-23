@@ -1,61 +1,61 @@
 ---
 title: 日志
-description: 内核唯一的出口——stderr 加 home 里一份带上限的 gwb.log；三路都走 ctx.logger，件挂 exporter 自取
+description: 内核唯一的日志输出——stderr 加上 home 里一份有大小上限的 gwb.log；三个来源都走 ctx.logger，插件要日志就自己注册 exporter
 ---
 
 # 日志
 
-**本页回答**：日志从哪几路来、出口在哪、文件怎么防写爆、内核与件各管到哪儿。
+**本页回答**：日志从哪几个来源来、输出到哪里、日志文件怎么防止无限增长、内核与插件各自负责到哪里。
 
 ## 管什么
 
-内核铺唯一一个出口：stderr 加 `<home>/gwb.log`。cordis 的日志经内核挂的全量 exporter 进这个出口；内核自己的话与页面 console 也走 `ctx.logger`，于是三路汇成一条流。文件有上限、会轮转，出口自己出岔子绝不把内核带走。主进程的未捕获异常与没人接的 rejection 只记不退。
+内核只设一个日志输出：stderr 加 `<home>/gwb.log`。cordis 的日志经内核注册的全量 exporter 进入这个输出；内核自己的日志与页面 console 也走 `ctx.logger`，于是三个来源汇成同一条日志流。日志文件有大小上限、会轮转；日志输出本身出了问题，也绝不会让内核跟着崩溃。主进程里未捕获的异常与没有被处理的 rejection 只记录、不退出。
 
 ## 不知道什么
 
-不为窗格铺日志管道、不自建缓冲——页面上要看日志的件自己挂第二个 exporter、从 cordis 自带的缓冲补历史、经 `gwbKernel.emit` 推给页面。日志格式不进契约面（[那张卡](/trajectory/2026-09-07-log-shape-not-in-vocab)）。不归因、不告警。
+不为窗格建日志管道、不自建缓冲——页面上要显示日志的插件自己注册第二个 exporter、从 cordis 自带的缓冲里补上历史、经 `gwbKernel.emit` 推送给页面。日志格式不属于内核接口（[日志条目的形状不进词汇表包](/trajectory/2026-09-07-log-shape-not-in-vocab)）。不分析原因、不告警。
 
 ## 数据结构
 
 - **一行**：`<ISO 时间> <级别> <名字> <正文>`，级别与名字照抄 cordis 那边的字符串，正文由 cordis 的 `Logger.format` 渲染
-- **三路的名字**：件用自己的 logger 名；内核是 `kernel`；页面 console 是 `renderer`
-- **文件**：现行一份 `gwb.log` 加滚下来的旧份；上限与留几份见下
+- **三个来源的名字**：插件用自己的 logger 名；内核是 `kernel`；页面 console 是 `renderer`
+- **文件**：当前的一份 `gwb.log`，加上轮转出来的旧文件；上限与保留几份见下
 
 ## 提供的接口
 
-**出口与上限**：`say` 同时写 stderr 与日志文件。上限走环境变量 `GWB_LOG_LIMIT_MB`（缺省见 `log-file.ts`；`0` = 不轮转、留全量；读不出数就用缺省），只留一份旧的。stderr 对端断了（没有终端起）每写一次抛 EPIPE，吞掉，文件照写（[那面墙](/trajectory/2026-09-08-wall-stderr-epipe)）。
+**输出与上限**：`say` 同时写 stderr 与日志文件。上限由环境变量 `GWB_LOG_LIMIT_MB` 设置（默认值见 `log-file.ts`；`0` = 不轮转、全部保留；读不出数字就用默认值），只保留一份旧文件。stderr 的另一端断开时（不是从终端启动的情况）每写一次都会抛 EPIPE，这个错误被忽略，文件照常写（[stderr 管道断开会让主进程崩溃](/trajectory/2026-09-08-wall-stderr-epipe)）。
 
 {/* ref file="../apps/desktop/src/main.ts" lines="58-85" */}
 
-**轮转**：按写进去的字节累加判断、不每条 stat；到上限先关句柄再改名、再重开，避免 fd 悬在改过名的文件上；开局就超限的上一轮文件，第一条日志就滚走。任何一步失败只说一句、继续往后写，轮转失败要再长一个上限才重试。
+**轮转**：按累计写入的字节数判断，不在每条日志时调用 stat；到上限时先关闭文件句柄，再改名，再重新打开，避免文件描述符还指向已经改名的文件；如果启动时上次留下的文件就已经超限，写第一条日志时就轮转。任何一步失败都只报一句、继续往后写；轮转失败后，要再写满一个上限的量才重试。
 
 {/* ref file="../apps/desktop/src/log-file.ts" lines="121-164" */}
 
-**全量 exporter**：在模块顶层、挂 loader 之前注册——cordis 没有 exporter 时只缓冲不输出，第一个挂不上的件的报错不能等（[那面墙](/trajectory/2026-09-07-wall-loader-error-swallowed)）。格式化失败有一层逐参数 `String` 的兜底。warn / error 到来时捅一下页面的只读现状（见[页面与桥](/docs/kernel/bridge)）。
+**全量 exporter**：在模块顶层、注册 loader 之前注册——cordis 没有 exporter 时只缓冲、不输出，而第一个加载失败的插件的报错必须马上输出（[loader 加载插件失败时，启动期的错误没有输出](/trajectory/2026-09-07-wall-loader-error-swallowed)）。格式化失败时有一层后备：逐个参数用 `String` 转换。warn / error 到来时，触发页面只读状态页的重新推送（见[页面与 IPC](/docs/kernel/bridge)）。
 
 {/* ref file="../apps/desktop/src/main.ts" lines="130-162" */}
 
-**内核的话与只记不退**：内核自己的话走 `ctx.logger('kernel')`，不直接 `say`——这样件挂一个 exporter 就收齐三路。件跑在这个进程里，件的错就是这个进程的错，两个 `process.on` 只记不退。
+**内核自己的日志，以及只记录不退出**：内核自己的日志走 `ctx.logger('kernel')`，不直接调用 `say`——这样插件注册一个 exporter 就能收到全部三个来源。插件运行在这个进程里，插件的错误就是这个进程的错误，所以两个 `process.on` 只记录、不退出。
 
 {/* ref file="../apps/desktop/src/main.ts" lines="164-171" */}
 
-**起不来那一句**：`main()` 抛出时直接 `say`（这时可能谁都没挂上），再弹错误框（见[挂载](/docs/kernel/loading)）。
+**启动失败时的那条日志**：`main()` 抛出错误时直接调用 `say`（这时可能还没有任何插件加载成功），再弹错误框（见[加载插件](/docs/kernel/loading)）。
 
 ## 依赖的接口
 
 | 接口 | 用来做什么 | 生产实现 | 测试实现 |
 | --- | --- | --- | --- |
-| cordis logger 工厂（`exporter`、`buffer`、`Logger.format`） | 收流、渲染、给只读现状取最近错误行 | cordis | — |
-| 文件系统 | 写 `gwb.log`、轮转 | `node:fs` | 真 fs 跑临时目录 |
-| `GWB_LOG_LIMIT_MB` | 上限 | 起进程的那只手给 | `limitFromEnv` 直接喂字符串 |
+| cordis logger 工厂（`exporter`、`buffer`、`Logger.format`） | 接收日志流、渲染、给只读状态页取最近的错误行 | cordis | — |
+| 文件系统 | 写 `gwb.log`、轮转 | `node:fs` | 用真实文件系统跑临时目录 |
+| `GWB_LOG_LIMIT_MB` | 上限 | 由启动进程的一方设置 | `limitFromEnv` 直接传入字符串 |
 
 ## 怎么单独测
 
-`log-file.ts` 不碰 electron 与 cordis，拿真 fs 跑临时目录：证明没到上限不轮转、超上限滚一份且只留约定的份数、轮转后新写的落进新文件、开局超限第一条就滚、上限 0 不轮转、轮转失败与开不出文件都不致命且只喊一句、`onWarn` 自己抛也不漏出去；`limitFromEnv` 覆盖缺省、正整数、0 与各种坏值（`tests/log-file.test.ts`）。「失败」用「目标位置被目录占着」造，那是 Windows 上真会撞的形态。
+`log-file.ts` 不依赖 electron 与 cordis，用真实文件系统在临时目录里测：证明没到上限不轮转、超过上限轮转出一份且只保留约定的份数、轮转后新写的内容进入新文件、启动时已超限则写第一条就轮转、上限为 0 时不轮转、轮转失败与无法创建文件都不致命且只报一句、`onWarn` 自己抛错也不会传到外面；`limitFromEnv` 覆盖默认值、正整数、0 与各种非法值（`tests/log-file.test.ts`）。「失败」的场景用「目标位置被一个目录占用」来制造，这是 Windows 上真会遇到的情况。
 
 ## 代码地图
 
-- **在哪**：`apps/desktop/src/log-file.ts`（上限与轮转的机械）、`apps/desktop/src/main.ts`（`say`、exporter、`kernelLog`、`process.on`）
+- **在哪**：`apps/desktop/src/log-file.ts`（上限与轮转的实现）、`apps/desktop/src/main.ts`（`say`、exporter、`kernelLog`、`process.on`）
 - **先读**：`main.ts` 的 exporter，再读 `openLogFile` 的 `write`
-- **读序**：本页独立；[页面与桥](/docs/kernel/bridge) 读它的缓冲
+- **读序**：本页可以单独读；[页面与 IPC](/docs/kernel/bridge) 会读取日志缓冲
 - **可跳过**：无

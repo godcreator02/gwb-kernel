@@ -1,27 +1,34 @@
 ---
 title: 术语表
-description: 这个仓自己造的词、或在这里有特定含义的词，每个一句定义并指到详解页
+description: 这个仓里有特定含义的词，每个一句定义并指到详解页
 ---
 
 # 术语表
 
-**本页回答**：文档里那个词在这个仓里指什么。只收本仓造的词与在这里有特定含义的词，通用术语不收。
+**本页回答**：文档里那个词在这个仓里指什么。只收这个仓自己的词和在这里有特定含义的词，通用编程术语不收。
 
 | 词 | 是什么 |
 | --- | --- |
-| **内核** | 这个仓的 Electron 应用本体：只做第一个件跑起来之前必须发生的事，其余一切皆件。见[从这里开始](/docs) |
-| **件** | 插件：一个普通 npm 包，装在 home 里，由 cordis 挂载，跑在主进程 |
-| **home** | 件住的地方，一个普通的 npm 项目根；一个 home 就是一套独立的世界。见[home](/docs/kernel/home) |
-| **准入判据** | 两道关：第一个件存在之前必须发生的事才进内核；真遇到需求才加。见[关键判据 K1](/docs/criteria/k1) |
-| **条目** | `cordis.yml` 里的一条：`id` 是身份（手写），`name` 是装哪个包。见[挂载](/docs/kernel/loading) |
-| **挂上** | 条目的 fiber 到了 `ACTIVE`；有 fiber 不等于挂上。见[挂载](/docs/kernel/loading) |
-| **热挂卸** | 运行中经条目树的 API 挂、改、卸一条条目，yml 随之写回；不是文件监听。见[挂载](/docs/kernel/loading) |
-| **裸名解析** | 把包名（与子路径）解成 home 里的真实文件：node 半给 loader 用，浏览器半拼 importmap。见[挂载](/docs/kernel/loading)、[importmap](/docs/kernel/importmap) |
-| **共享声明** | 包清单里的 `gwb.shared`：「我给页面提供这几个裸名」。见[importmap](/docs/kernel/importmap) |
-| **外壳** | 调了 `setShell` 的那个件，页面的 `#root` 归它的默认导出。见[页面与桥](/docs/kernel/bridge) |
-| **只读现状** | 没有外壳或外壳起不来时页面画的那份：各条目到哪一步、最近的错误行；不归因、没有按钮。见[页面与桥](/docs/kernel/bridge) |
-| **命令总线** | 某个件提供的命令服务；页面的命令原样派给它。见[页面与桥](/docs/kernel/bridge) |
-| **词汇表** | `@godcreator/gwb-plugin-api`：内核与件、页面之间的全部契约，纯类型。见[契约面](/docs/kernel/contract) |
-| **关键判据** | 反复出现的几类选择怎么判的规矩，编号 K1…K8，一条一页、编号即网址，引用写编号不复述。见[关键判据](/docs/criteria) |
-| **标准例子** | 几个件按关键判据应该长成的样子，E1…E5；今天对不上的地方各留一行现状偏差。见[标准例子](/docs/criteria/examples) |
-| **三路日志** | 件、内核、页面 console 三个来源，汇成同一条 cordis 日志流。见[日志](/docs/kernel/logs) |
+| **内核** | 这个仓的 Electron 应用本体：只做第一个插件运行之前必须完成的事，其余功能全部由插件实现。见[从这里开始](/docs) |
+| **插件** | 一个普通的 npm 包，安装在 home 里，由 cordis 加载，运行在 Electron 主进程里 |
+| **home** | 插件安装和存放数据的目录，一个普通的 npm 项目根；每个 home 有自己的插件、端口和数据，互不影响。见[home](/docs/kernel/home) |
+| **隔离 home** | 为了开发或验证单独创建的 home，和日常使用的 `default` 分开 |
+| **条目** | `cordis.yml` 里的一条配置（loader 里叫 entry）：`id` 是它的身份，手写；`name` 是要加载的包名。见[加载插件](/docs/kernel/loading) |
+| **加载成功** | 条目对应的 fiber 进入 `ACTIVE` 状态；有 fiber 不等于加载成功。见[加载插件](/docs/kernel/loading) |
+| **fiber** | cordis 为每个加载的插件建的运行单元，记录它的状态（等待依赖、运行中、失败等） |
+| **包名 import** | 直接写包名、不带相对路径的 import（英文叫 bare specifier），比如 `import { Service } from 'cordis'`。运行时要靠 Node 去 `node_modules` 里找，或靠页面的 importmap 查表。见[importmap](/docs/kernel/importmap) |
+| **构建产物** | 插件构建后发布出去的 `dist/` 里的文件，也就是运行时真正加载的代码 |
+| **importmap** | 页面上的一张表：包名 → 文件地址。浏览器里的包名 import 靠它找到文件。见[importmap](/docs/kernel/importmap) |
+| **共享声明** | 包清单里的 `gwb.shared` 字段：「把我的这几个文件放进页面的 importmap」。见[importmap](/docs/kernel/importmap) |
+| **外壳（shell）** | 调用了 `setShell` 的那个插件，页面的 `#root` 交给它的默认导出来渲染。见[页面与 IPC](/docs/kernel/bridge) |
+| **只读状态页** | 没有外壳、或外壳启动失败时页面显示的内容：各条目的加载状态和最近的错误日志，没有按钮。见[页面与 IPC](/docs/kernel/bridge) |
+| **命令总线** | `gwbCommands` 服务，由 commands 插件提供；页面、MCP 入口和其他插件都经它按名字调用命令 |
+| **服务** | 插件经 cordis `ctx.provide` 提供、别的插件经 `inject` 使用的对象 |
+| **扩展点** | 让别的插件往里注册东西的服务方法，比如注册命令、注册窗格、注册工具条按钮 |
+| **存在标记服务** | 只用来表示「某个插件已经加载」的服务，可以带一个契约版本号；依赖它的插件会随它一起重新加载 |
+| **接口定义包** | 提供方单独发布的一个库：只有类型、常量和纯函数，没有状态；调用方把它打包进自己的构建产物。见[关键判据 K4](/docs/criteria/k4) |
+| **词汇表包** | `@godcreator/gwb-plugin-api`：内核给插件和页面提供的全部接口的类型，纯类型、没有运行时代码。见[内核接口](/docs/kernel/contract) |
+| **准入判据** | 往内核里加东西要满足的两个条件：第一个插件运行之前必须完成；此刻确实需要。见[关键判据 K1](/docs/criteria/k1) |
+| **关键判据** | 写插件、改内核时反复遇到的几类选择该怎么决定，编号 K1…K8，一条一页，引用时写编号。见[关键判据](/docs/criteria) |
+| **标准例子** | 几个插件按关键判据应该写成的样子，编号 E1…E5；和今天代码不一致的地方各留一行「现状偏差」。见[标准例子](/docs/criteria/examples) |
+| **三路日志** | 插件、内核、页面 console 三个来源的日志，汇成同一条 cordis 日志流。见[日志](/docs/kernel/logs) |

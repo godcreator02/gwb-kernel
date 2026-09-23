@@ -1,14 +1,13 @@
 /**
- * 这个站怎么挂 docfirst：格式包、哪几区进 check、卡目录在哪、产物摆放、组件名册。
- * 命令行和站读的是同一份。
+ * 这个文档站的 docfirst 配置：用哪个格式包、哪几个目录参与检查、轨迹卡目录在哪、生成物写到哪、组件名单。
+ * 命令行和文档站读的是同一份。
  *
- * 项目根是站目录，钉的源码在仓根（../apps…）——引用里的路径相对项目根。
- * 六区里只有 docs（现状）与 outputs（生成正本）进 check——只有这两区对代码说话；
- * 轨迹、交接、未来、反馈四区的草稿记号与卡天然不进门禁，卡不许钉活代码。
+ * 项目根是站目录，被引用的源码在仓根（../apps…），引用里的路径都相对站目录。
+ * 六个区里只有 docs（现状）与 outputs（生成物的正本）参与检查——只有这两个区的内容对应当前代码；
+ * 轨迹、交接、未来、反馈四个区不参与检查，轨迹卡里不许引用代码。
  *
- * outputs：仓根 README.md、AGENTS.md、INSTALL.md 都是生成物，正本是 content/outputs/ 下的
- * readme.mdx、agents.mdx、install.mdx。改 mdx 源，`pnpm docfirst render` 重摆，一起提交。
- * CLAUDE.md 只有一行 @AGENTS.md，不派生。
+ * outputs：仓根 README.md、AGENTS.md、INSTALL.md、CLAUDE.md 都是生成物，正本是 content/outputs/ 下
+ * 同名的 mdx。改 mdx 正本后在站目录运行 `pnpm docfirst render` 重新生成，正本与生成物放进同一个提交。
  */
 import * as fumadocs from '@godcreator/docfirst-workflow/fumadocs'
 
@@ -22,6 +21,7 @@ export default {
     'content/outputs/readme.mdx': ['../README.md'],
     'content/outputs/agents.mdx': ['../AGENTS.md'],
     'content/outputs/install.mdx': ['../INSTALL.md'],
+    'content/outputs/claude.mdx': ['../CLAUDE.md'],
   },
   components: {
     ...fumadocs.defaultRoster,

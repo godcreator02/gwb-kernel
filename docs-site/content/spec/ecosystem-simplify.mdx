@@ -1,233 +1,233 @@
 ---
-title: 全生态机制定案：按「运行时谁提供」写依赖、home 只有件、一个写手
-description: 内核与全套件的配合机制逐个定死——依赖模型（peer 只写宿主提供的 cordis、其余一律 dev、产物只剩内置与 importmap 名、件与件不经 import 耦合）、home 与装卸、开发循环、importmap 与页面边界、契约面、跨件边界、件的收尾、守卫与审计、文档；每节写定法、归属、删掉什么、判据，分四期实施
+title: 全生态机制定案：按「运行时谁提供」写依赖、home 里只有插件、只由 plugin-manager 写 home
+description: 内核与全套插件的配合机制逐个定下来——依赖模型（peer 只写宿主提供的 cordis、其余一律写 dev、构建产物只依赖 Node 内置模块与 importmap 里的包、插件之间不通过 import 耦合）、home 与安装卸载、开发循环、importmap 与页面边界、契约、跨插件边界、插件的卸载清理、检查与审计、文档；每节写做法、归属、删掉什么、判据，分四期实施
 ---
 
 # 全生态机制定案
 
-**本页回答**：内核与全套件之间每一个配合机制最终定成什么样、为什么这么定、删掉什么、分几期做、做到什么算完。
-做完拆解归梁：定法进各仓现状页并钉码，每条了断落一张轨迹卡，然后删掉这一页。
+**本页回答**：内核与全套插件之间每一个配合机制最终定成什么样、为什么这么定、删掉什么、分几期做、做到什么算完。
+做完把内容分别归位：做法写进各仓现状页并引用代码，每条定下的结论写一张轨迹卡，然后删掉这一页。
 
-**由来**。2026-09-23 在总控台的会话里审了一遍内核与全套件的配合（dev、peer、importmap），查实内核本身已经很干净
-（七个文件），复杂度沉在 devkit 与 plugin-manager 两个件里，根子有三条：开发与发版都绕 registry、peer 手写还要跟
-dev 镜像、同一件事实抄在好几处。人的原话：
+**由来**。2026-09-23 在总控台的会话里审查了一遍内核与全套插件的配合（dev、peer、importmap），查实内核本身已经很干净
+（七个文件），复杂度集中在 devkit 与 plugin-manager 两个插件里，根源有三条：开发与发版都要经过 registry、peer 要手写，还要和
+dev 依赖逐条对应、同一个事实在好几处重复抄写。人的原话：
 
 > 可以都改我觉得，就是保持简洁，除了必要的功能不增加多余的复杂度。我们现在就在重构，应该朝着最干净、最整洁的方向努力。
 
 随后逐条追问：「peer 和可选 peer 是不是完全可以退役」「不是 devdependencies 吗」，最后纠正到「件里的 cordis 打进包
-肯定不对啊，应该区分什么时候用peer什么时候不用啊」——定下本页第一节的依赖模型：**按「运行时这份代码由谁提供」
-决定写法**，其余各节建在它上面。
+肯定不对啊，应该区分什么时候用peer什么时候不用啊」——由此定下本页第一节的依赖模型：**按「运行时这份代码由谁提供」
+决定写法**，其余各节都建立在它之上。
 
-**它改的是别的件 inject 的那一面**（plugin-manager 的命令面、词汇表包的导出、devkit 的发版检票与模板），也推翻本仓与
-devkit 仓几条写下的判据（见文末「要改写的卡与红线」）。方向人已点头（2026-09-23），定法已作为关键判据定稿。
+**它改的是被别的插件 inject 使用的那部分接口**（plugin-manager 的命令接口、词汇表包的导出、devkit 的发布前检查与模板），也推翻了本仓与
+devkit 仓已经写下的几条判据（见文末「要改写的轨迹卡与红线」）。方向人已同意（2026-09-23），做法已作为关键判据定稿。
 
-## 待拍板
+## 待决定
 
-- [ ] **registry 上存量的开发版**（约五百个 `-dev.*`）：删不删、留哪些。删除不可逆，要人点头；不删也不影响本页其余各节
+- [ ] **registry 上存量的开发版**（约五百个 `-dev.*`）：删不删、留哪些。删除不可逆，要人同意；不删也不影响本页其余各节
 
-## 已拍板（2026-09-23）
+## 已决定（2026-09-23）
 
-- 依赖、importmap、跨件交互、收尾这几类的定法作为[关键判据](/docs/criteria)（K1–K8）定稿进现状区，是正本；本页
-  各节只留实施相关的归属、删掉什么与代价。K3 不承认「体积」是进 importmap 的理由
-- 拿现有件做案例分析后定的三条：**可选 peer 去掉**（类型链由消费方在 dev 里列齐，门禁关 `skipLibCheck`）；**K5 翻成
-  「扩展点用服务，数据与动作用命令，同一能力只开一个面」**；**不加装机期依赖字段**（缺了就停在待命，看得见）。标准答案
+- 依赖、importmap、跨插件交互、卸载清理这几类的做法作为[关键判据](/docs/criteria)（K1–K8）定稿写进现状区，是正本；本页
+  各节只留和实施相关的归属、删掉什么与代价。K3 不承认「体积」是进 importmap 的理由
+- 拿现有插件做案例分析后定的三条：**去掉可选 peer**（类型链由使用方在 dev 里列齐，提交前检查关掉 `skipLibCheck`）；**K5 改成
+  「扩展点用服务，数据与动作用命令，同一能力只提供一种调用方式」**；**不加安装期依赖字段**（缺了就停在等待依赖的状态，看得见）。标准答案
   写成[标准例子](/docs/criteria/examples) E1–E5
-- 件里的 cordis **不打进包**：宿主提供的东西写 peer（K2 第一行）
-- 件的运行时自用库打进束、写 dev；件与件之间不经 import 耦合（第一节、第七节）
-- 词汇表包不改名、不并进内核应用包、不加「运行时内核版本」兼容字段；契约面收窄（第五节）
-- 不做：给命令分权限档（页面边界由第四节的导航锁保证）；跨 home 调命令改走 MCP 门（原候选第 10 条，不做）
-- 不动：importmap 归内核、MCP 门三枚工具封顶、单进程
+- 插件里的 cordis **不打包进构建产物**：宿主提供的东西写 peer（K2 第一行）
+- 插件运行时自己用的库打包进构建产物、写 dev；插件之间不通过 import 耦合（第一节、第七节）
+- 词汇表包不改名、不并进内核应用包、不加「运行时内核版本」兼容字段；契约收窄（第五节）
+- 不做：给命令分权限等级（页面边界由第四节的导航锁保证）；跨 home 调命令改走 MCP 入口（原候选第 10 条，不做）
+- 不动：importmap 归内核、MCP 入口只有三个工具且不再增加、单进程
 
 ## 一、依赖模型：按「运行时谁提供」决定写法
 
-**定法**：见[关键判据 K2](/docs/criteria/k2)。实施上补一条：打不进束的自用库（原生模块、运行时读自己文件的包）才写
-`dependencies` 并在清单注释里写明为什么——今天一个都没有。
+**做法**：见[关键判据 K2](/docs/criteria/k2)。实施上补一条：无法打包进构建产物的自用库（原生模块、运行时读自己文件的包）才写
+`dependencies`，并在清单注释里写明原因——今天一个都没有。
 
-**归属**：规矩与守卫在 devkit（模板、`devkit.release`、写插件手册）；各件照迁。
+**归属**：规矩与检查在 devkit（模板、`devkit.release`、写插件手册）；各插件照此迁移。
 
-**删掉**：拿 peer 声明别的件、库、react、旧共享包的全部写法；依赖三档（红线 3，换成这张表）；「相对 import 带
-`.js`、每个裸名都在依赖表里」（红线 4，打包器负责）；发版检票里「peer 下限 = dev 下限」那一族规则与 audit-deps 里
-对应的四类发现；home 里的库、共享包与依赖树——home 里除件之外只剩 pnpm 按必选 peer 补进来的那一份 `cordis`。
+**删掉**：用 peer 声明其他插件、库、react、旧共享包的全部写法；依赖三档（红线 3，换成这张表）；「相对 import 带
+`.js`、每个包名 import（bare specifier，直接写包名、不带相对路径的 import）都在依赖表里」（红线 4，交给打包器负责）；发布前检查里「peer 下限 = dev 下限」那一类规则与 audit-deps 里
+对应的四类发现；home 里的库、共享包与依赖树——home 里除插件之外只剩 pnpm 按必选 peer 补装的那一份 `cordis`。
 
-**判据**：见 K2 的「为什么」。实施时要知道的一条事实：home 里 pnpm 按 peer 补进来的那份 cordis（rc.10）与内核打进
-app.asar 的那份（rc.9）今天就不是同一物理实例；要让两边真是同一份，得内核在 node 半做裸名映射，没有现场故障，按 K1
-不做。「库独立热换」只有 docfirst 件现查 docfirst 库这一个用例，有意放弃（见「放弃的能力」）。
+**判据**：见 K2 的「为什么」。实施时要知道的一条事实：home 里 pnpm 按 peer 补装的那份 cordis（rc.10）与内核打包进
+app.asar 的那份（rc.9）今天就不是同一个物理实例；要让两边真是同一份，得由内核在 Node 一侧做包名 import 映射，目前没有实际发生的故障，按 K1
+不做。「库独立热替换」只有 docfirst 插件运行时查找 docfirst 库这一个用例，有意放弃（见「放弃的能力」）。
 
-**会失去什么**：装件时对库与别件的 peer 警告（从来只警告不拦，由开发期 audit-deps 代替）；库单独升级（要重发用到它的件
-——块笔记一族与 bn-papers 都是同仓同发）；报错堆栈指向束（esbuild 不压缩，基本可读；sourcemap 不做，要做得过内核
+**会失去什么**：安装插件时对库与其他插件的 peer 警告（一直只警告不拦截，由开发期的 audit-deps 代替）；库单独升级（要重新发布用到它的插件
+——块笔记系列插件与 bn-papers 都是同仓同时发布）；报错堆栈指向构建产物（esbuild 不压缩，基本可读；不做 sourcemap，要做得先通过内核
 准入判据）。
 
-## 二、home 与装卸：home 只有件，只有一个写手
+## 二、home 与安装卸载：home 里只有插件，只由 plugin-manager 写 home
 
-**定法**。home 的 `package.json` 只列件，一律精确号，锁文件是真相；**唯一写手是 plugin-manager**，一切变更（装、
-升、开发版换装）走同一个 `apply`：定版本 → 一趟 pnpm → 重挂变了的件 → 若 shell 变了整页重载。件之间只经服务交互，
-「依赖它的件跟着重挂」由 cordis 的 inject 自己完成，plugin-manager 不算依赖图。
+**做法**。home 的 `package.json` 只列插件，一律写精确版本号，以锁文件为准；**唯一写 home 的是 plugin-manager**，一切变更（安装、
+升级、换装开发版）走同一个 `apply`：确定版本 → 运行一次 pnpm → 重新加载有变化的插件 → 如果 shell 变了就整页重载。插件之间只通过服务交互，
+「依赖它的插件跟着重新加载」由 cordis 的 inject 自己完成，plugin-manager 不计算依赖图。
 
-**归属**：plugin-manager（被 inject 的一面）；devkit 的 `home.new` 与 `dev` 改为调它。
+**归属**：plugin-manager（被 inject 使用的那部分接口）；devkit 的 `home.new` 与 `dev` 改为调用它。
 
-**删掉**：install 的 peer 提升一步（必选 peer 只剩宿主提供的 `cordis`，pnpm 自己补一份给所有件共用，不必进清单）、
-`pnpm peers check` 与 `peerWarnings`、`peers.ts` / `peer-warnings.ts`、「库 / 共享包」分类；`plugin-manager.update`（并进 `update-all {"only":[…]}`）；devkit 里自写清单、读回核对、
-重挂那一套；`home.new` 的裸 `pnpm add`。内核 `INSTALL.md` 的装机法随之改成「装 plugin-manager 与门，其余经
-`plugin-manager.install`」或同一份底座清单（见第九节）。
+**删掉**：install 里提升 peer 的那一步（必选 peer 只剩宿主提供的 `cordis`，pnpm 自己补装一份给所有插件共用，不必写进清单）、
+`pnpm peers check` 与 `peerWarnings`、`peers.ts` / `peer-warnings.ts`、「库 / 共享包」分类；`plugin-manager.update`（并进 `update-all {"only":[…]}`）；devkit 里自己写清单、读回核对、
+重新加载的那一套；`home.new` 里绕过 plugin-manager 直接运行的 `pnpm add`。内核 `INSTALL.md` 的安装方法随之改成「装 plugin-manager 与 MCP 入口插件，其余经
+`plugin-manager.install`」或同一份首次安装的插件集清单（见第九节）。
 
-**判据**。今天有六个入口在写 home 清单、写法不一（`^` 与精确号混着，pnpm 沿用首次写法）；三个件在 default 里
-挂不上，正是因为升了一个库而依赖它的件没人重挂。库不进 home，这类事故就没有发生的位置。
+**判据**。今天有六个入口在写 home 清单、写法不一（`^` 与精确版本号混用，pnpm 沿用第一次的写法）；三个插件在 default 里
+加载失败，正是因为升级了一个库，而依赖它的插件没人重新加载。库不进 home，这类事故就无从发生。
 
 ## 三、开发循环：开发版不进 registry
 
-**定法**。`devkit.dev` 在仓里构建、`pnpm pack` 出带时间戳的 tgz，经第二节的 `apply` 以 `file:` 装进**隔离
-home**，再取证。registry 只放正式版。「写插件只有一条路：发、装、验」不变——pack 照 `files` 白名单出包，漏导出、
-漏文件照样在装的那一步现形。
+**做法**。`devkit.dev` 在仓里构建、用 `pnpm pack` 打出带时间戳的 tgz，通过第二节的 `apply` 以 `file:` 安装进**隔离
+home**，再查看运行结果。registry 只放正式版。「写插件只有一条路：发布、安装、验证」不变——pack 按 `files` 白名单打包，漏导出、
+漏文件照样会在安装那一步暴露。
 
 **归属**：devkit。
 
-**删掉**：dev tag、暂存发布、每包 `pnpm view` 查重；将来的「清理开发版」命令。构建改成只带上被测包及其依赖
+**删掉**：dev tag、暂存发布、每个包用 `pnpm view` 查重；将来的「清理开发版」命令。构建改成只构建被测包及其依赖
 （`pnpm -r --filter <包>...`），不再全仓构建。
 
 ## 四、importmap 与页面边界
 
-**定法**。
-- importmap 放什么照[关键判据 K3](/docs/criteria/k3)：只放整页必须只有一份的运行时，今天是 shell 的 react 四名。
-  `@godcreator/block-note` 撤掉自己的 `gwb.shared`，块笔记一族把解析库各自打进束
-- importmap 只在页面打招呼时算一次（页面本来就只注一次），撞名就拒、说一次
-- 只读现状只在没有外壳时推；日志的 warn / error 不再触发推送
-- 页面只可能是本地 `index.html`：主框架跳转、`window.open` 一律拒（`will-navigate` / `will-redirect` /
-  `setWindowOpenHandler`）；`gwb:command` 只收顶层这一帧的调用
+**做法**。
+- importmap 放什么按[关键判据 K3](/docs/criteria/k3)：只放整页必须只有一份的运行时，今天是 shell 的 react 四个包名。
+  `@godcreator/block-note` 撤掉自己的 `gwb.shared`，块笔记系列插件把解析库各自打包进构建产物
+- importmap 只在页面发来 hello 消息时计算一次（页面本来就只注入一次），名字冲突就拒绝、只报一次
+- 只读状态页只在没有外壳时推送；日志的 warn / error 不再触发推送
+- 页面只可能是本地 `index.html`：主框架跳转、`window.open` 一律拒绝（`will-navigate` / `will-redirect` /
+  `setWindowOpenHandler`）；`gwb:command` 只接收顶层框架的调用
 
-**归属**：内核（`main.ts`、`index.html`）；block-note 撤声明、块笔记一族改构建外置名单。
+**归属**：内核（`main.ts`、`index.html`）；block-note 撤掉声明、块笔记系列插件改构建脚本里的外置名单。
 
-**删掉**：每条 warn 一次扫盘、日志自激环（warn → 推送 → 重算 → warn）、`setShell` 直推 / 去抖 / hello 三条推送
-路径并成一条、页面里 pending 与 current 的双保险。将来的命令权限档不必设计。
+**删掉**：每条 warn 都扫一次磁盘、日志自我触发的循环（warn → 推送 → 重新计算 → warn）、`setShell` 直接推送 / 去抖 / hello 三条推送
+路径合并成一条、页面里 pending 与 current 的双重保险。将来的命令权限等级不必设计。
 
-**判据**。importmap 页面只注一次，推送时重算是白算；页面能调整条命令总线，页面边界是唯一需要守的线，守住它
-比给命令分档便宜得多。块笔记的解析库只是体积大、不是单例，按 K3 各件打进束——页面从本机加载，重复几百 KB 可以接受。
+**判据**。importmap 页面只注入一次，推送时重新计算是白算；页面能调用整条命令总线，页面边界是唯一需要守住的线，守住它
+比给命令分级便宜得多。块笔记的解析库只是体积大、不要求全页只有一份，按 K3 由各插件打包进构建产物——页面从本机加载，重复几百 KB 可以接受。
 
-## 五、契约面
+## 五、契约（对外承诺的接口）
 
-**定法**。`@godcreator/gwb-plugin-api` 是纯类型包，与内核同仓同号；件写 dev（K2）。公共面：
-`gwbKernel` 四样（`dataDir` / `version` / `emit` / `setShell`）、`window.gwb` 的 `command` / `on`、外壳默认导出
-`ShellBoot`；只增不减。`GwbResult` 挪到 commands 件（它是命令总线的信封，不是内核的词）；`onShell` 退出公共面
-（只有内核自己的页面用，第四节改推送时不再牵动任何件）。
+**做法**。`@godcreator/gwb-plugin-api` 是纯类型包，与内核同仓、同版本号；插件写 dev（K2）。公共接口：
+`gwbKernel` 四项（`dataDir` / `version` / `emit` / `setShell`）、`window.gwb` 的 `command` / `on`、外壳默认导出
+`ShellBoot`；只增不减。`GwbResult` 移到 commands 插件（它是命令总线统一的返回结构，不是内核的概念）；`onShell` 移出公共接口
+（只有内核自己的页面用，第四节改推送方式时不再牵动任何插件）。
 
-**归属**：内核仓 `packages/gwb-plugin-api`；commands 件先导出自己的信封类型。
+**归属**：内核仓 `packages/gwb-plugin-api`；commands 插件先导出自己的返回结构类型。
 
-**判据**。类型必须有一个共用的包（各件内联会让 `window.gwb` 的全局声明互相冲突）；运行中的内核版本与 home 里
-那份类型包版本本来就是两回事，peer 管不到运行时——加兼容字段是新机制，只增不减的契约用不着。
+**判据**。类型必须有一个共用的包（各插件各自内联会让 `window.gwb` 的全局声明互相冲突）；运行中的内核版本与 home 里
+那份类型包的版本本来就是两回事，peer 管不到运行时——加兼容字段是新机制，只增不减的契约用不着。
 
-## 六、共享裸名只有一个来源
+## 六、共享的包名只有一个来源
 
-**定法**。浏览器半外置哪些名字，只从提供方的 `gwb.shared` 读：shell 导出一个构建期 helper，各件的 `build.ts`
-调它，不再抄 react 四名。
+**做法**。页面一侧的构建产物外置哪些包名，只从提供方的 `gwb.shared` 读取：shell 导出一个构建期 helper，各插件的 `build.ts`
+调用它，不再手抄 react 四个包名。
 
-**归属**：shell（加一个子路径）；devkit 模板与各件照迁。
+**归属**：shell（加一个子路径导出）；devkit 模板与各插件照此迁移。
 
 **删掉**：十三份手抄的外置名单。
 
-## 七、跨件边界
+## 七、跨插件边界
 
-**定法**：见[关键判据 K4](/docs/criteria/k4)。实施上的落点是块笔记的存储行格式：`LIBRARY_CONTRACT` 对不上时改成拒绝挂载，
+**做法**：见[关键判据 K4](/docs/criteria/k4)。实施上落在块笔记的存储行格式上：`LIBRARY_CONTRACT` 对不上时改成拒绝加载，
 不只打 warn。
 
-**归属**：写插件手册；块笔记一族（`LIBRARY_CONTRACT` 那一处）。
+**归属**：写插件手册；块笔记系列插件（`LIBRARY_CONTRACT` 那一处）。
 
-**判据**。块笔记两个仓里所有 `instanceof CommandError` 接住的都是本件自己造的对象，命令总线只传信封——各件私有
-一份不出错；真正的风险是版本漂开导致写盘格式对不上。
+**判据**。块笔记两个仓里所有 `instanceof CommandError` 捕获的都是本插件自己创建的对象，命令总线只传返回结构——各插件私有
+一份不会出错；真正的风险是版本不一致导致写盘格式对不上。
 
-## 八、件的收尾
+## 八、插件的卸载清理
 
-**定法**：见[关键判据 K7](/docs/criteria/k7)。
+**做法**：见[关键判据 K7](/docs/criteria/k7)。
 
 **归属**：写插件手册；node-cli、py-cli、windows-backup、bn-core、mcp 各有一处要补。
 
-**判据**。内核退出时只等「交回来的 promise」；今天 restic 可以在 dispose 之后再跑六小时，bn-core 关库落盘没交回
+**判据**。内核退出时只等「返回的 promise」；今天 restic 可以在 dispose 之后再跑六小时，bn-core 关闭数据库并写盘的操作没有返回
 promise，退出时可能丢数据。
 
-## 九、守卫、审计与文档
+## 九、检查、审计与文档
 
-**定法**。
-- **产物守卫**（`devkit.release` 构建之后、发之前，机械执行）：node 半束的裸名 ⊆ node 内置 ∪ `electron` ∪ 必选
-  peer（今天只有 `cordis`）；浏览器半 ⊆ importmap 名；类型检查在 `skipLibCheck: false` 下通过（挡类型链缺包的
-  静默 any）；产物里没有空 import（`import { type X }` 留下的）
-- **audit-deps** 只报要动作的（出范围、钉了源上没有的号）；**audit-structure** 只查「装得上所需」（`exports` /
-  `files` / `keywords` / 入口可解析），不查目录名派生链；两条都接受无参数调用
-- **底座清单只有一份**：devkit 的底座件集是正本，`INSTALL.md` 由它生成或钉住，不再手抄
-- **文档不写会变的数**：AGENTS、README、说明书不写版本号、行数、别仓路径、命令条数，写取法
+**做法**。
+- **构建产物检查**（`devkit.release` 构建之后、发布之前，自动执行）：Node 一侧构建产物里的包名 import ⊆ Node 内置模块 ∪ `electron` ∪ 必选
+  peer（今天只有 `cordis`）；页面一侧 ⊆ importmap 里的包名；类型检查在 `skipLibCheck: false` 下通过（拦住类型链缺包导致的
+  静默 any）；构建产物里没有空 import（`import { type X }` 留下的）
+- **audit-deps** 只报需要处理的（超出版本范围、指定了源上没有的版本号）；**audit-structure** 只查「能装上」所需的（`exports` /
+  `files` / `keywords` / 入口可解析），不查从目录名推导名字的那一串规则；两条都支持无参数调用
+- **首次安装的插件集清单只有一份**：devkit 里的首次安装插件集是正本，`INSTALL.md` 由它生成或引用它，不再手抄
+- **文档不写会变的数字**：AGENTS、README、说明书不写版本号、行数、别的仓的路径、命令条数，写获取方法
 
-**归属**：devkit；docfirst 规矩（「不写会变的数」可加一条正则检查）。
+**归属**：devkit；docfirst 规矩（「不写会变的数字」可以加一条正则检查）。
 
 ## 放弃的能力
 
-- **库的独立热换**（peer 加现查 home 直接依赖，见卡 [依赖热换](/trajectory/2026-09-10-peer-dep-live-swap)）：唯一用例
-  是 docfirst 件现查 docfirst 库；改为随件同发
-- **装件时对库与别件的 peer 警告**：从来只警告不拦，由开发期 audit-deps 代替
-- **库单独升级**：要重发用到它的件
+- **库的独立热替换**（peer 加上运行时查找 home 的直接依赖，见卡 [依赖热换](/trajectory/2026-09-10-peer-dep-live-swap)）：唯一用例
+  是 docfirst 插件运行时查找 docfirst 库；改为随插件一起发布
+- **安装插件时对库与其他插件的 peer 警告**：一直只警告不拦截，由开发期 audit-deps 代替
+- **库单独升级**：要重新发布用到它的插件
 
-## 要改写的卡与红线
+## 要改写的轨迹卡与红线
 
-拆解归梁时落新卡，用 `supersedes::` 指旧卡，旧卡留档：
+拆解归位时写新卡，用 `supersedes::` 指向旧卡，旧卡保留存档：
 
 - [依赖三档](/trajectory/2026-09-07-deps-three-tiers)——被第一节那张「运行时谁提供」表取代
 - [依赖热换](/trajectory/2026-09-10-peer-dep-live-swap)——能力放弃
-- [cordis 走 peer](/trajectory/2026-09-07-wall-cordis-peer)——结论维持（cordis 是宿主提供的，写 peer）；新卡用
-  `pivots-from::` 指它，补上多份实测与「别写 `instanceof Service`」
-- [词汇表独立包](/trajectory/2026-09-07-vocab-package-standalone)——维持，契约面收窄另落卡
-- devkit 写插件手册红线 2（改成「宿主提供的写 peer，别写 `instanceof Service`」）、3（换成那张表）、4（打包器负责）
-  改写；base-plugins「撞过的墙」里「两份 cordis 会以莫名其妙的方式坏掉」那两处改写成实测结论
+- [cordis 走 peer](/trajectory/2026-09-07-wall-cordis-peer)——结论维持（cordis 由宿主提供，写 peer）；新卡用
+  `pivots-from::` 指向它，补上 cordis 多份实例的实测结果与「别写 `instanceof Service`」
+- [词汇表独立包](/trajectory/2026-09-07-vocab-package-standalone)——维持，契约收窄另写一张卡
+- devkit 写插件手册红线 2（改成「宿主提供的写 peer，别写 `instanceof Service`」）、3（换成那张表）、4（交给打包器负责）
+  改写；base-plugins「撞过的墙」一节里「两份 cordis 会以莫名其妙的方式坏掉」那两处改写成实测结论
 
 ## 分期与验收
 
-每期开工前读 devkit 的 skill「gwb-release」定版本号（契约面动了的抬次版本号）；每期在隔离 home 验，不拿 default 验。
+每期开工前读 devkit 的 skill「gwb-release」确定版本号（契约动了的升次版本号）；每期都在隔离 home 验证，不拿 default 验证。
 
 **第一期：内核（与其余各期独立）**
 
-- [ ] importmap 只在页面打招呼时算；只读现状只在无外壳时推；warn 不触发推送——单测钉住「撞名时不再反复推送」
-- [ ] 导航锁：主框架跳转、开新窗一律拒；`gwb:command` 只收顶层帧——隔离 home 里拖入链接、iframe 里 `window.open`
-  各验一次
-- [ ] 内核发版、装新安装包
+- [ ] importmap 只在页面发 hello 时计算；只读状态页只在没有外壳时推送；warn 不触发推送——用单测固定「名字冲突时不再反复推送」
+- [ ] 导航锁：主框架跳转、打开新窗口一律拒绝；`gwb:command` 只接收顶层框架——在隔离 home 里拖入链接、在 iframe 里调 `window.open`
+  各验证一次
+- [ ] 内核发版、安装新安装包
 
 **第二期：工具链（devkit 与 shell）**
 
-- [ ] shell 导出外置名 helper
-- [ ] 模板：两半 esbuild 打包、`cordis` 外置写 peer、其余照第一节那张表写、调 shell helper
-- [ ] `devkit.release`：产物守卫（裸名、`skipLibCheck: false` 类型检查、无空 import）；去掉 peer 那一族检票
-- [ ] `devkit.dev`：pack + `file:`，只带被测包及其依赖构建；装与重挂先临时用现有 plugin-manager 命令，第三期换 `apply`
-- [ ] audit-deps / audit-structure 去噪、接受无参数
+- [ ] shell 导出外置包名 helper
+- [ ] 模板：两侧都用 esbuild 打包、`cordis` 外置并写 peer、其余按第一节那张表写、调用 shell helper
+- [ ] `devkit.release`：构建产物检查（包名 import、`skipLibCheck: false` 类型检查、无空 import）；去掉 peer 那一类发布前检查
+- [ ] `devkit.dev`：pack + `file:`，只构建被测包及其依赖；安装与重新加载先临时用现有 plugin-manager 命令，第三期换成 `apply`
+- [ ] audit-deps / audit-structure 减少无用输出、支持无参数调用
 - [ ] 写插件手册与 gwb-release 按本页改写
 
-**第三期：各件迁移**
+**第三期：各插件迁移**
 
-- [ ] 先迁 default 里挂不上的 gitea、mineru、docfirst-workflow
-- [ ] commands 导出自己的信封类型；词汇表包收窄契约面（`GwbResult`、`onShell`），并给它的 d.ts 补上 DOM 类型库
-  声明——它引了 `HTMLElement`，关掉 skipLibCheck 时自己先报 TS2304（探针 01 的追加段）
-- [ ] 每个件：两半打包、清单照第一节那张表、不 `instanceof` 别件对象与 `Service`、dispose 交回 promise；块笔记一族契约版本不符拒挂；
-  block-note 撤掉自己的 `gwb.shared`、块笔记一族把解析库各自打进束
-- [ ] 旧共享包 `gwb-shared-react` / `gwb-tokens` 在 registry 上标弃用；cgm-alert、nas-suite 去掉对它们的依赖
+- [ ] 先迁移在 default 里加载失败的 gitea、mineru、docfirst-workflow
+- [ ] commands 导出自己的返回结构类型；词汇表包收窄契约（`GwbResult`、`onShell`），并给它的 d.ts 补上 DOM 类型库
+  声明——它引用了 `HTMLElement`，关掉 skipLibCheck 时自己先报 TS2304（probe 01 的追加段）
+- [ ] 每个插件：两侧打包、清单按第一节那张表、不 `instanceof` 其他插件的对象与 `Service`、dispose 返回 promise；块笔记系列插件契约版本不符时拒绝加载；
+  block-note 撤掉自己的 `gwb.shared`、块笔记系列插件把解析库各自打包进构建产物
+- [ ] 旧共享包 `gwb-shared-react` / `gwb-tokens` 在 registry 上标记弃用；cgm-alert、nas-suite 去掉对它们的依赖
 
-**迁移清单**（2026-09-23 拿现有件对照关键判据扫出来的偏差；先定标准答案，这些留着一起改）：
+**迁移清单**（2026-09-23 拿现有插件对照关键判据扫出来的偏差；先定标准答案，这些留着一起改）：
 
-| 件 | 偏差 | 判据 |
+| 插件 | 偏差 | 判据 |
 | --- | --- | --- |
-| gitea、docfirst-workflow、mineru | 按值 import 词汇表包已撤的 `isRecord`，default 里挂不上 | K2 |
-| settings | 卸载时清掉待写定时器，丢写盘 | K7 |
-| bn-core | 关库落盘的 promise 没交回 | K7 |
-| cgm-alert | 关库前不等在途写入；手写宿主类型并 `as` 强转；peer 挂停发共享包 | K7、K6、K2 |
-| windows-backup | restic 子进程与心跳卸载后照跑 | K7 |
-| node-cli、py-cli、devkit、plugin-manager | 在途子进程 / pnpm 进程卸载时不收 | K7 |
-| mcp | `server.close()` 不交回 promise；自用库写 dependencies 未打包 | K7、K2 |
-| bn-papers | 期望契约 7 已落后于 8；运行时 import 论文件子路径；调 bn-props 的命令；落盘队列不等 | K4、K5、K7 |
-| 块笔记各件 | 契约比对等值且只警告；bn-single 自己拼路径读 bn-core 数据目录 | K4 |
+| gitea、docfirst-workflow、mineru | 按值 import 词汇表包已移除的 `isRecord`，在 default 里加载失败 | K2 |
+| settings | 卸载时清掉待写入的定时器，未写入的数据丢失 | K7 |
+| bn-core | 关闭数据库并写盘的 promise 没有返回 | K7 |
+| cgm-alert | 关闭数据库前不等进行中的写入；手写宿主类型并用 `as` 强转；peer 依赖已停止发布的共享包 | K7、K6、K2 |
+| windows-backup | restic 子进程与心跳在卸载后照常运行 | K7 |
+| node-cli、py-cli、devkit、plugin-manager | 进行中的子进程 / pnpm 进程在卸载时不回收 | K7 |
+| mcp | `server.close()` 不返回 promise；自用库写在 dependencies 里、没有打包 | K7、K2 |
+| bn-papers | 期望的契约版本 7 已落后于 8；运行时 import 论文插件的子路径；调用 bn-props 的命令；写盘队列不等待 | K4、K5、K7 |
+| 块笔记各插件 | 契约比对用等值判断且只警告；bn-single 自己拼路径读 bn-core 的数据目录 | K4 |
 | block-note 库 | 自己声明 `gwb.shared` | K3 |
-| 各带界面的件 | 构建脚本手抄 react 四名（等 shell 出 helper） | K3 |
-| plugin-manager、docs-site | 经设置命令读别件的分区；docs-site 走 `shell.panes` 命令而服务上也有同名方法 | K5 |
+| 各个带界面的插件 | 构建脚本手抄 react 四个包名（等 shell 提供 helper） | K3 |
+| plugin-manager、docs-site | 通过设置命令读其他插件的分区；docs-site 调用 `shell.panes` 命令，而服务上也有同名方法 | K5 |
 | shell、unit-folder、node-cli | 服务上的读写方法与命令重复 | K5 |
-| dsh | `dsh.power` 一条命令四合一；`import { type X }` 留空 import | K5、K2 |
-| commands | 命令信封住在词汇表包；说明书服务的形状用 `as` 强转 | K6 |
-| 几乎所有件 | 词汇表包、别的件写成 peer；node 半产物留着自用库裸名 | K2 |
-| devkit | `yaml` 死依赖 | K2 |
+| dsh | `dsh.power` 一条命令包含四种操作；`import { type X }` 留下空 import | K5、K2 |
+| commands | 命令返回结构的类型放在词汇表包里；说明书服务的类型用 `as` 强转 | K6 |
+| 几乎所有插件 | 词汇表包、其他插件写成 peer；Node 一侧构建产物里留着自用库的包名 import | K2 |
+| devkit | `yaml` 是没用到的依赖 | K2 |
 
-**第四期：plugin-manager 收口**
+**第四期：plugin-manager 成为唯一写 home 的插件**
 
-- [ ] `apply` 成为唯一写手；精确号；删 peer 提升、`peerWarnings`、库分类；`update` 并入 `update-all`；shell 变了整页重载
-- [ ] `devkit.dev` / `home.new` 改调 `apply`；`INSTALL.md` 的底座清单改为从 devkit 正本来
-- [ ] default home 清单里的库与共享包清出去，只剩件
-- [ ] 各仓现状页改写并钉码；落卡；说明书（gwb-release、gwb-devkit、gwb-plugin-manager、gwb-shell）与 AGENTS 重摆；删本页
+- [ ] `apply` 成为唯一写 home 的入口；精确版本号；删 peer 提升、`peerWarnings`、库分类；`update` 并入 `update-all`；shell 变了整页重载
+- [ ] `devkit.dev` / `home.new` 改为调用 `apply`；`INSTALL.md` 的首次安装插件集清单改为从 devkit 的正本来
+- [ ] default home 清单里的库与共享包清出去，只剩插件
+- [ ] 各仓现状页改写并引用代码；写轨迹卡；说明书（gwb-release、gwb-devkit、gwb-plugin-manager、gwb-shell）与 AGENTS 重新生成；删本页

@@ -1,39 +1,39 @@
 ---
 title: AGENTS（仓根正本）
-description: 仓根 AGENTS.md 由这一页摆出去——每次会话都得知道的硬约束；改这里，跑 docfirst render，一起提交
+description: 仓根 AGENTS.md 由这一页生成——每次会话都要知道的硬约束；改这里，跑 docfirst render，一起提交
 ---
 
 # gwb-kernel
 
-god 工作台的内核：一个 Electron 应用，cordis 住主进程，只做第一个件跑起来之前必须发生的事，其余一切皆件。
-现状从文档站入口读（`docs-site/content/docs/index.mdx`，起站后是 `/docs`），只做什么、刻意不做什么见同目录 `boundary.mdx`；
-peer、importmap、服务还是命令这类反复出现的选择按同目录 `criteria/`（关键判据 K1…K8，一条一页，配标准例子 E1…E5）判，引用写编号。
+god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只做第一个插件运行前必须完成的事，其余都做成插件。
+现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`），只做什么、刻意不做什么见同目录 `boundary.mdx`；
+peer、importmap、服务还是命令这类反复出现的选择按同目录 `criteria/`（关键判据 K1…K8，一条一页，配标准例子 E1…E5）判断，引用写编号。
 
-## 准入判据（关键判据 K1）：两道关，都得过
+## 准入判据（关键判据 K1）：两条都要满足
 
-1. **凡是「第一个件存在之前必须发生的事」，才进内核。** 其余一律皆件
-2. **真遇到需求才加。** 此刻就干不成，而且说得出现场：谁、在做什么、卡在哪
+1. **只有「第一个插件存在之前必须完成的事」才进内核。** 其余一律做成插件
+2. **确实遇到需求才加。** 现在就做不成，而且说得出场景：谁、在做什么、卡在哪
 
-拿不准按「不进」处理。这个仓最容易的死法是慢慢长回母仓的样子——查母仓是为了知道坑在哪，不是抄它怎么绕。
+拿不准按「不进」处理。这个仓最容易出的问题是慢慢长回旧版工作台仓 god-workbench 的样子——查旧仓是为了知道坑在哪，不是照抄它的绕法。
 
-## 撞过的墙：别改回去
+## 遇到过的问题：别改回去
 
-- Electron ESM 主进程**不能顶层 `await app.whenReady()`**：ready 要等入口模块求值完才发，互相等死、静默挂住
-- 不给 `loader.internal` 塞裸名解析，件按 loader 自己的位置解析、**静默**挂不上
-- 工作区链接会替 registry 满足 peer：装包撞墙时先现读 `pnpm-workspace.yaml` 与 pnpm-lock 的 `settings`，别按老配置办事
-- 没有终端时 stderr 每写一次抛 EPIPE，`main.ts` 里吞掉，文件照写
+- Electron ESM 主进程**不能顶层 `await app.whenReady()`**：ready 要等入口模块求值完才触发，互相等待，静默卡死
+- 不给 `loader.internal` 配包名 import（bare specifier，直接写包名、不带相对路径的 import）解析，插件按 loader 所在位置解析，**静默**加载失败
+- 工作区链接会替 registry 满足 peer：装包出问题先读当前的 `pnpm-workspace.yaml` 与 pnpm-lock 的 `settings`，别按旧配置办
+- 没有终端时每次写 stderr 都抛 EPIPE，`main.ts` 捕获忽略，日志文件照写
 
-## 契约面
+## 契约（对外承诺的接口）
 
-正本 `packages/gwb-plugin-api/src/index.ts`，与内核同号。抬版本号前读 devkit 的 skill「gwb-release」；发版走
-`devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}`，别在包目录手敲 `pnpm publish`（绕开树干净与产物白名单两道守卫）。
+正本 `packages/gwb-plugin-api/src/index.ts`，与内核同版本号。升版本号前读 devkit 的 skill「gwb-release」；发版用
+`devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}`，别在包目录手动 `pnpm publish`（会跳过 git 干净与构建产物白名单检查）。
 
 ## 怎么跑
 
-**日常从安装版起，不进这个仓**（开始菜单「gwb-kernel」）。安装包：`pwsh installer\scripts\build.ps1`，方案正本 `installer/SPEC.md`；
-新机器装机照仓根 `INSTALL.md`。别日常直跑 `build\dist\win-unpacked\`——每次构建整个重生成，会撞在跑的 exe。
+**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）。安装包：`pwsh installer\scripts\build.ps1`，方案正本 `installer/SPEC.md`；
+新机器安装照仓根 `INSTALL.md`。别日常直接跑 `build\dist\win-unpacked\`——每次构建整个重新生成，会和运行中的 exe 冲突。
 
-**改内核本身才进这个仓**，验机只在隔离 home（`devkit.home.new` 起的是安装版、不 build 本仓）：
+**改内核本身才进这个仓**，只在隔离 home 里实际运行验证（`devkit.home.new` 启动的是安装版，不构建本仓）：
 
 ```powershell
 pnpm install
@@ -41,11 +41,11 @@ $env:GWB_HOME = '<这次验什么>-<yyMMddHHmm>'
 cd apps\desktop; pnpm start
 ```
 
-门禁 `pnpm check`；文档检查不在里面，单独 `pnpm doc` / `pnpm doc:confirm`。页面取证用 devkit 的 `devkit.cdp`，调试端口别跟别的会话撞。
-实验材料落 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm workspace。
+提交前检查 `pnpm check`；文档检查不在里面，单独跑 `pnpm doc` / `pnpm doc:confirm`。查看页面状态用 `devkit.cdp`，调试端口别和其他会话重复。
+实验材料放 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm workspace。
 
 ## 文档与注释
 
-- **知识随件走**，本仓不放 skill：写件读 `gwb-devkit`，写文档与记轨迹读 `docfirst-docs` / `trajectory`，选型先盘问（`matt-pocock` 的 grill 一节），推完交人拍板、拍板后记卡
-- 这份 AGENTS 只装硬约束；为什么、撞过什么住文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
-- 仓根 `README.md`、`AGENTS.md`、`INSTALL.md` 是生成物，正本在 `docs-site/content/outputs/`，改完在 `docs-site` 跑 `pnpm docfirst render`，一起提交；`CLAUDE.md` 只有一行 `@AGENTS.md`
+- **知识随插件发布**，本仓不放 skill：写插件读 `gwb-devkit`，写文档、轨迹卡读 `docfirst-docs` / `trajectory`，选型先盘问（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
+- 这份 AGENTS 只放硬约束；为什么、遇到过什么问题住文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
+- 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 是生成物，正本在 `docs-site/content/outputs/`，改完在 `docs-site` 跑 `pnpm docfirst render`，一起提交；`CLAUDE.md` 第一行固定是 `@AGENTS.md`，只给 Claude 的指令写在它后面

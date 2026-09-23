@@ -1,13 +1,13 @@
 ---
 title: E1 commands
-description: 最底层的服务提供方——扩展点用服务、不按值 import cordis 就没有 peer、契约住自己包里
+description: 最底层的服务提供方——扩展点用服务、不按值 import cordis 就不写 peer、契约放在自己的包里
 ---
 
 # E1 commands（`@godcreator/gwb-commands`）
 
 ## 角色
 
-命令总线：别的件往这里登记命令，页面、agent、别的件经它按名调用。它是一个纯粹的扩展点提供方。
+命令总线：别的插件往这里注册命令，页面、agent、别的插件通过它按名字调用。它只提供扩展点，别的不做。
 
 ## 清单
 
@@ -19,24 +19,24 @@ description: 最底层的服务提供方——扩展点用服务、不按值 imp
 }
 ```
 
-没有 peer：服务用 `ctx.provide` 提供，产物里没有一句 `import … from 'cordis'`，运行时不用在 home 里解析 cordis。它的 d.ts 里有 `declare module 'cordis'` 的增强，那是类型——消费方自己在 dev 里列 cordis（[K2](/docs/criteria/k2)）。它照样依赖 cordis 的协议，这份兼容由「宿主换 cordis 大版本是内核的破坏版、所有件同一趟重验」兜住（[K8](/docs/criteria/k8)）。`cordis` 留在 dev 里，给自己的类型检查用。
+没有 peer：服务用 `ctx.provide` 提供，构建产物里没有一句 `import … from 'cordis'`，运行时不需要在 home 里解析 cordis。它的 d.ts 里有 `declare module 'cordis'` 的类型增强，那只是类型——使用这些类型的一方自己在 dev 里列 cordis（[K2](/docs/criteria/k2)）。它照样依赖 cordis 的协议，这份兼容性由「宿主（内核）换 cordis 大版本就是内核的破坏性版本、所有插件在同一次里全部重新验证」来保证（[K8](/docs/criteria/k8)）。`cordis` 留在 dev 里，给自己的类型检查用。
 
-## 产物里的裸名
+## 构建产物里的包名 import
 
-只有 node 内置。
+包名 import（bare specifier，直接写包名、不带相对路径的 import，比如 `from 'cordis'`）只有 node 内置模块。
 
-## 面
+## 对外接口
 
-一个服务 `gwbCommands`：`register` 是扩展点（别的件往里登记命令），`run` 是按名转发的口。它自己不注册命令（[K5](/docs/criteria/k5)）。
+一个服务 `gwbCommands`：`register` 是扩展点（别的插件往里注册命令），`run` 按名字转发调用。它自己不注册命令（[K5](/docs/criteria/k5)）。
 
 ## 契约
 
-自己的包导出命令定义的形状、服务接口与命令信封 `{ ok, data, error }`，加上 `declare module 'cordis'` 的增强（[K6](/docs/criteria/k6)）。
+自己的包导出命令定义的类型、服务接口和命令返回值的外层结构 `{ ok, data, error }`，以及 `declare module 'cordis'` 的类型增强（[K6](/docs/criteria/k6)）。
 
-## 收尾
+## 卸载清理
 
-`register` 回注销函数，调用方包进 `ctx.effect`，卸载时自动撤；自己不起进程、不开定时器（[K7](/docs/criteria/k7)）。
+`register` 返回注销函数，调用方把它包进 `ctx.effect`，卸载时自动注销；自己不启动进程、不开定时器（[K7](/docs/criteria/k7)）。
 
 ## 现状偏差
 
-待改：词汇表包写成了 peer；命令信封住在词汇表包；说明书服务的形状是用 `as` 强转的。
+待改：词汇表包写成了 peer；命令返回值的外层结构放在词汇表包里；说明书（skill）服务的类型是用 `as` 强制转换出来的。

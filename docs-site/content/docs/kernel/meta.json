@@ -1,5 +1,5 @@
 {
   "title": "模块",
-  "description": "内核按模块一页：管什么、不知道什么、数据结构、接口、怎么单独测、代码地图",
+  "description": "内核每个模块一页：管什么、不知道什么、数据结构、接口、怎么单独测、代码地图",
   "pages": ["home", "loading", "importmap", "bridge", "logs", "contract"]
 }

@@ -1,9 +1,10 @@
 # gwb-kernel
 
-> **要在一台机器上装 gwb？** 见 [INSTALL.md](INSTALL.md)——写给替用户装机的 agent。安装包只带内核，件照那份说明装。
+> **要在一台机器上安装 gwb？** 见 [INSTALL.md](INSTALL.md)——写给替用户安装的 agent。安装包只带内核，插件按那份说明安装。
 
-god 工作台的内核：一个 Electron 应用，cordis 住在主进程里，只做第一个件跑起来之前必须发生的事——铺 home、起 cordis 并挂件、
-两半的裸名解析、开窗与桥、自己出错人看得见——其余一切皆件。件住在各自的件仓里，装进 home 由件管理件负责。
+god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里，只做第一个插件运行之前必须完成的事——初始化 home、创建 cordis 实例并加载插件、
+主进程与页面两侧的包名 import（bare specifier，直接写包名、不带相对路径的 import）解析、创建窗口与 IPC 通道、自身出错时让人看得见——其余功能全部由插件实现。
+插件的源码在各自的仓里，安装进 home 由插件管理插件（plugin-manager）负责。
 
 ## 开发
 
@@ -13,15 +14,15 @@ pnpm check                              # 构建词汇表 + typecheck + lint + t
 $env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 在隔离 home 里起本仓内核
 ```
 
-日常使用从安装版起，不从仓里跑；安装包由 `installer/` 出。
+日常使用从安装版启动，不从仓里运行；安装包由 `installer/` 生成。
 
 ## 文档
 
-文档站在 `docs-site/`，从「从这里开始」读起：是什么、跟着一次开机走一遍、按来意怎么读。站上还有边界（只做什么、刻意不做什么）、
-各模块的现状、轨迹（怎么走到今天）与路线。
+文档站在 `docs-site/`，从「从这里开始」读起：内核是什么、跟着一次启动走一遍、按你的目的该读哪些页。站上还有边界（只做什么、刻意不做什么）、
+各模块的现状、轨迹（怎么走到今天）与路线图。
 
 ```powershell
 cd docs-site; pnpm build; pnpm start      # http://localhost:4314
 ```
 
-这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`，改完在 `docs-site` 跑 `pnpm docfirst render` 重摆，一起提交。
+这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`，改完在 `docs-site` 跑 `pnpm docfirst render` 重新生成，一起提交。

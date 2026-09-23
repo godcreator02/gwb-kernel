@@ -1,16 +1,16 @@
 ---
 title: E4 块笔记
-description: 最复杂的件间关系——契约包 block-note、提供方 bn-core、消费方 bn-comment；命令为本、在场标记、契约版本区间
+description: 插件之间关系最复杂的一组——接口定义包 block-note、提供方 bn-core、使用方 bn-comment；以命令为主、存在标记服务、契约版本区间
 ---
 
 # E4 块笔记（`block-note` + `bn-core` + `bn-comment`）
 
 ## 角色
 
-三种角色各一个：
-- **`@godcreator/block-note`**：契约包（库，不是件）。命令的参数与回执定义、类型化客户端、类型与纯函数、界面组件
+三种角色各有一个：
+- **`@godcreator/block-note`**：接口定义包（是库，不是插件）。包含命令的参数与返回值定义、类型化客户端、类型与纯函数、界面组件
 - **`@godcreator/gwb-bn-core`**：提供方。持有笔记库，实现全部 `block-note.*` 命令
-- **`@godcreator/gwb-bn-comment`**：消费方之一（props、query、members、journal 同形）。在块上挂评论，经命令读写 bn-core
+- **`@godcreator/gwb-bn-comment`**：使用方之一（props、query、members、journal 的写法相同）。给块添加评论，通过命令读写 bn-core 的数据
 
 ## 清单
 
@@ -37,7 +37,7 @@ description: 最复杂的件间关系——契约包 block-note、提供方 bn-c
 ```
 
 ```jsonc
-// @godcreator/gwb-bn-comment —— 消费方
+// @godcreator/gwb-bn-comment —— 使用方
 {
   "keywords": ["gwb", "gwb-plugin"],
   "devDependencies": {
@@ -47,27 +47,27 @@ description: 最复杂的件间关系——契约包 block-note、提供方 bn-c
 }
 ```
 
-三个都**没有 peer**：bn-core 与 bn-comment 用 `ctx.provide` 与函数式写法，不按值 import cordis；block-note 与 block-notebook-core 是自用的库，打进各自的产物；bn-core 在 bn-comment 那里只取类型（[K2](/docs/criteria/k2)）。bn-comment 需要 bn-core 已装，不写进清单——没装时停在「缺 blockNote 服务」的待命。
+三个包都**没有 peer**：bn-core 与 bn-comment 用 `ctx.provide` 和函数式写法，不按值 import cordis；block-note 与 block-notebook-core 是自己用的库，打包进各自的构建产物；bn-comment 对 bn-core 只取类型（[K2](/docs/criteria/k2)）。bn-comment 需要 bn-core 已经安装，这一点不写进清单——没装时它停在「等待 blockNote 服务」的状态。
 
-## 产物里的裸名
+## 构建产物里的包名 import
 
-node 半：只有 node 内置。浏览器半：只有 react 四名。block-note 的解析库（mdast 一族）体积大，但不是整页单例，所以不进 importmap，各件自带；block-note 不声明 `gwb.shared`（[K3](/docs/criteria/k3)）。跨件共享 React context 不走 block-note 的 `./ui`，走 props。
+构建产物里剩下的包名 import（bare specifier，直接写包名、不带相对路径的 import，比如 `from 'cordis'`）：node 端代码里只有 node 内置模块；浏览器端代码里只有 react 的四个包名。block-note 用的解析库（mdast 这一系列包）体积大，但不需要整个页面只有一份，所以不进 importmap，各插件自带；block-note 不声明 `gwb.shared`（[K3](/docs/criteria/k3)）。插件之间共享 React context 不通过 block-note 的 `./ui`，通过 props。
 
-## 面
+## 对外接口
 
-- **命令为本**（[K5](/docs/criteria/k5)）：`block-note.*` 是读写笔记的唯一一个面，页面、agent、各件共用；bn-comment 注册自己的 `bn-comment.*`
-- **在场标记**：bn-core 提供服务 `blockNote`，只带 `{ contract, minCompatible }`；bn-comment `inject: ['gwbCommands', 'blockNote', 'blockNoteExtensions']`，bn-core 重挂时它跟着被拆掉再挂回
-- **扩展点**：`blockNoteLibraries`（登记笔记库）、`blockNoteExtensions`（登记属性提供者之类）是服务，因为要传回调、要随提供方撤销
-- **契约版本区间**（[K4](/docs/criteria/k4)）：bn-comment 把自己期望的版本写死在代码里，挂载时比对 `blockNote` 的 `[minCompatible, contract]`，落在外面就拒绝挂载
+- **以命令为主**（[K5](/docs/criteria/k5)）：`block-note.*` 是读写笔记的唯一方式，页面、agent、各插件共用；bn-comment 注册自己的 `bn-comment.*` 命令
+- **存在标记服务**：bn-core 提供服务 `blockNote`，只带 `{ contract, minCompatible }`；bn-comment 写 `inject: ['gwbCommands', 'blockNote', 'blockNoteExtensions']`，bn-core 重新加载时，它会跟着被卸载、再重新加载
+- **扩展点**：`blockNoteLibraries`（注册笔记库）、`blockNoteExtensions`（注册属性提供者之类）做成服务，因为要传回调、注册要随提供方卸载一起撤销
+- **契约版本区间**（[K4](/docs/criteria/k4)）：bn-comment 把自己期望的版本写死在代码里，加载时和 `blockNote` 的 `[minCompatible, contract]` 比对，落在区间外就拒绝加载
 
 ## 契约
 
-命令的参数、回执与类型化客户端住 block-note 契约包，由 bn-core 这一方维护并发版；消费方经客户端调命令，拿到的是类型化结果（[K6](/docs/criteria/k6)）。改命令形状要动 `contract`，破坏了旧形状还要抬 `minCompatible`，契约包的导出也在契约面里（[K8](/docs/criteria/k8)）。
+命令的参数、返回值与类型化客户端放在 block-note 接口定义包里，由 bn-core 这一方维护并发版；使用方通过客户端调命令，拿到的是有类型的结果（[K6](/docs/criteria/k6)）。改命令的参数或返回值结构要改 `contract`，破坏了旧结构还要升 `minCompatible`；接口定义包的导出也算契约（[K8](/docs/criteria/k8)）。
 
-## 收尾
+## 卸载清理
 
-bn-core 卸载时关库，冲刷落盘的 promise 从清理函数里交回；bn-comment 的登记随卸载自动摘；各件只读写自己的数据目录，bn-core 的库数据别的件经命令拿，不自己拼路径（[K7](/docs/criteria/k7)、[K4](/docs/criteria/k4)）。
+bn-core 卸载时关闭笔记库，把待写数据写入磁盘的 promise 从清理函数里返回；bn-comment 的注册在卸载时自动注销；各插件只读写自己的数据目录，bn-core 的笔记库数据，别的插件通过命令拿，不自己拼路径（[K7](/docs/criteria/k7)、[K4](/docs/criteria/k4)）。
 
 ## 现状偏差
 
-待改：block-note 库声明了 `gwb.shared`；一族把 block-note、bn-core、commands 等写成 peer；契约比对要求完全相等且只警告、bn-papers 期望的版本已落后；bn-core 关库落盘的 promise 没交回；bn-single 自己拼路径读 bn-core 的数据目录；bn-papers 运行时 import 论文件的子路径。
+待改：block-note 库声明了 `gwb.shared`；这组插件把 block-note、bn-core、commands 等写成了 peer；契约版本比对要求完全相等而且只警告，bn-papers 期望的版本已经落后；bn-core 关闭笔记库时写盘的 promise 没有返回；bn-single 自己拼路径读 bn-core 的数据目录；bn-papers 在运行时 import 论文插件的子路径。
