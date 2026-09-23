@@ -1,0 +1,44 @@
+---
+title: plugin-manager 精简分两步：过渡期做法留到插件迁移之后再删
+born-at: 2026-09-23T09:30
+type: choice
+parent: [2026-09-23-plugin-manager-into-kernel-repo]
+label: 精简分两步
+domain: 这条线
+---
+
+## 背景
+
+plugin-manager 搬进内核仓后，原计划第三步一次做完：删 peer 提升、peer 版本警告、库与插件的区分，所有写 home 的操作
+走同一个入口，条目状态和内核共用一份，加一个用真实 loader 跑的测试。
+
+动手前核对发现，前三样今天还在起作用：块笔记插件的页面代码直接 import `@godcreator/block-note`（`bn-comment` 的
+`dist/client.js`、`shared/comment.js`），这个名字靠 block-note 声明的 `gwb.shared` 进 importmap，而内核只从 home 的
+直接依赖收集 importmap——让 block-note 成为 home 直接依赖的正是 peer 提升。现在删掉，新 home 里装块笔记插件，页面
+上就找不到 block-note。default 里也还有两个库是直接依赖（`block-note`、`gwb-plugin-api`），安装时仍要知道库不加条目。
+内核仓的定案页本来就把这些删除排在插件迁移之后。
+
+## 结论与边界
+
+分两步。**3a（已做）**：
+- 改 home 只剩一个入口 `applyToHome`，安装、peer、升级、一键热升级、卸载都经它排进同一个串行队列，行为不变
+- 条目状态名表：内核 `entry-state.ts` 导出 `FIBER_STATE`，插件那份也导出，测试断言两份一致
+- `tests/loader.test.ts` 用内核实际使用的 loader 与 include 版本跑真实条目树，并断言版本与 `apps/desktop` 一致
+- 源码注释去黑话；文档页改成接缝页「home 与插件管理」
+- 只发开发版到隔离 home 验证，不发正式版、不动 default
+
+**3b（等块笔记插件按关键判据 K2 迁移之后）**：删 peer 提升、peer 版本警告、库与插件的区分，`update` 并进 `update-all`，
+对外提供 `plugin-manager.apply` 给 devkit 的 `dev` / `home.new` 用。这是破坏性变更，要升 x，插件管理窗格要跟着改。
+
+人同意先按推荐做进去，之后由人收敛（2026-09-23）。
+
+## 否掉的候选
+
+- **现在一次删完**——新装块笔记插件会在页面上找不到 block-note，直到那组插件迁移完
+- **现在就对外提供 `plugin-manager.apply` 命令**——还没有调用方，先只做内部入口
+- **把条目状态抽成一个私有共享包**——插件用 `tsc` 直接构建、不打包，引用私有包就得先发布它；一个核对测试就够了
+
+## 代价与遗留
+
+- 过渡期里 plugin-manager 仍保留三样将来要删的逻辑，接缝页「home 与插件管理」专门写了一节说明它们为什么还在
+- 条目状态名仍是两份，靠测试保证一致

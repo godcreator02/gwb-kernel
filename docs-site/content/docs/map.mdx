@@ -3,7 +3,7 @@ title: 系统地图
 description: 内核由哪几个文件组成、每个文件对外提供什么、谁依赖谁、接缝在哪、日志怎么输出
 ---
 
-**本页回答**：内核拆成哪几个文件，各自对外提供什么接口，谁依赖谁；四条接缝各由哪几个文件实现；日志怎么输出。
+**本页回答**：内核拆成哪几个文件，各自对外提供什么接口，谁依赖谁；五条接缝各由哪几个文件实现；日志怎么输出。
 
 <Diagram name="module-map" title="内核的文件、依赖方向与 IPC 通道">
 - 灰色箭头表示依赖，从 import 的一方指向被 import 的一方：`main.ts` 把各部分组装起来，是唯一依赖 electron 的文件，它依赖其余所有文件；`imports.ts` 依赖 `bare-import.ts`（两侧用同一个解析函数）；`entry-state.ts`、`log-file.ts` 不依赖任何其他文件
@@ -25,7 +25,7 @@ description: 内核由哪几个文件组成、每个文件对外提供什么、�
 | `preload.cjs` | 页面上的 `window.gwb` | [命令与事件](/docs/seams/commands)、[外壳接管页面](/docs/seams/shell) |
 | `index.html` | 页面入口 | [外壳接管页面](/docs/seams/shell) |
 | `packages/gwb-plugin-api` | 只有类型：`GwbKernelApi`、`GwbContext`、`GwbWindowApi`、`ShellBoot`、`GwbResult` | 全部接缝的类型 |
-| `plugins/plugin-manager` | 一个插件，不属于内核应用：服务 `gwbPluginManager` 与 `plugin-manager.*` 命令，管 home 里的包与条目 | [插件与内核](/docs/seams/plugins)（写 home、改条目树），见 [plugin-manager](/docs/plugin-manager) |
+| `plugins/plugin-manager` | 一个插件，不属于内核应用：服务 `gwbPluginManager` 与 `plugin-manager.*` 命令，管 home 里的包与条目 | [插件与内核](/docs/seams/plugins)（写 home、改条目树），见 [home 与插件管理](/docs/seams/home) |
 
 各模块导出的函数：
 
@@ -58,6 +58,7 @@ function limitFromEnv(raw: string | undefined, fallback?: number): number    // 
 | 接缝 | 两侧 | 一句话 |
 | --- | --- | --- |
 | [插件与内核](/docs/seams/plugins) | 内核 ↔ 任何插件 | 插件从 `cordis.yml` 进来、按 home 解析、由 cordis 加载，从 `ctx.gwbKernel` 拿到内核的全部东西 |
+| [home 与插件管理](/docs/seams/home) | 内核 ↔ plugin-manager | 只有 plugin-manager 写 home；它依赖 loader 条目树的结构与按真实路径解析，由同仓测试兜住 |
 | [外壳接管页面](/docs/seams/shell) | 页面入口 ↔ 调用 `setShell` 的插件 | 页面的 `#root` 交给外壳模块的默认导出；没有外壳时显示只读状态页 |
 | [页面上的包名](/docs/seams/shared) | 页面 ↔ 声明 `gwb.shared` 的包 | 内核把声明拼成 importmap；同一个名字有两个提供方就都不收录 |
 | [命令与事件](/docs/seams/commands) | 页面 ↔ 提供 `gwbCommands` 的插件 | 内核不认识命令名，原样转交；事件原样推送、不保留 |

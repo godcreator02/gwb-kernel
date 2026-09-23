@@ -19,7 +19,7 @@ description: 决定内核长什么样的六条设计——各自是什么、推�
 
 **刻意不做**（要做得先推翻 K1）：
 
-- 安装、升级插件，核对插件之间的依赖——由插件 [plugin-manager](/docs/plugin-manager) 负责（[移除内核的安装接口](/trajectory/2026-09-08-no-install-port)）
+- 安装、升级插件，核对插件之间的依赖——由插件 [plugin-manager](/docs/seams/home) 负责（[移除内核的安装接口](/trajectory/2026-09-08-no-install-port)）
 - `cordis.yml` 的模板与自动修复——文件缺了只补一个空表（[全新 home 没有 `cordis.yml` 时启动失败](/trajectory/2026-09-07-wall-fresh-home-no-yml)）
 - 界面上的失败处理——除了只读状态页，不分析原因、不重试，也没有按钮（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）
 - 写数据——内核只提供 `dataDir`，写数据由数据插件负责（[数据写盘做成插件](/trajectory/2026-09-07-gwb-data-plugin)）
@@ -68,7 +68,7 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：装了�
 - **依赖内核内部约定**的插件，放在本仓 `plugins/` 下，和内核一起开发、一起测试。内部约定指的是不在
   `gwbKernel` 接口里、却由内核决定的东西：loader 条目树的结构、home 的文件布局、按真实路径解析包名
 
-今天只有 [plugin-manager](/docs/plugin-manager) 一个：它经 `ctx.fiber.entry.parent.tree` 改条目树，写 home 的
+今天只有 [plugin-manager](/docs/seams/home) 一个：它经 `ctx.fiber.entry.parent.tree` 改条目树，写 home 的
 `package.json` 与 `cordis.yml`，热升级能生效靠的是内核按真实路径解析。内核升级 loader 或改解析方式时，在同一个仓里
 就能跑它的测试。它仍然是插件：由 `cordis.yml` 的条目加载，版本号独立于内核，单独发版
 （[plugin-manager 搬进内核仓](/trajectory/2026-09-23-plugin-manager-into-kernel-repo)）。

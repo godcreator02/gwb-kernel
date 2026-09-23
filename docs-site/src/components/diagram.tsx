@@ -11,6 +11,7 @@ import { CallerCleanup } from './diagrams/caller-cleanup'
 import { CommandRelay } from './diagrams/command-relay'
 import { KernelBoot } from './diagrams/kernel-boot'
 import { ModuleMap } from './diagrams/module-map'
+import { PluginHome } from './diagrams/plugin-home'
 import { PluginSeam } from './diagrams/plugin-seam'
 import { RuntimeProviders } from './diagrams/runtime-providers'
 import { SharedNames } from './diagrams/shared-names'
@@ -20,6 +21,7 @@ const drawings: Record<string, () => ReactNode> = {
   'kernel-boot': () => <KernelBoot />,
   'module-map': () => <ModuleMap />,
   'plugin-seam': () => <PluginSeam />,
+  'plugin-home': () => <PluginHome />,
   'shell-handover': () => <ShellHandover />,
   'shared-names': () => <SharedNames />,
   'command-relay': () => <CommandRelay />,

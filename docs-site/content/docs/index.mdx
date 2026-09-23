@@ -20,11 +20,12 @@ description: 内核是什么、一次启动依次发生什么、带着不同的�
 
 god 工作台的内核：一个 Electron 应用，只做**第一个插件运行之前必须完成的事**。界面、命令、数据、设置、插件的安装与卸载、给 agent 用的 MCP 入口，全部是插件。内核为什么切成这样、刻意不做哪些事，见[关键设计](/docs/design)。
 
-内核和插件、页面之间只有四条接缝：
+内核和插件、页面之间只有五条接缝：
 
 | 接缝 | 一句话 |
 | --- | --- |
 | [插件与内核](/docs/seams/plugins) | 插件从 `cordis.yml` 进来、按 home 解析、由 cordis 加载，从 `ctx.gwbKernel` 拿到内核的全部东西 |
+| [home 与插件管理](/docs/seams/home) | 只有插件 plugin-manager 写 home：一次 pnpm，再经 loader 条目树改 `cordis.yml`；它依赖内核的内部约定，和内核同仓 |
 | [外壳接管页面](/docs/seams/shell) | 谁调用 `setShell`，页面的 `#root` 就交给谁；没有外壳时显示只读状态页 |
 | [页面上的包名](/docs/seams/shared) | 包在清单里声明 `gwb.shared`，内核拼成 importmap，页面上 `import 'react'` 靠它找到文件 |
 | [命令与事件](/docs/seams/commands) | 页面调命令，内核原样转交给提供 `gwbCommands` 的插件；插件发事件，内核原样推给页面 |

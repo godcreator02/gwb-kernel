@@ -1,0 +1,96 @@
+---
+title: home 与插件管理
+description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_modules，loader 条目树改 cordis.yml；它依赖的 loader 结构与解析规则由内核决定，所以和内核同仓
+---
+
+**本页回答**：插件怎么装进 home、怎么热升级；内核和 plugin-manager 之间交换什么、各保证什么；为什么这条接缝
+的另一边放在内核仓；过渡期里还留着哪些做法。
+
+<Diagram name="plugin-home" title="只有 plugin-manager 写 home：一次 pnpm，再经 loader 条目树改 cordis.yml">
+- 两侧：内核决定 home 的布局、注册 loader 与 include、按真实路径解析包名；plugin-manager 是唯一写 home 的插件
+- 交换的东西：loader 条目树（`create` / `update` / `remove` / `resolve` 与 `store`，loader 没写进文档的内部结构）、home 里的 `package.json` / `node_modules` / `cordis.yml`
+- 安装：调用 `plugin-manager.install` → 经 `applyToHome` 一次 `pnpm add` → 经条目树 `create` 写回 `cordis.yml` 并当场加载，loader import 包名时由内核按真实路径解析
+- 热升级：`outdated` 查出过期包 → 一次 `pnpm add` 精确版本 → 同一条命令里逐条停用再启用（真实路径换了，重新解析就是新版本；plugin-manager 自己最后）→ `shell.reload` 整页重新加载
+- 换这一边：plugin-manager 的源码在内核仓 `plugins/plugin-manager/`，内核升级 loader 或改解析方式时，它的测试一起跑
+</Diagram>
+
+## 接口
+
+对外是 14 条命令（与同名的服务方法 `ctx.gwbPluginManager`）：
+
+| 命令 | 做什么 |
+| --- | --- |
+| `list` | home 里装了哪些包、每个包有哪些条目、是否加载成功 |
+| `install` / `uninstall` | 装一个包并加一条条目 / 删掉它的全部条目再卸包 |
+| `outdated` / `update` / `update-all` | 查新版本 / 升一个包（不重新加载）/ 一键热升级（不重启） |
+| `add-entry` / `remove-entry` / `enable` / `disable` / `remount` | 条目的增删、启用停用、停用再启用 |
+| `set-label` / `transfer-owner` / `shared` | 条目显示名 / 把一个 id 的数据与设置转给另一个包 / 声明了 `gwb.shared` 的包 |
+
+它用到的别的插件都是局部注入，缺了只少一部分功能：`gwbCommands`（注册命令、升级后调用 `shell.reload`）、
+`gwbData`（存条目显示名、记录数据目录的归属）、`gwbSettings`（设置项 `pnpm-path`、记录设置分区的归属）、`gwbSkills`（登记说明书）。
+
+对内核，它依赖的是一份**没有写进 `gwbKernel` 的约定**——loader 条目树的这几样：
+
+{/* ref file="../plugins/plugin-manager/src/tree.ts" lines="18-29" */}
+
+树从插件自己的条目上取，不需要知道内核那条 include 条目叫什么：
+
+{/* ref file="../plugins/plugin-manager/src/tree.ts" lines="57-60" */}
+
+改 `cordis.yml` 只走这棵树：它把写回文件和当场加载一起做；绕过它直接写文件，内存里的条目不知道，下一次写回会把
+磁盘上的改动覆盖掉。
+
+## 两边各保证什么
+
+内核保证：
+- home 的布局：`package.json` 列出装了哪些包，`cordis.yml` 列出条目，包在 `node_modules`（见[插件与内核](/docs/seams/plugins)）
+- loader 与 include 的版本固定在 `apps/desktop/package.json`；升级它们时先跑 plugin-manager 的测试
+- 包名按真实路径解析：包换了版本、真实路径跟着换，停用再启用就能拿到新版本
+
+plugin-manager 保证：
+- **只有它写 home**：所有 `pnpm add` / `pnpm remove` 都经同一个入口 `applyToHome` 排进串行队列——pnpm 每次都读-改-写
+  `package.json`，两次同时运行会互相覆盖；同一时刻只允许一个改动，重入的直接返回 BUSY
+- 升级与重新加载在**同一条命令**里做完：pnpm 会删掉旧版本目录，中间留出空档，旧插件读磁盘就会读空
+- 自己排在最后、回执发出之后才重新加载自己——在命令处理函数里停用自己，回执就发不出去了
+- 卸载先删条目、后卸包，pnpm 失败不回滚；数据与设置留在磁盘上
+
+改 home 的唯一入口：
+
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="1033-1040" */}
+
+停用再启用一条条目，等旧的卸载完才启用——否则新实例启动时旧服务可能还没撤销：
+
+{/* ref file="../plugins/plugin-manager/src/remount.ts" lines="52-60" */}
+
+## 过渡期里还留着的做法
+
+插件还没全部改成[关键判据 K2](/docs/criteria/k2) 的写法之前，下面三样还在，等块笔记这类插件把 block-note 打包进
+自己的构建产物、block-note 不再声明 `gwb.shared` 之后再删：
+
+- **peer 提升**：安装时把插件的 peer 装成 home 的直接依赖。今天块笔记插件的页面代码直接 import `@godcreator/block-note`，
+  这个名字要靠 block-note 声明的 `gwb.shared` 进 importmap，而内核只从 home 的直接依赖收集 importmap
+- **peer 版本警告**：装完运行 `pnpm peers check`，对不上的写进回执 `peerWarnings`
+- **库与插件的区分**：清单 `keywords` 只写 `gwb`、没写 `gwb-plugin` 的是库，装了不加条目
+
+删掉这三样、把 `update` 并进 `update-all` 是破坏性变更，要升 plugin-manager 的 x，插件管理窗格也要跟着改。
+
+## plugin-manager 不管什么
+
+- 查源上有什么可装、配第三方包源：在基础插件仓的 `gwb-plugin-sources`
+- 插件管理窗格的界面：在界面平台仓的 `gwb-baseui`
+- 插件之间的依赖是否齐全：缺了就停在「等待缺少的服务」，在 `list` 里看得到
+
+## 怎么单独测
+
+- 纯逻辑单元测试：id 的选取、升级计划、条目状态、peer 判断、pnpm 查找，传入构造的数据即可
+- `tests/loader.test.ts`：用内核实际使用的 loader 与 include 版本，照 `main.ts` 的顺序搭一个 home，跑取树、`create` /
+  `update` / `remove` 写回 `cordis.yml`、停用再启用后 `ACTIVE`；另断言版本和 `apps/desktop` 一致
+- `tests/fiber-state.test.ts`：条目状态名和内核只读状态页用的那份一致
+- 安装、热升级的整条路径只能在隔离 home 里实机验证（`devkit.dev` 发开发版进去）
+
+## 代码从哪读
+
+- 改 home 的唯一入口 `applyToHome` 与安装、升级、卸载：`plugins/plugin-manager/src/index.ts`
+- 取条目树：`plugins/plugin-manager/src/tree.ts`
+- 升级计划与停用再启用：`plugins/plugin-manager/src/update-all.ts`、`remount.ts`
+- 过渡期的 peer 判断：`plugins/plugin-manager/src/peers.ts`
