@@ -9,7 +9,7 @@ description: 内核由哪几个文件组成、每个文件对外提供什么、�
 - 灰色箭头表示依赖，从 import 的一方指向被 import 的一方：`main.ts` 把各部分组装起来，是唯一依赖 electron 的文件，它依赖其余所有文件；`imports.ts` 依赖 `bare-import.ts`（两侧用同一个解析函数）；`entry-state.ts`、`log-file.ts` 不依赖任何其他文件
 - 这四个文件不依赖 electron 与 cordis 实例，各有单元测试
 - 页面一侧：`preload.cjs` 注入 `window.gwb`，`index.html` 注入 importmap、交出 `#root`
-- `main.ts` 与 `preload.cjs` 之间的两根强调色箭头表示 IPC 消息的方向：主进程 → 页面是 `gwb:shell`、`gwb:event`；页面 → 主进程是 `gwb:command`、`gwb:hello`
+- `main.ts` 与 `preload.cjs` 之间的两根强调色箭头表示 IPC 消息的方向：主进程 → 页面推送 `gwb:shell`、`gwb:event`；页面 → 主进程调用 `gwb:command`，回执原路返回
 - 词汇表包 `@godcreator/gwb-plugin-api` 只有类型，`main.ts` 和插件都只 import 类型
 </Diagram>
 
@@ -17,7 +17,7 @@ description: 内核由哪几个文件组成、每个文件对外提供什么、�
 
 | 文件 | 对外提供 | 实现哪条接缝 |
 | --- | --- | --- |
-| `main.ts` | 不导出任何东西。选定 home、日志输出、单实例锁、`runtime.json`、cordis 实例与 `gwbKernel`、窗口、四个 IPC 通道、退出清理 | 全部 |
+| `main.ts` | 不导出任何东西。选定 home、日志输出、单实例锁、`runtime.json`、cordis 实例与 `gwbKernel`、窗口、三个 IPC 通道、退出清理 | 全部 |
 | `bare-import.ts` | `resolveFromHome`、`bareImportFromHome` | [插件与内核](/docs/seams/plugins)、[页面上的包名](/docs/seams/shared) |
 | `imports.ts` | `collectImports` | [页面上的包名](/docs/seams/shared) |
 | `entry-state.ts` | `describeEntry` | [外壳接管页面](/docs/seams/shell)（只读状态页） |
@@ -44,14 +44,13 @@ function openLogFile(options: LogFileOptions): LogFile
 function limitFromEnv(raw: string | undefined, fallback?: number): number    // 读 GWB_LOG_LIMIT_MB
 ```
 
-主进程与页面之间有四个 IPC 通道，主进程一侧在 `main.ts`，页面一侧在 `preload.cjs`：
+主进程与页面之间有三个 IPC 通道，主进程一侧在 `main.ts`，页面一侧在 `preload.cjs`：
 
 | 通道 | 方向 | 干什么 | 属于哪条接缝 |
 | --- | --- | --- | --- |
 | `gwb:command` | 页面 → 主进程，回执原路返回 | 调命令 | [命令与事件](/docs/seams/commands) |
 | `gwb:event` | 主进程 → 页面 | 推插件发的事件 | [命令与事件](/docs/seams/commands) |
-| `gwb:hello` | 页面 → 主进程 | 页面订阅 `onShell` 时问一次当前外壳是谁 | [外壳接管页面](/docs/seams/shell) |
-| `gwb:shell` | 主进程 → 页面 | 推外壳地址、importmap、只读状态页的数据 | [外壳接管页面](/docs/seams/shell) |
+| `gwb:shell` | 主进程 → 页面 | 推外壳地址、importmap、只读状态页的数据。页面订阅 `onShell` 时会先请求一次当前值（通道名 `gwb:hello`），所以页面比外壳晚就位也不会错过 | [外壳接管页面](/docs/seams/shell) |
 
 ## 接缝
 

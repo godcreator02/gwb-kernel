@@ -35,7 +35,7 @@ export function ModuleMap() {
       <Box x={590} y={30} w={155} h={52} lines={['preload.cjs', '注入 window.gwb']} />
       <Box x={590} y={140} w={155} h={58} lines={['index.html', '注入 importmap · 交出 #root', '没有外壳时显示状态页']} />
       <Arrow from={[400, 48]} to={[590, 48]} tone="a" label="gwb:shell · gwb:event" />
-      <Arrow from={[590, 64]} to={[400, 64]} tone="a" label="gwb:command · gwb:hello" labelAt="below" />
+      <Arrow from={[590, 64]} to={[400, 64]} tone="a" label="gwb:command" labelAt="below" />
 
       <Box x={120} y={250} w={520} h={46} lines={['@godcreator/gwb-plugin-api（词汇表包）', '只有类型：main.ts 和插件都只 import 类型，运行时不存在']} tone="b" dashed />
 
