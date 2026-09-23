@@ -1,6 +1,7 @@
 {
   "pages": [
     "index",
-    "ecosystem-simplify"
+    "ecosystem-simplify",
+    "platform-plugins"
   ]
 }
