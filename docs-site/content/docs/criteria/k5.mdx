@@ -17,20 +17,60 @@ description: 扩展点用服务，数据读写和动作用命令，同一能力�
 - 一条命令只做一件事；多步流程写在说明书（skill）里。唯一的例外是判定依赖同一份「这次执行之前」状态的事务
 - 命令的 `plugin` 字段写包名
 
+### 提供服务用哪种写法
+
+cordis 4 提供服务有两种写法，按「服务要不要认出调用方」选：
+
+**扩展点服务一律继承 cordis 的 `Service` 类。** 服务方法里的 `this.ctx` 是**调用方**插件的上下文，所以服务可以把注销函数登记到调用方的上下文里：调用方卸载时，它注册进来的东西自动撤销，调用方不用自己包 `ctx.effect`；服务也能从调用方身上认出是哪个插件在注册。
+
+```ts
+import { Service } from 'cordis'
+import type { Context } from 'cordis'
+
+export default class GwbExample extends Service {
+  constructor(ctx: Context) {
+    super(ctx, 'gwbExample')          // 注册成名为 gwbExample 的服务
+  }
+  register(item: Item): () => void {
+    table.add(item)
+    const unregister = () => table.delete(item)
+    // this.ctx 是调用方的上下文：调用方卸载时，unregister 自动执行
+    this.ctx.effect(() => unregister)
+    // 返回给调用方，想提前注销时调它
+    return unregister
+  }
+}
+```
+
+shell 的 `registerPane` 就是这样写的（`gwb-ui-plugins/plugins/shell/src/index.ts`）。
+
+代价：构建产物里有 `import { Service } from 'cordis'`，按 [K2](/docs/criteria/k2) 要写 peer `cordis`；不要写 `instanceof Service`。
+
+**不需要认出调用方的服务（存在标记服务）用 `ctx.provide`。** 它只是一个普通对象，不用 import cordis：
+
+```ts
+export function apply(ctx: Context) {
+  ctx.effect(() => ctx.provide('blockNote', { contract: 8, minCompatible: 6 }))
+}
+```
+
+**使用服务**不需要继承任何类，也不用 import cordis：函数式插件写 `export const inject = ['gwbExample']`，`Service` 类写 `static inject = [...]`，然后读 `ctx.gwbExample`；没在 `inject` 里声明就读，cordis 直接抛错。依赖可有可无时用 `ctx.inject(['gwbExample'], (ctx) => { … })`。完整的最小例子见 [E6 最小插件](/docs/criteria/examples/e6-minimal)。
+
 ## 标准例子
 
-- 只有扩展点的服务：[E1 commands](/docs/criteria/examples/e1-commands#对外接口)、[E5 node-cli](/docs/criteria/examples/e5-node-cli#对外接口)
+- 只有扩展点的服务、继承 `Service`、注册随调用方卸载自动撤销：[E1 commands](/docs/criteria/examples/e1-commands#对外接口)、[E5 node-cli](/docs/criteria/examples/e5-node-cli#对外接口)
+- 只使用服务、不提供服务：[E6 最小插件](/docs/criteria/examples/e6-minimal)
 - 服务只留扩展点、数据和动作全部通过命令：[E2 shell](/docs/criteria/examples/e2-shell#对外接口)、[E3 unit-folder](/docs/criteria/examples/e3-unit-folder#对外接口)
 - 以命令为主，加一个存在标记服务：[E4 块笔记](/docs/criteria/examples/e4-block-note#对外接口)
 
 ## 反例
 
-同一能力既有服务方法又有命令（两种调用方式会悄悄变得不一致）；为了读别的插件的配置或数据，去调它的设置分区；一条命令带一个 `action` 参数做四件事；一条命令把升版本号、查重、发布、安装串成一串。
+同一能力既有服务方法又有命令（两种调用方式会悄悄变得不一致）；扩展点服务用 `ctx.provide` 提供普通对象，要求调用方自己把注册包进 `ctx.effect`（忘了包，调用方卸载后注册还留在表里）；为了读别的插件的配置或数据，去调它的设置分区；一条命令带一个 `action` 参数做四件事；一条命令把升版本号、查重、发布、安装串成一串。
 
 ## 为什么
 
-命令表是页面、agent、插件共用的同一份事实来源；再提供一套服务方法，就有了两份并行的来源。服务留给命令表达不了的扩展点和生命周期。[命令保持原子、多步流程写进 skill；内核不关心 MCP 入口用什么协议](/trajectory/2026-09-14-atomic-commands-door-neutral)。
+命令表是页面、agent、插件共用的同一份事实来源；再提供一套服务方法，就有了两份并行的来源。服务留给命令表达不了的扩展点和生命周期。扩展点统一继承 `Service`，是因为只有这种写法能让服务拿到调用方的上下文：注册的清理跟着调用方走，不靠每个调用方记得包 `ctx.effect`——commands 要求调用方自己包，2026-09-09 就有插件因为没包，卸载后命令名还留在命令表里。[命令保持原子、多步流程写进 skill；内核不关心 MCP 入口用什么协议](/trajectory/2026-09-14-atomic-commands-door-neutral)。
 
 ## 执行
 
-迁移中：shell、unit-folder、node-cli 等服务上的读写方法与同名命令重复；plugin-manager、docs-site 通过设置命令读别的插件的设置分区。命令总线对 `plugin` 字段的写法只警告、不拦截。
+迁移中：commands 的扩展点服务用 `ctx.provide` 提供、要求调用方自己包 `ctx.effect`；shell、unit-folder、node-cli 等服务上的读写方法与同名命令重复；plugin-manager、docs-site 通过设置命令读别的插件的设置分区。命令总线对 `plugin` 字段的写法只警告、不拦截。

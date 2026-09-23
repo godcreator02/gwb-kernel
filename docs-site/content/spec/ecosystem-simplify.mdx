@@ -31,7 +31,10 @@ devkit 仓已经写下的几条判据（见文末「要改写的轨迹卡与红�
   各节只留和实施相关的归属、删掉什么与代价。K3 不承认「体积」是进 importmap 的理由
 - 拿现有插件做案例分析后定的三条：**去掉可选 peer**（类型链由使用方在 dev 里列齐，提交前检查关掉 `skipLibCheck`）；**K5 改成
   「扩展点用服务，数据与动作用命令，同一能力只提供一种调用方式」**；**不加安装期依赖字段**（缺了就停在等待依赖的状态，看得见）。标准答案
-  写成[标准例子](/docs/criteria/examples) E1–E5
+  写成[标准例子](/docs/criteria/examples) E1–E6
+- **扩展点服务一律继承 cordis 的 `Service` 类**：服务方法里的 `this.ctx` 是调用方的上下文，注册随调用方卸载自动撤销，调用方不再自己包
+  `ctx.effect`；代价是这些插件写 peer `cordis`。commands 从 `ctx.provide` 改过来，已经自己包了 `ctx.effect` 的调用方不受影响
+  （[K5](/docs/criteria/k5#提供服务用哪种写法)）
 - 插件里的 cordis **不打包进构建产物**：宿主提供的东西写 peer（K2 第一行）
 - 插件运行时自己用的库打包进构建产物、写 dev；插件之间不通过 import 耦合（第一节、第七节）
 - 词汇表包不改名、不并进内核应用包、不加「运行时内核版本」兼容字段；契约收窄（第五节）
@@ -221,7 +224,8 @@ promise，退出时可能丢数据。
 | plugin-manager、docs-site | 通过设置命令读其他插件的分区；docs-site 调用 `shell.panes` 命令，而服务上也有同名方法 | K5 |
 | shell、unit-folder、node-cli | 服务上的读写方法与命令重复 | K5 |
 | dsh | `dsh.power` 一条命令包含四种操作；`import { type X }` 留下空 import | K5、K2 |
-| commands | 命令返回结构的类型放在词汇表包里；说明书服务的类型用 `as` 强转 | K6 |
+| commands | 命令返回结构的类型放在词汇表包里；说明书服务的类型用 `as` 强转；服务用 `ctx.provide` 提供，要调用方自己包 `ctx.effect`（改成继承 `Service`、加 peer `cordis`） | K6、K5 |
+| devkit 模板 | peer 写了词汇表包、commands、shell 和已停止发布的共享包；注册命令自己包 `ctx.effect`（commands 改完后删）；手抄外置名单；样式从 gwb-tokens 引用 | K2、K5、K3 |
 | 几乎所有插件 | 词汇表包、其他插件写成 peer；Node 一侧构建产物里留着自用库的包名 import | K2 |
 | devkit | `yaml` 是没用到的依赖 | K2 |
 

@@ -1,6 +1,6 @@
 ---
 title: 标准例子
-description: 五个插件按关键判据应该写成什么样——标准答案，和现状不一致的地方各留一行待改
+description: 六个插件按关键判据应该写成什么样——标准答案，和现状不一致的地方各留一行待改
 ---
 
 # 标准例子
@@ -11,8 +11,9 @@ description: 五个插件按关键判据应该写成什么样——标准答案�
 
 | 例子 | 为什么挑它 | 主要示范 |
 | --- | --- | --- |
-| [E1 commands](/docs/criteria/examples/e1-commands) | 最底层的服务提供方 | 扩展点用服务；不按值 import cordis 就不写 peer；契约放在自己的包里（K2、K5、K6） |
+| [E1 commands](/docs/criteria/examples/e1-commands) | 最底层的服务提供方 | 扩展点服务继承 `Service`，注册随调用方卸载自动撤销；因此 peer 只有 cordis；契约放在自己的包里（K2、K5、K6） |
 | [E2 shell](/docs/criteria/examples/e2-shell) | importmap 的唯一提供方 | K3 对提供方的全部规矩；服务只留扩展点（K2、K3、K5） |
 | [E3 unit-folder](/docs/criteria/examples/e3-unit-folder) | 普通的带窗格插件 | 数据读写和动作通过命令；浏览器端代码怎么外置；导出返回值类型（K2、K3、K5、K6） |
 | [E4 块笔记](/docs/criteria/examples/e4-block-note) | 插件之间的关系最复杂 | 接口定义包、以命令为主、存在标记服务、契约版本区间（K3、K4、K5、K6、K7） |
 | [E5 node-cli](/docs/criteria/examples/e5-node-cli) | 会启动子进程 | 卸载清理的完整做法（K5、K7） |
+| [E6 最小插件](/docs/criteria/examples/e6-minimal) | 只使用服务、不提供服务，大多数插件是这样 | `inject` 声明依赖；不 import cordis 就不写 peer；注册不用自己包 `ctx.effect`（K2、K5） |

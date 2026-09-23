@@ -1,0 +1,80 @@
+---
+title: E6 最小插件
+description: 只使用服务、不提供服务的最小插件——一个窗格加一条命令；inject 声明依赖，不 import cordis，不写 peer，注册不用自己包 ctx.effect
+---
+
+# E6 最小插件（devkit 脚手架生成的插件）
+
+## 角色
+
+一个窗格、一条 `ping` 命令，别的什么都没有。`devkit` 新建插件时生成的就是它；大多数插件只使用服务、不提供服务，照这个写。
+
+## 清单
+
+```json
+{
+  "keywords": ["gwb", "gwb-plugin"],
+  "gwb": { "title": "…" },
+  "exports": { ".": "…" },
+  "devDependencies": {
+    "cordis": "…", "react": "…", "react-dom": "…",
+    "@godcreator/gwb-plugin-api": "…", "@godcreator/gwb-commands": "…", "@godcreator/gwb-shell": "…"
+  }
+}
+```
+
+**为什么没有 peer**——看代码。节点端入口 `src/index.ts`：
+
+```ts
+import type { GwbContext } from '@godcreator/gwb-plugin-api'
+import type {} from '@godcreator/gwb-commands'   // 只为让 ctx.gwbCommands 有类型
+import type {} from '@godcreator/gwb-shell'      // 只为让 ctx.gwbShell 有类型
+
+export const name = '@godcreator/gwb-demo'
+
+// 声明依赖：两个服务都就位了 cordis 才调 apply；任何一个重新加载，本插件跟着重新加载
+export const inject = ['gwbCommands', 'gwbShell']
+
+const CLIENT_URL = new URL('./client.js', import.meta.url).href
+const STYLE_URL = new URL('./style.css', import.meta.url).href
+
+export function apply(ctx: GwbContext): void {
+  ctx.gwbShell!.registerPane({ id: 'main', title: '示例', client: CLIENT_URL, style: STYLE_URL })
+
+  ctx.gwbCommands!.register(
+    { name: 'demo.ping', description: '回一个时间戳，确认插件在运行', plugin: name },
+    async () => ({ ok: true, data: { plugin: name, time: new Date().toISOString() } }),
+  )
+}
+```
+
+构建产物 `dist/index.js` 里没有任何包名 import：三句 `import type` 编译后整句消失，`ctx` 和它上面的服务都是 cordis 调 `apply(ctx)` 时交给插件的。运行时不需要从 home 里找到任何包，所以不写 peer（[K2](/docs/criteria/k2)）。
+
+要点逐条：
+- **声明依赖只写 `inject`**：没在 `inject` 里写就去读 `ctx.gwbShell`，cordis 直接抛错；commands 和 shell 需要已经安装，这一点不写进清单——没装时插件停在「等待缺少的服务」的状态
+- **`!` 是安全的**：`inject` 保证 `apply` 运行时两个服务都在，`declare module 'cordis'` 里把它们写成可选只是因为别的插件不一定 inject 它们
+- **注册不用包 `ctx.effect`**：`registerPane`、`register` 都是继承 `Service` 的服务提供的扩展点，服务把注销函数登记到本插件的上下文里，本插件卸载时自动注销（[K5](/docs/criteria/k5#提供服务用哪种写法)）
+- **可有可无的依赖**不写进 `inject`，改用 `ctx.inject(['gwbUnitFolder'], (ctx) => { … })`：那个服务出现时回调运行，消失时回调里注册的东西自动撤销
+
+## 构建产物里的包名 import
+
+包名 import（bare specifier，直接写包名、不带相对路径的 import，比如 `from 'cordis'`）：节点端代码里没有；浏览器端代码 `dist/client.js` 里只有 react 的四个包名。构建脚本从 shell 的 `./externals` 取这份外置名单（构建时不打包、留给 importmap 提供的包名清单），样式文件引用 shell 的 `theme.reference.css`——两者都只在构建时用，所以 shell 写 dev（[K3](/docs/criteria/k3)）。
+
+## 对外接口
+
+一条命令 `demo.ping`；不提供服务，所以清单里没有 `gwb.provides`（[K5](/docs/criteria/k5)）。
+
+## 契约
+
+只有命令本身：命令名和返回值结构 `{ plugin, time }`。没有别的插件依赖它的类型，不导出类型（[K6](/docs/criteria/k6)）。
+
+## 卸载清理
+
+窗格和命令都随本插件卸载自动注销；不启动进程、不开定时器，没有别的要清理（[K7](/docs/criteria/k7)）。
+
+## 现状偏差
+
+devkit 模板（`gwb-devkit/plugins/devkit/template/pkg/`）待改：
+- `package.json.tpl` 把 plugin-api、commands、shell 以及已经停止发布的 gwb-tokens、gwb-shared-react 写成了 peer
+- `index.ts.tpl` 注册命令时自己包了一层 `ctx.effect`——这是因为 commands 还没改成继承 `Service`（见 [E1 现状偏差](/docs/criteria/examples/e1-commands#现状偏差)），commands 改完后删掉
+- `build.ts.tpl` 手抄外置名单；`styles.css.tpl` 从 gwb-tokens 引用 `theme.reference.css`，应改为从 shell 引用
