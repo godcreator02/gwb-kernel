@@ -41,7 +41,7 @@ interface GwbContext extends Context {
 
 ## 插件怎么进来
 
-1. home 的 `package.json` 列出插件包，pnpm 把它们装进 `node_modules`——这一步由插件 [plugin-manager](/docs/seams/home) 负责，内核不碰 pnpm
+1. home 的 `package.json` 列出插件包，pnpm 把它们装进 `node_modules`——这一步由插件 [plugin-manager](/docs/plugin-manager) 负责，内核不碰 pnpm
 2. `cordis.yml` 的每一条条目写一个包名；内核注册 cordis 官方的 loader 和 include，include 读这个文件，loader 按条目加载
 3. loader 要 import 一个包名时，内核替它解析：先把 `<home>/node_modules/<包名>` 解析成磁盘上的真实路径，再按包的 `exports` 找到入口文件
 4. cordis 调用插件的 `apply(ctx)`（或实例化它的 `Service` 类）；`inject` 里的服务缺一个，插件就停在等待状态，补齐后自动加载

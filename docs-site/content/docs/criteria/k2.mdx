@@ -50,7 +50,7 @@ export function apply(ctx: Context) {
 
 **peer 的意思是「运行时要从 home 里解析到这个包」**，所以只看构建产物里有没有这个包名 import：构建产物里有 `import … from 'cordis'`（比如 `extends Service`）才写 peer `cordis`；没有就不写——**哪怕 d.ts 里有 `declare module 'cordis'`**，那只是类型，使用这些类型的一方自己在 dev 里列 cordis。插件照样依赖 cordis 的协议，但这份兼容性不靠 peer 表达：宿主换 cordis 大版本就是内核的破坏性版本，所有插件在同一次里全部重新验证（见 [K8](/docs/criteria/k8)）。这条可以自动检查：构建产物里出现 `cordis` 的包名 import 却没写 peer，或者写了 peer 构建产物里却没有，都拒绝。
 
-**类型引用到的包由使用方自己列全**：本插件做类型检查时引用到的别的包的类型（包括上游 d.ts 里又引用到的包），这些包都写进本插件的 dev；检查流程里关掉 `skipLibCheck` 跑一遍类型检查——缺哪个包它会点名报「找不到模块」，否则那段类型会不报错地变成 any。**只引类型时必须写 `import type`**，`import { type X }` 在 `verbatimModuleSyntax` 下会在构建产物里留下一句空 import。
+**类型引用到的包由使用方自己列全**：本插件做类型检查时引用到的别的包的类型（包括上游 d.ts 里又引用到的包），这些包都写进本插件的 dev；检查流程里关掉 `skipLibCheck` 跑一遍类型检查——缺哪个包它会报「找不到模块」并写出包名，否则那段类型会不报错地变成 any。**只引类型时必须写 `import type`**，`import { type X }` 在 `verbatimModuleSyntax` 下会在构建产物里留下一句空 import。
 
 插件需要另一个插件已经安装（比如块笔记的各个插件需要 bn-core），这一点不写进清单（package.json）；没装时它停在「等待缺少的某个服务」的状态，在[只读状态页](/docs/seams/shell#没有外壳时)和 `plugin-manager.list` 里都看得到。
 
@@ -73,3 +73,5 @@ export function apply(ctx: Context) {
 ## 执行
 
 迁移中（[全生态机制定案](/spec/ecosystem-simplify)第二、三期）。计划在 `devkit.release` 里加这几项检查：构建产物的包名 import 检查、d.ts 在 `skipLibCheck: false` 下的类型检查、`import type` 的 lint 规则。
+
+插件管理安装时的 peer 提升与 peer 版本警告，是替还没改成这条写法的插件留的；各插件的 peer 只剩 `cordis` 之后一起删（见[插件管理](/docs/plugin-manager#对照关键判据)）。

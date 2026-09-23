@@ -44,8 +44,6 @@ const config = {
     { source: '/docs/kernel/importmap', destination: '/docs/seams/shared', permanent: true },
     { source: '/docs/kernel/bridge', destination: '/docs/seams/shell', permanent: true },
     { source: '/docs/kernel/logs', destination: '/docs/map', permanent: true },
-    // plugin-manager 的模块页改成接缝页「home 与插件管理」（2026-09-23）
-    { source: '/docs/plugin-manager', destination: '/docs/seams/home', permanent: true },
   ],
   // 旧配置曾把 /docs 永久重定向到 /docs/system-map，浏览器缓存着那条 308：这里再重定向回 /docs
   // 就成环。改写不发 30x，缓存了旧跳转的浏览器也看得到入口页。系统地图现在的网址是 /docs/map

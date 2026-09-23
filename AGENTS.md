@@ -2,7 +2,7 @@
 
 god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只做第一个插件运行前必须完成的事，其余都做成插件。
 现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：只做什么、刻意不做什么见同目录 `design.mdx`，
-内核和插件、页面之间的五条接缝见 `seams/`，每个文件对外提供什么见 `map.mdx`；
+内核和插件、页面之间的五条接缝见 `seams/`，每个文件对外提供什么见 `map.mdx`，插件管理怎么分块、每块功能怎么工作见 `plugin-manager/`；
 peer、importmap、服务还是命令这类反复出现的选择按同目录 `criteria/`（关键判据 K1…K8，一条一页，配标准例子 E1…E6）判断，引用写编号。
 
 ## 准入判据（关键判据 K1）：两条都要满足
@@ -10,7 +10,7 @@ peer、importmap、服务还是命令这类反复出现的选择按同目录 `cr
 1. **只有「第一个插件存在之前必须完成的事」才进内核。** 其余一律做成插件
 2. **确实遇到需求才加。** 现在就做不成，而且说得出场景：谁、在做什么、卡在哪
 
-拿不准按「不进」处理。这个仓最容易出的问题是慢慢长回旧版工作台仓 god-workbench 的样子——查旧仓是为了知道坑在哪，不是照抄它的绕法。
+拿不准按「不进」处理。这个仓最容易出的问题是慢慢长回旧版工作台仓 god-workbench 的样子——查旧仓是为了知道坑在哪，不是照抄它的变通做法。
 
 ## 遇到过的问题：别改回去
 
@@ -30,12 +30,12 @@ peer、importmap、服务还是命令这类反复出现的选择按同目录 `cr
 按真实路径解析包名），所以放在这里和内核一起测试。它的版本号独立于内核，改了就按 gwb-release 升自己的号，发版用
 `devkit.release {"dir":"<本仓>","packages":["plugins/plugin-manager"]}`；验证照插件的流程，在隔离 home 里用
 `devkit.dev {"home":"<隔离 home>","dir":"<本仓>","packages":["plugins/plugin-manager"]}`。
-内核升级 `@cordisjs/plugin-loader` 或改包名解析时，先跑 `pnpm check`，它的测试会一起跑。
+内核升级 `@cordisjs/plugin-loader` 或改包名解析时，先运行 `pnpm check`，它的测试会一起跑。
 
 ## 怎么跑
 
 **日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）。安装包：`pwsh installer\scripts\build.ps1`，方案正本 `installer/SPEC.md`；
-新机器安装照仓根 `INSTALL.md`。别日常直接跑 `build\dist\win-unpacked\`——每次构建整个重新生成，会和运行中的 exe 冲突。
+新机器安装照仓根 `INSTALL.md`。别日常直接运行 `build\dist\win-unpacked\`——每次构建整个重新生成，会和运行中的 exe 冲突。
 
 **改内核本身才进这个仓**，只在隔离 home 里实际运行验证（`devkit.home.new` 启动的是安装版，不构建本仓）：
 
@@ -45,11 +45,11 @@ $env:GWB_HOME = '<这次验什么>-<yyMMddHHmm>'
 cd apps\desktop; pnpm start
 ```
 
-提交前检查 `pnpm check`；文档检查不在里面，单独跑 `pnpm doc` / `pnpm doc:confirm`。查看页面状态用 `devkit.cdp`，调试端口别和其他会话重复。
+提交前检查 `pnpm check`；文档检查不在里面，单独运行 `pnpm doc` / `pnpm doc:confirm`。查看页面状态用 `devkit.cdp`，调试端口别和其他会话重复。
 实验材料放 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm workspace。
 
 ## 文档与注释
 
-* **知识随插件发布**：本仓只有 `plugins/plugin-manager` 带说明书（`gwb-plugin-manager`），内核本身不带；写插件读 `gwb-devkit`，写文档、轨迹卡读 `docfirst-docs` / `trajectory`，选型先盘问（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
+* **知识随插件发布**：本仓只有 `plugins/plugin-manager` 带说明书（`gwb-plugin-manager`），内核本身不带，那份 `SKILL.md` 是生成物（见下面最后一条）；写插件读 `gwb-devkit`，写文档、轨迹卡读 `docfirst-docs` / `trajectory`，选型先盘问（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
 * 这份 AGENTS 只放硬约束；为什么、遇到过什么问题写在文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
-* 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 是生成物，正本在 `docs-site/content/outputs/`，改完在 `docs-site` 跑 `pnpm docfirst render`，一起提交；`CLAUDE.md` 第一行固定是 `@AGENTS.md`，只给 Claude 的指令写在它后面
+* 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 与 `plugins/plugin-manager/skills/gwb-plugin-manager/SKILL.md` 是生成物，正本在 `docs-site/content/outputs/`（说明书在 `outputs/skills/`），改完在 `docs-site` 运行 `pnpm docfirst render`，一起提交；`CLAUDE.md` 第一行固定是 `@AGENTS.md`，只给 Claude 的指令写在它后面

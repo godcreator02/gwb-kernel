@@ -22,6 +22,8 @@ const drawings: Record<string, () => ReactNode> = {
   'module-map': () => <ModuleMap />,
   'plugin-seam': () => <PluginSeam />,
   'plugin-home': () => <PluginHome />,
+  'plugin-home-install': () => <PluginHome flow="install" />,
+  'plugin-home-upgrade': () => <PluginHome flow="upgrade" />,
   'shell-handover': () => <ShellHandover />,
   'shared-names': () => <SharedNames />,
   'command-relay': () => <CommandRelay />,

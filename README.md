@@ -12,7 +12,7 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 ```powershell
 pnpm install
 pnpm check                              # 构建词汇表 + typecheck + lint + test
-$env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 在隔离 home 里起本仓内核
+$env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 在隔离 home 里启动本仓内核
 ```
 
 日常使用从安装版启动，不从仓里运行；安装包由 `installer/` 生成。
@@ -20,10 +20,10 @@ $env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 在隔离 home 里起�
 ## 文档
 
 文档站在 `docs-site/`，从「从这里开始」读起：内核是什么、跟着一次启动走一遍、按你的目的该读哪些页。站上还有关键设计（只做什么、刻意不做什么）、
-系统地图、五条接缝（其中一条是 home 与插件管理）、关键判据、轨迹（怎么走到今天）与路线。
+系统地图、五条接缝（其中一条是 home 与插件管理）、插件管理的分功能说明、关键判据、轨迹（怎么走到今天）与路线。
 
 ```powershell
 cd docs-site; pnpm build; pnpm start      # http://localhost:4314
 ```
 
-这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`，改完在 `docs-site` 跑 `pnpm docfirst render` 重新生成，一起提交。
+这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`；plugin-manager 包里的说明书 `SKILL.md` 也是，正本是 `docs-site/content/outputs/skills/gwb-plugin-manager.mdx`。改完在 `docs-site` 运行 `pnpm docfirst render` 重新生成，一起提交。

@@ -2,7 +2,7 @@
 
 /**
  * home 与插件管理：左边是调用方（agent 或插件管理窗格），中间是 plugin-manager，右边上半是 home 里的文件，
- * 右边下半是内核（loader 条目树与按真实路径解析）。分步走一遍安装与一键热升级。
+ * 右边下半是内核（loader 条目树与按真实路径解析）。分步走一遍安装与一键热升级；`flow` 只放其中一段
  */
 
 import { Arrow, Box, BORDER, FG, MUTED, Note, StepCaption } from './parts'
@@ -10,17 +10,20 @@ import { StepControls, useSteps } from './steps'
 
 type Part = 'caller' | 'manager' | 'queue' | 'package' | 'modules' | 'yml' | 'tree' | 'resolve' | 'shell'
 
-const STEPS: { title: string; detail: string; lit: Part[]; arrow?: 'call' | 'pnpm' | 'tree' | 'reload' }[] = [
+type Flow = 'install' | 'upgrade'
+
+const ALL_STEPS: { title: string; detail: string; lit: Part[]; arrow?: 'call' | 'pnpm' | 'tree' | 'reload'; flow?: Flow }[] = [
   { title: '全貌', detail: '只有 plugin-manager 写 home：pnpm 改 package.json 与 node_modules，loader 的条目树改 cordis.yml。它用到的 loader 结构与解析规则由内核决定。', lit: [] },
-  { title: '安装 1：调用 plugin-manager.install', detail: 'agent 或插件管理窗格按包名调用；同一时刻只允许一个改动，重入的直接返回 BUSY。', lit: ['caller', 'manager'], arrow: 'call' },
-  { title: '安装 2：一次 pnpm add', detail: '经 applyToHome 排进串行队列，把包写进 home 的 package.json 与 node_modules。过渡期里，该进 home 的 peer 也装成直接依赖。', lit: ['queue', 'package', 'modules'], arrow: 'pnpm' },
-  { title: '安装 3：加一条条目', detail: '经 loader 条目树 create：写回 cordis.yml 并当场加载。loader 要 import 包名时由内核按真实路径解析。', lit: ['tree', 'yml', 'resolve'], arrow: 'tree' },
-  { title: '热升级 1：一次 pnpm add 精确版本', detail: 'outdated 查出过期包，一次 pnpm add 把它们都升到精确版本；旧版本目录随即被 pnpm 删除。', lit: ['queue', 'package', 'modules'], arrow: 'pnpm' },
-  { title: '热升级 2：逐条停用再启用', detail: '同一条命令里每条条目停用再启用。真实路径带版本号，内核重新解析就拿到新版本；plugin-manager 自己排最后、回执之后才动。', lit: ['tree', 'resolve'], arrow: 'tree' },
-  { title: '热升级 3：整页重新加载', detail: '调用命令 shell.reload，页面重新加载，窗格拿到新版本的页面代码。', lit: ['shell'], arrow: 'reload' },
+  { title: '安装 1：调用 plugin-manager.install', detail: 'agent 或插件管理窗格按包名调用；同一时刻只允许一个改动，重入的直接返回 BUSY。', lit: ['caller', 'manager'], arrow: 'call', flow: 'install' },
+  { title: '安装 2：一次 pnpm add', detail: '经 applyToHome 排进串行队列，把包写进 home 的 package.json 与 node_modules。过渡期里，该进 home 的 peer 也装成直接依赖。', lit: ['queue', 'package', 'modules'], arrow: 'pnpm', flow: 'install' },
+  { title: '安装 3：加一条条目', detail: '经 loader 条目树 create：写回 cordis.yml 并当场加载。loader 要 import 包名时由内核按真实路径解析。', lit: ['tree', 'yml', 'resolve'], arrow: 'tree', flow: 'install' },
+  { title: '热升级 1：一次 pnpm add 精确版本', detail: 'outdated 查出过期包，一次 pnpm add 把它们都升到精确版本；旧版本目录随即被 pnpm 删除。', lit: ['queue', 'package', 'modules'], arrow: 'pnpm', flow: 'upgrade' },
+  { title: '热升级 2：逐条停用再启用', detail: '同一条命令里每条条目停用再启用。真实路径带版本号，内核重新解析就拿到新版本；plugin-manager 自己排最后、回执之后才动。', lit: ['tree', 'resolve'], arrow: 'tree', flow: 'upgrade' },
+  { title: '热升级 3：整页重新加载', detail: '调用命令 shell.reload，页面重新加载，窗格拿到新版本的页面代码。', lit: ['shell'], arrow: 'reload', flow: 'upgrade' },
 ]
 
-export function PluginHome() {
+export function PluginHome({ flow }: { flow?: Flow }) {
+  const STEPS = ALL_STEPS.filter((step) => flow === undefined || step.flow === undefined || step.flow === flow)
   const state = useSteps(STEPS.length, 3000)
   const current = STEPS[state.step]!
   const lit = (part: Part) => (current.lit.includes(part) ? 'a' : undefined)

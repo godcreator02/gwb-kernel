@@ -80,4 +80,4 @@ export function apply(ctx: Context) {
 
 ## 执行
 
-迁移中：commands 的扩展点服务用 `ctx.provide` 提供、要求调用方自己包 `ctx.effect`；shell、unit-folder、node-cli 等服务上的读写方法与同名命令重复；plugin-manager、docs-site 通过设置命令读别的插件的设置分区。命令总线对 `plugin` 字段的写法只警告、不拦截。
+迁移中：commands 的扩展点服务用 `ctx.provide` 提供、要求调用方自己包 `ctx.effect`；shell、unit-folder、node-cli、plugin-manager 等服务上的读写方法与同名命令重复（plugin-manager 的服务下游只用来判断它装了没有，计划收成只表示「装了」的服务，见[插件管理](/docs/plugin-manager#对照关键判据)）；docs-site 通过设置命令读别的插件的设置分区。命令总线对 `plugin` 字段的写法只警告、不拦截。
