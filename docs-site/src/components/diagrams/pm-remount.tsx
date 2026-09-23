@@ -19,8 +19,8 @@ function Bar({ x, y, w, label, tone }: { x: number; y: number; w: number; label:
 }
 
 function Lane({ y, title, waits }: { y: number; title: string; waits: boolean }) {
-  const disposeEnd = waits ? 430 : 470
-  const startAt = waits ? 440 : 330
+  const disposeEnd = waits ? 430 : 480
+  const startAt = waits ? 440 : 360
   return (
     <g>
       <Note x={16} y={y + 16} size={12.5} color={waits ? 'var(--diagram-a)' : 'var(--diagram-b)'} weight={600}>
@@ -36,7 +36,7 @@ function Lane({ y, title, waits }: { y: number; title: string; waits: boolean })
       </Note>
       <Bar x={startAt} y={y + 66} w={waits ? 170 : 200} label={waits ? '启动 → ACTIVE' : '启动：provide 同名服务'} tone={waits ? 'a' : 'b'} />
       {!waits && (
-        <Note x={540} y={y + 84} size={11} color="var(--diagram-b)">
+        <Note x={566} y={y + 84} size={11} color="var(--diagram-b)">
           → service has been registered
         </Note>
       )}

@@ -20,12 +20,12 @@ export function PmHomeContents() {
         运行时由谁提供
       </Note>
       <Box x={470} y={40} w={276} h={56} lines={['内核（宿主）', "提供 cordis：import 'cordis' 用的是这一份"]} />
-      <Box x={470} y={124} w={276} h={56} lines={['页面的 importmap', 'react 的四个包名，只由插件声明']} />
-      <Box x={470} y={204} w={276} h={50} lines={['只取类型的包', 'cordis 的类型、词汇表包：编译后消失']} dashed />
+      <Box x={470} y={120} w={276} h={50} lines={['只取类型的包', 'cordis 的类型、词汇表包：编译后消失']} dashed />
+      <Box x={470} y={196} w={276} h={56} lines={['页面的 importmap', 'react 的四个包名，只由插件声明']} />
 
       <Arrow from={[368, 70]} to={[470, 68]} label="按值 import cordis" />
-      <Arrow from={[368, 110]} to={[470, 229]} dashed label="import type" labelAt="below" />
-      <Arrow from={[368, 196]} to={[470, 152]} label="声明" />
+      <Arrow from={[368, 118]} to={[470, 145]} dashed label="import type" labelAt="below" />
+      <Arrow from={[368, 210]} to={[470, 224]} label="声明" />
 
       <Note x={380} y={284} anchor="middle" size={11.5} color={MUTED}>
         插件的依赖都有着落，不需要另外装进 home——所以插件管理不装 peer，也不判断装的是不是库

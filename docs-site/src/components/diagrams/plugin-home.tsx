@@ -33,7 +33,7 @@ export function PluginHome() {
       <Box x={512} y={234} w={106} h={50} lines={['cordis.yml', '条目']} />
       <Box x={628} y={234} w={106} h={50} lines={['node_modules/', '按真实路径读']} />
 
-      <Arrow from={[137, 174]} to={[137, 234]} label="pnpm add / remove" />
+      <Arrow from={[200, 174]} to={[200, 234]} label="pnpm add / remove" />
       <Arrow from={[565, 120]} to={[565, 234]} label="写回并当场加载" />
       <Arrow from={[681, 120]} to={[681, 234]} label="import 时解析" />
 

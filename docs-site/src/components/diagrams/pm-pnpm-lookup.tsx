@@ -23,8 +23,11 @@ export function PmPnpmLookup() {
 
       <Box x={264} y={200} w={230} h={44} lines={['每一处都不行', '报错，列出每一处的原因']} tone="b" />
       <Arrow from={[379, 176]} to={[379, 200]} />
-      <Note x={530} y={226} size={11} color={MUTED}>
-        pnpm 包大版本低于 12：明确报错，不试着运行
+      <Note x={530} y={216} size={11} color={MUTED}>
+        pnpm 包大版本低于 12：
+      </Note>
+      <Note x={530} y={232} size={11} color={MUTED}>
+        明确报错，不试着运行
       </Note>
     </svg>
   )
