@@ -41,7 +41,7 @@ function collectImports(deps: { dataDir: string; warn: (msg: string) => void }):
 ## 规矩
 
 - **一个名字只有一个提供方**：撞名时全部拒绝，不比版本、不挑谁更新
-- **提供方只能是插件**：进 importmap 的只能是整个页面必须只有一份的运行时代码（比如 react），库不声明 `gwb.shared`（[关键判据 K3](/docs/criteria/k3)）
+- **提供方只能是插件**：进 importmap 的只能是整个页面必须只有一份的运行时代码（比如 react），库不声明 `gwb.shared`
 - **使用方构建时把这些名字外置**：浏览器端代码打包时不打进这几个包名，留给 importmap；外置名单从 shell 取，不手抄
 - **解析不到只报 warn**：一个提供方出问题，只损失它自己声明的那几个名字
 

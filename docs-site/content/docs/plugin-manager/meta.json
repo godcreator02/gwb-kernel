@@ -1,5 +1,5 @@
 {
   "title": "插件管理",
-  "description": "唯一写 home 的插件：源码分块、对外接口、对照关键判据，以及安装卸载、热升级、条目与 id、pnpm 四块功能",
+  "description": "唯一写 home 的插件：源码分块、对外接口、它遵守的规矩，以及安装卸载、热升级、条目与 id、pnpm 四块功能",
   "pages": ["index", "install", "upgrade", "entries", "pnpm"]
 }

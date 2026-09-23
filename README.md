@@ -20,7 +20,7 @@ $env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 在隔离 home 里启�
 ## 文档
 
 文档站在 `docs-site/`，从「从这里开始」读起：内核是什么、跟着一次启动走一遍、按你的目的该读哪些页。站上还有关键设计（只做什么、刻意不做什么）、
-系统地图、五条接缝（其中一条是 home 与插件管理）、插件管理的分功能说明、关键判据、轨迹（怎么走到今天）与路线。
+系统地图、五条接缝（其中一条是 home 与插件管理）、插件管理的分功能说明（带它遵守的规矩）、轨迹（怎么走到今天）与路线。
 
 ```powershell
 cd docs-site; pnpm build; pnpm start      # http://localhost:4314

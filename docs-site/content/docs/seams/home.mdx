@@ -3,7 +3,7 @@ title: home 与插件管理
 description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_modules，loader 条目树改 cordis.yml；它依赖的 loader 结构与解析规则由内核决定，所以和内核同仓
 ---
 
-**本页回答**：内核和 plugin-manager 之间交换什么、各保证什么；为什么这条接缝的另一边放在内核仓；过渡期里还留着哪些做法。plugin-manager 自己怎么分块、每块功能怎么工作，见[插件管理](/docs/plugin-manager)。
+**本页回答**：内核和 plugin-manager 之间交换什么、各保证什么；为什么这条接缝的另一边放在内核仓。plugin-manager 自己怎么分块、每块功能怎么工作，见[插件管理](/docs/plugin-manager)。
 
 <Diagram name="plugin-home" title="只有 plugin-manager 写 home：包经 pnpm，条目经 loader 的条目树">
 - 左边是 plugin-manager 用到的两样：从自己的条目上取的条目树（`EntryTreeLike`）、唯一运行 pnpm 的入口 `applyToHome`
@@ -15,7 +15,7 @@ description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_
 
 ## 接口
 
-对调用方，plugin-manager 是 14 条命令，分组与回执见[插件管理](/docs/plugin-manager#对外接口)。
+对调用方，plugin-manager 是 12 条命令，分组与回执见[插件管理](/docs/plugin-manager#对外接口)。
 
 对内核，它依赖的是一份**没有写进 `gwbKernel` 的约定**——loader 条目树的这几样：
 
@@ -38,10 +38,6 @@ plugin-manager 保证：
 - **只有它写 home**：所有 `pnpm add` / `pnpm remove` 都经同一个入口 `applyToHome` 排进串行队列（见[同一时刻只允许一个改动](/docs/plugin-manager/pnpm#同一时刻只允许一个改动)）
 - 升级与重新加载在**同一条命令**里做完，自己排在最后、回执发出之后才重新加载自己（见[一键热升级](/docs/plugin-manager/upgrade#一键热升级)）
 - 卸载先删条目、后卸包，pnpm 失败不回滚；数据与设置留在磁盘上（见[卸载](/docs/plugin-manager/install#卸载)）
-
-## 过渡期里还留着的做法
-
-peer 提升、peer 版本警告、「库不加条目」这三样，是替还没改成[关键判据 K2](/docs/criteria/k2)、[K3](/docs/criteria/k3) 写法的插件留的：今天块笔记插件的页面代码直接 import `@godcreator/block-note`，这个名字靠 block-note 声明的 `gwb.shared` 进 importmap，而内核只从 home 的直接依赖收集 importmap。K2、K3 执行完就删，那是破坏性变更，要升 plugin-manager 的 x。各自做什么见[安装与卸载](/docs/plugin-manager/install#过渡期的-peer-那一步)。
 
 ## 怎么单独测
 

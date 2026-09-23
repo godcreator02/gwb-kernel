@@ -1,6 +1,6 @@
 ---
 title: 找 pnpm 与运行 pnpm
-description: 只用 pnpm 12 起的原生可执行文件，设置项 pnpm-path 优先、PATH 回退；直接启动那个文件、不设超时；所有改 home 的 pnpm 经 applyToHome 串行，五条改动命令另有 BUSY 互斥
+description: 只用 pnpm 12 起的原生可执行文件，设置项 pnpm-path 优先、PATH 回退；直接启动那个文件、不设超时；所有 pnpm 经同一个串行队列，四条改动命令另有 BUSY 互斥
 ---
 
 **本页回答**：插件管理用的是哪个 pnpm、按什么顺序找；怎么启动它、输出怎么收；两次改动同时来时怎么办；卸载时正在运行的 pnpm 为什么不结束。
@@ -25,32 +25,37 @@ description: 只用 pnpm 12 起的原生可执行文件，设置项 pnpm-path �
 - 环境变量原样传下去（用户的 `~/.npmrc`、pnpm 配置照常读到），只去掉 `ELECTRON_RUN_AS_NODE`——它只对 electron 有意义，留着会传给 pnpm 启动的依赖构建脚本
 - **不设超时**：装一个大包本来就可能要几分钟，定一个时限只会在慢网络上误杀正常的安装；网络层的超时 pnpm 自己有
 - 改 home 的那几次（`add` / `remove`）成功时不保留输出，失败时回执带 stdout 与 stderr 合起来的最后 12 行——pnpm 把原因写在最后
-- `outdated` 与 `peers check` 要读 stdout 上的 JSON，用另一个函数完整保留 stdout；两边对输出的取舍相反，所以不合成一个
+- `outdated` 要读 stdout 上的 JSON，用另一个函数完整保留 stdout；两边对输出的取舍相反，所以不合成一个
 
 ## 同一时刻只允许一个改动
 
 有两道，管的事不同：
 
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="1033-1040" */}
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="726-733" */}
 
-- **串行队列**：所有 `pnpm add` / `remove` 都经 `applyToHome` 排进同一个队列，`outdated` 与 `peers check` 也排进去。pnpm 每次都读、改、写 home 的 `package.json`，两次同时运行，后写的会把前一次加进去的依赖覆盖掉，而且不报错。前一个任务失败不影响后面排队的
-- **BUSY**：`install`、`uninstall`、`update`、`update-all`、`remount` 五条命令在最外层过一道互斥，已经有一个在运行时，重入的直接返回 `ok: false` 与一句 BUSY，不排队——排队会让界面看起来点了没反应。一个内核进程只服务一个 home，所以进程内的一个标志就够了
+- **串行队列**：所有 `pnpm add` / `remove` 都经 `applyToHome` 排进同一个队列，只读的 `outdated` 也排进去。pnpm 每次都读、改、写 home 的 `package.json`，两次同时运行，后写的会把前一次加进去的依赖覆盖掉，而且不报错。前一个任务失败不影响后面排队的
+- **BUSY**：`install`、`uninstall`、`update-all`、`remount` 四条命令在最外层过一道互斥，已经有一个在运行时，重入的直接返回 `ok: false` 与一句 BUSY，不排队——排队会让界面看起来点了没反应。一个内核进程只服务一个 home，所以进程内的一个标志就够了
 
-BUSY 只加在命令上，服务方法不经过它；服务方法调到 pnpm 时仍然经过串行队列，不会并发改 home。
+插件管理对外只有命令，没有绕开命令的调用方式，所以每一次改动都经过这两道关。
 
-<Diagram name="pm-busy" title="两道关：命令过 BUSY，所有 pnpm 过串行队列">
+<Diagram name="pm-busy" title="两道关：改动命令过 BUSY，所有 pnpm 过串行队列">
 - 命令 A（`install`）通过 BUSY 检查、占住标志，它的 `pnpm add` 进队列开始运行
-- 命令 B（`update`）进来时标志被占着，不排队，马上得到 `{ ok: false, error: "BUSY…" }`
-- 服务方法 C 不经过 BUSY，但它的 pnpm 排在 A 后面等
+- 命令 B（`uninstall`）进来时标志被占着，不排队，马上得到 `{ ok: false, error: "BUSY…" }`
+- 命令 C（`outdated`）只读，不经过 BUSY，但它的 `pnpm outdated` 排在 A 后面等
 - A 返回回执时释放标志（抛错也会释放），队列里 C 的 pnpm 开始运行
 </Diagram>
 
 ## 卸载时不结束 pnpm
 
-插件管理卸载时（包括内核退出），正在运行的 pnpm 不结束。pnpm 正在改 home 的 `package.json` 与 `node_modules`，中途结束会留下装了一半的 home，比让它跑完更难收拾；它跑完之后回执没人接，改动照样生效。这是[关键判据 K7](/docs/criteria/k7) 的例外，理由写在 `runPnpm` 的注释里。
+插件管理卸载时（包括内核退出），正在运行的 pnpm 不结束。理由写在 `runPnpm` 的注释里。
+
+<Callout type="warn" title="卸载时清理自己启动的子进程——例外：正在改 home 的 pnpm">
+插件启动的子进程，卸载时要杀掉整棵进程树、等它真正退出。插件管理启动的 pnpm 是例外：它正在改 home 的 `package.json` 与 `node_modules`，中途结束会留下装了一半的 home，比让它跑完更难收拾；它跑完之后回执没人接，改动照样生效。例外都要在代码里写明理由。
+</Callout>
 
 ## 怎么单独测
 
 - `tests/pnpm-path.test.ts`：各平台的目录布局——原生可执行文件、垫片、npm 全局布局、设置项的几种写法、版本太低、PATH 上几处都不行时的报错
+- `tests/pnpm.test.ts`：失败时回执里的 `error` 与最后几行
 - `tests/busy.test.ts`：重入返回 BUSY；运行中抛错也会释放
-- 启动进程与收集输出（`pnpm.ts`）没有单元测试，靠实机：`devkit.dev` 装进隔离 home 后调 `plugin-manager.install` / `outdated`
+- 启动进程与收集输出没有单元测试，靠实机：`devkit.dev` 装进隔离 home 后调 `plugin-manager.install` / `outdated`

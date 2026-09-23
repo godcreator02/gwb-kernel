@@ -63,7 +63,7 @@ function limitFromEnv(raw: string | undefined, fallback?: number): number    // 
 | [页面上的包名](/docs/seams/shared) | 页面 ↔ 声明 `gwb.shared` 的包 | 内核把声明拼成 importmap；同一个名字有两个提供方就都不收录 |
 | [命令与事件](/docs/seams/commands) | 页面 ↔ 提供 `gwbCommands` 的插件 | 内核不认识命令名，原样转交；事件原样推送、不保留 |
 
-插件和插件之间通过 cordis 的服务与命令交互，不经过内核，规矩在[关键判据 K4](/docs/criteria/k4)、[K5](/docs/criteria/k5)。
+插件和插件之间通过 cordis 的服务与命令交互，不经过内核。
 
 ## 日志
 

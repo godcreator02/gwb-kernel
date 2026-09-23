@@ -2,10 +2,10 @@
 
 god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只做第一个插件运行前必须完成的事，其余都做成插件。
 现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：只做什么、刻意不做什么见同目录 `design.mdx`，
-内核和插件、页面之间的五条接缝见 `seams/`，每个文件对外提供什么见 `map.mdx`，插件管理怎么分块、每块功能怎么工作见 `plugin-manager/`；
-peer、importmap、服务还是命令这类反复出现的选择按同目录 `criteria/`（关键判据 K1…K8，一条一页，配标准例子 E1…E6）判断，引用写编号。
+内核和插件、页面之间的五条接缝见 `seams/`，每个文件对外提供什么见 `map.mdx`，插件管理怎么分块、每块功能怎么工作、遵守哪些规矩见 `plugin-manager/`
+（规矩写在各页的感叹号提示框里：peer 怎么写、服务还是命令、契约归谁、卸载时清理什么、版本号怎么升）。
 
-## 准入判据（关键判据 K1）：两条都要满足
+## 准入判据：两条都要满足
 
 1. **只有「第一个插件存在之前必须完成的事」才进内核。** 其余一律做成插件
 2. **确实遇到需求才加。** 现在就做不成，而且说得出场景：谁、在做什么、卡在哪
@@ -27,7 +27,8 @@ peer、importmap、服务还是命令这类反复出现的选择按同目录 `cr
 ## 和内核同仓的插件：plugins/
 
 `plugins/plugin-manager` 是一个插件，不是内核应用的一部分：它依赖内核的内部约定（loader 条目树的结构、home 的文件布局、
-按真实路径解析包名），所以放在这里和内核一起测试。它的版本号独立于内核，改了就按 gwb-release 升自己的号，发版用
+按真实路径解析包名），所以放在这里和内核一起测试。它对外只有命令，服务 `gwbPluginManager` 只表示装了，不要往上面加方法。
+它的版本号独立于内核，改了就按 gwb-release 升自己的号，发版用
 `devkit.release {"dir":"<本仓>","packages":["plugins/plugin-manager"]}`；验证照插件的流程，在隔离 home 里用
 `devkit.dev {"home":"<隔离 home>","dir":"<本仓>","packages":["plugins/plugin-manager"]}`。
 内核升级 `@cordisjs/plugin-loader` 或改包名解析时，先运行 `pnpm check`，它的测试会一起跑。

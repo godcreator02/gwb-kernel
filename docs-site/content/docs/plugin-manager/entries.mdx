@@ -27,7 +27,7 @@ id 只能是 ASCII kebab-case，人需要一个看得懂的名字。显示名存
 
 `list` 把 home 的 `package.json` 与条目树对照，两边都不丢：
 
-- `package.json` 里有、条目树上没有的包，报成 `entries: []`——这只表示「一条条目都没有」，不表示「装了没启用」，共享包与库本来就没有条目
+- `package.json` 里有、条目树上没有的包，报成 `entries: []`——这只表示「一条条目都没有」，不推断原因
 - 条目指向一个不在 `package.json` 里的包（手工改过 `cordis.yml`，或包被 `pnpm remove` 删了），报成 `installed: false`
 - `active` 看的是 fiber 的状态是不是 `ACTIVE`，不是 fiber 在不在：`inject` 没满足的插件照样有 fiber，只是永远到不了 `ACTIVE`
 
@@ -58,6 +58,10 @@ id 只能是 ASCII kebab-case，人需要一个看得懂的名字。显示名存
 ## 把数据与设置转给另一个包
 
 同一个插件改了包名、要继续用旧数据时，用 `transfer-owner`（`{ id, pkg }`）把这个 id 的数据目录与设置分区一起转给新包名，再 `remount` 那条条目。插件管理只调数据插件、设置插件自己的服务来改归属，不碰它们的目录；哪个插件没装，回执里对应的一半是 `false`。
+
+<Callout type="warn" title="插件之间只通过服务和命令交互：数据目录归它的主人">
+插件不 import 别的插件，也不自己拼路径去读写别的插件的数据目录——要那份数据，就通过它的服务或命令拿。插件管理要改数据目录、设置分区属于哪个包，只调数据插件、设置插件提供的 `owners` / `transferOwner`；这两个插件都是可选的，用嵌套注入接上，缺了就跳过那一半。
+</Callout>
 
 **不是同一个插件**就换一个 id，别转归属——那等于把前一个包的东西交给它。
 

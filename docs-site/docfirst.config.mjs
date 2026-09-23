@@ -32,5 +32,7 @@ export default {
     ...fumadocs.defaultRoster,
     // 示意图：图本身 agent 看不见，生成文件时只保留「[图] 标题」和子元素里的文字说明
     Diagram: (node, h) => [h.paragraph(`[图] ${h.attr(node, 'title') ?? h.attr(node, 'name') ?? ''}`), ...h.children()],
+    // fumadocs 的提示框：生成文件时标题变成「[注意] 标题」一段，正文照原样保留（行内代码不转义）
+    Callout: (node, h) => [h.paragraph(`[注意] ${h.attr(node, 'title') ?? ''}`), ...h.children()],
   },
 }

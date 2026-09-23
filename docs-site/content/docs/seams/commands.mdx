@@ -50,7 +50,7 @@ ipcMain.handle('gwb:command', (_event, command, args) => {
 - 命令名和参数原样交给命令总线，回执原样返回；内核自己不注册任何命令
 - 事件原样推给页面；页面没打开时事件就丢了，不补发
 
-命令总线保证（今天是 commands 插件，见[标准例子 E1](/docs/criteria/examples/e1-commands)）：
+命令总线保证（今天是 commands 插件）：
 - 任何命令都返回 `{ ok, data, error }`，命令抛错也收成 `ok: false`，不会让页面收到异常
 - 页面、agent、插件用的是同一张命令表
 

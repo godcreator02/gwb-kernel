@@ -1,73 +1,51 @@
 ---
 title: 安装与卸载
-description: install 一次 pnpm add，过渡期再装 peer、查 peer 版本，库不加条目，其余选 id 建条目；uninstall 先删条目后卸包、不回滚、不动 peer
+description: install 一次 pnpm add，再选 id 加一条条目，不装 peer、不判断是不是库；uninstall 先删条目后卸包、不回滚
 ---
 
-**本页回答**：装一个包要经过哪几步、每一步失败时回执是什么样；为什么库不加条目；为什么建条目只等写入、不等加载；卸载为什么先删条目、失败不回滚、不动 peer。
+**本页回答**：装一个包要经过哪几步、每一步失败时回执是什么样；为什么安装不装 peer、也不判断是不是库；为什么建条目只等写入、不等加载；卸载为什么先删条目、失败不回滚。
 
-## 安装的五步
+## 安装的三步
 
-<Diagram name="pm-install" title="安装一个包：五步依次做，每一步失败时回执是什么样，回执里逐步多出哪几行">
+<Diagram name="pm-install" title="安装一个包：三步依次做，每一步失败时回执是什么样，回执里逐步多出哪几行">
 1. **校验参数**：包名与版本范围不合规就抛错——拦的是 `-r` 这类会被 pnpm 当成命令行选项的参数。参数全程以数组传给 pnpm、不经过 shell。只有调用方写错才抛，下面每一种失败都转成 `ok: false` 的回执
 2. **一次 `pnpm add`**：先[找 pnpm](/docs/plugin-manager/pnpm)，再经 `applyToHome` 运行。失败时回执带 pnpm 输出的最后几行
-3. **peer 那一步**（过渡期）：见[下一节](#过渡期的-peer-那一步)。排在建条目之前——条目一加进去 loader 就加载插件，插件启动时要找的 peer 得已经在；peer 装不上不让安装失败，写进回执的 `peers` 与 `note`
-4. **查 peer 版本**（过渡期）：运行一次 `pnpm peers check`，home 里每一处版本对不上的写进回执的 `peerWarnings`，只提醒、不拦
-5. **是库还是插件**：是库就不加条目，回执里没有 `entryId`、`note` 说明原因；是插件就选一个 id（规则见[条目、id 与归属](/docs/plugin-manager/entries#选-id)），经条目树 `create` 加进 `cordis.yml`，回执带 `entryId`。加载在后台继续，命令不等它；写不进 `cordis.yml` 时回执 `ok: false`，包留在 home 里
+3. **选 id，加一条条目**：选一个 id（规则见[条目、id 与归属](/docs/plugin-manager/entries#选-id)），经条目树 `create` 加进 `cordis.yml`，回执带 `entryId`。加载在后台继续，命令不等它；写不进 `cordis.yml` 时回执 `ok: false`，包留在 home 里
 </Diagram>
 
 同一个包 install 两次会得到两条条目（第二条的 id 带数字后缀）：一个包对应几条条目本来就合法，不替调用方猜「是不是装过了」。
 
-### 库不加条目
+装了一个没有 `apply` 的包（比如一个库），条目照样加上，加载失败（日志 `invalid plugin, expect function or object with apply`），在 `list` 里显示为未加载；要去掉就 `uninstall`。
 
-清单 `keywords` 里写了 `gwb`、没写 `gwb-plugin` 的是库（`block-note`、`gwb-plugin-api` 这类）。库没有 `apply`，加进 `cordis.yml` 也加载不起来，只会多一条报错的条目，所以回执里没有 `entryId`，`note` 说明原因。
+<Callout type="warn" title="为什么安装不装 peer：peer 只写宿主提供的 cordis">
+插件的 peer 只该是宿主提供、构建产物里按值 import 的 `cordis`，它由内核提供，不能在 home 里再装一份（那是第二张服务注册表）；别的依赖一律写 dev、打包进插件自己的构建产物。所以插件管理不读插件的 `peerDependencies`、不替它装任何东西，也不运行 `pnpm peers check`。插件的 peer 写了别的包，是那个插件没按规矩写，运行时找不到就会加载失败。
+</Callout>
 
-{/* ref file="../plugins/plugin-manager/src/inventory.ts" lines="93-96" */}
-
-只认**明确写明是库**的：第三方插件常常一个 keyword 都不写，把「没写」也当成库，就会变成「装上了却不加载」，比多一条条目更难查。这个判断只在库还要装进 home 的过渡期里需要，见[关键判据 K3](/docs/criteria/k3)。
+<Callout type="warn" title="为什么不判断是不是库：库不进 home">
+库（包括词汇表包、接口定义包）由用它的插件打包进自己的构建产物，不装进 home。页面上必须只有一份的运行时代码（今天是 react 的四个包名）只由有条目的插件在清单的 `gwb.shared` 里声明，库不声明。所以 home 里只该有插件，插件管理不按 `keywords` 猜一个包是不是库。
+</Callout>
 
 ### 建条目只等写入、不等加载
 
 条目树的 `create` 返回的 promise 里包含加载过程，而加载可能永远不结束：`inject` 满足不了的插件会一直等待。等它的话，装一个依赖还没装的插件，命令就永远没有回执。写回 `cordis.yml` 在 `create` 的第一个 `await` 之前就同步安排好了，所以不等也不影响写入；加载成功没有看 `list` 里的 `active`，失败原因在日志里。
 
-## 过渡期的 peer 那一步
-
-插件如果依赖一个会独立升级、只读文件或启动进程（不 import 代码）的包，那个包必须写进 home 的 `package.json`：只有这样 `<home>/node_modules/<包名>` 才存在，插件每次运行时去找它都拿到当前版本，`outdated` 与 `update-all` 也才看得见它。pnpm 自动补装的 peer 只放进 `.pnpm/`，做不到这一点。
-
-所以 install 读刚装进来那个包的 `peerDependencies`，逐条判断：
-
-| 情况 | 处理 |
-| --- | --- |
-| 已经在 home 的 `package.json` 里 | `present`，版本一个字不动 |
-| `cordis` | `skipped`：宿主提供的那一份，home 里再装一份就是第二张服务注册表 |
-| `@godcreator/gwb-*` 里声明了 `gwb.shared` 的共享包 | 装 |
-| `@godcreator/gwb-*` 里的插件，或读不到清单的 | `skipped`：插件走 `install`，还要加条目 |
-| 其余 | 装 |
-
-- 装的是 latest，不是清单上写的范围：范围原样写进回执，latest 真不满足时会出现在 `peerWarnings` 里
-- 每条 peer 单独运行一次 pnpm：一次装几个时只要有一个在包源上不存在，pnpm 就整体失败，而且不说是哪一个
-- 这一步永不让安装失败：插件本身已经装上了，没装上的 peer 写进回执的 `peers` 与 `note`
-
-[关键判据 K2](/docs/criteria/k2) 执行完之后，插件的 peer 只剩 `cordis`，这一步和 peer 版本警告都没有事可做，一起删掉。
-
 ## 回执
 
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="114-138" */}
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="93-102" */}
 
 ## 卸载
 
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="850-881" */}
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="541-571" */}
 
 - **先删全部条目，后卸包**：反过来的话，条目会指向一个不在 home 里的包。删条目时 fiber 当场卸载，依赖它的其他插件被 cordis 一起卸载，停在未加载
 - **pnpm 失败不回滚**：条目已删是可以接受的结果，包会出现在「已装、没有条目」那一组里，要用再加条目
-- **不动 peer**：不查谁还在用 install 替它装进来的 peer。残留一个没人用的包只是占磁盘，误删一个还有插件在用的包会让它运行出错
 - **设置与数据留在磁盘上**：重新装回来时沿用原来的 id，还是那一份（见[选 id](/docs/plugin-manager/entries#选-id)）
 - 只删一条条目、保留包，用 `remove-entry`
 
 ## 怎么单独测
 
 - `tests/ids.test.ts`：包名、版本范围的校验与 `pnpm add` 参数
-- `tests/inventory.test.ts`：库的判断，两个方向认错各是什么后果
-- `tests/peers.test.ts`、`tests/peer-warnings.test.ts`：peer 计划的四条判据；`pnpm peers check` 输出的解析
-- `tests/home.test.ts`：读已装包与 peer 的清单
+- `tests/home.test.ts`：读 home 的 `package.json`，清单不在、坏了都当空表
 - `tests/uninstall.test.ts`：卸载删哪些条目
+- `tests/pnpm.test.ts`：pnpm 失败时回执里的 `error` 与最后几行
 - 整条安装、卸载只能实机验证：`devkit.dev` 把开发版装进隔离 home，再调 `plugin-manager.install` / `uninstall`

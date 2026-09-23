@@ -33,11 +33,6 @@ const STEPS: { title: string; detail: string; events: Event[] }[] = [
     ],
   },
   {
-    title: '查 peer 版本（过渡期）',
-    detail: '重新加载之前先查，回执内容在插件管理自己重新加载之前就齐了。',
-    events: [{ lane: 1, lines: ['peers', 'check'] }],
-  },
-  {
     title: '条目 A 停用再启用',
     detail: '在同一条命令里做：停用 → 等旧的卸载完 → 启用 → 等新的加载完。启用时按真实路径重新解析，拿到的就是 A@1.1。',
     events: [{ lane: 3, lines: ['停用→启用', 'ACTIVE'] }],
@@ -60,13 +55,13 @@ const STEPS: { title: string; detail: string; events: Event[] }[] = [
 ]
 
 const LANE_Y = (lane: number) => 34 + lane * 48
-const COL_X = (step: number) => 176 + step * 82
+const COL_X = (step: number) => 176 + step * 96
 
 export function PmUpgrade() {
   const all = [{ title: '全貌', detail: '一条命令里按时间先后做完：定计划 → 一次 pnpm add → 逐条停用再启用 → 回执 → 重新加载插件管理自己 → 整页重新加载。', events: [] as Event[] }, ...STEPS]
   const state = useSteps(all.length, 3000)
   const current = all[state.step]!
-  const replyX = COL_X(4) - 4
+  const replyX = COL_X(3) - 4
 
   return (
     <>

@@ -1,16 +1,14 @@
 /**
- * plugin-manager 的源码分层：顶上是组装一切的 index.ts，中间是不读磁盘的纯逻辑文件（虚线框是过渡期的做法），
+ * plugin-manager 的源码分层：顶上是组装一切的 index.ts，中间是不读磁盘的纯逻辑文件，
  * 下面左边是读磁盘、启动进程的两个文件，右边是插件管理外面的东西。
  */
 
 import { Arrow, Box, BORDER, FG, MUTED, Note } from './parts'
 
-const PURE: { file: string; what: string; transitional?: boolean }[] = [
+const PURE: { file: string; what: string }[] = [
   { file: 'tree.ts', what: '取条目树' },
   { file: 'inventory.ts', what: '包与条目对照' },
   { file: 'ids.ts', what: 'id 规则与选 id' },
-  { file: 'peers.ts', what: 'peer 那一步', transitional: true },
-  { file: 'peer-warnings.ts', what: '读 peers check', transitional: true },
   { file: 'uninstall.ts', what: '卸载删哪些条目' },
   { file: 'outdated.ts', what: '读 outdated' },
   { file: 'update-all.ts', what: '热升级的计划' },
@@ -23,7 +21,7 @@ const PURE: { file: string; what: string; transitional?: boolean }[] = [
 export function PmModules() {
   return (
     <svg viewBox="0 0 760 350" role="img" aria-label="plugin-manager 的源码分层">
-      <Box x={260} y={14} w={240} h={48} lines={['index.ts', '服务类与 14 条命令，按顺序调用各块']} tone="a" />
+      <Box x={260} y={14} w={240} h={48} lines={['index.ts', '12 条命令，按顺序调用各块']} tone="a" />
       <Arrow from={[380, 62]} to={[380, 96]} label="import" />
 
       <Note x={22} y={90} size={12} color={FG} weight={600}>
@@ -38,7 +36,6 @@ export function PmModules() {
           w={112}
           h={46}
           lines={[one.file, one.what]}
-          dashed={one.transitional}
         />
       ))}
 
@@ -59,7 +56,7 @@ export function PmModules() {
       <Arrow from={[356, 287]} to={[392, 287]} />
 
       <Note x={380} y={342} anchor="middle" size={11.5} color={MUTED}>
-        index.ts 依赖其余所有文件；虚线框是过渡期的做法，关键判据 K2、K3 执行完就删
+        index.ts 依赖其余所有文件；构建产物里除了 node 内置模块，没有别的包名 import
       </Note>
     </svg>
   )

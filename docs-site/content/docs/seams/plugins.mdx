@@ -37,7 +37,7 @@ interface GwbContext extends Context {
 
 {/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="15-33" */}
 
-`emit` 与 `setShell` 的另一头在页面上，见[命令与事件](/docs/seams/commands)与[外壳接管页面](/docs/seams/shell)。这些类型都在词汇表包 `@godcreator/gwb-plugin-api` 里：只有类型、没有运行时代码，插件在 dev 里列它、只用 `import type`（[关键判据 K2](/docs/criteria/k2)）。
+`emit` 与 `setShell` 的另一头在页面上，见[命令与事件](/docs/seams/commands)与[外壳接管页面](/docs/seams/shell)。这些类型都在词汇表包 `@godcreator/gwb-plugin-api` 里：只有类型、没有运行时代码，插件在 dev 里列它、只用 `import type`。
 
 ## 插件怎么进来
 
@@ -73,9 +73,9 @@ interface GwbContext extends Context {
 - 退出时卸载整棵插件树，等各插件的清理结束，最多等 5 秒，超时就强制退出
 
 插件保证：
-- 自己启动、创建的东西在卸载时清理掉，并把清理返回成 promise——内核等的就是这个 promise（[关键判据 K7](/docs/criteria/k7)）
+- 自己启动、创建的东西在卸载时清理掉，并把清理返回成 promise——内核等的就是这个 promise
 - 要 home 路径只从 `gwbKernel.dataDir` 取，数据写在自己的目录里
-- 和别的插件只通过服务和命令交互（[关键判据 K4](/docs/criteria/k4)、[K5](/docs/criteria/k5)）
+- 和别的插件只通过服务和命令交互
 
 {/* ref file="../apps/desktop/src/main.ts" lines="304-326" */}
 
