@@ -15,7 +15,7 @@ description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_
 
 ## 接口
 
-对调用方，plugin-manager 是 12 条命令，分组与回执见[插件管理](/docs/plugin-manager#对外接口)。
+对调用方，plugin-manager 是 12 条命令，参数与回执见[对外只有命令](/docs/plugin-manager/commands)。
 
 对内核，它依赖的是一份**没有写进 `gwbKernel` 的约定**——loader 条目树的这几样：
 
@@ -35,9 +35,9 @@ description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_
 - 包名按真实路径解析：包换了版本、真实路径跟着换，停用再启用就能拿到新版本
 
 plugin-manager 保证：
-- **只有它写 home**：所有 `pnpm add` / `pnpm remove` 都经同一个入口 `applyToHome` 排进串行队列（见[同一时刻只允许一个改动](/docs/plugin-manager/pnpm#同一时刻只允许一个改动)）
-- 升级与重新加载在**同一条命令**里做完，自己排在最后、回执发出之后才重新加载自己（见[一键热升级](/docs/plugin-manager/upgrade#一键热升级)）
-- 卸载先删条目、后卸包，pnpm 失败不回滚；数据与设置留在磁盘上（见[卸载](/docs/plugin-manager/install#卸载)）
+- **只有它写 home**：所有 `pnpm add` / `pnpm remove` 都经同一个入口 `applyToHome` 排进串行队列（见[唯一写入者](/docs/plugin-manager/home#只有插件管理写-home)）
+- 升级与重新加载在**同一条命令**里做完，自己排在最后、回执发出之后才重新加载自己（见[热升级](/docs/plugin-manager/upgrade)、[重新加载一条条目](/docs/plugin-manager/remount)）
+- 卸载先删条目、后卸包，pnpm 失败不回滚；数据与设置留在磁盘上（见[卸载](/docs/plugin-manager/install#卸载先删条目后卸包)）
 
 ## 怎么单独测
 

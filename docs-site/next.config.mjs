@@ -49,6 +49,8 @@ const config = {
     { source: '/docs/criteria/k1', destination: '/docs/design', permanent: false },
     { source: '/docs/criteria', destination: '/docs/plugin-manager', permanent: false },
     { source: '/docs/criteria/:path*', destination: '/docs/plugin-manager', permanent: false },
+    // 插件管理按机制拆页（2026-09-23）：条目页拆进「home 的两层」与「id 与归属」
+    { source: '/docs/plugin-manager/entries', destination: '/docs/plugin-manager/ids', permanent: false },
   ],
   // 旧配置曾把 /docs 永久重定向到 /docs/system-map，浏览器缓存着那条 308：这里再重定向回 /docs
   // 就成环。改写不发 30x，缓存了旧跳转的浏览器也看得到入口页。系统地图现在的网址是 /docs/map

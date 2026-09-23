@@ -1,36 +1,34 @@
 ---
 title: 插件管理
-description: plugin-manager 是唯一写 home 的插件——装卸包、增删条目、查新版本与热升级；源码在内核仓 plugins/plugin-manager/，这里讲它怎么分块、对外提供什么、遵守哪些规矩
+description: plugin-manager 是唯一写 home 的插件——装卸包、增删条目、查新版本与热升级；这里是地图：它靠哪几个机制工作、源码怎么分块、有哪些命令、怎么测
 ---
 
-**本页回答**：插件管理管什么、不管什么；源码分成哪几块、谁依赖谁；对外提供哪些命令；它的清单怎么写；怎么测。每块功能的细节在下面四页，它和内核之间交换什么、各保证什么在接缝页[home 与插件管理](/docs/seams/home)。各页的感叹号提示框写的是插件管理遵守的规矩，以及它用到的例外。
+**本页回答**：插件管理是什么、不管什么；它靠哪几个机制工作，各在哪一页；源码怎么分块；有哪些命令；怎么测。它和内核之间交换什么、各保证什么，在接缝页[home 与插件管理](/docs/seams/home)。
 
-## 管什么
+## 是什么
 
-home 里有两层东西，插件管理的工作是让两层对应上：
+一个插件，源码在内核仓 `plugins/plugin-manager/`，由 `cordis.yml` 的条目加载、版本号独立于内核。它管 home 里的两层东西：pnpm 装进来的**包**，和 `cordis.yml` 里指向包的**条目**——只装包、不加条目，插件不会运行。放在内核仓，是因为它依赖内核没写进文档的内部结构（loader 条目树、home 的布局、包名的解析规则），理由见[home 与插件管理](/docs/seams/home)。
 
-- **包**：pnpm 装进 home 的 `package.json` 与 `node_modules`。只装包，插件不会运行
-- **条目**：`cordis.yml` 里的一行，指向一个包。有了条目，loader 才加载它；一个包可以有好几条条目，各是一个实例
+## 靠哪几个机制工作
 
-改这两层只有两条路，都在插件管理里：包经 `applyToHome` 运行 pnpm，所有改动排进同一个串行队列；条目经 loader 的条目树改，写回 `cordis.yml` 与当场加载一起完成。
+每页讲一个机制：它是什么、为什么这么做、怎么做的，需要时配图。
 
-| 功能 | 页面 |
-| --- | --- |
-| 装一个包并加条目；卸载一个包 | [安装与卸载](/docs/plugin-manager/install) |
-| 查新版本；一键热升级，不重启 | [查新版本与热升级](/docs/plugin-manager/upgrade) |
-| 条目的增删、启用停用、重新加载、显示名；id 怎么定、数据与设置属于哪个包 | [条目、id 与归属](/docs/plugin-manager/entries) |
-| 找这台机器上的 pnpm；运行 pnpm；同一时刻只允许一个改动 | [找 pnpm 与运行 pnpm](/docs/plugin-manager/pnpm) |
-
-<Callout type="warn" title="放哪个仓：依赖内核内部结构的插件放进内核仓">
-只依赖内核对外提供的东西（`gwbKernel`、词汇表包、命令）的插件放在自己的仓；依赖内核没写进文档的内部结构（loader 条目树、home 的布局、包名的解析规则）的，放进内核仓的 `plugins/`，内核改这些结构时它的测试一起跑。插件管理是唯一这样的插件；它仍然是插件，由 `cordis.yml` 的条目加载，版本号独立于内核。
-</Callout>
+| 机制 | 一句话 | 页 |
+| --- | --- | --- |
+| home 的两层与唯一写入者 | 包与条目两层；包只经一个串行队列改，条目只经 loader 的条目树改；同一时刻只允许一个改动 | [home 的两层与唯一写入者](/docs/plugin-manager/home) |
+| 对外只有命令 | 12 条命令是唯一的调用方式；服务只表示「装了」；回执类型由插件管理导出 | [对外只有命令](/docs/plugin-manager/commands) |
+| 安装与卸载 | 装包与加条目在一条命令里做完、不等加载；home 里只有插件；卸载先删条目后卸包 | [安装与卸载](/docs/plugin-manager/install) |
+| 重新加载一条条目 | 停用 → 等旧的卸载完 → 启用；插件管理自己排到回执之后 | [重新加载一条条目](/docs/plugin-manager/remount) |
+| 热升级 | 升级与重新加载在同一条命令里；精确版本、每条条目各自重新加载、自己最后 | [热升级](/docs/plugin-manager/upgrade) |
+| id 与归属 | id 是身份不能改；选 id 时看磁盘上的归属记录，不读到别的包的数据 | [id 与归属](/docs/plugin-manager/ids) |
+| 找 pnpm 与运行 pnpm | 只用原生可执行文件、设置项优先；直接启动、不设超时；卸载时不结束 pnpm | [找 pnpm 与运行 pnpm](/docs/plugin-manager/pnpm) |
 
 ## 不管什么
 
 - 查包源上有什么可装、配第三方包源：基础插件仓的 `gwb-plugin-sources`
 - 插件管理窗格的界面：界面平台仓的 `gwb-baseui`
 - 插件之间的依赖齐不齐：缺了就停在「等待缺少的服务」，`plugin-manager.list` 里看得到
-- 插件的 peer、库、页面上的共享包名：插件管理只装包、加条目，不替插件装 peer，也不判断装的是不是库，见[安装与卸载](/docs/plugin-manager/install)
+- 插件的 peer、库、页面上的共享包名：插件管理只装包、加条目，理由见[安装与卸载](/docs/plugin-manager/install#home-里只有插件)
 - 这些命令怎么调用：说明书 [gwb-plugin-manager](/outputs/skills/gwb-plugin-manager)，生成到包里的 `SKILL.md`，agent 经 MCP 入口读它
 
 ## 源码分块
@@ -44,60 +42,33 @@ home 里有两层东西，插件管理的工作是让两层对应上：
 - 插件管理外面：home 目录、loader 提供的条目树、四个可选插件（commands、data、settings、skills）
 </Diagram>
 
-| 文件 | 管什么 | 功能页 |
+| 文件 | 管什么 | 在哪一页讲 |
 | --- | --- | --- |
-| `index.ts` | 12 条命令与服务，按顺序调用下面各块 | 全部 |
-| `tree.ts` | 从插件自己的条目上取条目树与自己的 entryId | [条目](/docs/plugin-manager/entries) |
-| `inventory.ts` | 条目树与 home 清单对照成 `list` 的结果 | [条目](/docs/plugin-manager/entries) |
-| `home.ts` | 读 home 的 `package.json`（读磁盘） | [安装](/docs/plugin-manager/install) |
-| `ids.ts` | id 规则、默认 id、选 id；包名与版本范围的校验 | [条目](/docs/plugin-manager/entries) |
-| `uninstall.ts` | 卸载要删哪些条目 | [安装](/docs/plugin-manager/install) |
-| `outdated.ts` | 解析 `pnpm outdated` 的输出 | [升级](/docs/plugin-manager/upgrade) |
-| `update-all.ts` | 一键热升级的计划；条目状态名 | [升级](/docs/plugin-manager/upgrade) |
-| `remount.ts` | 停用再启用的时序；自己那条推迟到回执之后 | [升级](/docs/plugin-manager/upgrade) |
+| `index.ts` | 12 条命令与服务，按顺序调用下面各块 | [对外只有命令](/docs/plugin-manager/commands) |
+| `tree.ts` | 从插件自己的条目上取条目树与自己的 entryId | [home 的两层](/docs/plugin-manager/home) |
+| `inventory.ts` | 条目树与 home 清单对照成 `list` 的结果 | [home 的两层](/docs/plugin-manager/home) |
+| `home.ts` | 读 home 的 `package.json`（读磁盘） | [home 的两层](/docs/plugin-manager/home) |
+| `busy.ts` | 同一时刻只允许一个改动，重入返回 BUSY | [home 的两层](/docs/plugin-manager/home) |
+| `uninstall.ts` | 卸载要删哪些条目 | [安装与卸载](/docs/plugin-manager/install) |
+| `remount.ts` | 停用再启用的时序；自己那条推迟到回执之后 | [重新加载](/docs/plugin-manager/remount) |
+| `outdated.ts` | 解析 `pnpm outdated` 的输出 | [热升级](/docs/plugin-manager/upgrade) |
+| `update-all.ts` | 一键热升级的计划；条目状态名 | [热升级](/docs/plugin-manager/upgrade) |
+| `ids.ts` | id 规则、默认 id、选 id；包名与版本范围的校验 | [id 与归属](/docs/plugin-manager/ids) |
 | `pnpm-path.ts` | 找 pnpm（磁盘信息由调用方传入） | [pnpm](/docs/plugin-manager/pnpm) |
 | `pnpm.ts` | 查磁盘、启动 pnpm、收集输出（启动进程） | [pnpm](/docs/plugin-manager/pnpm) |
-| `busy.ts` | 同一时刻只允许一个改动，重入返回 BUSY | [pnpm](/docs/plugin-manager/pnpm) |
 | `vocab.ts` | 取内核服务、判断是不是对象 | — |
 
-## 对外接口
-
-对外只有 12 条命令：
+## 命令一览
 
 | 分组 | 命令 |
 | --- | --- |
-| 查看 | `list`（包与各自的条目、是否加载成功） |
-| 安装与卸载 | `install`、`uninstall` |
-| 升级 | `outdated`、`update-all`（给 `only` 就只升这几个包） |
-| 条目 | `add-entry`、`remove-entry`、`enable`、`disable`、`remount`、`set-label`、`transfer-owner` |
+| 查看 | `list` |
+| 安装与卸载 | `install`、`uninstall`、`add-entry`、`remove-entry` |
+| 启用与重新加载 | `enable`、`disable`、`remount` |
+| 升级 | `outdated`、`update-all` |
+| id 与显示名 | `transfer-owner`、`set-label` |
 
-- `install`、`uninstall`、`update-all`、`remount` 四条命令过互斥检查，同一时刻只允许一个，重入的直接返回 BUSY
-- 回执的类型由本包导出（`InstallResult`、`UpdateAllResult`、`UninstallResult`、`RemountedEntry`、`PluginPackageView` 等），使用方 `import type` 引它
-- 用到的别的插件都是局部注入，缺了只少一部分功能：`gwbCommands`（注册命令、升级后调用 `shell.reload`；缺了插件管理就没有任何对外接口）、`gwbData`（存条目显示名、记录数据目录属于哪个包）、`gwbSettings`（设置项 `pnpm-path`、记录设置分区属于哪个包）、`gwbSkills`（登记说明书）
-
-服务 `gwbPluginManager` 上没有方法，只表示插件管理装了：
-
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="74-82" */}
-
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="183-188" */}
-
-<Callout type="warn" title="服务还是命令：同一件事只提供一种调用方式">
-扩展点（让别的插件往这里注册东西、需要跟着提供方一起重新加载的生命周期）用服务；读写数据和执行动作用命令，页面、agent、插件用的是同一套命令。插件管理没有扩展点，所以对外只有命令；别的插件要跟着它一起加载、卸载，就 inject 这个只表示「装了」的服务。只表示存在的服务用 `ctx.provide` 提供普通对象，不继承 cordis 的 `Service` 类。
-</Callout>
-
-<Callout type="warn" title="契约归提供方：回执类型由插件管理导出">
-谁提供接口，谁定义类型。命令的参数与回执类型由插件管理导出，调用方 `import type` 引它，不手写、不用 `as` 强制转换。插件管理用到的 loader 条目树也照这条做：按 loader 自己导出的 `EntryTree` 类型取，再赋给收窄后的 `EntryTreeLike`，由类型检查核对（见[home 与插件管理](/docs/seams/home#接口)）。
-</Callout>
-
-<Callout type="warn" title="版本号：破坏旧接口才升 0.x 的 x">
-改了命令名、参数或回执的形状，删了命令，改了服务的值，都是破坏性变更，升 x，并把服务值里的 `contract` 加一；加命令、加可选参数、回执加字段、修 bug 升 y。删掉 `update`、`shared` 与服务方法就是一次 x。
-</Callout>
-
-## 清单怎么写
-
-<Callout type="warn" title="依赖怎么写：peer 只写宿主提供、按值 import 的 cordis">
-peer 的意思是「运行时要从 home 里解析到这个包」，只有宿主提供、构建产物里按值 import 的 `cordis` 才写成 peer，其余一律写 dev。插件管理只 import 类型（cordis、词汇表包、loader、四个可选插件），编译后这些 import 全部消失，所以一条 peer 都不写。构建产物里除了 node 内置模块没有别的包名 import，`tests/artifact.test.ts` 检查这一点。
-</Callout>
+参数与回执见[对外只有命令](/docs/plugin-manager/commands)。
 
 ## 怎么测
 
@@ -109,4 +80,4 @@ peer 的意思是「运行时要从 home 里解析到这个包」，只有宿主
 
 ## 代码从哪读
 
-先读 `plugins/plugin-manager/src/index.ts` 顶部的注释与 `apply`，再按上面的表读各功能对应的文件。
+先读 `plugins/plugin-manager/src/index.ts` 顶部的注释与 `apply`，再按上面的表读各机制对应的文件。
