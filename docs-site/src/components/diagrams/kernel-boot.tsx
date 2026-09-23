@@ -2,14 +2,14 @@
 
 /**
  * 一次启动：左边是 home 里的文件，中间是主进程（内核与 cordis 实例），右边是页面。
- * 第 0 步是全貌，之后每一步把这一步碰到的东西点亮；内置插件在第 5 步出现，cordis.yml 里的插件在第 6 步出现，
+ * 第 0 步是全貌，之后每一步把这一步碰到的东西点亮；cordis.yml 里的插件在第 5 步出现，
  * 页面的 #root 从空、只读状态页到外壳。
  */
 
 import { Arrow, Box, BORDER, MUTED, Note, StepCaption } from './parts'
 import { StepControls, useSteps } from './steps'
 
-type Part = 'package' | 'yml' | 'modules' | 'log' | 'runtime' | 'kernel' | 'cordis' | 'gwbKernel' | 'builtin' | 'loader' | 'plugins' | 'shell' | 'page'
+type Part = 'package' | 'yml' | 'modules' | 'log' | 'runtime' | 'kernel' | 'cordis' | 'gwbKernel' | 'loader' | 'plugins' | 'shell' | 'page'
 
 const STEPS: { title: string; detail: string; lit: Part[]; root: string }[] = [
   { title: '全貌', detail: '两个进程：主进程里是内核和 cordis 实例，插件都运行在 cordis 里；页面是唯一的窗口。home 是磁盘上的一个目录。', lit: [], root: '' },
@@ -17,22 +17,20 @@ const STEPS: { title: string; detail: string; lit: Part[]; root: string }[] = [
   { title: '第 2 步：日志、单实例锁、运行记录', detail: '打开 gwb.log；同一个 home 已有实例在运行就退出；把 pid、版本写进 runtime.json。', lit: ['log', 'runtime', 'kernel'], root: '' },
   { title: '第 3 步：创建 cordis 实例', detail: '根上下文指向 home，并提供 gwbKernel——早于任何插件。', lit: ['cordis', 'gwbKernel'], root: '' },
   { title: '第 4 步：创建窗口', detail: '页面加载入口 index.html。这时还没有外壳，页面显示只读状态页。', lit: ['page'], root: '只读状态页' },
-  { title: '第 5 步：加载内置插件', detail: '注册 loader，把命令插件与插件管理作为 loader 根层的条目加载：命令总线 gwbCommands 在 cordis.yml 里的任何插件之前就在。', lit: ['loader', 'builtin'], root: '只读状态页' },
-  { title: '第 6 步：加载 cordis.yml 里的插件', detail: 'include 读 cordis.yml，loader 按条目从 home 的 node_modules 按真实路径找到包并加载。', lit: ['loader', 'yml', 'modules', 'plugins', 'shell'], root: '只读状态页' },
-  { title: '第 7 步：页面交给外壳', detail: '外壳插件调用 setShell；页面注入 importmap、import 外壳模块、把 #root 交给它。', lit: ['shell', 'gwbKernel', 'page'], root: '外壳' },
+  { title: '第 5 步：加载 cordis.yml 里的插件', detail: '注册 loader 与 include；include 读 cordis.yml，loader 按条目从 home 的 node_modules 按真实路径找到包并加载。命令插件、插件管理也是这样加载的。', lit: ['loader', 'yml', 'modules', 'plugins', 'shell'], root: '只读状态页' },
+  { title: '第 6 步：页面交给外壳', detail: '外壳插件调用 setShell；页面注入 importmap、import 外壳模块、把 #root 交给它。', lit: ['shell', 'gwbKernel', 'page'], root: '外壳' },
 ]
 
 export function KernelBoot() {
   const state = useSteps(STEPS.length, 2800)
   const current = STEPS[state.step]!
   const lit = (part: Part) => (current.lit.includes(part) ? 'a' : undefined)
-  const pluginsShown = state.step === 0 || state.step >= 6
-  const builtinShown = state.step === 0 || state.step >= 5
+  const pluginsShown = state.step === 0 || state.step >= 5
   const rootText = current.root
 
   return (
     <>
-      <svg viewBox="0 0 760 400" role="img" aria-label="内核一次启动的七步">
+      <svg viewBox="0 0 760 400" role="img" aria-label="内核一次启动的六步">
         {/* home */}
         <Note x={20} y={22} size={12} color="var(--color-fd-foreground)" weight={600}>
           home（磁盘上的目录）
@@ -59,7 +57,7 @@ export function KernelBoot() {
         </Note>
         <Box x={234} y={130} w={136} h={44} lines={['gwbKernel', '根上下文上的服务']} tone={lit('gwbKernel')} />
         <Box x={382} y={130} w={136} h={44} lines={['loader + include', '读 cordis.yml']} tone={lit('loader')} />
-        <Box x={234} y={190} w={136} h={44} lines={['内置插件', '命令总线 · 插件管理']} tone={lit('builtin')} dim={!builtinShown} dashed={!builtinShown} />
+        <Box x={234} y={190} w={136} h={44} lines={['命令插件', '插件管理 · …']} tone={lit('plugins')} dim={!pluginsShown} dashed={!pluginsShown} />
         <Box x={382} y={190} w={64} h={44} lines={['shell', '外壳']} tone={lit('shell')} dim={!pluginsShown} dashed={!pluginsShown} />
         <Box x={454} y={190} w={64} h={44} lines={['其他插件', '…']} tone={lit('plugins')} dim={!pluginsShown} dashed={!pluginsShown} />
         <Note x={376} y={262} anchor="middle" size={10.5}>

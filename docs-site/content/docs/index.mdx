@@ -1,75 +1,67 @@
 ---
 title: 从这里开始
-description: gwb-kernel 是什么；内核仓拆成哪几个包、包之间靠哪十二条接缝连起来（接缝图）；带着不同的目的来该接着读哪几页
+description: gwb-kernel 是什么；内核仓拆成哪几个包、包之间靠哪八条接缝连起来（接缝图）；带着不同的目的来该接着读哪几页
 ---
 
-**本页回答**：gwb-kernel 是什么；内核仓的各个包怎样拼在一起，每两个模块之间靠哪条接缝相连、接缝上交换什么、细节在哪一页；每个包讲什么、在哪一页；带着不同的目的来，接着读哪几页。
+**本页回答**：gwb-kernel 是什么；内核仓的各个包怎样拼在一起，每两个模块之间靠哪条接缝相连、接口是什么、细节在哪一页；每个包讲什么、在哪一页；带着不同的目的来，接着读哪几页。
 
 ## 是什么
 
-god 工作台的内核：一个 Electron 应用，只做**第一个插件运行之前必须完成的事**，外加内置的两个平台核心：命令总线 `gwb-commands` 与负责装卸插件的 `gwb-plugin-manager`。界面、数据、设置、给 agent 用的 MCP 入口，全部是 `cordis.yml` 里的插件。内核为什么切成这样、刻意不做哪些事，见[关键设计](/docs/design)；一次启动依次发生什么，见[启动与退出](/docs/desktop/boot)。
+god 工作台的内核：一个 Electron 应用，只做**第一个插件运行之前必须完成的事**。命令总线、插件管理、界面、数据、设置、给 agent 用的 MCP 入口，全部是 `cordis.yml` 里的插件，各在自己的仓里。内核为什么切成这样、刻意不做哪些事，见[关键设计](/docs/design)；一次启动依次发生什么，见[启动与退出](/docs/desktop/boot)。
 
 ## 接缝图
 
-模块不一定是代码：说明书是随内置插件发布的文件，`runtime.json` 是写在 home 里、给外部工具读的一份记录。
+模块不一定是代码：`runtime.json` 是写在 home 里、给外部工具读的一份记录。
 
 <Diagram name="seam-map" title="虚线框是包，连线是接缝，编号对应下面的表">
 - 页面（渲染进程）：页面入口 `index.html` 与 `#root`、`window.gwb`（由 `preload.cjs` 注入）
-- 内核应用（`apps/desktop`）：包名解析、页面上的包名、日志、只读状态页的数据、组装（`main.ts`）
-- cordis.yml 里的插件（各自的仓）：外壳、MCP 入口，以及数据、设置、说明书插件等任何插件
-- 内置插件（`plugins/`）：插件管理、命令插件
+- 内核应用（`apps/desktop`）：包名解析、组装（`main.ts`）、页面上的包名、日志、只读状态页的数据
+- cordis.yml 里的插件（各自的仓）：外壳、MCP 入口、命令插件 `gwb-commands`（基础插件仓）、插件管理 `gwb-plugin-manager`（devkit 仓），以及数据、设置、说明书插件等任何插件
+- 词汇表包（`packages/gwb-plugin-api`）：只有类型，接缝 2、3、4 连接的模块都用它的类型；它自己不算一条接缝
+- 安装包（`installer/`）：外层引导脚本
 - cordis（外部依赖）：cordis 实例、loader、include
-- 词汇表包（`packages/gwb-plugin-api`）：只有类型，是接缝 2、3、4、5 两侧共用的类型；它自己不算一条接缝
-- 安装包（`installer/`）：安装包里的 pnpm、外层引导脚本
 - home（磁盘上的目录）：`package.json`、`cordis.yml`、`node_modules/`、`gwb.log`、`runtime.json`
-- 包外面：人、AI、说明书、外部工具（devkit、装机的 agent）
+- 包外面：人、AI、外部工具（devkit、装机的 agent）
 - 人从页面进来，AI 从 MCP 入口进来；这两条是入口，不算接缝
-- 实线接缝两侧有代码接口；点线接缝（10、11）两侧只靠约定
+- 实线接缝有代码接口；点线接缝（7）只靠约定
 </Diagram>
 
-## 十二条接缝
+## 八条接缝
 
-| # | 接缝 | 两侧 | 交换什么 | 细节在 |
+| # | 接缝 | 连接的模块 | 接口 | 细节在 |
 | --- | --- | --- | --- | --- |
 | 1 | 插件加载 | 内核应用 ↔ cordis.yml 里的插件 | `cordis.yml` 的条目；按 home 把包名解析成真实路径再 import；插件的 `apply` 或 `Service` 类 | [插件加载](/docs/seams/loading) |
 | 2 | 内核服务 | 内核应用 ↔ 任何插件 | `ctx.gwbKernel` 的 `dataDir`、`version`、`emit`、`setShell` | [内核服务](/docs/seams/kernel) |
-| 3 | 命令总线 | 命令插件 ↔ 任何插件（含 MCP 入口） | `ctx.gwbCommands` 的 `register`、`run`、`list` 与回执形状 | [命令总线](/docs/seams/command-bus) |
-| 4 | IPC 通道 | 页面 ↔ 内核应用 | `window.gwb` 的三个函数；`gwb:command`、`gwb:event`、`gwb:shell`、`gwb:hello` 四个通道 | [IPC 通道](/docs/seams/ipc) |
-| 5 | 外壳接管 | 页面 ↔ 调用 `setShell` 的插件 | 外壳模块的默认导出 `ShellBoot`、`#root`、`dispose`；没有外壳时显示只读状态页 | [外壳接管](/docs/seams/shell) |
-| 6 | 页面上的包名 | 内核应用 ↔ 声明 `gwb.shared` 的包 | 包清单里的 `gwb.shared` → 页面的 importmap | [页面上的包名](/docs/seams/shared) |
-| 7 | 内置插件的加载 | 内核应用 ↔ 两个内置插件 | 构建时复制进 `dist/builtin/`；作为 loader 根层条目、排在 `cordis.yml` 之前加载；条目名是包名；插件管理的 config `{ home, pnpm }` | [内置插件的加载](/docs/seams/builtin) |
-| 8 | 条目树与 home 布局 | 插件管理 ↔ loader 与 include | 条目树的 `create`、`update`、`remove`、`resolve`；写回 `cordis.yml`；home 的文件布局 | [条目树与 home 布局](/docs/seams/home) |
-| 9 | pnpm | 插件管理 ↔ 安装包里的 pnpm | 可执行文件的路径、命令行参数、环境、退出码与输出 | [pnpm](/docs/seams/pnpm) |
-| 10 | 说明书（约定） | 内置插件的说明书 ↔ AI | 随包发布的 `SKILL.md`，经说明书插件登记，按包名和命令表对上 | [说明书](/docs/seams/skills) |
-| 11 | runtime.json（约定） | 内核应用 ↔ 外部工具 | pid、启动时刻、版本、应用目录、调试端口；读的一方负责确认进程还在 | [runtime.json](/docs/seams/runtime) |
-| 12 | 日志 | 内核应用 ↔ 任何插件 | 插件、内核、页面的日志汇成一条 cordis 日志流；插件注册 exporter；`gwb.log` 一行的格式 | [日志](/docs/seams/log) |
+| 3 | IPC 通道 | 页面 ↔ 内核应用 | `window.gwb` 的三个函数；`gwb:command`、`gwb:event`、`gwb:shell`、`gwb:hello` 四个通道；页面发来的命令交给命令插件提供的 `gwbCommands` | [IPC 通道](/docs/seams/ipc) |
+| 4 | 外壳接管 | 页面 ↔ 调用 `setShell` 的插件 | 外壳模块的默认导出 `ShellBoot`、`#root`、`dispose`；没有外壳时显示只读状态页 | [外壳接管](/docs/seams/shell) |
+| 5 | 页面上的包名 | 内核应用 ↔ 声明 `gwb.shared` 的包 | 包清单里的 `gwb.shared` → 页面的 importmap | [页面上的包名](/docs/seams/shared) |
+| 6 | home 布局与条目树 | 内核应用（loader 与 include）↔ 插件管理 | home 的文件布局；loader 与 include 的版本与条目树；按真实路径解析包名；插件声明的 `gwb.testedKernel` | [home 布局与条目树](/docs/seams/home) |
+| 7 | runtime.json（约定） | 内核应用 ↔ 外部工具 | pid、启动时刻、版本、应用目录、调试端口；读的一方负责确认进程还在 | [runtime.json](/docs/seams/runtime) |
+| 8 | 日志 | 内核应用 ↔ 任何插件 | 插件、内核、页面的日志汇成一条 cordis 日志流；插件注册 exporter；`gwb.log` 一行的格式 | [日志](/docs/seams/log) |
 
 ## 包
 
 | 包名 | 在哪 | 讲什么 | 页 |
 | --- | --- | --- | --- |
-| `@godcreator/gwb-kernel-desktop` | `apps/desktop` | 内核应用：选定 home、日志、单实例锁、创建 cordis 实例、加载内置插件与 `cordis.yml`、窗口与 IPC、退出清理 | [内核应用](/docs/desktop) |
+| `@godcreator/gwb-kernel-desktop` | `apps/desktop` | 内核应用：选定 home、日志、单实例锁、创建 cordis 实例、加载 `cordis.yml`、窗口与 IPC、退出清理 | [内核应用](/docs/desktop) |
 | `@godcreator/gwb-plugin-api` | `packages/gwb-plugin-api` | 词汇表包：内核给插件与页面的全部接口类型，只增不减 | [词汇表包](/docs/vocab) |
-| `@godcreator/gwb-commands` | `plugins/commands` | 命令插件：命令表本身，登记、注销、执行的规则 | [命令插件](/docs/commands) |
-| `@godcreator/gwb-plugin-manager` | `plugins/plugin-manager` | 插件管理：唯一写 home 的插件，装卸包、增删条目、查新版本、热升级 | [插件管理](/docs/plugin-manager) |
-| `gwb-installer` | `installer/` | 安装包：带什么、怎么打包、怎么验证 | [安装包](/docs/installer) |
+| `gwb-installer` | `installer/` | 安装包：产出什么、装好之后是什么样 | [安装包](/docs/installer) |
 
-cordis 与 cordis.yml 里的插件不在本仓：前者是外部依赖，后者各在自己的仓里。
+cordis 与 cordis.yml 里的插件不在本仓：cordis 是外部依赖；命令插件在基础插件仓，插件管理在 devkit 仓，其余插件各在自己的仓里。
 
 ## 怎么读这张图
 
-- 图上只画包与包之间的接缝；包内部模块之间的依赖，看各包自己的首页
-- 一条接缝两侧的模块可以各自替换：只要接缝上交换的东西不变，另一侧不用改
-- 每条接缝怎么单独测，写在「细节在」那一列的页里；左栏接缝页标题前的数字就是图上的编号
+- 图上只画包与包之间的接缝；每个包有哪些功能、提供什么接口，看各包自己的首页
+- 一条接缝连接的两个模块可以各自替换：只要接口不变，换掉其中一个，另一个不用改
+- 每条接缝由什么测试保护，写在「细节在」那一列的页里；左栏接缝页标题前的数字就是图上的编号
 
 ## 按要做的事读
 
 - **想知道内核为什么长这样**：[关键设计](/docs/design)
 - **在本仓动手**（怎么跑、怎么测、怎么打安装包、怎么发版）：[开发](/docs/develop)；硬约束在仓根 AGENTS
-- **写插件**：先读[插件加载](/docs/seams/loading)、[内核服务](/docs/seams/kernel)、[命令总线](/docs/seams/command-bus)；写插件的完整流程在 devkit 的说明书 `gwb-devkit`
+- **写插件**：先读[插件加载](/docs/seams/loading)、[内核服务](/docs/seams/kernel)、[日志](/docs/seams/log)；写插件的规矩与完整流程在 devkit 的说明书 `gwb-devkit`
 - **做界面**：[IPC 通道](/docs/seams/ipc)、[外壳接管](/docs/seams/shell)、[页面上的包名](/docs/seams/shared)
-- **改内核应用**：[内核应用](/docs/desktop)看每个文件管什么、谁依赖谁
-- **改命令总线**：[命令插件](/docs/commands)；它和插件之间交换什么在[命令总线](/docs/seams/command-bus)
-- **改插件管理**（安装、升级、条目与 id）：[插件管理](/docs/plugin-manager)；它和内核、pnpm 之间的约定在[内置插件的加载](/docs/seams/builtin)、[条目树与 home 布局](/docs/seams/home)、[pnpm](/docs/seams/pnpm)
+- **改内核应用**：[内核应用](/docs/desktop)看它有哪些功能、提供哪些接口
+- **改了内核之后**：改了接缝上已有的东西就升 x；插件管理会按各插件声明的 `gwb.testedKernel` 报出哪些还没在新内核上测过（见[home 布局与条目树](/docs/seams/home)）
 - **改安装包**：[安装包](/docs/installer)
 - **排查故障**：日志在 home 里的 `gwb.log`（[日志](/docs/seams/log)）；外壳没有加载出来时页面显示的只读状态页见[外壳接管](/docs/seams/shell)；找进程看 home 里的 `runtime.json`（[runtime.json](/docs/seams/runtime)）

@@ -5,14 +5,14 @@
   "author": {"name": "godcreator"},
   "type": "module",
   "main": "dist/main.js",
-  "description": "gwb 内核：cordis 运行在 Electron 主进程里，整个应用只有主进程与渲染进程。只做第一个插件运行之前必须完成的事，内置命令插件与插件管理",
+  "description": "gwb 内核：cordis 住 Electron 主进程，整个应用只有主进程与渲染进程。只做第一个件跑起来之前必须发生的事",
   "files": [
     "dist"
   ],
   "scripts": {
     "//setup-electron": "postinstall 已拆（0.2.1）：作为依赖装进消费方时它找不到本仓的 electron，必炸。electron 包不带 postinstall，仓内 clone 后跑一次 setup:electron 装二进制",
     "setup:electron": "node node_modules/electron/install.js",
-    "build": "pnpm --filter @godcreator/gwb-plugin-api --filter @godcreator/gwb-commands --filter @godcreator/gwb-plugin-manager build && tsc -p tsconfig.build.json && node scripts/copy-assets.mjs",
+    "build": "pnpm --filter @godcreator/gwb-plugin-api build && tsc -p tsconfig.build.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "pnpm build",
     "start": "pnpm build && electron ."
@@ -24,9 +24,6 @@
     "@godcreator/gwb-plugin-api": "workspace:*"
   },
   "devDependencies": {
-    "@godcreator/gwb-commands": "workspace:*",
-    "@godcreator/gwb-plugin-manager": "workspace:*",
-    "@pnpm/exe.win32-x64": "12.4.2",
     "@types/node": "^24.0.0",
     "electron": "44.1.1",
     "typescript": "^7.0.2"

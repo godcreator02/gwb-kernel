@@ -1,13 +1,20 @@
 ---
-title: 11 runtime.json
-description: 内核每次启动把这次运行的 pid、启动时刻、版本、应用目录、调试端口写进 home 里的 runtime.json；读它的是 devkit 与装机的 agent，两侧之间只有这份约定，没有代码接口
+title: 7 runtime.json
+description: 连接内核应用与工作台进程之外的读者（devkit、照 INSTALL.md 安装工作台的 agent）：内核每次启动把这次运行的 pid、启动时刻、版本、应用目录、调试端口写进 home 里的 runtime.json；内核应用与读者之间只有这份约定，没有代码接口
 ---
 
-**本页回答**：`runtime.json` 里写了什么、什么时候写、谁读；写的一方和读的一方各保证什么。
+**本页回答**：`runtime.json` 里写了什么、什么时候写、谁读；内核应用和读它的程序各保证什么。
 
-两侧：一侧是[内核应用](/docs/desktop)，启动时写这份文件；另一侧是这个工作台进程之外的读者——插件 `gwb-devkit` 的命令（在一个工作台里按 home 名找到另一个正在运行的工作台）和照 `INSTALL.md` 装机的 agent。两侧之间没有代码接口，只靠这份约定：字段名写在内核的 `main.ts` 里，读的一方在各自的仓里按名字读。
+## 连接的模块
 
-## 交换什么
+- [内核应用](/docs/desktop)：启动时写这份文件
+- 工作台进程之外的读者，不在本仓：
+  - **devkit**（插件 `gwb-devkit` 的命令）：在一个工作台里按 home 名连接另一个正在运行的工作台时，从这份文件取调试端口，并用 `pid` 确认进程还在；删除一个 home 时按 `pid` 找到要结束的进程
+  - **安装工作台的 agent**：照 `INSTALL.md` 安装，第 4 步轮询到 `mcp` 字段出现就算启动完成，核对 `version`；用 `pid` 关闭窗口（正本 `docs-site/content/outputs/install.mdx`）
+
+内核应用与读者之间没有代码接口，只靠这份约定：字段名写在内核的 `main.ts` 里，读者在各自的仓里按名字读。
+
+## 接口
 
 文件在 home 根上：`<home>/runtime.json`，两格缩进的 JSON，末尾一个换行。内核写这几项：
 
@@ -19,43 +26,33 @@ description: 内核每次启动把这次运行的 pid、启动时刻、版本、
 | `appDir` | 应用目录，即 Electron 的 `app.getAppPath()`（从仓里运行是 `apps/desktop`） |
 | `cdp` | Chromium 调试端口；启动时没给 `--remote-debugging-port` 就没有这个字段 |
 
-{/* ref file="../apps/desktop/src/main.ts" lines="99-124" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="97-122" */}
 
 调试端口只有启动进程的一方知道，页面和插件都读不到，所以要由内核写下来。
 
-MCP 入口插件 `gwb-mcp` 在它的端口开好之后往同一份文件里补一个 `mcp` 字段（MCP 入口的地址）；装机的 agent 就是等这个字段出现来判断工作台启动完成。
+MCP 入口插件 `gwb-mcp` 在它的端口开好之后往同一份文件里补一个 `mcp` 字段（MCP 入口的地址）；安装工作台的 agent 就是等这个字段出现来判断工作台启动完成。
 
-## 谁读
+## 约定
 
-- **devkit**：按 home 名连接一个运行中的工作台时，从这份文件取调试端口，并用 `pid` 确认进程还在；删除一个 home 时按 `pid` 找到要结束的进程
-- **装机的 agent**：`INSTALL.md` 第 4 步轮询到 `mcp` 字段出现就算启动完成，核对 `version`；用 `pid` 关闭窗口（正本 `docs-site/content/outputs/install.mdx`）
-
-## 两边各保证什么
-
-内核保证：
+内核应用保证：
 - **每次启动整份重写**：上一次运行留下的字段（包括别的插件补写的）都会被覆盖。home 里的 `package.json`、`cordis.yml` 是缺了才补，这一份不同，它描述的是当前这个进程
 - 同一个 home 已有实例在运行时，第二个实例拿不到单实例锁就退出，**不动**这份文件
 - 退出时不删；写入失败只记一条 warn，不影响启动
 
-{/* ref file="../apps/desktop/src/main.ts" lines="94-97" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="92-95" */}
 
-读的一方保证：
+读者保证：
 - **自己确认进程还在**：文件在不等于工作台在运行——崩溃、被结束的进程来不及清理，这份文件总是留着上一次的内容。至少核对 `pid` 是一个活着的进程；要用调试端口的，还要核对这个端口确实属于这个 `pid`
 - 文件不在、读不出、内容不完整时当成「没有在运行」，不报错退出
 
-往这份文件补字段的插件保证：先读、合并、再写回，保留自己不认识的字段；整份覆盖会抹掉内核写的那几项。
+往这份文件补字段的插件（如 `gwb-mcp`）保证：先读、合并、再写回，保留自己不认识的字段；整份覆盖会抹掉内核写的那几项。
 
-## 一侧不管什么
+## 不负责的事
 
-- 内核自己不读 `runtime.json`，也不知道谁在读
-- 内核不给这份文件加锁，也不保证原子写入
-- 读的一方不能用它判断「这个 home 有没有装好」：那是 `cordis.yml` 与 `node_modules` 的事
+- 内核应用自己不读 `runtime.json`，也不知道谁在读
+- 内核应用不给这份文件加锁，也不保证原子写入
+- 读者不能用它判断「这个 home 有没有装好」：那是 `cordis.yml` 与 `node_modules` 的事
 
-## 怎么单独测
+## 测试
 
-没有代码接口，也就没有单元测试。实机验证：用 `--remote-debugging-port=<端口>` 在隔离 home 里启动（怎么启动见[开发](/docs/develop)），读 `runtime.json`，`pid` 是正在运行的内核进程、`cdp` 是给的那个端口、`version` 与内核包清单一致；关掉工作台后文件还在；不带调试端口再启动一次，文件里没有 `cdp`。
-
-## 代码从哪读
-
-- 写：`main.ts` 顶层、单实例锁之后写 `runtime.json` 的那一段
-- 读：devkit 仓里连接、删除 home 的命令；`INSTALL.md` 第 4 步
+没有代码接口，也就没有单元测试，只能实机验证（见[开发](/docs/develop)）：用 `--remote-debugging-port=<端口>` 在隔离 home 里启动，`pid` 是正在运行的内核进程、`cdp` 是给的那个端口、`version` 与内核包清单一致，关掉工作台后文件还在；不带调试端口再启动一次，文件里没有 `cdp`。

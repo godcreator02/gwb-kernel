@@ -1,13 +1,13 @@
 ---
 title: 开发
-description: 改内核本身（包括两个内置插件）时怎么准备、怎么从源码启动、怎么测、怎么在隔离 home 里验证内置插件、怎么打安装包、怎么发版
+description: 改内核本身时怎么准备、怎么从源码启动、隔离 home 里的插件从哪来、构建做了什么、提交前跑哪些检查、怎么在隔离 home 里验证、怎么打安装包（打包流程、不能删的检查、打完怎么验证）、怎么发版与发布到 gitea releases
 ---
 
-**本页回答**：什么时候才进这个仓；第一次怎么准备；怎么从源码启动内核、构建时做了什么；提交前跑哪些检查；两个内置插件怎么在隔离 home 里验证；怎么打安装包；发版按什么顺序做。
+**本页回答**：什么时候才进这个仓；第一次怎么准备；怎么从源码启动内核、隔离 home 里的插件从哪来、构建时做了什么；提交前跑哪些检查；怎么在隔离 home 里验证；怎么打安装包、打包脚本一步步做了什么、哪几道检查不能删、打完怎么验证；发版按什么顺序做、版本号升哪一位、怎么发布到 gitea releases。
 
 ## 什么时候进这个仓
 
-**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）；新机器安装照仓根 `INSTALL.md`。**改内核本身（包括 `plugins/` 下的两个内置插件）才进这个仓**，改动只在隔离 home 里实际运行验证，不碰日常用的 `default`。写 `cordis.yml` 里的普通插件不在这里，流程见 devkit 的说明书 `gwb-devkit`。
+**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）；新机器安装照仓根 `INSTALL.md`。**改内核本身才进这个仓**，改动只在隔离 home 里实际运行验证，不碰日常用的 `default`。写 `cordis.yml` 里的插件不在这里——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`，流程见 devkit 的说明书 `gwb-devkit`。
 
 ## 第一次准备
 
@@ -29,28 +29,33 @@ cd apps\desktop; pnpm start
 
 `GWB_HOME` 每次验证给一个新名字，home 会建在 `%APPDATA%\gwb-kernel\homes\<名字>`；**不设就是 `default`**，同一个 home 已有实例在运行时这次启动会直接退出（[home 的准备与单实例锁](/docs/desktop/home)）。
 
-`pnpm start` 先构建再启动 electron。构建依次是：词汇表包与两个内置插件各自 `tsc`，内核 `tsc`，最后 `scripts/copy-assets.mjs` 把页面的两个文件和两个内置插件的构建产物复制进 `dist/`：
+### 隔离 home 里的插件从哪来
 
-{/* ref file="../apps/desktop/package.json" lines="12-19" */}
+内核不带插件，全新的 home 里 `cordis.yml` 是空表：启动后页面只显示[只读状态页](/docs/desktop/status-page)，页面发来的命令都回「没有命令服务」。要验证命令、外壳、插件管理这些，先往这个 home 里装上命令插件等插件，两种做法：
 
-{/* ref file="../apps/desktop/scripts/copy-assets.mjs" lines="15-29" */}
+- **用 devkit**：`devkit.home.new {"short":"<这次验什么>"}` 新建一个隔离 home，装好命令插件、外壳、数据、设置、说明书、插件管理、基础窗格这一套基础插件，并用安装版内核打开它。关掉那个窗口，再把 `GWB_HOME` 设成它返回的 home 名，从源码启动
+- **照 `INSTALL.md` 手动装**：在 home 目录里写 `cordis.yml` 的条目、用机器上的 pnpm `pnpm add` 对应的包，步骤与仓根 `INSTALL.md` 第 3 步相同，只把 home 目录换成这个隔离 home
 
-内置插件的 `dist/builtin/` 每次整个重建；插件没构建过就直接报错停下。说明书按插件自己的位置找 `skills/`，所以复制时 `dist` 与 `skills` 保持同级。
+### 构建做了什么
+
+`pnpm start` 先构建再启动 electron。构建依次是：词汇表包 `tsc`，内核 `tsc`，最后把页面的两个文件 `index.html`、`preload.cjs` 从 `src/` 复制进 `dist/`：
+
+{/* ref file="../apps/desktop/package.json" lines="14-18" */}
 
 ## 提交前的检查
 
-{/* ref file="../package.json" lines="5-15" */}
+{/* ref file="../package.json" lines="6-14" */}
 
-- **`pnpm check`**（仓根）：先构建词汇表包与两个内置插件，再对全仓做类型检查、lint 和测试。内核、命令插件、插件管理的测试一起跑；词汇表包或插件管理的 config 类型写坏了，内核的类型检查跟着失败。内核升级 `@cordisjs/plugin-loader` 或改包名解析时，先运行它——插件管理的 `loader.test.ts` 用同样的 loader 版本、照内核的加载顺序搭 home
-- **`pnpm doc`**（仓根）：文档站的钉码检查，不在 `pnpm check` 里。钉住的代码改了、论断仍成立时，先提交代码，再只点名自己改过的页确认：`pnpm doc:confirm <页的路径…>`（路径相对 `docs-site/`）。不带路径会把别人还没复核的页一起确认掉
+- **`pnpm check`**（仓根）：先构建词汇表包，再对全仓做类型检查、lint 和测试。测试是 `apps` 与 `packages` 下各 `tests/` 目录里的单元测试；词汇表包的类型写坏了，内核的类型检查跟着失败
+- **`pnpm doc`**（仓根）：文档站的检查，不在 `pnpm check` 里：文档页引用的代码改了、生成物和正本不一致，都会报出来。引用的代码改了、页上的说法仍成立时，先提交代码，再只点名自己改过的页确认：`pnpm doc:confirm <页的路径…>`（路径相对 `docs-site/`）。不带路径会把别人还没复核的页一起确认掉
 
-每个文件各有哪些测试、证明什么，见各包的页：[内核应用](/docs/desktop#怎么单独测)、[命令插件](/docs/commands)、[插件管理](/docs/plugin-manager)。
+每个机制有哪些测试、证明什么，写在各页的「怎么测」或「怎么验证」一节，从[内核应用](/docs/desktop)的功能列表进去。
 
-## 在隔离 home 里验证内置插件
+## 在隔离 home 里验证
 
-两个内置插件不在 home 里，**不能用 `devkit.dev` 验证**（那是往 home 里装包），`devkit.home.new` 启动的也是安装版、不构建本仓。只能从源码启动内核：
+`devkit.dev` 是往 home 里装插件包，验证不了内核本身；`devkit.home.new` 打开的是安装版、不构建本仓。改了内核要从源码启动：
 
-1. 构建后带调试端口启动，端口别和其他会话重复：
+1. 照上面「隔离 home 里的插件从哪来」准备好 home，构建后带调试端口启动，端口别和其他会话重复：
 
    ```powershell
    $env:GWB_HOME = '<这次验什么>-<yyMMddHHmm>'
@@ -59,7 +64,7 @@ cd apps\desktop; pnpm start
    ```
 
    内核把调试端口写进 home 的 `runtime.json`（[runtime.json](/docs/seams/runtime)），`devkit.cdp` 从那里找到它；后一个开关让窗口被遮住时页面照常刷新，截图不会拿到旧画面
-2. 用 `devkit.cdp` 在这个 home 的页面上调命令、截图、读页面状态，例如 `devkit.cdp {"args":["<home 名>","cmd","plugin-manager.list"]}`。新 home 的 `cordis.yml` 是空的，要什么插件就用 `plugin-manager.install` 装进去
+2. 用 `devkit.cdp` 在这个 home 的页面上调命令、截图、读页面状态，例如 `devkit.cdp {"args":["<home 名>","cmd","plugin-manager.list"]}`
 3. 看结果：home 里的 `gwb.log`；没有外壳时页面上的[只读状态页](/docs/desktop/status-page)列出每个条目加载到哪一步
 
 实验材料放 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm workspace。
@@ -70,14 +75,56 @@ cd apps\desktop; pnpm start
 pwsh installer\scripts\build.ps1
 ```
 
-已跟踪的文件有未提交改动时脚本直接停下。产物在 `installer\build\dist\`；流程、检查与验证方法见[安装包](/docs/installer)。
+在仓根运行，产物在 `installer\build\dist\`。安装包产出什么、装好之后是什么样见[安装包](/docs/installer)。输入全部来自本仓（内核的 tarball、`apps/desktop` 开发依赖里的 electron 版本号），不从包源下载内核。
+
+### 打包流程
+
+**1. 检查工作区**：已跟踪的文件有未提交的改动就停下——打包用的是仓里的代码，有改动时打出来的 exe 说不清装了什么。未跟踪的新文件不算。
+
+{/* ref file="../installer/scripts/build.ps1" lines="21-23" */}
+
+**2. 构建内核并 `pnpm pack`**：`pnpm build` 构建词汇表包和内核；`pnpm pack` 按 `files` 过滤打出 tarball。**必须用 pnpm 打包**：内核清单里的 `workspace:*` 只有 pnpm pack 会替换成实际版本，npm pack 原样打进去，安装时报 `EUNSUPPORTEDPROTOCOL`。
+
+{/* ref file="../installer/scripts/build.ps1" lines="25-39" */}
+
+**3. 读版本号**：内核版本与 electron 版本都从 `apps/desktop/package.json` 读。electron 的版本只写在它的 `devDependencies.electron` 这一处，经命令行传给 electron-builder——electron-builder 只在项目根找 electron 版本、不看 `directories.app`，所以 `electron-builder.yml` 里不写。
+
+{/* ref file="../installer/scripts/build.ps1" lines="41-44" */}
+
+**4. 组装应用目录**：把外层应用的模板 `installer/app-template/` 复制到 `build\app`，把清单里的 `version` 占位换成内核版本（产物文件名带它；内核报的版本读内核包自己的清单，不读外层），把 `__TGZ__` 占位换成刚打出的 tarball 的相对路径，再 `npm install`。依赖必须写进清单：electron-builder 按清单收集 `node_modules`，`--no-save` 装的包它不收。装完检查内核包在。
+
+{/* ref file="../installer/scripts/build.ps1" lines="46-65" */}
+
+**5. electron-builder**：`installer/node_modules` 里没有 electron-builder 就先 `npm install`，再按下面的配置打出 `gwb-setup-<版>.exe` 与 `gwb-portable-<版>.zip`，最后列出产物和大小。
+
+{/* ref file="../installer/scripts/build.ps1" lines="67-75" */}
+
+{/* ref file="../installer/electron-builder.yml" */}
+
+### 不能删的检查
+
+- **每条 npm / pnpm 之后检查退出码**：pwsh 对原生命令的非零退出码默认不停，出过一次组装目录是空的、却一路打出安装包的事故
+- **检查产物存在**：tarball、组装目录里的内核包，缺一样就停
+
+### 验证
+
+安装包没有单元测试。打包脚本自己在每一步检查退出码和产物，打完之后这样验证：
+
+- **打包形态能启动**：设一个临时的 `GWB_HOME`（给路径）运行 `installer\build\dist\win-unpacked\` 里的 exe，引导脚本能从 asar 里 import 内核，`gwb.log` 里有「up」那一行、没有 error。不设 `GWB_HOME` 运行它会打开真正的 default home
+- **单实例锁**：同一个 home 再启动一次，退出码 1、`runtime.json` 不变
+- **安装说明**：派一个没有上下文的子代理，只给它 `INSTALL.md`，让它往一个临时 home（`GWB_HOME` 给路径）里照做一遍、启动 `win-unpacked` 的内核，MCP 入口能调通、条目全部 ACTIVE 才算通过；它不得不问的每个问题都是说明的漏洞
 
 ## 发版
 
-升哪一位版本号、依赖怎么写、发破坏版要多做什么，正本是 devkit 的说明书 `gwb-release`，**每次升版本号之前都读一遍**，这里只列本仓的要点：
+升哪一位版本号、依赖怎么写、发破坏性版本要多做什么，正本是 devkit 的说明书 `gwb-release`，**每次升版本号之前都读一遍**，这里只列本仓的要点：
 
 1. **隔离 home 里验证通过**，`pnpm check`、`pnpm doc` 都通过
-2. **升版本号并提交**：`apps/desktop/package.json` 与 `packages/gwb-plugin-api/package.json` 写同一个号（[词汇表包](/docs/vocab#版本号与发版)）。加功能、修 bug、契约只增不减，升补丁号；破坏了契约才升次版本号，并先照 `gwb-release` 通知下游。git 工作区要干净
+2. **升版本号并提交**：`apps/desktop/package.json` 与 `packages/gwb-plugin-api/package.json` 写同一个号（[词汇表包](/docs/vocab#版本号与发版)）。git 工作区要干净。升哪一位按改没改接缝判断：
+   - **改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）：八条接缝上已有的任何一样被改名、删除、改了形状或含义——词汇表包里的类型、IPC 通道、`gwb.shared` 的读法、home 布局、`runtime.json` 的字段、日志行格式——以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` 的版本（拿不准会不会弄坏插件管理，一律按会弄坏算）。插件在 `package.json` 的 `gwb.testedKernel` 里写它测过的内核版本，插件管理按「同一条版本线」比对（[插件写明在哪个内核版本上测过](/docs/design#插件写明在哪个内核版本上测过)）；升了 x，所有插件都会被标成没在这个内核上测过，要先照 `gwb-release` 通知下游
+   - **只给接缝加东西（加类型、加可选字段）、只改内核内部或修 bug，升 y**：测过的插件仍算测过
 3. **发词汇表包到团队包源**：`devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}`，别在包目录手动 `pnpm publish`
-4. **打安装包、发布到 gitea releases**：见[安装包](/docs/installer#发布)
-5. **本机升级**：重新运行新版安装包。改了契约时，先装新内核，再发用到新契约的插件
+4. **打安装包、发布到 gitea releases**：打包见上面[打安装包](#打安装包)。发布仓 `godcreator/gwb-kernel` 公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包；push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
+   - **release 只上传 `gwb-setup-<版>.exe`**：便携 zip 只在本地构建、不上传
+   - tag 跟内核版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
+   - **推送 tag 会让同名的草稿 release 自动公开**：要先存草稿、人工确认后再公开，就最后推 tag
+5. **本机升级**：重新运行新版安装包。升了 x 时，先装新内核，再在新内核上测插件、改它们的 `gwb.testedKernel` 并发版——插件发版时 `devkit.release` 会检查这个字段

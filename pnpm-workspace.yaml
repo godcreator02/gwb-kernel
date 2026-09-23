@@ -1,9 +1,7 @@
 packages:
   - apps/*
   - packages/*
-  # 和内核一起开发、一起测试的插件：内核直接依赖的命令插件（commands），依赖内核内部约定的插件管理（plugin-manager）
-  - plugins/*
-  # 文档站：自己的依赖树与检查，不进根目录的 build 与 test
+  # 文档站:自己的依赖树与门禁,不进根 build/test
   - docs-site
 
 allowBuilds:

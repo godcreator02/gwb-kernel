@@ -1,55 +1,52 @@
 import electron from 'electron'
 import fs from 'node:fs'
-import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { Context, type Fiber, type Plugin } from 'cordis'
+import { Context, type Fiber } from 'cordis'
 import Loader, { type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
-import type { GwbCommands, GwbKernelApi } from '@godcreator/gwb-plugin-api'
-import type { PluginManagerConfig } from '@godcreator/gwb-plugin-manager'
+import type { GwbKernelApi } from '@godcreator/gwb-plugin-api'
 import { collectImports } from './imports.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
 import { limitFromEnv, openLogFile } from './log-file.js'
 
 /**
- * gwb 内核的主进程入口：cordis 实例和所有插件都在这个进程里，页面是唯一的另一个进程；不依赖
- * electron 的纯函数放在旁边几个模块（imports / bare-import / entry-state / log-file），各自有单元测试。
- * 只做第一个插件运行之前必须完成的事：准备 home、创建 cordis 实例、加载内置的命令插件与插件管理、
- * 加载 cordis.yml 里的插件、创建窗口、转交命令、推送事件、告诉页面外壳是谁、自己出错时让人看得见。
- * 其余都由插件实现。取舍见文档站
+ * gwb 内核的主进程入口：载体、宿主、桥都在这个进程里，页面是唯一的另一个进程；不带
+ * electron 的纯函数住旁边几个模块（imports / bare-import / entry-state），各自可单测。
+ * 只做第一个件跑起来之前必须发生的事：铺 home、起 cordis、挂 loader、开窗、一条命令口、
+ * 一条事件口、告诉页面外壳是谁、自己出错时人看得见。其余一律皆件。取舍见文档站
  */
 
 const { app, BrowserWindow, Menu, dialog, ipcMain } = electron
 const here = path.dirname(fileURLToPath(import.meta.url))
-/** 内核自己的版本号：读本包的清单（dist/ 的上一级）。从仓里运行、从安装包运行读的都是这一份，不读应用外层的清单 */
+/** 内核自己的版本号：读本包的清单（dist/ 的上一级）。从仓里起、从安装包起都是这一份，不经应用壳的清单 */
 const kernelVersion = (JSON.parse(fs.readFileSync(path.join(here, '..', 'package.json'), 'utf8')) as { version: string }).version
 
 declare module 'cordis' {
   interface Context {
-    /** 内核的服务，在根上下文上提供、永不撤销 */
+    /** 内核的服务，根上下文 provide、永不撤销 */
     gwbKernel: GwbKernelApi
-    /** 命令总线，由内置的命令插件提供；它加载失败时是 undefined */
-    gwbCommands?: GwbCommands
+    /** 命令总线，由某个件提供；没装那个件就是 undefined */
+    gwbCommands?: { run(command: string, args?: unknown): Promise<unknown> }
   }
 }
 
-/** 用哪个 home：`GWB_HOME` 是个名字就用 appData/gwb-kernel/homes/<名>，带路径分隔符就当成目录本身 */
+/** 用哪个 home：`GWB_HOME` 是个名字就落 appData/gwb-kernel/homes/<名>，带路径分隔符就当成目录本身 */
 const homeArg = process.env.GWB_HOME ?? 'default'
 const homePath = /[\\/]/.test(homeArg) ? path.resolve(homeArg) : path.join(app.getPath('appData'), 'gwb-kernel', 'homes', homeArg)
 fs.mkdirSync(homePath, { recursive: true })
-// realpath 把大小写、junction、斜杠写法都统一成磁盘上的真实路径：同一 home 的两种写法必须得到
-// 同一个字符串，下面按 userData 生效的单实例锁才认得出「同一个 home」
+// realpath 把大小写、junction、斜杠写法都钉到磁盘上的真实路径：同一 home 的两种给法必须归成
+// 同一个串，下面那把按 userData 生效的单开锁才认得出「同一个 home」
 const dataDir = fs.realpathSync.native(homePath)
 
 /**
- * Chromium 的 userData 每个 home 一份（<home>/electron）：单实例锁按它区分，多个 home 同时运行时
- * Local Storage 互不影响。homes 的根从 appData 算、不从 userData 算——userData 已按 home 分开，从它算就递归了
+ * Chromium 的 userData 拆成每 home 一份（<home>/electron）：单开锁的钥匙，多 home 并跑不串
+ * Local Storage。homes 的根从 appData 推、不从 userData 推——userData 已按 home 拆，从它推就递归了
  */
 app.setPath('userData', path.join(dataDir, 'electron'))
 
-/** home 能启动的最小形态：包清单、空条目表。缺哪样补哪样，不覆盖 */
+/** home 起得来的最小形态：包清单、空条目表。缺哪样补哪样，不覆盖 */
 for (const [file, content] of [
   ['package.json', '{\n  "name": "gwb-home",\n  "private": true\n}\n'],
   ['cordis.yml', '[]\n'],
@@ -59,20 +56,21 @@ for (const [file, content] of [
 }
 
 /**
- * 内核唯一的日志输出：stderr 加 home 里一份**带上限与轮转**的文件。一个插件都没有时人也看得见。
+ * 内核唯一的日志出口：stderr 加 home 里一份**带上限与轮转**的文件。一个件都没有时人也看得见。
  *
- * 上限的依据：这份日志用来事后查错，不是存档——排查问题要看的是「最近一次启动到现在」那一段，
- * 再往前的没人看。实测 2026-09-20 那份 6.67 GB：平时约 2 MB/h（约 48 MB/日），遇到大量输出日志的插件能到
- * 约 675 MB/h（约 16 GB/日）——那 6.67 GB 里有 5.8 GB 是一夜之间写出来的。取 128 MB：平时能留
- * 两天半，大量输出时十几分钟轮转一次，磁盘总占用（当前的加一份旧的）在 256 MB 以内。
+ * 上限的判据：这份日志是拿来事后查错的，不是档案馆——排障要看的是「最近一次开机到此刻」那一段，
+ * 再往前的没人翻。实测 2026-09-20 那份 6.67 GB：常态约 2 MB/h（约 48 MB/日），撞上刷屏的件能到
+ * 约 675 MB/h（约 16 GB/日）——那 6.67 GB 里有 5.8 GB 是一夜之间刷出来的。取 128 MB：常态装得下
+ * 两天半，刷屏时十几分钟滚一次，磁盘总共（现行的加一份旧的）压在 256 MB 以内。6.67 GB 那份之所
+ * 以要命，正是因为它既看不完、又一直在长。
  */
 const log = openLogFile({
   file: path.join(dataDir, 'gwb.log'),
-  // 单位 MB，由 `GWB_LOG_LIMIT_MB` 设置；0 = 不轮转（排查问题时要留全部日志）。放在环境变量上、不做成
-  // 设置项：改它是排查问题时的一次性操作，而加一个设置项要改设置插件的契约
+  // 单位 MB，`GWB_LOG_LIMIT_MB` 给；0 = 不轮转（排障时要留全量）。旋钮留在环境变量上、不进
+  // 设置项：改它是排障当场的一次性动作，而加一个设置键要动 settings 件的契约面
   limitBytes: limitFromEnv(process.env.GWB_LOG_LIMIT_MB),
   keep: 1,
-  // 轮转或打开文件出错时写一句。**不走 say**：say 也往这个文件写，会自己等自己
+  // 轮转与开文件出岔子时说一句。**不走 say**：say 也往这个文件写，绕回来是自己等自己
   onWarn: (msg) => {
     process.stderr.write(`${new Date().toISOString()} warn kernel ${msg}\n`)
   },
@@ -83,24 +81,24 @@ function say(level: string, name: string, msg: string): void {
   log.write(line)
 }
 const stackOf = (e: unknown): string => (e instanceof Error ? (e.stack ?? e.message) : String(e))
-// 没有终端时（stderr 的另一端断开）每写一次都抛 EPIPE，忽略它，日志文件照常写
+// stderr 对端断了（无终端起）每写一次抛一次 EPIPE，吞掉，文件那投照旧
 process.stderr.on('error', () => {})
 
 /**
- * 同一 home 只允许一个实例：用 Electron 的单实例锁，按上面每个 home 一份的 userData 区分。第二个实例
- * 拿不到锁就报一句、退出码 1、不动 runtime.json；正在运行的那个收到 second-instance 把窗口调到前面。
- * 不自己写锁文件（理由见文档站）
+ * 同一 home 只许一个实例：Electron 的平台锁，钥匙是上面那份 per-home userData。第二个实例
+ * 拿不到锁就报一句、退出码 1、不动 runtime.json；在跑那份收到 second-instance 把窗抬到前面。
+ * 不手搓锁文件（判据见文档站）
  */
 if (!app.requestSingleInstanceLock()) {
-  say('error', 'kernel', `home ${dataDir} 已有实例在运行，本实例退出`)
+  say('error', 'kernel', `home ${dataDir} 已有实例在跑，本实例退出`)
   app.exit(1)
 }
 
 /**
- * 这次运行的信息写进 `runtime.json`：pid、启动时刻、版本、应用目录，外加 Chromium 调试端口
- * ——只有启动进程的一方知道这个端口，页面读不到。**每次启动整份重写**（与上面两个文件
- * 「缺什么补什么」相反：那两个属于 home，这一份描述的是当前这个进程）；退出时不删，读的一方
- * 负责确认进程还在；写入失败只报一句。理由见文档站
+ * 这一轮的运行时身份落 `runtime.json`：pid、起的时刻、版本、应用目录，外加 Chromium 调试口
+ * ——那个口只有起进程的这只手知道，内核不认识它、页面也读不到。**每次开机整份重写**（与上面
+ * 两件套「缺什么补什么」相反：那是 home 的家当，这是此刻这个进程的身份）；退出不删，读的人
+ * 负责验活；写不动只报一句就走。判据见文档站
  */
 const cdpPort = Number(app.commandLine.getSwitchValue('remote-debugging-port'))
 try {
@@ -112,7 +110,7 @@ try {
         startedAt: Date.now(),
         version: kernelVersion,
         appDir: app.getAppPath(),
-        // 没开调试端口就没有这个字段：写 0 或 null 的话，读的一方还得再判断一次这个值有没有意义
+        // 没开这道口就没有这一格：写 0 或 null 的话，读的人还得再判一次「这个数算不算数」
         ...(Number.isInteger(cdpPort) && cdpPort > 0 && cdpPort < 65536 ? { cdp: cdpPort } : {}),
       },
       null,
@@ -120,18 +118,18 @@ try {
     ) + '\n',
   )
 } catch (err) {
-  say('warn', 'kernel', `runtime.json 写入失败：${stackOf(err)}`)
+  say('warn', 'kernel', `runtime.json 写不动：${stackOf(err)}`)
 }
 
 const ctx = new Context()
 /** 模块解析的起点指向 home；loader 与 include 都从根上下文继承它 */
 ctx.baseUrl = pathToFileURL(dataDir + path.sep).href
-/** loader 的 fiber，退出时（will-quit）卸载它，连带卸载整棵插件树；main() 加载 loader 之前是 undefined */
+/** 挂上的 loader 的 fiber，退出时（will-quit）拆它收走整棵件树；main() 走到挂载那步之前是 undefined */
 let loaderFiber: Fiber | undefined
 
-// cordis 的日志全部交给 say。格式化用 cordis 自己的 Logger.format（能处理 %s、%o、Error），
-// 类从一个实例的 constructor 上取，免得 import cordis 的内部模块。buffer 是 cordis 自带的环形缓冲，
-// 只读状态页的错误行从这里筛
+// cordis 的日志全量进 say。渲染交给 cordis 自己的 Logger.format（%s、%o、Error 它都会），
+// 类从一个实例的 constructor 上取，免得 import cordis 的内部。buffer 是 cordis 自带的环形缓冲，
+// 页面上那份只读现状从这儿筛错误行
 interface LogMessage {
   ts?: number
   type?: string
@@ -157,24 +155,24 @@ const exporter = {
   // 级别与名字在 cordis 那边就是字符串，正文才是任意值
   export: (message: LogMessage): void => {
     say(message.type ?? 'info', message.name ?? '', formatMessage(message))
-    // 错误行是只读状态页的一部分，来一条就重新推送一次（去抖）
+    // 错误行是页面那份只读现状的一部分，来一条就重推一次（去抖）
     if (message.type === 'error' || message.type === 'warn') pushShell()
   },
 }
 factory.exporter(exporter)
 
 /**
- * 内核自己的日志也走 cordis logger，不直接 say：任何插件注册一个 exporter 就能收到内核、插件、页面
- * 三个来源的日志，内核不为窗格另建通道。say 只给 exporter 本身和启动失败那一句用。见文档站
+ * 内核自己的话也走 cordis logger，不直接 say：任何件挂一个 exporter 就收齐内核、件、渲染层
+ * 三路，内核不为窗格铺任何管道。say 只给 exporter 本身与起不来那一句用。见文档站
  */
 const kernelLog = ctx.logger('kernel')
-// 插件运行在这个进程里，插件的错误就是这个进程的错误。只记录不退出：一个坏插件不该让整个工作台退出
-process.on('unhandledRejection', (e) => kernelLog.error(`没有被处理的 rejection（插件加载失败多半在这里）：${stackOf(e)}`))
+// 件跑在这个进程里，件的错就是这个进程的错。只记不退：一个坏件不该带走工作台
+process.on('unhandledRejection', (e) => kernelLog.error(`没人接的 rejection（件挂载失败多半落这儿）：${stackOf(e)}`))
 process.on('uncaughtException', (e) => kernelLog.error(`未捕获异常：${stackOf(e)}`))
 
 /**
- * 只读状态页的数据：各条目加载到哪一步、最近的错误行。只在没有外壳时显示，数据都是内核手上已有的
- * （loader 的条目树、logger 的缓冲），不分析原因、不放按钮。理由见文档站
+ * 页面上那份只读现状：条目清单各自到哪一步、最近的错误行。只在没有外壳时画，数据全是内核已经
+ * 攥着的（loader 的条目树、logger 的缓冲），不归因、不摆按钮。为什么是这条线，见文档站
  */
 interface Report {
   home: string
@@ -182,7 +180,7 @@ interface Report {
   errors: string[]
 }
 function report(): Report {
-  // 页面第一次请求可能早于 loader 加载，那时服务还不在
+  // 页面的第一声 hello 可能早于 loader 挂上，那时服务还不在
   const loader = ctx.loader as typeof ctx.loader | undefined
   const entries = loader === undefined ? [] : [...loader.entries()]
   const errors = (factory.buffer ?? [])
@@ -197,21 +195,21 @@ function report(): Report {
 }
 
 let win: electron.BrowserWindow | null = null
-// 第二个实例拿不到锁时 Electron 会通知第一个实例：把已打开的窗口调到前面，第二次双击看到的是原窗口
+// 第二实例被锁拒时 Electron 会通知第一实例：把已在跑的窗抬到前面，人第二次双击看到的是原窗聚焦
 app.on('second-instance', () => {
   if (win === null) return
   win.show()
   win.focus()
 })
-/** 页面根交给谁。插件经 setShell 设置，页面经 onShell 订阅 */
+/** 页面根交给谁。件经 setShell 说，页面经 onShell 听 */
 let shellUrl: string | null = null
-/** 推给页面的内容：外壳地址、importmap、只读状态页的数据。每次重新计算：共享包装了或升级了，整页重载时页面再请求一次就拿到新的 importmap */
+/** 推给页面的那一份：外壳地址加 importmap 加只读现状。每次现算：共享包装了或升了版，整页重载时页面重问一次就注上新表 */
 const shellMessage = (): { url: string | null; imports: Record<string, string>; report: Report } => ({
   url: shellUrl,
   imports: collectImports({ dataDir, warn: (msg) => kernelLog.warn(msg) }),
   report: report(),
 })
-// 条目状态变化、新的错误行都会触发重新推送，去抖成一次；页面上有外壳时不看 report
+// 条目换态、错误行到来都会重推，去抖成一次；页面那头外壳在时不看 report
 let pushTimer: NodeJS.Timeout | null = null
 function pushShell(): void {
   if (pushTimer !== null) return
@@ -238,58 +236,33 @@ const kernel: GwbKernelApi = {
 }
 ctx.provide('gwbKernel', kernel)
 
-/** 页面发来的命令一律交给 ctx.gwbCommands，内核不认识任何命令名 */
+/** 桥：命令一律派给 ctx.gwbCommands，内核不认识任何件的命令名 */
 ipcMain.handle('gwb:command', (_event, command: unknown, args: unknown) => {
   if (typeof command !== 'string') return { ok: false, error: '命令名要是字符串' }
   const bus = ctx.gwbCommands
-  if (bus === undefined) return { ok: false, error: `没有命令服务（ctx.gwbCommands），无法执行 ${command}` }
+  if (bus === undefined) return { ok: false, error: `没有命令服务（ctx.gwbCommands），认不出 ${command}` }
   return bus.run(command, args)
 })
-/** 页面订阅 onShell 时请求一次当前值 */
+/** 页面订上 onShell 时问一次当前值 */
 ipcMain.on('gwb:hello', (event) => event.sender.send('gwb:shell', shellMessage()))
 
-/**
- * 内置的两个插件：命令插件与插件管理。构建时从仓里的 plugins/ 复制到 dist/builtin/<目录名>/，
- * 作为 loader 根层的条目、排在承载 cordis.yml 的 include 条目之前加载；不在 cordis.yml 里、随内核一起升级。
- * 做成条目而不是直接 ctx.plugin：数据、说明书等插件按调用方的条目认身份，没有条目就用不了它们。
- * 条目的 name 写包名（从它的 package.json 读），说明书、日志里报的就是包名，和命令表对得上
- */
-async function importBuiltin(dir: string): Promise<{ name: string; plugin: Plugin.Object }> {
-  const root = path.join(here, 'builtin', dir)
-  const { name } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as { name: string }
-  const plugin = (await import(pathToFileURL(path.join(root, 'dist', 'index.js')).href)) as Plugin.Object
-  return { name, plugin }
-}
-/** 承载 cordis.yml 的 include 条目在 loader 根层的 id；插件管理经 config 拿到它，自己取出那棵条目树 */
-const HOME_ENTRY = 'home'
-
-/** 插件管理用的 pnpm：打包运行时在安装包的资源目录，从源码运行时用本包开发依赖里那份 */
-function pnpmFile(): string {
-  if (app.isPackaged) return path.join(process.resourcesPath, 'pnpm', 'pnpm.exe')
-  const manifest = createRequire(import.meta.url).resolve('@pnpm/exe.win32-x64/package.json')
-  return path.join(path.dirname(manifest), 'pnpm.exe')
-}
-
 async function main(): Promise<void> {
-  // 应用没设菜单时 Electron 会给一套默认菜单（File/Edit/View/Window），没有用，设成 null。
-  // 内核不替插件做菜单：需要菜单的插件自己调 setApplicationMenu（要在 ready 之后调用）
+  // Electron 在应用没设菜单时兜一套默认菜单（File/Edit/View/Window）：没人订，撤成 null。
+  // 退默认不是代办——菜单归件，谁要谁自己 setApplicationMenu 盖上来（须在 ready 之后调，main 正好）
   Menu.setApplicationMenu(null)
-  const commands = await importBuiltin('commands')
-  const pluginManager = await importBuiltin('plugin-manager')
-
   win = new BrowserWindow({
     width: 1100,
     height: 720,
-    // 窗口底色取设计令牌暗色主题的背景色（tokens.css 的 --background ≈ #151518），与 index.html 的
-    // html 背景是同一个值：窗口创建到第一帧之间、最小化还原时、整页重载的第一帧，
-    // 露出来的都是这个颜色而不是白色。默认主题换了底色时，这里和 index.html 一起改
+    // 窗底取令牌暗色那档井色（tokens.css 的 --background ≈ #151518），与 index.html 的
+    // html 背景同一个值：窗口创建到首帧之间、最小化还原的空档、整页 reload 的第一帧，
+    // 露出来的都是它而不是白。默认主题若换了底色，这里跟 index.html 一起改
     backgroundColor: '#151518',
-    // 第一帧画好再显示窗口（ready-to-show），启动时也不闪白
+    // 首帧画好再亮窗（ready-to-show），启动那一刻也不露白
     show: false,
     webPreferences: { preload: path.join(here, 'preload.cjs') },
   })
   win.once('ready-to-show', () => win?.show())
-  // 页面的 console 也进 cordis 的日志，名字是 renderer。electron 的级别名只有 warning 和 cordis 不同
+  // 渲染层的 console 也归进 cordis logger 那条流，名字 renderer。electron 的级别词只有 warning 一个跟 cordis 不同
   win.webContents.on('console-message', (event) => {
     const method = event.level === 'error' ? 'error' : event.level === 'warning' ? 'warn' : event.level === 'debug' ? 'debug' : 'info'
     ctx.logger('renderer')[method](event.message)
@@ -301,68 +274,53 @@ async function main(): Promise<void> {
 
   loaderFiber = await ctx.plugin(Loader, {})
   // 主进程没有 --expose-internals，loader 拿不到 node 内部的 ESM loader，那时它按自己的位置
-  // 解析包名，插件静默加载失败。内核替它提供一个 import：内置插件的包名直接给模块，其余按 home
-  // 把包名解析成真实路径再 import，实现在 bare-import.ts（有单元测试）
-  const builtinModules = new Map<string, Plugin.Object>([
-    [commands.name, commands.plugin],
-    [pluginManager.name, pluginManager.plugin],
-  ])
-  const importFromHome = bareImportFromHome(dataDir)
-  ctx.loader.internal = {
-    import: async (name: string) => builtinModules.get(name) ?? importFromHome(name),
-  } as unknown as ModuleLoader
+  // 解析裸名、件静默挂不上。内核替它塞一个 import：裸名怎么解成真实路径并 import 进来，
+  // 单独住 bare-import.ts（可单测）
+  ctx.loader.internal = { import: bareImportFromHome(dataDir) } as unknown as ModuleLoader
   ctx.loader.builtins.include = Include
-  // loader 会深拷贝条目的 config，只能传字符串：插件管理用到时自己按 HOME_ENTRY 取出条目树
-  const pluginManagerConfig: PluginManagerConfig = { home: HOME_ENTRY, pnpm: pnpmFile() }
-  // 内置的两个排在 include 之前：同一个服务名第二次提供一律报错，内置的先提供，
-  // 已有 home 的 cordis.yml 里残留的同名条目只会加载失败（实验见文档站）
-  await ctx.loader.root.update([
-    { id: 'commands', name: commands.name },
-    { id: 'plugin-manager', name: pluginManager.name, config: pluginManagerConfig },
-    { id: HOME_ENTRY, name: 'cordis:include', config: { path: 'cordis.yml' } },
-  ])
+  await ctx.loader.root.update([{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }])
   await ctx.loader.await()
-  kernelLog.info(`up，home=${dataDir}，外壳=${shellUrl ?? '（没有插件调用 setShell）'}`)
+  kernelLog.info(`up，home=${dataDir}，外壳=${shellUrl ?? '（没有件调 setShell）'}`)
   pushShell()
 }
 
-// 不能顶层 await：Electron 的 ready 要等入口模块求值完才触发，顶层等 ready 会互相等待、卡死
+// 不能顶层 await：Electron 的 ready 要等入口模块求值完才发，顶层等 ready 就互相等死
 void app
   .whenReady()
   .then(main)
   .catch((err: unknown) => {
-    say('error', 'kernel', `启动失败：${stackOf(err)}`)
-    // 窗口可能还没打开，页面显示不了；Electron 保证这个对话框在 ready 之前也能弹出
-    dialog.showErrorBox('gwb 启动失败', `${stackOf(err)}\n\n日志：${path.join(dataDir, 'gwb.log')}`)
+    say('error', 'kernel', `起不来：${stackOf(err)}`)
+    // 窗可能还没开，页面画不了；Electron 保证这个框 ready 之前就能弹
+    dialog.showErrorBox('gwb 起不来', `${stackOf(err)}\n\n日志：${path.join(dataDir, 'gwb.log')}`)
     app.exit(1)
   })
 app.on('window-all-closed', () => app.quit())
 
 /**
- * 退出时卸载自己创建的 cordis 运行时：卸载 loader 的 fiber，整棵插件树的清理 effect 逐层执行完——
- * 插件启动的长期子进程靠这一步结束，不然主进程一退它们就成了孤儿进程。谁创建了 Context 谁负责卸载，
- * 见文档站
+ * 退出时收走自己起的 cordis 运行时：拆 loader 的 fiber，整棵件树的收尾 effect 递归跑完——
+ * 件起的长命子进程靠这条路被带走，不然主进程一退它们就是孤儿。谁起了 Context 谁收
+ * Context，见文档站
  */
 let quitting = false
 app.on('will-quit', (event) => {
-  // 清理完之后的 app.quit() 会再次进入 will-quit（quitting 让它通过）；main() 还没加载 loader
-  // （启动慢、刚启动就退出）时没有要卸载的，同样放行
+  // 收完尾的 app.quit() 会二次进 will-quit（quitting 放它过去）；main() 还没挂上 loader
+  // （起得慢、起来就退）时没有可拆的，同样放行
   if (quitting || loaderFiber === undefined) return
   event.preventDefault()
   quitting = true
-  // 取一份非空的引用给闭包用（模块级 let 的类型收窄传不进闭包）
+  // 闭包里拿得住的非空那份（模块级的 let 收窄不进闭包）
   const fiber = loaderFiber
-  // dispose() 只是**开始**卸载，要再 await() 才等得到嵌套的异步清理；插件那边也要把清理的 promise
-  // **返回**出来（effect 的清理函数返回 promise），两边缺一不可（实测数据见文档站）。
-  // 某个插件的清理卡住时 5 秒超时：超时就直接退出，工作台不能一直不退
+  // dispose() 只把拆卸**启动**，补 await() 才等得到嵌套的异步收尾；件那半还得把真收尾
+  // **返回**出来（effect 清理回 promise），两半缺一不可（实测读数见文档站）。
+  // 某个件的收尾挂死时 5 秒超时兜底：超时就硬退，工作台不能赖着不走
   void Promise.race([
     fiber
       .dispose()
       .then(() => fiber.await())
-      .catch((err) => kernelLog.warn(`退出时清理出错：${stackOf(err)}`)),
+      .catch((err) => kernelLog.warn(`退出收尾出错：${stackOf(err)}`)),
     new Promise<void>((resolve) => setTimeout(resolve, 5000)),
   ]).then(() => {
-    kernelLog.info('清理完成，退出')
+    kernelLog.info('收尾完，退出')
     app.quit()
   })
 })

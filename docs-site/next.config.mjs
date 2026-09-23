@@ -44,21 +44,24 @@ const config = {
     { source: '/docs/kernel/importmap', destination: '/docs/seams/shared', permanent: true },
     { source: '/docs/kernel/bridge', destination: '/docs/seams/shell', permanent: true },
     { source: '/docs/kernel/logs', destination: '/docs/seams/log', permanent: true },
-    // 关键判据并进插件管理各页的提示框、准入判据并进关键设计（2026-09-23）。用临时跳转：永久跳转会被浏览器缓存，
-    // 以后这些网址再用上就打不开
+    // 以下都用临时跳转：永久跳转会被浏览器缓存，以后这些网址再用上就打不开。
+    // 准入判据在关键设计；写插件的规矩、插件管理、命令插件的页在各自的仓（devkit 仓、基础插件仓）的文档站，
+    // 本站入口页列出它们在哪
     { source: '/docs/criteria/k1', destination: '/docs/design', permanent: false },
-    { source: '/docs/criteria', destination: '/docs/plugin-manager', permanent: false },
-    { source: '/docs/criteria/:path*', destination: '/docs/plugin-manager', permanent: false },
-    // 插件管理按机制拆页（2026-09-23）：条目页拆进「home 的两层」与「id 与归属」
-    { source: '/docs/plugin-manager/entries', destination: '/docs/plugin-manager/ids', permanent: false },
-    // 现状区按接缝图重排（2026-09-23）：系统地图并进接缝图与内核应用，插件与内核、命令与事件两页拆成几条接缝，
-    // 找 pnpm 一页成为接缝 pnpm
-    // 接缝图并进入口页（2026-09-23）
+    { source: '/docs/criteria', destination: '/docs', permanent: false },
+    { source: '/docs/criteria/:path*', destination: '/docs', permanent: false },
+    { source: '/docs/plugin-manager', destination: '/docs', permanent: false },
+    { source: '/docs/plugin-manager/:path*', destination: '/docs', permanent: false },
+    { source: '/docs/commands', destination: '/docs', permanent: false },
+    { source: '/docs/seams/builtin', destination: '/docs', permanent: false },
+    { source: '/docs/seams/command-bus', destination: '/docs', permanent: false },
+    { source: '/docs/seams/pnpm', destination: '/docs', permanent: false },
+    { source: '/docs/seams/skills', destination: '/docs', permanent: false },
+    // 接缝图就是入口页
     { source: '/docs/map', destination: '/docs', permanent: false },
     { source: '/docs/seams', destination: '/docs', permanent: false },
     { source: '/docs/seams/plugins', destination: '/docs/seams/loading', permanent: false },
     { source: '/docs/seams/commands', destination: '/docs/seams/ipc', permanent: false },
-    { source: '/docs/plugin-manager/pnpm', destination: '/docs/seams/pnpm', permanent: false },
   ],
   // 旧配置曾把 /docs 永久重定向到 /docs/system-map，浏览器缓存着那条 308：这里再重定向回 /docs
   // 就成环。改写不发 30x，缓存了旧跳转的浏览器也看得到入口页

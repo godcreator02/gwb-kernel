@@ -1,5 +1,0 @@
-{
-  "title": "说明书",
-  "description": "随两个内置插件发布的 SKILL.md 的正本，agent 经 MCP 入口的 skill.read 读到的就是生成结果",
-  "pages": ["gwb-commands", "gwb-plugin-manager"]
-}

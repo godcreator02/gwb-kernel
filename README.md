@@ -1,29 +1,31 @@
 # gwb-kernel
 
-> **要在一台机器上安装 gwb？** 见 [INSTALL.md](INSTALL.md)——写给替用户安装的 agent。安装包带内核（含内置的命令插件与插件管理）和一份 pnpm，其余插件按那份说明安装。
+> **要在一台机器上安装 gwb？** 见 [INSTALL.md](INSTALL.md)——写给替用户安装的 agent。安装包只带内核，插件由 agent 按那份说明用 pnpm 安装。
 
 god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里，只做第一个插件运行之前必须完成的事——初始化 home、创建 cordis 实例并加载插件、
-主进程与页面两侧的包名 import（bare specifier，直接写包名、不带相对路径的 import）解析、创建窗口与 IPC 通道、自身出错时让人看得见——
-外加内置的两个平台核心：命令插件 commands（命令总线，页面发来的命令都交给它）和插件管理 plugin-manager（安装、升级插件都由它负责）。
-这两个的代码在本仓 `plugins/` 下，构建时复制进内核；其余插件的源码在各自的仓里。
+主进程与页面的包名 import（bare specifier，直接写包名、不带相对路径的 import）解析、创建窗口与 IPC 通道、自身出错时让人看得见——其余功能全部由插件实现。
+
+本仓只放内核应用 `apps/desktop`、词汇表包 `packages/gwb-plugin-api` 和安装包 `installer/`。插件的源码在各自的仓里：命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，
+插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`；它们和别的插件一样写在 home 的 `cordis.yml` 里。
 
 ## 开发
 
 ```powershell
 pnpm install
-pnpm check                              # 构建词汇表包与两个内置插件 + typecheck + lint + test
-$env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 构建（含两个内置插件）并在隔离 home 里启动本仓内核
+pnpm check                              # 构建词汇表包 + typecheck + lint + test
+$env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 构建并在隔离 home 里启动本仓内核
 ```
 
+隔离 home 里要先装好命令插件等插件（用 devkit 的 `devkit.home.new`，或照 `INSTALL.md` 用 pnpm 装），否则页面只显示只读状态页。
 日常使用从安装版启动，不从仓里运行；安装包由 `installer/` 生成。
 
 ## 文档
 
-文档站在 `docs-site/`，从「从这里开始」读起：内核是什么、接缝图（八个包与它们之间的十二条接缝）、按你的目的该读哪些页。站上还有关键设计（只做什么、刻意不做什么）、
-十二条接缝各一页、开发（怎么跑、怎么测、怎么发版）、内核应用、词汇表包、命令插件、插件管理按机制分页的说明、安装包、轨迹（怎么走到今天）与路线。
+文档站在 `docs-site/`，从「从这里开始」读起：内核是什么、接缝图（内核仓的包、它们之间的八条接缝）、按你的目的该读哪些页。站上还有关键设计（只做什么、刻意不做什么、插件怎么写明测过哪个内核）、
+八条接缝各一页、开发（怎么跑、怎么测、怎么发版）、三个包各一页（内核应用、词汇表包、安装包）、轨迹（怎么走到今天）与路线。
 
 ```powershell
 cd docs-site; pnpm build; pnpm start      # http://localhost:4314
 ```
 
-这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`；`plugins/` 下两个插件包里的说明书 `SKILL.md` 也是，正本在 `docs-site/content/outputs/skills/`。改完在 `docs-site` 运行 `pnpm docfirst render` 重新生成，一起提交。
+这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`，改完在 `docs-site` 运行 `pnpm docfirst render` 重新生成，一起提交。

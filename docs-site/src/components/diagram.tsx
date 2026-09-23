@@ -9,20 +9,7 @@
 import type { ReactNode } from 'react'
 import { CommandRelay } from './diagrams/command-relay'
 import { KernelBoot } from './diagrams/kernel-boot'
-import { PluginHome } from './diagrams/plugin-home'
 import { PluginSeam } from './diagrams/plugin-seam'
-import { PmBusy } from './diagrams/pm-busy'
-import { PmCommands } from './diagrams/pm-commands'
-import { PmHomeContents } from './diagrams/pm-home-contents'
-import { PmInstall } from './diagrams/pm-install'
-import { PmList } from './diagrams/pm-list'
-import { PmModules } from './diagrams/pm-modules'
-import { PmPickId } from './diagrams/pm-pick-id'
-import { PmPnpmLookup } from './diagrams/pm-pnpm-lookup'
-import { PmRemount } from './diagrams/pm-remount'
-import { PmUninstall } from './diagrams/pm-uninstall'
-import { PmUpgrade } from './diagrams/pm-upgrade'
-import { PmUpgradeGap } from './diagrams/pm-upgrade-gap'
 import { SeamMap } from './diagrams/seam-map'
 import { SharedNames } from './diagrams/shared-names'
 import { ShellHandover } from './diagrams/shell-handover'
@@ -31,19 +18,6 @@ const drawings: Record<string, () => ReactNode> = {
   'seam-map': () => <SeamMap />,
   'kernel-boot': () => <KernelBoot />,
   'plugin-seam': () => <PluginSeam />,
-  'plugin-home': () => <PluginHome />,
-  'pm-modules': () => <PmModules />,
-  'pm-list': () => <PmList />,
-  'pm-busy': () => <PmBusy />,
-  'pm-commands': () => <PmCommands />,
-  'pm-install': () => <PmInstall />,
-  'pm-home-contents': () => <PmHomeContents />,
-  'pm-uninstall': () => <PmUninstall />,
-  'pm-remount': () => <PmRemount />,
-  'pm-upgrade': () => <PmUpgrade />,
-  'pm-upgrade-gap': () => <PmUpgradeGap />,
-  'pm-pick-id': () => <PmPickId />,
-  'pm-pnpm-lookup': () => <PmPnpmLookup />,
   'shell-handover': () => <ShellHandover />,
   'shared-names': () => <SharedNames />,
   'command-relay': () => <CommandRelay />,

@@ -1,145 +1,60 @@
 ---
 title: gwb-installer · 安装包
-description: 内核发版就是发 exe——installer/ 把本仓的内核构建、打成 NSIS 安装包与便携 zip；安装包带内核（含两个内置插件）和一份 pnpm，不带其他插件；它管什么、不知道什么、产物与安装后的目录、是哪条接缝的一侧、依赖什么、怎么验证、怎么发布到 gitea releases、打包脚本一步步做了什么
+description: 内核发版就是发 exe——installer/ 把本仓的内核打成 NSIS 安装包与便携 zip，只带内核，不带插件、不带 pnpm；本页讲它产出什么、装好之后是什么样，谁在用它产出的东西（安装程序、安装目录、外层引导脚本、发布物），它依赖什么，哪些事不归它做
 ---
 
-**本页回答**：安装包里带什么、不带什么，刻意不管什么；产物和装好之后的目录是什么样、怎么升级；它是哪条接缝的一侧、依赖什么；怎么验证；怎么发布到 gitea releases；`installer/scripts/build.ps1` 一步步做了什么，哪几道检查不能删。
+**本页回答**：安装包产出什么、装好之后是什么样；它产出的东西谁在用、定义在哪；它依赖什么、缺了会怎样；哪些事不归它做。包名 `gwb-installer`，源码目录 `installer/`（不在 pnpm 工作区里），入口文件 `installer/scripts/build.ps1`。
 
-## 管什么
+安装包把本仓的内核打成 Windows 安装程序，内核发版就是发这个 exe，内核不发 npm 包（[撤掉 npm 发布](/trajectory/2026-09-18-withdraw-npm-channel)）。怎么运行打包脚本、它一步步做什么见[开发](/docs/develop#打安装包)。
 
-**内核发版就是发 exe**：NSIS 安装包（按当前用户安装、不需要管理员权限）和便携 zip 两种产物。内核不发 npm 包（[撤掉 npm 发布](/trajectory/2026-09-18-withdraw-npm-channel)）。
+## 功能
 
-### 带什么
+- **产出两种安装包**：在 `installer\build\dist\` 下生成 NSIS 安装包 `gwb-setup-<版>.exe`（一键安装、按当前用户安装、不需要管理员权限）和便携 zip `gwb-portable-<版>.zip`，`<版>` 是内核版本。同目录的 `win-unpacked\` 是两种产物共用的未打包目录，只用来验证；每次打包整个重新生成，别日常直接运行它
+- **只带内核**：本仓 `apps/desktop` 的构建产物和它的运行时依赖。插件一个也不带，pnpm 也不带：`cordis.yml` 里的插件一律从包源装、经插件管理热升级，插件放进安装包的话，每发一个插件版本就得重打 exe，热升级也就没有用了；不带插件，同一个版本号的安装包内容就唯一，home 从一开始就由 pnpm 管理（[不带插件，装机交给 agent](/trajectory/2026-09-18-no-seed-agent-installs)）
+- **装好之后**：安装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，开始菜单出现「gwb-kernel」。外层应用（清单、引导脚本、装好的 `node_modules`）在 `resources\app.asar` 里。home 在 `%APPDATA%\gwb-kernel\homes\` 下，和安装目录分开：内核启动时只补 home 缺的文件、不覆盖（[home 的准备与单实例锁](/docs/desktop/home)）
+- **升级内核**：重新运行新版安装包，home 不动
+- **装机**：由 agent 照仓根 `INSTALL.md` 做：配用户级 pnpm 配置 → 装 exe → 往 default home 写 `package.json` 与 `cordis.yml`、用机器上的 pnpm 装命令插件、插件管理、MCP 入口等插件 → 启动 → 连 MCP 入口
+- **发布**：release 只上传 `gwb-setup-<版>.exe` 到 gitea 发布仓 `godcreator/gwb-kernel`，便携 zip 只在本地构建；顺序与注意事项见[开发](/docs/develop#发版)
 
-- **内核**：本仓 `apps/desktop` 的构建产物，里面带着两个内置插件（命令插件与插件管理，构建时复制进 `dist/builtin/`，随内核版本发布）
-- **一份固定版本的 pnpm**：放在安装目录的 `resources\pnpm\`，内核在打包运行时把这个路径交给插件管理，用户不需要自己装 node 或 pnpm
-- **不带其他插件**：`cordis.yml` 里的插件一律从包源装、经插件管理一键热升级。装机由 agent 照仓根 `INSTALL.md` 做：配用户级 pnpm 配置 → 装 exe → 往 default home 写 `package.json` 与 `cordis.yml`、用安装包里的 pnpm 装基础插件 → 启动 → 连 MCP 入口。这样同一个版本号的安装包内容唯一，home 从一开始就由 pnpm 管理（[不带插件，装机交给 agent](/trajectory/2026-09-18-no-seed-agent-installs)）
+## 接口
 
-插件要是放进安装包，每发一个插件版本就得重打 exe，热升级也就没有用了，所以插件不进安装包。两个内置插件是例外：它们没有替换的必要，随内核发版（[核心插件内置](/trajectory/2026-09-23-core-plugins-built-in)）。
+安装包本身不导出模块或类型，别的模块用的是它产出的东西，都不属于八条接缝。
 
-### 装好之后
+| 接口 | 谁在用、做什么 |
+| --- | --- |
+| 安装程序 `gwb-setup-<版>.exe` 与便携 zip | 人和装机的 agent 用它安装内核；按当前用户安装，产品名 `gwb-kernel` 决定安装目录与开始菜单项 |
+| 装好后的目录 | 内核应用从 `resources\app.asar` 启动 |
+| 外层引导脚本 `bootstrap.mjs` | 外层应用的入口，只 import 内核包，内核自己在 Electron ready 之后运行；import 失败时弹错误框、退出码 1 |
+| 给人和装机 agent 的发布物 | gitea release 上的 `gwb-setup-<版>.exe`、开始菜单里的「gwb-kernel」；装机步骤在仓根 `INSTALL.md` |
 
-安装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，开始菜单出现「gwb-kernel」。home 在 `%APPDATA%\gwb-kernel\homes\` 下，和安装目录分开：内核启动时只补 home 缺的文件、不覆盖（[home 的准备与单实例锁](/docs/desktop/home)）。
+{/* has file="../installer/electron-builder.yml" text="artifactName: gwb-setup-" */}
 
-**升级内核**就是重新运行新版安装包：home 不动，两个内置插件随内核一起升级。
+{/* has file="../installer/electron-builder.yml" text="perMachine: false" */}
 
-别日常直接运行 `installer\build\dist\win-unpacked\`：每次打包整个重新生成，会和运行中的 exe 冲突；不设 `GWB_HOME` 运行它还会打开真正的 default home。
+{/* has file="../installer/electron-builder.yml" text="productName: gwb-kernel" */}
 
-### 发布
+{/* has file="../installer/electron-builder.yml" text="- bootstrap.mjs" */}
 
-- 发布仓 `godcreator/gwb-kernel`：公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包。push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
-- **release 只上传 `gwb-setup-<版>.exe`**：便携 zip 只在本地构建、不上传
-- tag 跟内核版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
-- **推送 tag 会让同名的草稿 release 自动公开**：要先存草稿、人工确认后再公开，就最后推 tag
+{/* has file="../installer/app-template/bootstrap.mjs" text="import('@godcreator/gwb-kernel-desktop')" */}
 
-升版本号、发词汇表包的顺序见[开发](/docs/develop#发版)。
+{/* has file="../installer/app-template/bootstrap.mjs" text="app.exit(1)" */}
 
-## 不知道什么
+## 依赖
+
+| 依赖 | 用来做什么 | 缺了会怎样 |
+| --- | --- | --- |
+| 内核包 `@godcreator/gwb-kernel-desktop` | 打进安装包的内核本身：`apps/desktop` 的 `pnpm build` 与 `pnpm pack` 打出的 tarball | 构建或打包失败时脚本停下；内核仓有已跟踪文件的未提交改动时脚本在第一步就停下 |
+| 内核 tarball 的依赖（cordis、loader、include、词汇表包） | 在组装目录里装齐 `node_modules`，npm 从包源装 | `npm install` 失败时脚本停下；词汇表包的新版本要先发布，否则装不上（[版本号与发版](/docs/vocab#版本号与发版)） |
+| electron | 安装包里的运行时：版本只写在 `apps/desktop` 的 `devDependencies.electron`，二进制从 `electron-builder.yml` 的 `electronDownload` 镜像下载 | 下载不下来时 electron-builder 失败，脚本停下 |
+| electron-builder | 打出 NSIS 安装包与便携 zip：`installer/package.json` 的开发依赖，工具二进制从 `ELECTRON_BUILDER_BINARIES_MIRROR` 下载，环境里没设就用脚本里的国内镜像 | `installer/node_modules` 里没有时脚本先 `npm install`；装不上或打包失败时脚本停下 |
+| git | `git status --porcelain` 检查内核仓没有未提交的改动 | 找不到 git 时脚本在第一步就报错停下 |
+| gitea | 发布 release：git 凭据管理器里的凭据、gwb-gitea 插件的 `gitea.http` | 发布不了；安装包照样能在本地打出来 |
+
+## 不做的事
 
 - **不改内核运行时**：外层应用只有一份 `package.json` 和一个只负责启动内核的引导脚本，内核怎么选 home、怎么加载插件全由内核自己决定
-- **不知道 `cordis.yml` 里装哪些插件**：安装包不带插件，也不写 home；home 缺的文件由内核启动时补上，插件由装机的 agent 照 `INSTALL.md` 装
-- **不从包源下载内核**：内核来自本仓当场构建、`pnpm pack` 打出的 tarball；只有这个 tarball 自己的依赖由 npm 从包源装（见下面「依赖的接口」）
+- **不带插件、不写 home**：安装包不知道 `cordis.yml` 里装哪些插件；home 缺的文件由内核启动时补上，插件由装机的 agent 照 `INSTALL.md` 用机器上的 pnpm 装
+- **不带 pnpm**：装机与插件管理都用机器上自己装的 pnpm
+- **不从包源下载内核**：内核来自本仓当场构建、`pnpm pack` 打出的 tarball；只有这个 tarball 自己的依赖由 npm 从包源装
 - **不自己定 electron 版本**：版本只写在 `apps/desktop/package.json` 的 `devDependencies.electron` 一处，打包时经命令行传给 electron-builder
-
-## 数据结构
-
-**产物**在 `installer\build\dist\`：
-
-- `gwb-setup-<版>.exe`：NSIS 安装包，一键安装、按当前用户安装
-- `gwb-portable-<版>.zip`：便携 zip
-- `win-unpacked\`：两种产物共用的未打包目录，验证时直接运行它（见「怎么单独测」）
-
-`<版>` 是内核版本：组装时把外层应用模板的 `version` 占位换成它，`__TGZ__` 占位换成内核 tarball 的相对路径。外层应用的清单模板：
-
-{/* ref file="../installer/app-template/package.json" */}
-
-**装好之后的目录**：外层应用（清单、引导脚本、装好的 `node_modules`）在 `resources\app.asar` 里，pnpm 在 `resources\pnpm\`（`pnpm.exe` 和它的清单，清单只用来在日志里报版本）。
-
-## 提供的接口
-
-安装包是下面这条接缝的一侧，交换什么、两边各保证什么写在接缝页：
-
-| 接缝 | 另一侧 | 安装包这一侧提供什么 |
-| --- | --- | --- |
-| [pnpm](/docs/seams/pnpm) | 插件管理 | 安装目录 `resources\pnpm\pnpm.exe`：一份固定版本的原生可执行文件，和它的清单 |
-
-内核那一侧怎么找到它：
-
-{/* ref file="../apps/desktop/src/main.ts" lines="266-271" */}
-
-另外两处交接不算接缝图上的接缝。
-
-**外层引导脚本 → 内核应用**：外层应用的引导脚本只 import 内核包，内核自己在 Electron ready 之后运行；import 失败时弹错误框、退出码 1：
-
-{/* ref file="../installer/app-template/bootstrap.mjs" */}
-
-**给人和装机的 agent**：gitea release 上的 `gwb-setup-<版>.exe`、开始菜单里的「gwb-kernel」；装机步骤在仓根 `INSTALL.md`。
-
-## 依赖的接口
-
-| 接口 | 用来做什么 | 生产实现 | 测试实现 |
-| --- | --- | --- | --- |
-| 内核包 `@godcreator/gwb-kernel-desktop` | 打进安装包的内核本身 | `apps/desktop` 的 `pnpm build` 与 `pnpm pack` 打出的 tarball | 没有替身：打包后运行 `win-unpacked` 实测 |
-| 内核 tarball 的依赖（cordis、loader、include、词汇表包） | 在组装目录里装齐 `node_modules` | npm 从包源装；词汇表包要先发布（[版本号与发版](/docs/vocab#版本号与发版)） | 同上 |
-| electron | 安装包里的运行时 | `apps/desktop` 的 `devDependencies.electron` 写的版本，二进制从 `electron-builder.yml` 的 `electronDownload` 镜像下载 | 同上 |
-| electron-builder | 打出 NSIS 安装包与便携 zip | `installer/package.json` 的开发依赖，`installer/node_modules` 里没有时脚本先 `npm install`；它要的工具二进制从 `ELECTRON_BUILDER_BINARIES_MIRROR` 下载，环境里没设就用脚本里的国内镜像 | 同上 |
-| `@pnpm/exe.win32-x64` | 安装包里的 `pnpm.exe` | `apps/desktop` 开发依赖里固定版本的那一份 | 脚本检查 `pnpm.exe` 复制到了 |
-| git | 检查内核仓没有未提交的改动 | `git status --porcelain` | — |
-| gitea | 发布 release | git 凭据管理器里的凭据、gwb-gitea 插件的 `gitea.http` | — |
-
-## 怎么单独测
-
-安装包没有单元测试。打包脚本自己在每一步检查退出码和产物（见下面「不能删的检查」），打完之后这样验证：
-
-- **打包形态能启动**：设一个临时的 `GWB_HOME`（给路径）运行 `win-unpacked` 里的 exe，引导脚本能从 asar 里 import 内核，内核能从 `dist/builtin/` 加载两个内置插件，`gwb.log` 里没有 error
-- **单实例锁**：同一个 home 再启动一次，退出码 1、`runtime.json` 不变
-- **安装说明**：派一个没有上下文的子代理，只给它 `INSTALL.md`，让它往一个临时 home（`GWB_HOME` 给路径）里照做一遍、启动 `win-unpacked` 的内核，MCP 入口能调通、条目全部 ACTIVE 才算通过；它不得不问的每个问题都是说明的漏洞
-
-## 代码地图
-
-**在哪**：`installer/`，不在 pnpm 工作区里，自己的依赖用 npm 装：
-
-- `scripts/build.ps1`：打包的全流程
-- `electron-builder.yml`：electron-builder 的配置
-- `app-template/`：外层应用的模板，一份 `package.json` 和一个只负责启动内核的引导脚本；**不改内核运行时**
-- `icons/`：图标，`scripts/make-icon.ps1` 生成
-- `package.json`：只有 electron-builder 一个开发依赖，`build` 脚本就是运行 `scripts/build.ps1`
-- `build/`：组装目录与产物，不进 git
-
-**先读**：`scripts/build.ps1`，从头读到尾就是下面的打包流程；再读 `electron-builder.yml`，最后是 `app-template/` 的两个文件。
-
-**可跳过**：`build/`、`node_modules/`、`package-lock.json`、`icons/` 与 `scripts/make-icon.ps1`（生成占位图标）、`SPEC.md`（只有一行，指向本页）。
-
-### 打包流程
-
-在仓根运行 `pwsh installer\scripts\build.ps1`，产物在 `installer\build\dist\`。输入全部来自本仓（内核的 tarball、`apps/desktop` 开发依赖里的 electron 与 pnpm），不从包源下载内核。
-
-**1. 检查工作区**：已跟踪的文件有未提交的改动就停下——打包用的是仓里的代码，有改动时打出来的 exe 说不清装了什么。未跟踪的新文件不算。
-
-{/* ref file="../installer/scripts/build.ps1" lines="22-24" */}
-
-**2. 构建内核并 `pnpm pack`**：`pnpm build` 构建词汇表包、两个内置插件和内核；`pnpm pack` 按 `files` 过滤打出 tarball。**必须用 pnpm 打包**：内核清单里的 `workspace:*` 只有 pnpm pack 会替换成实际版本，npm pack 原样打进去，安装时报 `EUNSUPPORTEDPROTOCOL`。
-
-{/* ref file="../installer/scripts/build.ps1" lines="32-40" */}
-
-**3. 读版本号**：内核版本与 electron 版本都从 `apps/desktop/package.json` 读。electron 的版本只写在它的 `devDependencies.electron` 这一处，经命令行传给 electron-builder——electron-builder 只在项目根找 electron 版本、不看 `directories.app`，所以 `electron-builder.yml` 里不写。
-
-{/* ref file="../installer/scripts/build.ps1" lines="42-45" */}
-
-**4. 组装应用目录**：把模板复制到 `build\app`，把 `version` 换成内核版本（产物文件名带它；内核报的版本读内核包自己的清单，不读外层），把内核依赖指向刚打出的 tarball，再 `npm install`。依赖必须写进清单：electron-builder 按清单收集 `node_modules`，`--no-save` 装的包它不收。装完检查内核包和内置插件管理的入口文件都在。
-
-{/* ref file="../installer/scripts/build.ps1" lines="47-69" */}
-
-**5. 复制 pnpm**：从 `@pnpm/exe.win32-x64` 复制 `pnpm.exe` 和它的清单（清单只用来在日志里报版本）到 `build\pnpm\`，electron-builder 再放进 `resources\pnpm\`。内核那一侧怎么找到它见上面「提供的接口」。
-
-{/* ref file="../installer/scripts/build.ps1" lines="71-78" */}
-
-**6. electron-builder**：按下面的配置打出 `gwb-setup-<版>.exe` 与 `gwb-portable-<版>.zip`。
-
-{/* ref file="../installer/electron-builder.yml" */}
-
-### 不能删的检查
-
-- **每条 npm / pnpm 之后检查退出码**：pwsh 对原生命令的非零退出码默认不停，出过一次组装目录是空的、却一路打出安装包的事故
-- **检查产物存在**：tarball、组装目录里的内核包、内置插件管理的入口文件、`pnpm.exe`，缺一样就停
-- **内置插件不写成内核包的依赖**：组装时要从包源装内核 tarball 的依赖，写成依赖就得单独发布它们。所以构建时复制进 `dist/builtin/`，打包脚本检查它们在
+- **不发 npm 包**：内核只以安装包的形式发布

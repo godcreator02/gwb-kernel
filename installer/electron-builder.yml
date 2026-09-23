@@ -1,7 +1,7 @@
-# electron-builder 的配置。应用目录是 build.ps1 组装出来的 build/app（gitignore），产物在 build/dist。
-# **不写 electronVersion**——版本只写在 apps/desktop 的 devDependencies.electron 里，
-# build.ps1 读出来经 --config.electronVersion 传入，这里不再写一份。
-# 安装包带内核（含内置的命令插件与插件管理）和一份 pnpm，其他插件由 agent 照仓根 INSTALL.md 安装
+# electron-builder 正本。应用目录是装配出来的 build/app（gitignore），产物落 build/dist。
+# **不写 electronVersion**——单一真源在 apps/desktop 的 devDependencies.electron，
+# build.ps1 现读现经 --config.electronVersion 传进来，别在这里再钉一份。
+# 安装包只带内核，不带任何插件：装机由 agent 照仓根 INSTALL.md 做
 appId: online.tianshen02.gwb
 productName: gwb-kernel
 directories:
@@ -11,10 +11,6 @@ files:
   - package.json
   - bootstrap.mjs
   - node_modules/**
-# 内置的插件管理用的 pnpm：内核打包运行时读 resources/pnpm/pnpm.exe
-extraResources:
-  - from: build/pnpm
-    to: pnpm
 win:
   icon: icons/icon.ico
   artifactName: gwb-portable-${version}.${ext}

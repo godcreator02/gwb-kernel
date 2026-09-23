@@ -1,13 +1,14 @@
 # gwb-kernel
 
-god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只做第一个插件运行前必须完成的事，外加内置的命令插件与插件管理，其余都做成插件。
-现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：入口页就是接缝图，画出八个包与十二条接缝，也是全部包的总索引；只做什么、刻意不做什么见同目录 `design.mdx`，
-十二条接缝各一页见 `seams/`，怎么跑、怎么测、怎么发版见 `develop.mdx`，内核应用每个文件管什么见 `desktop/`，命令插件见 `commands.mdx`，插件管理靠哪几个机制工作见 `plugin-manager/`，安装包见 `installer.mdx`
-（每页讲一个机制：是什么、为什么这么做、怎么做的——peer 怎么写、服务还是命令、契约归谁、卸载时清理什么、版本号怎么升都在里面）。
+god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只做第一个插件运行前必须完成的事，其余都做成插件。
+本仓只放三样：内核应用 `apps/desktop`、词汇表包 `packages/gwb-plugin-api`、安装包 `installer/`。插件一个也不放——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`，都是 `cordis.yml` 里的普通插件。
+
+现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：入口页就是接缝图，也是全部包的总索引；只做什么、刻意不做什么、插件怎么写明测过哪个内核见同目录 `design.mdx`，
+八条接缝各一页见 `seams/`，怎么跑、怎么测、怎么发版见 `develop.mdx`；三个包各一页：内核应用见 `desktop/`，词汇表包见 `vocab.mdx`，安装包见 `installer.mdx`。
 
 ## 准入判据
 
-1. **只有「第一个插件存在之前必须完成的事」，或「没有它工作台就无法操作、也没有替换必要的平台核心」才进内核。** 平台核心目前只有命令总线和插件管理；其余一律做成插件
+1. **只有「第一个插件运行之前必须完成的事」才进内核。** 其余一律做成插件
 2. **确实遇到需求才加。** 现在就做不成，而且说得出场景：谁、在做什么、卡在哪
 
 拿不准按「不进」处理。这个仓最容易出的问题是慢慢长回旧版工作台仓 god-workbench 的样子——查旧仓是为了知道坑在哪，不是照抄它的变通做法。
@@ -19,31 +20,18 @@ god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只�
 * 工作区链接会替 registry 满足 peer：装包出问题先读当前的 `pnpm-workspace.yaml` 与 pnpm-lock 的 `settings`，别按旧配置办
 * 没有终端时每次写 stderr 都抛 EPIPE，`main.ts` 捕获忽略，日志文件照写
 
-## 契约（对外承诺的接口）
+## 契约与版本号
 
-正本 `packages/gwb-plugin-api/src/index.ts`，与内核同版本号。升版本号前读 devkit 的 skill「gwb-release」；发版用
-`devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}`，别在包目录手动 `pnpm publish`（会跳过 git 干净与构建产物白名单检查）。
-
-## 内置插件：plugins/
-
-这里的两个插件内置在内核里：代码按 cordis 插件的写法写、各自有测试，`apps/desktop` 构建时把它们复制进 `dist/builtin/`，
-`main.ts` 把它们作为 loader 根层的条目（`commands`、`plugin-manager`）、排在承载 `cordis.yml` 的 include 条目 `home` 之前加载——做成条目是因为数据、说明书等插件按条目认身份；条目的 name 写包名（内核的 import 先按包名查内置模块），说明书表才和命令表对得上。它们不在 home 里，不单独发布（包是 `private`），随内核一起发版。
-
-* `plugins/commands`：命令总线，服务 `gwbCommands`（类型在词汇表包里）。页面发来的命令一律交给 `ctx.gwbCommands.run`
-* `plugins/plugin-manager`：唯一写 home 的插件。`main.ts` 经 config 交给它两个字符串：include 条目的 id 与 pnpm 路径（loader 会深拷贝 config，别往里放对象），它用到时自己取出条目树；
-  它依赖 loader 条目树的结构、home 的文件布局、按真实路径解析包名。它对外只有命令，服务 `gwbPluginManager` 只表示装了，不要往上面加方法
-
-**必须在 `cordis.yml` 之前加载**：同一个服务名第二次提供一律报错，内置的先加载，已有 home 里残留的同名条目才只是加载失败。
-验证它们不能用 `devkit.dev`（那是往 home 里装包），要从源码启动内核（见下面「怎么跑」）。
-内核升级 `@cordisjs/plugin-loader` 或改包名解析时，先运行 `pnpm check`，插件管理的测试会一起跑。
+正本 `packages/gwb-plugin-api/src/index.ts`，与内核同版本号。升版本号前读 devkit 的 skill「gwb-release」：
+**改了接缝上已有的东西就升 x**（改名或删除、改形状或含义，以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` 的版本、改 home 布局），只加东西、改内部或修 bug 升 y——插件在 `package.json` 的 `gwb.testedKernel` 里写测过的内核版本，插件管理按版本线比对。
+发版用 `devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}`，别在包目录手动 `pnpm publish`（会跳过 git 干净与构建产物白名单检查）。
 
 ## 怎么跑
 
-**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）。安装包：`pwsh installer\scripts\build.ps1`，方案见文档站的安装包页（`docs-site/content/docs/installer.mdx`）；
+**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）。安装包：`pwsh installer\scripts\build.ps1`，打包步骤见文档站「开发」页的「打安装包」（`docs-site/content/docs/develop.mdx`），安装包带什么见 `installer.mdx`；
 新机器安装照仓根 `INSTALL.md`。别日常直接运行 `build\dist\win-unpacked\`——每次构建整个重新生成，会和运行中的 exe 冲突。
 
-**改内核本身（包括两个内置插件）才进这个仓**，只在隔离 home 里实际运行验证（`devkit.home.new` 启动的是安装版，不构建本仓）。
-`pnpm start` 会先构建词汇表包与两个内置插件、复制进 `dist/builtin/`，再启动：
+**改内核本身才进这个仓**，只在隔离 home 里实际运行验证。内核不带插件，隔离 home 里的命令插件等插件要先装好：用 `devkit.home.new` 新建（它装好基础插件、用安装版打开，关掉窗口后再从源码启动同一个 home），或照 `INSTALL.md` 第 3 步用 pnpm 装。`pnpm start` 会先构建词汇表包与内核，再启动：
 
 ```powershell
 pnpm install
@@ -56,6 +44,6 @@ cd apps\desktop; pnpm start
 
 ## 文档与注释
 
-* **知识随插件发布**：本仓的说明书在两个内置插件里（`gwb-commands`、`gwb-plugin-manager`），随内核一起发布，那两份 `SKILL.md` 是生成物（见下面最后一条）；写插件读 `gwb-devkit`，写文档、轨迹卡读 `docfirst-docs` / `trajectory`，选型先把需求逐条问清楚（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
+* **知识随插件发布**，本仓不放说明书：写插件读 `gwb-devkit`，写文档、轨迹卡读 `docfirst-docs` / `trajectory`，选型先把需求逐条问清楚（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
 * 这份 AGENTS 只放硬约束；为什么、遇到过什么问题写在文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
-* 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 与 `plugins/*/skills/*/SKILL.md` 是生成物，正本在 `docs-site/content/outputs/`（说明书在 `outputs/skills/`），改完在 `docs-site` 运行 `pnpm docfirst render`，一起提交；`CLAUDE.md` 第一行固定是 `@AGENTS.md`，只给 Claude 的指令写在它后面
+* 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 是生成物，正本在 `docs-site/content/outputs/`，改完在 `docs-site` 运行 `pnpm docfirst render`，一起提交；`CLAUDE.md` 第一行固定是 `@AGENTS.md`，只给 Claude 的指令写在它后面

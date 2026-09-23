@@ -1,10 +1,9 @@
 {
   "title": "生成正本",
-  "description": "README、AGENTS、INSTALL 与插件管理说明书的 mdx 正本——运行 render 生成到仓根和包里；要改就改这里，不改生成出来的文件",
+  "description": "README、AGENTS、INSTALL、CLAUDE 的 mdx 正本——运行 render 生成到仓根；要改就改这里，不改生成出来的文件",
   "pages": [
     "readme",
     "agents",
-    "install",
-    "skills"
+    "install"
   ]
 }

@@ -1,5 +1,5 @@
 {
   "title": "接缝",
-  "description": "十二条接缝各一页，标题前的数字是首页接缝图上的编号：两侧各是谁、交换什么、各保证什么、怎么单独测",
-  "pages": ["loading", "kernel", "command-bus", "ipc", "shell", "shared", "builtin", "home", "pnpm", "skills", "runtime", "log"]
+  "description": "八条接缝各一页，标题前的数字是首页接缝图上的编号：连接哪两个模块、接口是什么、双方各保证什么、由什么测试保护",
+  "pages": ["loading", "kernel", "ipc", "shell", "shared", "home", "runtime", "log"]
 }

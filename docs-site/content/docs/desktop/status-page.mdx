@@ -21,27 +21,27 @@ description: 没有外壳或外壳启动失败时页面显示的只读状态页�
 
 数据由 `main.ts` 的 `report()` 在每次推送时重新计算：条目取自 loader 的条目树，错误行从 cordis logger 自带的环形缓冲里筛出 error 与 warn 级别的最后 20 条。loader 还没加载时条目表是空的。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="175-197" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="173-195" */}
 
-它随每一条 `gwb:shell` 一起推给页面（见[内核应用](/docs/desktop#数据结构)的推送形状）；页面上有外壳时不看它。
+它随每一条 `gwb:shell` 一起推给页面（推送的整份形状见 [IPC 通道](/docs/seams/ipc)）；页面上有外壳时不看它。
 
 ## 条目状态怎么说
 
 `entry-state.ts` 的 `describeEntry` 把一个条目说成一句话。状态名照 cordis 的 fiber 状态原名；fiber 之外还有停用和「没有 fiber」（import 失败）两种。等待中的带上还缺哪个服务，失败的带上错误的第一行。
 
-{/* ref file="../apps/desktop/src/entry-state.ts" lines="30-41" */}
+{/* ref file="../apps/desktop/src/entry-state.ts" lines="29-40" */}
 
-cordis 的 fiber 状态是 `const enum`，在本仓的编译设置下引用不到，所以按它的定义照抄了一份名字表；插件管理也有一份，两份必须一致，由插件管理的 `fiber-state.test.ts` 核对。
+cordis 的 fiber 状态是 `const enum`，在本仓的编译设置下引用不到，所以按它的定义照抄了一份名字表。本仓没有测试核对这张表，升级 cordis 时要对照它的 `FiberState` 声明看一遍；插件管理 `@godcreator/gwb-plugin-manager` 自己也抄了一份，由它自己的测试对照 cordis 的声明核对。
 
-{/* ref file="../apps/desktop/src/entry-state.ts" lines="18-21" */}
+{/* ref file="../apps/desktop/src/entry-state.ts" lines="18-20" */}
 
 ## 什么时候重新推送
 
 条目状态变化（cordis 的 `internal/status` 事件）、每来一行 error 或 warn 日志，都会触发重新推送，200 毫秒内的多次合并成一次；每次推送的都是整份当前状态。页面订阅时还会主动请求一次当前值（`gwb:hello`），所以页面比插件晚就位也不会错过。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="214-223" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="212-221" */}
 
-{/* ref file="../apps/desktop/src/main.ts" lines="154-164" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="152-162" */}
 
 ## 为什么只做到这一步
 
