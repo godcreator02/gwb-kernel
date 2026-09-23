@@ -143,7 +143,7 @@
     "../packages/gwb-plugin-api/src/index.ts:41-53": {
       "kind": "git",
       "blob": "00479c02de641e96d6dc26a03cb4c7eb4be1721b",
-      "commit": "b75d971df0957664205209ba4e9871a8a1a283e3",
+      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
       "lines": [
         41,
         53
@@ -153,7 +153,7 @@
     "../apps/desktop/src/main.ts:239-245": {
       "kind": "git",
       "blob": "7b32d9a126925ce9fed239c675d5c24e33c7e70f",
-      "commit": "b75d971df0957664205209ba4e9871a8a1a283e3",
+      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
       "lines": [
         239,
         245
@@ -163,7 +163,7 @@
     "../apps/desktop/src/preload.cjs:4-10": {
       "kind": "git",
       "blob": "d61fcd8a0a9052a13a04ddd91093c2ac2c1212dc",
-      "commit": "b75d971df0957664205209ba4e9871a8a1a283e3",
+      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
       "lines": [
         4,
         10
@@ -531,6 +531,94 @@
         "uninstall.test.ts",
         "update-all.test.ts"
       ]
+    }
+  },
+  "content/docs/commands.mdx": {
+    "../plugins/commands/src/registry.ts:3-19": {
+      "kind": "git",
+      "blob": "ad00e1ad016311604d8b7afcf802a7d8d8004857",
+      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
+      "lines": [
+        3,
+        19
+      ],
+      "hash": "7b889316d3f89370638a99e400230e136561cccef0033efd986dc2517d483c6a"
+    },
+    "../plugins/commands/src/registry.ts:37-57": {
+      "kind": "git",
+      "blob": "ad00e1ad016311604d8b7afcf802a7d8d8004857",
+      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
+      "lines": [
+        37,
+        57
+      ],
+      "hash": "11130be94f9f28133e8c6dcb52b2a38f0d63ead71f7c6b5453871754047746bd"
+    },
+    "../plugins/commands/src/registry.ts:63-85": {
+      "kind": "git",
+      "blob": "ad00e1ad016311604d8b7afcf802a7d8d8004857",
+      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
+      "lines": [
+        63,
+        85
+      ],
+      "hash": "01dc27b7b29f591a12900bbe1251c18d3e44061f2ac308045b5c653d7ea61db6"
+    },
+    "../plugins/commands/src/index.ts:31-39": {
+      "kind": "git",
+      "blob": "61dd55457919350feaa4c2e6f0c2728c1caa9e01",
+      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
+      "lines": [
+        31,
+        39
+      ],
+      "hash": "becb4328e43df526dde2931c33377f0d796db4b46e588f6a493b9e3c1438709a"
+    },
+    "../plugins/commands/src/index.ts:41-47": {
+      "kind": "git",
+      "blob": "61dd55457919350feaa4c2e6f0c2728c1caa9e01",
+      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
+      "lines": [
+        41,
+        47
+      ],
+      "hash": "2d54e50d681a3cb2be0d75d78c30a4cef9cd191ec2f0445b3b0c554ef1ca89da"
+    },
+    "../plugins/commands/src/index.ts:7-13": {
+      "kind": "git",
+      "blob": "61dd55457919350feaa4c2e6f0c2728c1caa9e01",
+      "commit": "633a29e28ae4dc98782edecdf5af7cd29dc64d61",
+      "lines": [
+        7,
+        13
+      ],
+      "hash": "28aab65ebca1606e832adea6498ae4f7634c93b91c9f69124cac00099f2feb54"
+    },
+    "tree ../plugins/commands/tests depth=1": {
+      "kind": "tree",
+      "names": [
+        "artifact.test.ts",
+        "registry.test.ts",
+        "self-report.test.ts"
+      ]
+    },
+    "has ../plugins/commands/tests/registry.test.ts \"撞名是后来者赢\"": {
+      "kind": "has"
+    },
+    "has ../plugins/commands/tests/registry.test.ts \"注销只收自己那份\"": {
+      "kind": "has"
+    },
+    "has ../plugins/commands/tests/registry.test.ts \"handler 抛出来不许炸到调用方\"": {
+      "kind": "has"
+    },
+    "has ../plugins/commands/tests/registry.test.ts \"handler 自己带了 ok 就原样透传\"": {
+      "kind": "has"
+    },
+    "has ../plugins/commands/tests/registry.test.ts \"plugin 写短名 warn 一句\"": {
+      "kind": "has"
+    },
+    "has ../plugins/commands/tests/registry.test.ts \"登记与执行都出声\"": {
+      "kind": "has"
     }
   }
 }
