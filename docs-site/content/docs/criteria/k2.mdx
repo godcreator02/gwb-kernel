@@ -23,6 +23,22 @@ description: peer 只写由宿主提供、插件按值 import 的 cordis；其�
 | 构建时才用到的输入（shell 的样式映射文件 `theme.reference.css`、tailwind 之类） | dev |
 | 外部程序、python 环境 | 不声明；用的时候检测它在不在 |
 
+「按值 import」和「只 import 类型」的区别，看编译后留不留下东西：
+
+```ts
+// 按值 import：Service 是一个类，运行时要用到它——构建产物里原样留下这一句，要写 peer cordis
+import { Service } from 'cordis'
+export default class MyPlugin extends Service { /* … */ }
+
+// 只 import 类型：编译后整句消失，构建产物里没有 cordis——不写 peer，cordis 写 dev
+import type { Context } from 'cordis'
+export function apply(ctx: Context) {
+  ctx.provide('myService', { /* … */ })   // ctx 是 cordis 交给插件的，不用 import
+}
+```
+
+真实插件的对照见 [E1 commands](/docs/criteria/examples/e1-commands#清单)（不写 peer）和 [E2 shell](/docs/criteria/examples/e2-shell#清单)（写 peer）。
+
 判据只看构建产物，不管用什么方式构建：用 tsc 直接输出也好、用 esbuild 打包也好，构建产物里多出一个包名 import 就是违反。
 
 **peer 的意思是「运行时要从 home 里解析到这个包」**，所以只看构建产物里有没有这个包名 import：构建产物里有 `import … from 'cordis'`（比如 `extends Service`）才写 peer `cordis`；没有就不写——**哪怕 d.ts 里有 `declare module 'cordis'`**，那只是类型，使用这些类型的一方自己在 dev 里列 cordis。插件照样依赖 cordis 的协议，但这份兼容性不靠 peer 表达：宿主换 cordis 大版本就是内核的破坏性版本，所有插件在同一次里全部重新验证（见 [K8](/docs/criteria/k8)）。这条可以自动检查：构建产物里出现 `cordis` 的包名 import 却没写 peer，或者写了 peer 构建产物里却没有，都拒绝。

@@ -35,7 +35,31 @@ UI 平台：接管页面的 `#root`、管理窗格，是 importmap 里 react 的
 }
 ```
 
-peer 只有 `cordis`，因为它 `extends Service`；commands、data 只取类型，写 dev（[K2](/docs/criteria/k2)）。
+**为什么 peer 只有 cordis**——看代码。源码 `gwb-ui-plugins/plugins/shell/src/index.ts`（节选）：
+
+```ts
+import { Service } from 'cordis'
+
+export default class GwbShell extends Service implements GwbShellApi {
+  static inject = ['gwbCommands', 'gwbData']
+
+  constructor(ctx: GwbContext) {
+    super(ctx, 'gwbShell')
+    // …
+  }
+}
+```
+
+构建产物 `dist/index.js` 里原样留着这两行：
+
+```js
+import { Service } from 'cordis';
+export default class GwbShell extends Service {
+```
+
+`Service` 是 cordis 导出的一个类（运行时的值，不只是类型），shell 要继承它，所以构建产物里有一句 `import { Service } from 'cordis'`。运行时 Node 会去 home 的 `node_modules` 里找 `cordis` 这个包，找不到这个插件就加载失败——这正是 peer 的用途：声明「运行时要从 home 里拿到这个包」，pnpm 会为它装上一份。
+
+commands、data 两个插件只出现在 `static inject` 里和类型声明里：`static inject` 写的是服务名字符串，运行时由 cordis 把服务交给 shell；类型只在编译时用。构建产物里没有 `from '@godcreator/gwb-commands'` 这类 import，所以它们写 dev（[K2](/docs/criteria/k2)）。
 
 ## 构建产物里的包名 import
 

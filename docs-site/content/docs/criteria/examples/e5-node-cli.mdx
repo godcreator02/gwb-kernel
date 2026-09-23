@@ -20,7 +20,20 @@ description: 会启动子进程的插件——注册工具是扩展点、运行�
 }
 ```
 
-peer 只有 `cordis`（`extends Service`），commands 只取类型（[K2](/docs/criteria/k2)）。
+**为什么 peer 只有 cordis**——和 [E2 shell](/docs/criteria/examples/e2-shell#清单) 同一个道理。源码 `gwb-base-plugins/plugins/node-cli/src/index.ts`（节选）：
+
+```ts
+import { Service } from 'cordis'
+
+export default class GwbNodeCli extends Service implements GwbNodeCliApi {
+  constructor(ctx: GwbContext) {
+    super(ctx, 'gwbNodeCli')
+    // …
+  }
+}
+```
+
+构建产物 `dist/index.js` 里留着 `import { Service } from 'cordis';`，运行时要从 home 里找到 cordis，所以写 peer。commands 只用来取命令定义的类型，构建产物里没有它的 import，写 dev（[K2](/docs/criteria/k2)）。
 
 ## 构建产物里的包名 import
 

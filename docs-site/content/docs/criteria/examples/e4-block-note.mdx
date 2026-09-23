@@ -47,7 +47,21 @@ description: 插件之间关系最复杂的一组——接口定义包 block-not
 }
 ```
 
-三个包都**没有 peer**：bn-core 与 bn-comment 用 `ctx.provide` 和函数式写法，不按值 import cordis；block-note 与 block-notebook-core 是自己用的库，打包进各自的构建产物；bn-comment 对 bn-core 只取类型（[K2](/docs/criteria/k2)）。bn-comment 需要 bn-core 已经安装，这一点不写进清单——没装时它停在「等待 blockNote 服务」的状态。
+三个包都**没有 peer**——看代码。bn-core 提供服务用的是 `ctx.provide`，没有继承 cordis 的 `Service` 类（`gwb-block-note-v2/plugins/gwb-bn-core/src/node/index.ts`，节选）：
+
+```ts
+export const inject = ['gwbCommands']
+// …
+ctx.effect(() => ctx.provide('blockNote', { contract: COMMAND_CONTRACT, commandPrefix: 'block-note.' }))
+```
+
+bn-comment 声明依赖也只是一行服务名字符串（`gwb-block-note-v2/plugins/gwb-bn-comment/src/node/index.ts`）：
+
+```ts
+export const inject = ['gwbCommands', 'blockNote', 'blockNoteExtensions']
+```
+
+两者的构建产物里都没有 `from 'cordis'`，也没有 `from '@godcreator/gwb-bn-core'`——服务是 cordis 在运行时交给插件的，不需要 import。block-note 与 block-notebook-core 是自己用的库，打包进各自的构建产物，产物里不留它们的包名 import；bn-comment 对 bn-core 只取类型。所以全部写 dev（[K2](/docs/criteria/k2)）。bn-comment 需要 bn-core 已经安装，这一点不写进清单——没装时它停在「等待 blockNote 服务」的状态。
 
 ## 构建产物里的包名 import
 
@@ -58,7 +72,21 @@ description: 插件之间关系最复杂的一组——接口定义包 block-not
 - **以命令为主**（[K5](/docs/criteria/k5)）：`block-note.*` 是读写笔记的唯一方式，页面、agent、各插件共用；bn-comment 注册自己的 `bn-comment.*` 命令
 - **存在标记服务**：bn-core 提供服务 `blockNote`，只带 `{ contract, minCompatible }`；bn-comment 写 `inject: ['gwbCommands', 'blockNote', 'blockNoteExtensions']`，bn-core 重新加载时，它会跟着被卸载、再重新加载
 - **扩展点**：`blockNoteLibraries`（注册笔记库）、`blockNoteExtensions`（注册属性提供者之类）做成服务，因为要传回调、注册要随提供方卸载一起撤销
-- **契约版本区间**（[K4](/docs/criteria/k4)）：bn-comment 把自己期望的版本写死在代码里，加载时和 `blockNote` 的 `[minCompatible, contract]` 比对，落在区间外就拒绝加载
+- **契约版本区间**（[K4](/docs/criteria/k4)）：bn-comment 把自己期望的版本写死在代码里，加载时和 `blockNote` 的 `[minCompatible, contract]` 比对，落在区间外就拒绝加载。标准写法：
+
+  ```ts
+  // 本插件照着第 8 版命令写的，写死在自己代码里，不从 block-note 库里取
+  export const EXPECTED_CONTRACT = 8
+
+  export function apply(ctx: GwbContext): void {
+    const mark = ctx.blockNote!
+    if (EXPECTED_CONTRACT < mark.minCompatible || EXPECTED_CONTRACT > mark.contract) {
+      // 在 apply 里抛错，这个插件的 fiber 就进入 FAILED，等于拒绝加载
+      throw new Error(`bn-core 支持第 ${mark.minCompatible}–${mark.contract} 版命令，本插件按第 ${EXPECTED_CONTRACT} 版写的`)
+    }
+    // …
+  }
+  ```
 
 ## 契约
 
@@ -70,4 +98,4 @@ bn-core 卸载时关闭笔记库，把待写数据写入磁盘的 promise 从清
 
 ## 现状偏差
 
-待改：block-note 库声明了 `gwb.shared`；这组插件把 block-note、bn-core、commands 等写成了 peer；契约版本比对要求完全相等而且只警告，bn-papers 期望的版本已经落后；bn-core 关闭笔记库时写盘的 promise 没有返回；bn-single 自己拼路径读 bn-core 的数据目录；bn-papers 在运行时 import 论文插件的子路径。
+待改：block-note 库声明了 `gwb.shared`；这组插件把 block-note、bn-core、commands 等写成了 peer；契约版本比对要求完全相等而且只警告（bn-comment 现在的写法是 `if (mark.contract !== EXPECTED_CONTRACT) { log.warn(…) }`，bn-core 也还没有 `minCompatible`），bn-papers 期望的版本已经落后；bn-core 关闭笔记库时写盘的 promise 没有返回；bn-single 自己拼路径读 bn-core 的数据目录；bn-papers 在运行时 import 论文插件的子路径。

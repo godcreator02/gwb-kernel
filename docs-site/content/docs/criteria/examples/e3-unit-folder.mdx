@@ -25,7 +25,22 @@ description: 普通的带窗格插件——数据读写和动作通过命令、�
 }
 ```
 
-peer 只有 `cordis`（`extends Service`）。shell 写 dev：用来取类型、构建时调用 `@godcreator/gwb-shell/externals`、在样式里引用 `theme.reference.css`（[K2](/docs/criteria/k2)）。
+**为什么 peer 只有 cordis**——和 [E2 shell](/docs/criteria/examples/e2-shell#清单) 同一个道理。源码 `gwb-unit-folder/src/index.ts`（节选）：
+
+```ts
+import { Service } from 'cordis'
+
+export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
+  constructor(ctx: GwbContext) {
+    super(ctx, 'gwbUnitFolder')
+    // …
+  }
+}
+```
+
+构建产物 `dist/index.js` 里留着 `import { Service } from 'cordis';`，运行时要从 home 里找到 cordis，所以写 peer。
+
+shell 写 dev：三个用途都只发生在构建时或类型检查时——取类型、构建脚本调用 `@godcreator/gwb-shell/externals` 拿外置名单、样式文件引用 `theme.reference.css`。构建产物里不会出现 `from '@godcreator/gwb-shell'`（[K2](/docs/criteria/k2)）。
 
 ## 构建产物里的包名 import
 
