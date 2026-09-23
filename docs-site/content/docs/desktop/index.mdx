@@ -5,13 +5,7 @@ description: apps/desktop 是内核本身——Electron 主进程里的一个 co
 
 **本页回答**：内核应用（`apps/desktop`）管什么、刻意不知道什么；它由哪几个文件组成、谁依赖谁；对外提供哪几条接缝、依赖哪些接口；怎么单独测；代码从哪读。
 
-<Diagram name="module-map" title="内核的文件、依赖方向与 IPC 通道">
-- 灰色箭头表示依赖，从 import 的一方指向被 import 的一方：`main.ts` 把各部分组装起来，是唯一依赖 electron 的文件，它依赖其余所有文件；`imports.ts` 依赖 `bare-import.ts`（两侧用同一个解析函数）；`entry-state.ts`、`log-file.ts` 不依赖任何其他文件
-- 这四个文件不依赖 electron 与 cordis 实例，各有单元测试
-- 页面一侧：`preload.cjs` 注入 `window.gwb`，`index.html` 注入 importmap、交出 `#root`，没有外壳时显示只读状态页
-- `main.ts` 与 `preload.cjs` 之间的两根强调色箭头表示 IPC 消息的方向：主进程 → 页面推送 `gwb:shell`、`gwb:event`；页面 → 主进程调用 `gwb:command`，回执原路返回
-- 词汇表包 `@godcreator/gwb-plugin-api` 只有类型，`main.ts` 和插件都只 import 类型
-</Diagram>
+内核应用在[接缝图](/docs/seams)上是「内核应用」那个框：框里是它的五个文件，框边上的编号连线是它参与的接缝，页面一侧的 `preload.cjs`、`index.html` 画在左边「页面」框里。文件之间谁依赖谁见本页最后的「代码地图」。
 
 ## 管什么
 

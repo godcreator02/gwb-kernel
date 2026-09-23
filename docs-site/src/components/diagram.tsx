@@ -9,7 +9,6 @@
 import type { ReactNode } from 'react'
 import { CommandRelay } from './diagrams/command-relay'
 import { KernelBoot } from './diagrams/kernel-boot'
-import { ModuleMap } from './diagrams/module-map'
 import { PluginHome } from './diagrams/plugin-home'
 import { PluginSeam } from './diagrams/plugin-seam'
 import { PmBusy } from './diagrams/pm-busy'
@@ -31,7 +30,6 @@ import { ShellHandover } from './diagrams/shell-handover'
 const drawings: Record<string, () => ReactNode> = {
   'seam-map': () => <SeamMap />,
   'kernel-boot': () => <KernelBoot />,
-  'module-map': () => <ModuleMap />,
   'plugin-seam': () => <PluginSeam />,
   'plugin-home': () => <PluginHome />,
   'pm-modules': () => <PmModules />,
