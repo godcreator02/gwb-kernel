@@ -1,0 +1,39 @@
+---
+title: K3 什么能进 importmap
+description: importmap 只放整页必须只有一份的运行时，提供方只能是件
+---
+
+# K3 什么能进 importmap
+
+## 规则
+
+**importmap 只放整页必须只有一份的运行时**，今天就是 react 那四个名字；提供方只能是挂着条目的件。
+
+## 怎么判
+
+同一个模块在页面上出现两份会出错（全局单例、hooks、跨组件树的 context 这类），才进。只是体积大、或好几个件都用，不进，各自打进束——页面从本机 `file://` 加载，重复几百 KB 可以接受。
+
+进了之后的规矩：
+- 提供方只能是挂着条目的件，在自己清单的 `gwb.shared` 里声明；库不声明
+- 一个裸名只有一个提供方，撞名全拒（见 [importmap](/docs/kernel/importmap)）
+- 件的外置名单只从提供方读（提供方导出构建期 helper），不手抄
+- 共享的运行时升大版本，就是提供方的破坏版（见 [K8](/docs/criteria/k8)）
+- 跨件共享 React context 只能经 importmap 提供方，或经 props 传递；各件自带的库里的 context 跨件不通
+
+## 标准例子
+
+- 唯一的提供方：[E2 shell](/docs/criteria/examples/e2-shell#面)
+- 消费方怎么外置：[E3 unit-folder](/docs/criteria/examples/e3-unit-folder#产物里的裸名)
+- 体积大但不是单例、各件自带：[E4 块笔记](/docs/criteria/examples/e4-block-note#产物里的裸名)
+
+## 反例
+
+库自己声明 `gwb.shared`（它没有条目，能进表只因为被装成了 home 的直接依赖）；为省体积把工具库放进 importmap；在各件的构建脚本里手抄外置名单。
+
+## 为什么
+
+[importmap 归内核](/trajectory/2026-09-09-importmap-in-kernel)：它是页面级的运行时服务，声明权在提供方。提供方限定为件，提供方就必然是 home 的直接依赖、有人管它的升级。
+
+## 执行
+
+撞名全拒已有机械守卫。库声明共享、手抄外置名单属迁移中。

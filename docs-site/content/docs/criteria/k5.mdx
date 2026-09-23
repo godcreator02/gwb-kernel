@@ -1,0 +1,36 @@
+---
+title: K5 服务还是命令
+description: 扩展点用服务，数据与动作用命令，同一能力只开一个面
+---
+
+# K5 服务还是命令
+
+## 规则
+
+**扩展点用服务，数据与动作用命令，同一能力只开一个面。**
+
+## 怎么判
+
+- **服务**：命令表达不了的——登记（往我这儿登记窗格、命令、工具）、回调、要随提供方联动重挂的生命周期。服务上不放读写数据与执行动作的方法
+- **命令**：可序列化的读写与动作。页面、agent、件都走同一套命令，这是件对外能力的唯一一个面；件内要类型安全，就经提供方发布的类型化客户端调（契约包，见 [K4](/docs/criteria/k4)）
+- **在场标记**：依赖方要随提供方联动、又只用命令时，inject 提供方一个在场标记服务（可以只带契约版本号）
+- 一条命令只做一件事；多步编排归说明书。唯一例外是判定依赖同一份「这一趟之前」状态的事务
+- 命令的 `plugin` 字段写包名
+
+## 标准例子
+
+- 只有扩展点的服务：[E1 commands](/docs/criteria/examples/e1-commands#面)、[E5 node-cli](/docs/criteria/examples/e5-node-cli#面)
+- 服务只留扩展点、数据与动作全走命令：[E2 shell](/docs/criteria/examples/e2-shell#面)、[E3 unit-folder](/docs/criteria/examples/e3-unit-folder#面)
+- 命令为本加在场标记：[E4 块笔记](/docs/criteria/examples/e4-block-note#面)
+
+## 反例
+
+同一能力既有服务方法又有命令（两个面会悄悄走样）；为读别件的配置或数据去调它的设置分区；一条命令带一个 `action` 参数做四件事；一条命令把抬号、查重、发布、装机串成一串。
+
+## 为什么
+
+命令表是页面、agent、件共用的同一份真相；再开一个服务面就有两份并行。服务留给命令表达不了的扩展点与生命周期。[命令原子、门中立](/trajectory/2026-09-14-atomic-commands-door-neutral)。
+
+## 执行
+
+迁移中：shell、unit-folder、node-cli 等服务上的读写方法与同名命令重复；plugin-manager、docs-site 经设置命令读别件的分区。命令总线对 `plugin` 字段的写法只警告不拦。

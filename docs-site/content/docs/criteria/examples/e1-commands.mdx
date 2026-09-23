@@ -1,0 +1,42 @@
+---
+title: E1 commands
+description: 最底层的服务提供方——扩展点用服务、不按值 import cordis 就没有 peer、契约住自己包里
+---
+
+# E1 commands（`@godcreator/gwb-commands`）
+
+## 角色
+
+命令总线：别的件往这里登记命令，页面、agent、别的件经它按名调用。它是一个纯粹的扩展点提供方。
+
+## 清单
+
+```json
+{
+  "keywords": ["gwb", "gwb-plugin"],
+  "gwb": { "provides": { "gwbCommands": { "summary": "…", "usage": "…" } } },
+  "devDependencies": { "cordis": "…", "@godcreator/gwb-plugin-api": "…" }
+}
+```
+
+没有 peer：服务用 `ctx.provide` 提供，只按类型引用 cordis（[K2](/docs/criteria/k2)）。
+
+## 产物里的裸名
+
+只有 node 内置。
+
+## 面
+
+一个服务 `gwbCommands`：`register` 是扩展点（别的件往里登记命令），`run` 是按名转发的口。它自己不注册命令（[K5](/docs/criteria/k5)）。
+
+## 契约
+
+自己的包导出命令定义的形状、服务接口与命令信封 `{ ok, data, error }`，加上 `declare module 'cordis'` 的增强（[K6](/docs/criteria/k6)）。
+
+## 收尾
+
+`register` 回注销函数，调用方包进 `ctx.effect`，卸载时自动撤；自己不起进程、不开定时器（[K7](/docs/criteria/k7)）。
+
+## 现状偏差
+
+待改：词汇表包写成了 peer；命令信封住在词汇表包；说明书服务的形状是用 `as` 强转的。

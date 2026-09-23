@@ -1,0 +1,37 @@
+---
+title: K7 状态与收尾
+description: 件自己起的一切在卸载时收走，并把 promise 交回去
+---
+
+# K7 状态与收尾
+
+## 规则
+
+**件自己起的进程、定时器、监听、在途的落盘与网络请求，卸载时收走，并把 promise 交回去。** 随重挂该清掉的状态放 `apply` 里。
+
+## 怎么判
+
+- **交回哪里**：从 `ctx.effect` 的清理函数返回 promise（`Service` 上就是 dispose 返回它）；登记类 API 回的注销函数也包进 `ctx.effect`。`.catch(() => {})` 把 promise 吞掉、`void` 掉不返回，都算没交回
+- **收走什么**：子进程杀整棵树、等它真退出；定时器清掉；在途写盘写完再兑现（不是丢掉待写）；在途网络请求能中止
+- **状态放哪**：模块顶层的状态在同版本重挂时不会重置，只放真要跨重挂留着的东西。落盘走数据件，配置走设置件，home 下的路径只从 `gwbKernel.dataDir` 取
+- **例外，都要在代码里写明**：
+  - 有意比宿主活得久的进程（测试 home、外部编辑器），要 detached 加 `unref`，并能被下一轮重新认领
+  - 件对自身的重挂任务天然活过自己的卸载，只许持条目树与 logger
+  - 位置由外部定死的文件（`runtime.json` 的门那一格、`~/.npmrc`）与用户指定的数据根（论文库这类），不走数据件
+
+## 标准例子
+
+- 子进程的标准收尾：[E5 node-cli](/docs/criteria/examples/e5-node-cli#收尾)
+- 关库落盘交回 promise：[E4 块笔记](/docs/criteria/examples/e4-block-note#收尾)
+
+## 反例
+
+卸载时清掉待写定时器、等于丢掉这次写盘；关库之前不等在途的写入；起了子进程只靠超时收；`server.close()` 不等它关完。
+
+## 为什么
+
+内核退出时只等交回来的 promise，5 秒超时硬退：[退出收尾两半](/trajectory/2026-09-12-quit-dispose-two-halves)。[数据件](/trajectory/2026-09-07-gwb-data-plugin)。
+
+## 执行
+
+靠人；迁移中的见[机制定案](/spec/ecosystem-simplify)的迁移清单。

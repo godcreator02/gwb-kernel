@@ -1,0 +1,35 @@
+---
+title: K6 契约住哪
+description: 谁提供谁定义；调用方不手写、不强转提供方的形状
+---
+
+# K6 契约住哪
+
+## 规则
+
+**谁提供，谁定义。** 内核提供的面住词汇表包，只增不减；件提供的服务类型、命令参数与回执类型住那个件自己的包（或它发布的契约包）。
+
+## 怎么判
+
+- 内核的面：`gwbKernel`、`window.gwb` 的 `command` / `on`、外壳默认导出——在词汇表包 `@godcreator/gwb-plugin-api`，纯类型
+- 件的面：服务接口、命令的参数与回执类型都从提供方导出；命令信封 `{ ok, data, error }` 属于命令总线件
+- 调用方取类型只 `import type` 提供方的包；有意不引提供方类型的调用方（对方是可选件），对回执做防御式收窄，不算违反
+- 不用 `as` 把东西强转成提供方的形状；收窄接口要经赋值让类型检查验过
+
+## 标准例子
+
+- 命令信封住命令总线件：[E1 commands](/docs/criteria/examples/e1-commands#契约)
+- 命令回执类型导出：[E3 unit-folder](/docs/criteria/examples/e3-unit-folder#契约)
+- 契约包：[E4 块笔记](/docs/criteria/examples/e4-block-note#契约)
+
+## 反例
+
+把件之间的契约塞进词汇表包；消费方手写提供方的类型；`ctx as unknown as SomeShape`；回执形状只写在命令描述里、没有导出类型。
+
+## 为什么
+
+[词汇表独立包](/trajectory/2026-09-07-vocab-package-standalone)、[它就这么大](/trajectory/2026-09-07-wall-vocab-just-size)：契约跟定义方走，住消费方就是消费方持有契约，提供方改实现没人拦。
+
+## 执行
+
+词汇表包已是纯类型；命令信封还住在词汇表包，迁移中；「只增不减」靠发版纪律。

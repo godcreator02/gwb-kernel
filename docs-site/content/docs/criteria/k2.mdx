@@ -1,0 +1,50 @@
+---
+title: K2 依赖怎么写
+description: peer 只写宿主提供、件按值 import 的 cordis；其余一律 dev；产物里只剩内置、electron、cordis 与 importmap 名
+---
+
+# K2 依赖怎么写（peer 怎么用）
+
+## 规则
+
+**peer 只写宿主提供、件按值 import 的 `cordis`；其余一律写 dev。** 产物里剩下的裸名只能是 node 内置、`electron`、`cordis`（node 半）与 importmap 名（浏览器半）。
+
+## 怎么判
+
+按运行时这份代码由谁提供来定：
+
+| 运行时谁提供 | 写法 |
+| --- | --- |
+| 宿主提供、件按值 import（`extends Service` 这类） | peer：`cordis` |
+| 运行环境自带（node 内置、`electron`） | 不声明 |
+| 页面经 importmap 提供（react 四名，见 [K3](/docs/criteria/k3)） | dev；浏览器半外置 |
+| 另一个件 | dev（只取类型）；运行时经 inject 与命令（见 [K4](/docs/criteria/k4)） |
+| 本件运行时自用的库、契约包 | dev；产物里不留它的裸名 |
+| 构建期输入（样式映射面、tailwind 之类） | dev |
+| 外部程序、python 环境 | 不声明；用时探测在不在 |
+
+判据只看产物，不管手段：tsc 直出也好、esbuild 打包也好，产物里多出一个裸名就是违反。
+
+**类型链由消费方自己列齐**：本件的类型检查引到别的包的类型（包括上游 d.ts 里再引到的包），这些包都写进本件的 dev；门禁关掉 `skipLibCheck` 跑一遍类型检查——缺哪个包它会点名报「找不到模块」，不然那段类型会静默变 any。**类型只能用 `import type`**，`import { type X }` 在 `verbatimModuleSyntax` 下会在产物里留一句空 import。
+
+件需要另一个件已装（比如块笔记各件需要 bn-core），不写进清单；没装时它停在「缺某服务」的待命，[只读现状](/docs/kernel/bridge)与 `plugin-manager.list` 里看得见。
+
+## 标准例子
+
+- 不按值 import cordis 就没有 peer：[E1 commands](/docs/criteria/examples/e1-commands#清单)
+- `extends Service` 所以 peer 只有 cordis：[E2 shell](/docs/criteria/examples/e2-shell#清单)、[E5 node-cli](/docs/criteria/examples/e5-node-cli#清单)
+- 别件、契约包、构建期输入全写 dev：[E3 unit-folder](/docs/criteria/examples/e3-unit-folder#清单)、[E4 块笔记](/docs/criteria/examples/e4-block-note#清单)
+
+## 反例
+
+拿 peer 声明别的件、库、react、已停发的共享包、词汇表包；按值 import 词汇表包（它是纯类型包，没有运行时导出，件挂不上）；自用库写 `dependencies` 而产物里留着它的裸名；写 `instanceof Service`——件与宿主的 cordis 可能是不同的拷贝，跨拷贝为 false。
+
+## 为什么
+
+- cordis 靠 `Symbol.for` 协议键跨拷贝工作，件自带或 home 另有一份都能 provide / inject / 联动，只有跨拷贝 `instanceof` 为 false：仓根 `probes/2609231600_cordis-multi-copy/`；[cordis 走 peer](/trajectory/2026-09-07-wall-cordis-peer)
+- 只写 dev 时类型链靠 pnpm 默认的隐藏提升解析，少列一个静默变 any，关掉 `skipLibCheck` 就会报出来：`probes/2609231600_types-without-peer/`（情形 01、04）
+- peer 从来只警告不拦，而且管不到运行时实际解析到哪一版（见 [K8](/docs/criteria/k8)）；把它收窄到「宿主提供」这一种含义，依赖只剩两种写法
+
+## 执行
+
+迁移中（[机制定案](/spec/ecosystem-simplify)第二、三期）。守卫计划放在 `devkit.release`：产物裸名检查、d.ts 在 `skipLibCheck: false` 下的类型检查、`import type` 的 lint 规则。

@@ -1,0 +1,48 @@
+---
+title: E5 node-cli
+description: 会起子进程的件——登记是扩展点、跑走命令、卸载收尾的完整做法
+---
+
+# E5 node-cli（`@godcreator/gwb-node-cli`）
+
+## 角色
+
+让件登记随包带的 node 命令行工具；每个工具镜像成一条命令，调用时起子进程、收输出、按时限收尾。
+
+## 清单
+
+```json
+{
+  "keywords": ["gwb", "gwb-plugin"],
+  "gwb": { "provides": { "gwbNodeCli": { "summary": "…", "usage": "…" } } },
+  "peerDependencies": { "cordis": "…" },
+  "devDependencies": { "cordis": "…", "@godcreator/gwb-plugin-api": "…", "@godcreator/gwb-commands": "…" }
+}
+```
+
+peer 只有 `cordis`（`extends Service`），commands 只取类型（[K2](/docs/criteria/k2)）。
+
+## 产物里的裸名
+
+`cordis` 与 node 内置（`node:child_process` 这类）。
+
+## 面
+
+- **服务** `gwbNodeCli.register` 是扩展点：别的件登记自己的工具（[K5](/docs/criteria/k5)）
+- **命令**是「跑」的唯一面：每个登记的工具自动镜像成一条命令；服务上没有 `run`
+
+## 契约
+
+导出登记的形状与运行回执的类型（stdout、stderr、退出码、超时、溢出文件路径）（[K6](/docs/criteria/k6)）。
+
+## 收尾
+
+这是 [K7](/docs/criteria/k7) 的标准写法：
+- 每个起出来的子进程登记进一张在途表，进程退出时摘掉
+- 卸载时对表里每一个杀整棵进程树，从清理函数交回一个等它们真退出才兑现的 promise
+- 超时照旧按登记的时限杀
+- 输出超长时溢出到自己数据目录下的文件，路径进回执
+
+## 现状偏差
+
+待改：在途子进程卸载时不收，只靠超时；服务上的 `run` 与镜像命令重复；词汇表包写成了 peer。

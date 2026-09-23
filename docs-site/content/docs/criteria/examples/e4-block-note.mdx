@@ -1,0 +1,73 @@
+---
+title: E4 块笔记
+description: 最复杂的件间关系——契约包 block-note、提供方 bn-core、消费方 bn-comment；命令为本、在场标记、契约版本区间
+---
+
+# E4 块笔记（`block-note` + `bn-core` + `bn-comment`）
+
+## 角色
+
+三种角色各一个：
+- **`@godcreator/block-note`**：契约包（库，不是件）。命令的参数与回执定义、类型化客户端、类型与纯函数、界面组件
+- **`@godcreator/gwb-bn-core`**：提供方。持有笔记库，实现全部 `block-note.*` 命令
+- **`@godcreator/gwb-bn-comment`**：消费方之一（props、query、members、journal 同形）。在块上挂评论，经命令读写 bn-core
+
+## 清单
+
+```jsonc
+// @godcreator/block-note —— 库
+{
+  "keywords": ["gwb"],
+  "exports": { ".": "…", "./ui": "…", "./ui/style.css": "…", "./testing": "…" },
+  "devDependencies": { "react": "…", "react-dom": "…", "mdast-util-from-markdown": "…" }
+}
+```
+
+```jsonc
+// @godcreator/gwb-bn-core —— 提供方
+{
+  "keywords": ["gwb", "gwb-plugin"],
+  "gwb": { "provides": { "blockNote": { "…": "…" }, "blockNoteLibraries": { "…": "…" }, "blockNoteExtensions": { "…": "…" } } },
+  "devDependencies": {
+    "cordis": "…", "@godcreator/block-note": "…", "@godcreator/block-notebook-core": "…",
+    "@godcreator/gwb-plugin-api": "…", "@godcreator/gwb-commands": "…",
+    "@godcreator/gwb-data": "…", "@godcreator/gwb-shell": "…"
+  }
+}
+```
+
+```jsonc
+// @godcreator/gwb-bn-comment —— 消费方
+{
+  "keywords": ["gwb", "gwb-plugin"],
+  "devDependencies": {
+    "cordis": "…", "@godcreator/block-note": "…", "@godcreator/gwb-bn-core": "…",
+    "@godcreator/gwb-plugin-api": "…", "@godcreator/gwb-commands": "…"
+  }
+}
+```
+
+三个都**没有 peer**：bn-core 与 bn-comment 用 `ctx.provide` 与函数式写法，不按值 import cordis；block-note 与 block-notebook-core 是自用的库，打进各自的产物；bn-core 在 bn-comment 那里只取类型（[K2](/docs/criteria/k2)）。bn-comment 需要 bn-core 已装，不写进清单——没装时停在「缺 blockNote 服务」的待命。
+
+## 产物里的裸名
+
+node 半：只有 node 内置。浏览器半：只有 react 四名。block-note 的解析库（mdast 一族）体积大，但不是整页单例，所以不进 importmap，各件自带；block-note 不声明 `gwb.shared`（[K3](/docs/criteria/k3)）。跨件共享 React context 不走 block-note 的 `./ui`，走 props。
+
+## 面
+
+- **命令为本**（[K5](/docs/criteria/k5)）：`block-note.*` 是读写笔记的唯一一个面，页面、agent、各件共用；bn-comment 注册自己的 `bn-comment.*`
+- **在场标记**：bn-core 提供服务 `blockNote`，只带 `{ contract, minCompatible }`；bn-comment `inject: ['gwbCommands', 'blockNote', 'blockNoteExtensions']`，bn-core 重挂时它跟着被拆掉再挂回
+- **扩展点**：`blockNoteLibraries`（登记笔记库）、`blockNoteExtensions`（登记属性提供者之类）是服务，因为要传回调、要随提供方撤销
+- **契约版本区间**（[K4](/docs/criteria/k4)）：bn-comment 把自己期望的版本写死在代码里，挂载时比对 `blockNote` 的 `[minCompatible, contract]`，落在外面就拒绝挂载
+
+## 契约
+
+命令的参数、回执与类型化客户端住 block-note 契约包，由 bn-core 这一方维护并发版；消费方经客户端调命令，拿到的是类型化结果（[K6](/docs/criteria/k6)）。改命令形状要动 `contract`，破坏了旧形状还要抬 `minCompatible`，契约包的导出也在契约面里（[K8](/docs/criteria/k8)）。
+
+## 收尾
+
+bn-core 卸载时关库，冲刷落盘的 promise 从清理函数里交回；bn-comment 的登记随卸载自动摘；各件只读写自己的数据目录，bn-core 的库数据别的件经命令拿，不自己拼路径（[K7](/docs/criteria/k7)、[K4](/docs/criteria/k4)）。
+
+## 现状偏差
+
+待改：block-note 库声明了 `gwb.shared`；一族把 block-note、bn-core、commands 等写成 peer；契约比对要求完全相等且只警告、bn-papers 期望的版本已落后；bn-core 关库落盘的 promise 没交回；bn-single 自己拼路径读 bn-core 的数据目录；bn-papers 运行时 import 论文件的子路径。
