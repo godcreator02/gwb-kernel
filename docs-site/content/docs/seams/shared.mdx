@@ -49,7 +49,7 @@ function collectImports(deps: { dataDir: string; warn: (msg: string) => void }):
 
 内核每次推送都重新计算，而且从真实路径开始解析，所以提供方换了版本，下一次推送的表里就是新地址（[importmap 也会遇到 Node 解析缓存](/trajectory/2026-09-17-wall-importmap-resolver-cache)）。但页面上的 importmap 只注入一次：**整页重新加载**之后才用上新版本。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="206-211" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="205-210" */}
 
 ## 内核不管什么
 

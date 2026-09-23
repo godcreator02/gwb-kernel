@@ -47,7 +47,7 @@ interface GwbContext extends Context {
 3. loader 要 import 一个包名时，内核替它解析：先把 `<home>/node_modules/<包名>` 解析成磁盘上的真实路径，再按包的 `exports` 找到入口文件
 4. cordis 调用插件的 `apply(ctx)`（或实例化它的 `Service` 类）；`inject` 里的服务缺一个，插件就停在等待状态，补齐后自动加载
 
-{/* ref file="../apps/desktop/src/main.ts" lines="275-282" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="274-281" */}
 
 {/* ref file="../apps/desktop/src/bare-import.ts" lines="17-29" */}
 
@@ -78,7 +78,7 @@ interface GwbContext extends Context {
 - 要 home 路径只从 `gwbKernel.dataDir` 取，数据写在自己的目录里
 - 和别的插件只通过服务和命令交互
 
-{/* ref file="../apps/desktop/src/main.ts" lines="304-326" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="303-325" */}
 
 ## 内核不管什么
 
@@ -97,4 +97,4 @@ interface GwbContext extends Context {
 - 包名解析：`bare-import.ts`
 - 退出清理：`main.ts` 的 `will-quit`
 
-{/* ref file="../apps/desktop/src/main.ts" lines="223-237" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="222-236" */}

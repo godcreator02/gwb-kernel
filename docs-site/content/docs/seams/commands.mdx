@@ -37,12 +37,12 @@ interface GwbResult<T = unknown> { ok: boolean; data?: T; error?: string }
 ipcMain.handle('gwb:command', (_event, command, args) => {
   if (typeof command !== 'string') return { ok: false, error: '命令名要是字符串' }
   const bus = ctx.gwbCommands
-  if (bus === undefined) return { ok: false, error: `没有命令服务（ctx.gwbCommands），认不出 ${command}` }
+  if (bus === undefined) return { ok: false, error: `没有命令服务（ctx.gwbCommands），无法执行 ${command}` }
   return bus.run(command, args)
 })
 ```
 
-{/* ref file="../apps/desktop/src/main.ts" lines="239-245" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="238-244" */}
 
 ## 两边各保证什么
 
