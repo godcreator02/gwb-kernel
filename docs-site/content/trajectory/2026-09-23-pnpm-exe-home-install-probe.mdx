@@ -1,0 +1,37 @@
+---
+title: 实验结论——只带一个 pnpm.exe 就能装好新 home；插件管理依赖 @pnpm/exe.win32-x64 而不是 pnpm 包；包源照旧只配在用户级 .npmrc
+born-at: 2026-09-23T20:30
+type: evidence
+parent: [2026-09-23-platform-plugins-first-start-install]
+label: pnpm.exe 装新 home
+domain: 发版
+---
+
+## 背景
+
+上一张卡定了新 home 第一次启动时由内核用安装包自带的 pnpm 运行 `pnpm install`。动手前用
+`probes/2609231950_pnpm-exe-home-install/` 验证了四件事，原始输出在它的 `runs/` 下。
+
+同一轮里人对设计改了一处：「保持用户级 .npmrc」——模板不带 `.npmrc`，`@godcreator` 的包源照旧只配在用户级 `.npmrc`。
+
+## 结论与边界
+
+- 安装包里只放一个 `pnpm.exe` 就够：全新存储装两个插件 2.7 秒，本机已有存储 0.3 秒
+- 装到一半被强杀：`node_modules` 已建、两个包都缺，「列的包有缺」这个判据能发现，再运行一次 `pnpm install` 能补齐
+- 装完以后某个包的链接被删：普通 `pnpm install` 只说已是最新，补不回来；`--force` 能补，但它会连不符合本机平台的可选依赖一起装，
+  不放进启动路径。内核遇到这种情况只记日志
+- 插件管理直接依赖 `@pnpm/exe.win32-x64`：依赖 `pnpm` 包时，它的安装脚本被 pnpm 默认拦下，每次改 home 都以
+  `ERR_PNPM_IGNORED_BUILDS` 退出码 1 结束
+- 运行中的 `pnpm.exe` 升级、降级自己都不会被占用卡住：旧版本目录留在 `node_modules/.pnpm`，不需要另外复制一份再运行
+- 模板只有 `package.json` 与 `cordis.yml` 两个文件；包源与包龄豁免都在用户级配置里，`INSTALL.md` 配包源那一步保留
+
+## 否掉的候选
+
+- **模板带一份只写包源的 `.npmrc`**：新机器少配一步，但包源会有两处配置；人要求保持用户级 `.npmrc` 一处
+- **缺包时用 `pnpm install --force`**：能修链接被删的情况，代价是可能装上别的平台的二进制，而这种情况不是正常路径
+
+## 代价与遗留
+
+- `@pnpm/exe.win32-x64` 带平台名，将来支持别的平台时要按平台换依赖
+- 第一次运行时如果装的是 `pnpm` 包而不是可执行文件包，下载要两分多钟，这也是不用它的理由之一
+- 设计的其余各步见交接区[命令插件与插件管理随安装包预装](/spec/platform-plugins)

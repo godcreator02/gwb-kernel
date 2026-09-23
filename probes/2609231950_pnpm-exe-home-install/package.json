@@ -1,0 +1,8 @@
+{
+  "name": "probe-pnpm-exe-home-install",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@pnpm/exe.win32-x64": "12.4.2"
+  }
+}

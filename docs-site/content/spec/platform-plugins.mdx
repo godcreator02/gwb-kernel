@@ -8,11 +8,11 @@ docfirst: none
 
 ## 验收清单
 
-- [ ] 实验：只拷一个 `pnpm.exe` 能在新 home 里按模板装好；home 的 `.npmrc` 只写包源一行、用户级 `.npmrc` 没配时也能装；插件管理升级时连带升 pnpm 不会被锁住（下面「第 1 步」）
+- [x] 实验：只拷一个 `pnpm.exe` 能在新 home 里按模板装好；装到一半中断能补齐；插件管理升级时连带升 pnpm 不会被锁住（下面「第 1 步」）
 - [ ] 命令插件在内核仓 `plugins/commands/`，`pnpm check` 通过；基础插件仓不再有它
 - [ ] 插件管理依赖固定版本的 pnpm，删掉设置项 `pnpm-path` 与 PATH 查找
 - [ ] 内核仓有一份 home 模板，测试保证模板里两个插件的版本号与仓里两个包的版本号相同，内核自带的 pnpm 与插件管理依赖的 pnpm 版本相同
-- [ ] 装好 app、第一次启动一个全新的 home（机器上没装 pnpm、用户级 `.npmrc` 没配）：两个插件的条目都是 `ACTIVE`
+- [ ] 装好 app、第一次启动一个全新的 home（机器上没装 pnpm，用户级 `.npmrc` 照 `INSTALL.md` 配好了包源）：两个插件的条目都是 `ACTIVE`
 - [ ] 在这个 home 里：`package.json` 写的是版本号；`list`、`outdated`、`update-all`、`uninstall` 与别的插件表现一样
 - [ ] 第一次启动时断网：窗口照常打开、内核日志里有 pnpm 的报错；联网后再启动一次就装好
 - [ ] 已有的 home（default）启动时不运行 pnpm
@@ -28,25 +28,31 @@ docfirst: none
 
 内核今天在 home 缺 `package.json` 或 `cordis.yml` 时，各补一份最小的。改成：
 
-**一、新 home 从模板开始**。home 里没有 `package.json` 时算新 home：把安装包里模板目录的文件逐个复制进去，已有的文件不覆盖。模板有三个文件：
+**一、新 home 从模板开始**。home 里没有 `package.json` 时算新 home：把安装包里模板目录的文件逐个复制进去，已有的文件不覆盖。模板有两个文件：
 
 - `package.json`：`dependencies` 列两个插件的精确版本号
 - `cordis.yml`：两条条目，`commands` 与 `plugin-manager`
-- `.npmrc`：只有一行 `@godcreator:registry=<地址>`，不含 token。新机器不用先去改用户级 `.npmrc`
 
-插件名、版本号、包源地址都写在模板文件里，内核代码里没有。已有 `package.json` 的 home 一个文件都不补。
+插件名、版本号都写在模板文件里，内核代码里没有。已有 `package.json` 的 home 一个文件都不补。
+
+`@godcreator` 的包源照旧只配在用户级 `.npmrc`（`INSTALL.md` 第一步），模板不带 `.npmrc`：包源只有一处配置，所有 home 和所有 pnpm 读的都是它。没配就第一次启动时装不上，日志里是 pnpm 的 404，配好后再启动一次即可。
 
 **二、`package.json` 里列的包缺了，就运行一次 `pnpm install`**。在加载 `cordis.yml` 之前检查：`dependencies` 里每个包名在 `node_modules` 下有没有目录；有缺的，就用安装包自带的 pnpm 在 home 里运行 `pnpm install`，等它结束再加载。
 
 - 这条规则只看 `package.json` 和 `node_modules`，不认识任何插件。新 home 第一次启动一定会触发；装好之后不再触发；第一次断网装失败，下次启动因为包还缺着会再试
+- 装到一半被强杀的 home，这条规则能发现，再运行一次 `pnpm install` 能补齐（实验第三项）
 - 已有的 home 包都在，不触发。只拷了 `package.json`、没拷 `node_modules` 的 home，启动时会被补齐
+- 修不好的情况：装完以后有人手动删了某个包的目录，普通 `pnpm install` 只说「已是最新」（实验第二项）。每次启动会再运行一次（约 80 毫秒），日志里记下还缺哪些包；要修就删掉整个 `node_modules` 再启动。`pnpm install --force` 能修，但它会连不符合本机平台的可选依赖一起装，不放进每次启动都可能走到的路径
 - 启动 pnpm 的方式照插件管理的规矩：直接启动原生可执行文件，环境原样传下去、只去掉 `ELECTRON_RUN_AS_NODE`，不设超时。输出进内核日志；失败只记日志，照常加载，缺的条目报「找不到包」
 - 内核不给插件提供任何「装」的接口，pnpm 的路径也不告诉插件。这一点和 09-08 移除装机口时一样；改变的只是内核自己在启动时会运行一次 pnpm
 
 ## pnpm 有两份，版本相同
 
 - **内核那份**：安装包的资源目录里放 pnpm 本机平台的原生可执行文件（`resources/pnpm/pnpm.exe`，约 42 MB），只给上面第二件事用。从源码启动内核时，用内核仓依赖里的那份
-- **插件管理那份**：插件管理的 `dependencies` 写 `"pnpm": "<精确版本>"`，随它装进 home，插件管理从自己的依赖里找到它。这样插件管理不依赖内核告诉它 pnpm 在哪
+- **插件管理那份**：插件管理的 `dependencies` 写 `"@pnpm/exe.win32-x64": "<精确版本>"`，随它装进 home，插件管理从自己的依赖里找到它。这样插件管理不依赖内核告诉它 pnpm 在哪
+  - 不能写 `"pnpm"`：`pnpm` 包带安装脚本，pnpm 默认不运行依赖的安装脚本，每次改 home 都以 `ERR_PNPM_IGNORED_BUILDS` 退出码 1 结束（实验第四项）。`@pnpm/exe.win32-x64` 的包里只有一个 `pnpm.exe`，没有安装脚本
+  - 代价：包名带平台，将来支持别的平台时要按平台换
+  - 插件管理升级时连带升级这份 pnpm 不会被占用卡住：pnpm 只把链接换到新版本目录，旧目录和正在运行的那个文件留在原处（实验第四项）
 - 两份版本号由内核仓的测试保证相同
 
 ## 发版顺序
@@ -55,19 +61,14 @@ docfirst: none
 
 ## 分几步做
 
-1. **实验**：在 `probes/` 下建一个目录，逐条验证后记下原始输出，不通就回来改设计：
-   - 只把 `pnpm.exe` 一个文件拷到别处，能不能在一个只有模板三个文件的目录里完成 `pnpm install`
-   - 用户级 `.npmrc` 没有包源那一行时，home 里的 `.npmrc` 够不够
-   - `node_modules` 装到一半中断后，再运行一次 `pnpm install` 能不能补齐
-   - 插件管理从 home 里的 pnpm 运行 `pnpm add`、同时把 pnpm 自己升到新版本时，会不会因为正在运行的 `pnpm.exe` 被锁而失败
-2. **插件管理用固定版本的 pnpm**：`dependencies` 加 pnpm；查找只剩「从自己的依赖里找原生可执行文件」；删掉设置项 `pnpm-path`、PATH 查找与它们的测试；文档「找 pnpm 与运行 pnpm」一页跟着改
+1. **实验**（已做完）：`probes/2609231950_pnpm-exe-home-install/`，结论已写进上面各节
+2. **插件管理用固定版本的 pnpm**：`dependencies` 加 `@pnpm/exe.win32-x64`；查找只剩「从自己的依赖里找原生可执行文件」；删掉设置项 `pnpm-path`、PATH 查找与它们的测试；文档「找 pnpm 与运行 pnpm」一页跟着改
 3. **命令插件搬进内核仓**：源码、测试、说明书、文档原样搬到 `plugins/commands/`，包名不变；基础插件仓删掉它（先读那个仓的 AGENTS）。命令回执的外层类型挪回命令插件自己的包里，内核 `import type` 引它
 4. **内核**：模板目录进内核仓；`main.ts` 补 home 的那一段改成「新 home 复制模板」加「包缺了就运行 `pnpm install`」；两份版本号的测试。单元测试用临时目录与假的 pnpm
 5. **构建安装包**：electron-builder 把模板目录与 `pnpm.exe` 放进资源目录；装一次，按验收清单逐条验
-6. **文档与说明**：`INSTALL.md` 去掉「机器上装 pnpm 12」「配 `@godcreator` 包源」两条前提（新 home 已经带着），基础插件清单去掉这两个；安装包 SPEC 改「插件」「pnpm 来路」两行；现状区写清楚新 home 怎么来的；每步各写轨迹卡
+6. **文档与说明**：`INSTALL.md` 去掉「机器上装 pnpm 12」这条前提（配包源那一步保留），基础插件清单去掉这两个；安装包 SPEC 改「插件」「pnpm 来路」两行；现状区写清楚新 home 怎么来的；每步各写轨迹卡
 
 ## 还没定的
 
-- **pnpm 升级时被锁**：如果第 1 步证实会失败，候选是插件管理先把自己依赖里的 `pnpm.exe` 复制一份到 home 的 `.plugin-manager/` 再运行（这样运行的那份永远不在 `node_modules` 里）
 - **插件管理「不依赖数据插件、设置插件」做到哪一步**：显示名、id 归属是否挪进 home 的 `.plugin-manager/`。不影响本页各步，放在第 2 步之后单独定
 - **MCP 入口插件要不要也写进模板**：agent 要连上 MCP 入口才能调插件管理的命令，今天它靠 agent 照 `INSTALL.md` 装。本页先不包含它
