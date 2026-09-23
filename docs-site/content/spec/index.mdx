@@ -16,7 +16,7 @@ docfirst: none
 **进行中**：
 
 - [全生态机制定案](/spec/ecosystem-simplify)——按「运行时谁提供」写依赖、home 里只有插件、只由 plugin-manager 写 home，分四期
-- [命令插件与插件管理随安装包预装](/spec/platform-plugins)——新 home 第一次启动时由内核用自带的 pnpm 按模板装好这两个插件，之后和别的插件同一个机制；命令插件搬进内核仓
+- [命令插件与插件管理内置进内核](/spec/platform-plugins)——内核在加载 cordis.yml 之前直接加载这两个插件，随内核发版、不进 home；命令的类型挪进词汇表包；pnpm 只在安装包里放一份
 
 ## 什么样的工作才单独写成一页
 

@@ -1,0 +1,63 @@
+---
+title: 命令插件与插件管理内置进内核：内核在加载 cordis.yml 之前直接加载它们，随内核发版，不进 home
+born-at: 2026-09-23T19:20
+type: choice
+parent: [2026-09-23-platform-plugins-first-start-install, 2026-09-08-no-install-port, 2026-09-07-gwb-kernel]
+label: 核心插件内置
+domain: 内核
+---
+
+## 背景
+
+前面几张卡定了这两个插件「随安装包预装、和别的插件同一个机制」：新 home 从模板开始，第一次启动时内核运行一次
+`pnpm install` 把它们装进 home。第 3 步把命令插件搬进内核仓之后、动手改内核之前，人的原话：
+
+> 我现在意图直接把plugin-manager和gwb-command 内置kernel了得了，这俩插件太核心了，没有替换的必要
+
+讨论后人确认了四条（2026-09-23）。
+
+## 结论与边界
+
+- **形态**：两个插件的代码仍在 `plugins/commands`、`plugins/plugin-manager`，仍按 cordis 插件的写法写；内核在加载 `cordis.yml`
+  之前用 `ctx.plugin` 直接加载它们，从安装包里加载、不经 home。它们不在 `cordis.yml`、不在 home 的 `package.json` 里，
+  不能停用、卸载，随内核一起发版、一起升级（重装安装包、重启）
+- **插件管理拿条目树**：内核加载 include 之后用 `ctx.loader.resolve('home').subtree` 取到承载 `cordis.yml` 的那棵树，经 config
+  交给插件管理（实验 `probes/2609231905_kernel-passes-entry-tree/`）。插件管理不再有「自己那条条目」，处理自己的逻辑
+  （升级到自己时排最后、回执之后重新加载自己、删自己的条目）全部删掉
+- **可选服务名留在插件包里**：插件管理用到的数据、设置、说明书三个插件的服务（显示名、id 归属、登记说明书）仍在
+  `plugins/plugin-manager` 里用 `ctx.inject` 可选地取；`main.ts` 只认识这两个内置插件，不认识那三个服务名
+- **命令的类型**：`GwbCommands`、`GwbCommandDef` 挪进词汇表包 `@godcreator/gwb-plugin-api`，`GwbContext` 上 `gwbCommands` 和
+  `gwbKernel` 一样一定存在；`@godcreator/gwb-commands` 包停止发布。`GwbResult` 留在词汇表包
+- **pnpm**：只在安装包的资源目录里放一份 `pnpm.exe`，内置的插件管理用它；home 里不再有插件管理，也就没有
+  `@pnpm/exe.win32-x64` 这个依赖
+- **已有 home 的迁移**：内核不为这两个包名写特殊判断。实验 `probes/2609231919_duplicate-service-provider/` 确认：
+  同一个服务名第二次 provide 一律抛错、不覆盖。内置的先加载，所以已有 home 里残留的两条条目会加载失败（FAILED，日志里各一条
+  error 和一条 unhandledRejection），依赖这两个服务的插件照常拿到内置那份。工作台照常能用，迁移只是为了清掉这些报错：
+  `INSTALL.md` 的升级一节写一步手工清理——删掉 `cordis.yml` 里这两条条目，用安装包里的 pnpm 卸掉这两个包
+- **MCP 入口不内置**：它是给 agent 调命令的一个入口，可以替换，依赖也重；仍由 agent 照 `INSTALL.md` 装，装的时候用安装包里的 pnpm
+
+**这张卡改变了哪些已有决定**：
+
+- 准入判据（[这个内核的起点](/trajectory/2026-09-07-gwb-kernel)）：「只有第一个插件运行前必须做的事才进内核」扩成「以及没有它
+  工作台就无法操作的平台核心」。平台核心目前只有命令总线和插件管理两个，理由是它们没有替换的必要；再往里加要重新过这一条
+- 「内核不认识任何插件、服务、命令的名字」：内核自己提供 `gwbCommands` 与 `plugin-manager.*` 命令。`cordis.yml` 里的插件照旧不被内核认识
+- 09-08 [装机口移除](/trajectory/2026-09-08-no-install-port)的「内核不碰 pnpm」：插件管理进了内核，内核运行 pnpm。
+  那张卡删掉的「给插件用的装机接口」依然没有：装插件只经 `plugin-manager.*` 命令
+- 作废[预装插件不特殊](/trajectory/2026-09-23-platform-plugins-ordinary)与[首启由内核装](/trajectory/2026-09-23-platform-plugins-first-start-install)：
+  没有 home 模板，也没有第一次启动时的 `pnpm install`
+- [平台插件随安装包](/trajectory/2026-09-23-platform-plugins-in-installer)里「修它们要重打 exe，不能热升级」重新成立，而且是有意的
+
+## 否掉的候选
+
+- **预装成普通插件（上一张卡）**：能停用、卸载、单独热升级，但要 home 模板、第一次启动时联网装，插件管理还要处理
+  「升级到自己」「删了自己」这类情况。人判断这两个没有替换的必要，这些灵活性换不来什么
+- **把代码并进 `apps/desktop`，由根上下文直接提供服务**：内核本体就要认识数据、设置、说明书三个插件的服务名，
+  而且插件管理现有的测试要跟着改写
+
+## 代价与遗留
+
+- 这两个组件的任何修改都要发一版安装包、重启工作台才生效
+- 下游插件要把 `import type … from '@godcreator/gwb-commands'` 改成从词汇表包引用，并删掉它们自己对 `gwbCommands?` 的类型声明；
+  基础插件仓与界面插件仓都有，按「下游慢慢适配」处理
+- 内置插件必须在 `cordis.yml` 之前加载：顺序反过来的话，残留条目那份先生效，内置那份加载失败，而且之后条目删掉了它也不会自己补上
+- 交接页[随安装包预装](/spec/platform-plugins)按这张卡重写
