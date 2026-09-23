@@ -16,11 +16,11 @@ description: 连接内核应用与任何插件；接口是内核应用在 cordis
 
 `gwbKernel` 的四样：
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="15-28" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="16-29" */}
 
 插件的 `apply` 拿到的上下文类型 `GwbContext` 上只有 `gwbKernel` 这一个服务：
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="30-33" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="31-34" */}
 
 内核应用的实现就是一个对象，在根上下文上提供：
 
@@ -31,13 +31,13 @@ description: 连接内核应用与任何插件；接口是内核应用在 cordis
 - `emit(payload)`：往页面推一条事件，页面用 `window.gwb.on` 收，通道见 [IPC 通道](/docs/seams/ipc)
 - `setShell(url)`：把页面交给这个地址指向的模块，返回撤销函数；页面怎么接管见[外壳接管](/docs/seams/shell)
 
-{/* ref file="../apps/desktop/src/main.ts" lines="39-41" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="40-42" */}
 
-{/* ref file="../apps/desktop/src/main.ts" lines="23-24" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="24-25" */}
 
 内核应用在自己的代码里给 cordis 的 `Context` 写了类型声明：除了 `gwbKernel`，还写了一个可选的 `gwbCommands`，只声明转交命令用到的 `run`。没装命令插件、或它加载失败时，`gwbCommands` 不存在，内核应用转交命令前要判断这一点。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="26-33" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="27-34" */}
 
 ## 约定
 

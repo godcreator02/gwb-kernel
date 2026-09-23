@@ -57,6 +57,8 @@ const config = {
     { source: '/docs/seams/command-bus', destination: '/docs', permanent: false },
     { source: '/docs/seams/pnpm', destination: '/docs', permanent: false },
     { source: '/docs/seams/skills', destination: '/docs', permanent: false },
+    { source: '/spec/ecosystem-simplify', destination: '/spec', permanent: false },
+    { source: '/spec/platform-plugins', destination: '/spec', permanent: false },
     // 接缝图就是入口页
     { source: '/docs/map', destination: '/docs', permanent: false },
     { source: '/docs/seams', destination: '/docs', permanent: false },

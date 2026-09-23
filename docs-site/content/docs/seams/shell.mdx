@@ -33,9 +33,9 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 ```
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="23-27" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="24-28" */}
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="55-56" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="50-51" */}
 
 内核应用记下地址，每次变化都把整份当前状态推给页面；撤销函数只在自己仍是当前外壳时才清空：
 

@@ -9,7 +9,7 @@ description: 内核唯一的日志输出是 stderr 加 home 里的 gwb.log；文
 
 内核只有一个日志输出：每一行同时写 stderr 和 home 里的 `gwb.log`，一个插件都没有时人也看得见。一行的格式是 `<时间> <级别> <名字> <正文>`。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="58-85" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="59-85" */}
 
 没有终端时（stderr 的另一端断开）每写一次 stderr 都抛 EPIPE，内核忽略它，日志文件照常写。
 
