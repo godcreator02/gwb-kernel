@@ -20,6 +20,18 @@ description: 停用 → 等旧的卸载完 → 启用 → 等新的加载完，�
 
 {/* ref file="../plugins/plugin-manager/src/remount.ts" lines="52-60" */}
 
+**守住它的测试**：假的条目树测顺序与回执，真实的 loader 测最后回到 `ACTIVE`，另测等待到了时限就继续、状态名和内核一致。
+
+{/* has file="../plugins/plugin-manager/tests/remount.test.ts" text="停用再启用，回 remounted 和重新加载后的状态" */}
+
+{/* has file="../plugins/plugin-manager/tests/remount.test.ts" text="原本停用的条目：最后是启用的" */}
+
+{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="永远不结束的 await：到了时限就继续" */}
+
+{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="停用再启用会重新加载，最后是 ACTIVE" */}
+
+{/* has file="../plugins/plugin-manager/tests/fiber-state.test.ts" text="两份状态名表完全相同" */}
+
 ## 目标是插件管理自己：回执之后再动
 
 **是什么**：`remount` 的目标是插件管理自己时，先返回回执（`action: 'deferred'`，`state` 是动手前的状态），下一个宏任务才重新加载；热升级里升到了插件管理自己，也是这样排在最后。
@@ -29,6 +41,10 @@ description: 停用 → 等旧的卸载完 → 启用 → 等新的加载完，�
 **怎么做**：把重新加载排到下一个宏任务，那时命令的应答早已发出。这段代码运行时插件管理原来的实例已经卸载，ctx 上什么都不能用（取服务会报 inactive context），所以它只持有事先拿到的条目树、id 与 logger；热升级那次另外持有命令插件的引用，重新加载完调用 `shell.reload`。之后用 `plugin-manager.list` 核对 `active`，不会有第二份回执。
 
 {/* ref file="../plugins/plugin-manager/src/remount.ts" lines="74-96" */}
+
+**守住它的测试**：先回 `deferred`、条目树一下都没动；排到的那一个任务执行后，才停用再启用、记下「重新加载了」。
+
+{/* ref file="../plugins/plugin-manager/tests/remount.test.ts" lines="99-113" */}
 
 **例外**：插件卸载时要清理掉自己启动的一切，内核退出时等的就是这些清理。这段在插件自己卸载之后才运行的代码是允许的例外，条件就是上面这条：只持有条目树与 logger，不碰 ctx。
 
@@ -42,8 +58,6 @@ description: 停用 → 等旧的卸载完 → 启用 → 等新的加载完，�
 目标是命令插件或插件管理自己时，条目会停在停用状态，没有命令能把它启用回来，只能手工改 `cordis.yml` 再重启。
 </Callout>
 
-## 怎么单独测
+**守住它的测试**：假的命令插件在停用时撤掉全部命令，这条 `await` 链照样把启用做完。
 
-- `tests/remount.test.ts`：停用再启用的时序（假的条目树）；目标是自己时当下回 `deferred`、下一个宏任务才重新加载
-- `tests/loader.test.ts`：用真实的 loader 停用再启用一条条目，回到 `ACTIVE`
-- `tests/fiber-state.test.ts`：回执里的状态名和内核只读状态页用的那份一致
+{/* has file="../plugins/plugin-manager/tests/remount.test.ts" text="命令插件停用时全部命令都撤掉（包括 remount），这条 await 链照样做完，条目回到启用" */}

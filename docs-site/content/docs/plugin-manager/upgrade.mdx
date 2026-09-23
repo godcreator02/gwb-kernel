@@ -11,6 +11,12 @@ description: outdated 查过期包；update-all 一次 pnpm add 精确版本，�
 
 **怎么做**：退出码 1 表示「有过期包」，是结果不是失败；找不到 pnpm、输出解析不了都转成 `ok: false` 的回执，界面上只显示一句提示。它只读不写，不过 BUSY，但 pnpm 照样排进串行队列（见[唯一写入者](/docs/plugin-manager/home#同一时刻只允许一个改动busy)）。
 
+**守住它的测试**：
+
+{/* has file="../plugins/plugin-manager/tests/outdated.test.ts" text="空串是「全都最新」，不是失败" */}
+
+{/* has file="../plugins/plugin-manager/tests/outdated.test.ts" text="单条缺 current 或 latest 只跳过那一条，其余照收" */}
+
 ## 升级与重新加载在同一条命令里
 
 **是什么**：`update-all` 一条命令做完：一次 `pnpm add` 把过期包升到精确版本 → 逐条重新加载 → 整页重新加载。只升某几个包也用它，给 `only`；没有「只升包、不重新加载」的命令。
@@ -24,6 +30,8 @@ description: outdated 查过期包；update-all 一次 pnpm add 精确版本，�
 
 **例外**：命令本该保持原子、一条只做一件事，多步流程写进说明书由调用方一步步调。`update-all` 是允许的例外：升级与重新加载都依赖「这次升级之前磁盘上是哪个版本」，拆开就有上图那段空档。`pnpm add` 失败时一条条目都不动。
 
+这一条只能实机验证：在隔离 home 里先装某个包的旧版本，再调 `plugin-manager.update-all`，看条目回到 `ACTIVE`、日志里没有读不到文件的报错。
+
 ## 升级计划
 
 **是什么**：升哪些包、重新加载哪些条目、谁排最后，由一个纯函数算出，单独测。
@@ -35,6 +43,16 @@ description: outdated 查过期包；update-all 一次 pnpm add 精确版本，�
 - 本来就停用的条目保持停用，记为 `skipped`
 - 插件管理自己那条排在它的包里最后，它的包排在所有包最后（理由见[回执之后再动](/docs/plugin-manager/remount#目标是插件管理自己回执之后再动)）
 - 给了 `only` 就只升点名的几个；点了名却不在过期清单里的，回执的 `note` 里列出来
+
+**守住它的测试**：计划是纯函数，每一条都有测试。排序这条最能说明规则：
+
+{/* ref file="../plugins/plugin-manager/tests/update-all.test.ts" lines="63-73" */}
+
+{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="pnpm 参数是一次 add，每个包用 outdated 查到的版本号，不用 @latest 标签" */}
+
+{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="停用的条目带 disabled——执行时保持停用，不重新加载" */}
+
+{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="只升点了名的；点了名却不在过期清单里的进 ignored，不进 pnpm 参数" */}
 
 ## 一次热升级依次发生什么
 
@@ -50,9 +68,3 @@ description: outdated 查过期包；update-all 一次 pnpm add 精确版本，�
 **整页重新加载**：经命令插件调用外壳的 `shell.reload`，按命令名查找，不 import 外壳。回执的 `reload`：`done` 已经重新加载；`deferred` 等插件管理自己重新加载完再做；`unavailable` 命令表里没有它或它失败了，界面要手动刷新，原因在 `note` 里。
 
 {/* ref file="../plugins/plugin-manager/src/index.ts" lines="123-141" */}
-
-## 怎么单独测
-
-- `tests/outdated.test.ts`：`pnpm outdated` 输出的解析，空输出、格式变了、单条缺字段
-- `tests/update-all.test.ts`：计划——精确版本、自己最后、停用的保持停用、分组条目不算、`only` 的过滤
-- 整条热升级只能实机验证：在隔离 home 里先装某个包的旧版本，再调 `plugin-manager.update-all`

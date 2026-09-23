@@ -24,6 +24,14 @@ description: install 在一条命令里装包并加一条条目，只等写入�
 - 同一个包 install 两次会得到两条条目（第二条的 id 带数字后缀）：一个包对应几条条目本来就合法，不替调用方猜「是不是装过了」
 - 只给已装的包再加一条条目，用 `add-entry`
 
+**守住它的测试**：参数校验与失败回执有单元测试；整条安装只能实机验证（`devkit.dev` 装进隔离 home 后调 `plugin-manager.install`）。
+
+{/* has file="../plugins/plugin-manager/tests/ids.test.ts" text="以 - 开头的包名不认——pnpm 会把它当成命令行选项" */}
+
+{/* has file="../plugins/plugin-manager/tests/ids.test.ts" text="拼出 pnpm add 的参数" */}
+
+{/* has file="../plugins/plugin-manager/tests/pnpm.test.ts" text="退出码与输出的最后几行" */}
+
 ## 建条目只等写入、不等加载
 
 **是什么**：第 3 步只等条目写进 `cordis.yml` 就返回回执，不等插件加载完。加载成功没有，看 `list` 里的 `active`；失败原因在日志里。
@@ -33,6 +41,8 @@ description: install 在一条命令里装包并加一条条目，只等写入�
 **怎么做**：写回 `cordis.yml` 在 `create` 的第一个 `await` 之前就同步安排好了，所以不 `await` 也不影响写入；加载失败只记一条 warn。
 
 {/* ref file="../plugins/plugin-manager/src/index.ts" lines="708-711" */}
+
+这一条没有单元测试：要验证，就在隔离 home 里装一个依赖还没装齐的插件，看命令是否照常返回回执、`list` 里是否显示未加载。
 
 ## home 里只有插件
 
@@ -70,10 +80,8 @@ description: install 在一条命令里装包并加一条条目，只等写入�
 
 只删一条条目、保留包，用 `remove-entry`。
 
-## 怎么单独测
+**守住它的测试**：删哪些条目有单元测试；删条目与 pnpm 两步的顺序只能实机验证。
 
-- `tests/ids.test.ts`：包名、版本范围的校验与 `pnpm add` 参数
-- `tests/uninstall.test.ts`：卸载删哪些条目
-- `tests/pnpm.test.ts`：pnpm 失败时回执里的 `error` 与最后几行
-- `tests/artifact.test.ts`：插件管理自己的构建产物里没有别的包名 import——它自己也守「home 里只有插件」这条
-- 整条安装、卸载只能实机验证：`devkit.dev` 把开发版装进隔离 home，再调 `plugin-manager.install` / `uninstall`
+{/* has file="../plugins/plugin-manager/tests/uninstall.test.ts" text="同一个包的多条条目全部删——漏一条就留下一条指向没装的包的条目" */}
+
+{/* has file="../plugins/plugin-manager/tests/uninstall.test.ts" text="停用的、没加载成功的条目也一起删" */}

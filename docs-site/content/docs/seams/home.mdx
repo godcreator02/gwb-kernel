@@ -41,7 +41,17 @@ plugin-manager 保证：
 
 ## 怎么单独测
 
-`tests/loader.test.ts` 用内核实际使用的 loader 与 include 版本，照 `main.ts` 的顺序搭一个 home，把上面这份约定跑一遍：取条目树与自己的 entryId、`create` / `update` / `remove` 写回 `cordis.yml`、停用再启用后 `ACTIVE`；另断言这几个版本和 `apps/desktop` 一致。其余测试见[插件管理](/docs/plugin-manager#怎么测)。
+`plugins/plugin-manager/tests/loader.test.ts` 用内核实际使用的 loader 与 include 版本，照 `main.ts` 的顺序搭一个 home，把上面这份约定跑一遍；内核升级这两个包、改了条目树的结构，它先失败：
+
+{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="plugin-loader、plugin-include、cordis 的版本与 apps/desktop 写的完全相同" */}
+
+{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="从插件自己的上下文取到条目树与自己的 entryId" */}
+
+{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="create、update、remove 改的是内存里的条目，也写回 cordis.yml" */}
+
+{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="停用再启用会重新加载，最后是 ACTIVE" */}
+
+其余测试见[插件管理](/docs/plugin-manager#怎么测)。
 
 ## 代码从哪读
 

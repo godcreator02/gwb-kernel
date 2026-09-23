@@ -27,6 +27,16 @@ description: 只用 pnpm 12 起的原生可执行文件，设置项 pnpm-path �
 - 设置项按 home 保存：换一个 home 要重填一次
 - 查找是纯逻辑，磁盘上的信息由调用方传进三个函数（这个路径是文件还是目录、真实路径、pnpm 包的版本号），所以能用假的目录布局测各个平台
 
+**守住它的测试**：各平台的目录布局与设置项的几种写法都有测试，下面是和规则直接相关的几条。
+
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="填了设置项就不再回退 PATH——填错了要立即看到，而不是悄悄用了另一个" */}
+
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="从垫片推出原生 pnpm.exe" */}
+
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="第一个垫片推不出 pnpm 包时接着往后找——corepack、volta 的垫片不是这种布局" */}
+
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="版本低于 12 明确报错、说清要装 12 以上，不试着运行" */}
+
 ## 直接启动、不设超时
 
 **是什么**：直接启动找到的那个文件，环境变量原样传下去，不设超时。
@@ -37,6 +47,12 @@ description: 只用 pnpm 12 起的原生可执行文件，设置项 pnpm-path �
 
 **怎么做**：改 home 的那几次（`add` / `remove`）成功时不保留输出（几十行进度没人看），失败时回执带 stdout 与 stderr 合起来的最后 12 行——pnpm 把原因写在最后。`outdated` 要读 stdout 上的 JSON，用另一个函数完整保留 stdout；两边对输出的取舍相反，所以不合成一个。
 
+**守住它的测试**：启动参数与环境、输出只留最后几行有单元测试；真正启动进程、收集输出只能实机验证（`devkit.dev` 装进隔离 home 后调 `plugin-manager.install` / `outdated`）。
+
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="直接启动可执行文件，环境原样传下去，只去掉 ELECTRON_RUN_AS_NODE" */}
+
+{/* has file="../plugins/plugin-manager/tests/pnpm.test.ts" text="只留最后几行，去掉首尾空行" */}
+
 ## 卸载时不结束 pnpm
 
 **是什么**：插件管理卸载时（包括内核退出），正在运行的 pnpm 不结束，让它跑完。
@@ -44,9 +60,3 @@ description: 只用 pnpm 12 起的原生可执行文件，设置项 pnpm-path �
 **为什么**：pnpm 正在改 home 的 `package.json` 与 `node_modules`，中途结束会留下装了一半的 home，比让它跑完更难收拾；它跑完之后回执没人接，改动照样生效。
 
 **例外**：插件启动的子进程，卸载时本该杀掉整棵进程树、等它真正退出。这是允许的例外，理由写在 `runPnpm` 的注释里——例外都要在代码里写明。
-
-## 怎么单独测
-
-- `tests/pnpm-path.test.ts`：各平台的目录布局——原生可执行文件、垫片、npm 全局布局、设置项的几种写法、版本太低、PATH 上几处都不行时的报错
-- `tests/pnpm.test.ts`：失败时回执里的 `error` 与最后几行
-- 启动进程与收集输出没有单元测试，靠实机：`devkit.dev` 装进隔离 home 后调 `plugin-manager.install` / `outdated`

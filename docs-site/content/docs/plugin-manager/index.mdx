@@ -72,11 +72,14 @@ description: plugin-manager 是唯一写 home 的插件——装卸包、增删�
 
 ## 怎么测
 
-- 单元测试：除 `index.ts`、`vocab.ts` 外，每个文件都有同名的 `tests/<文件名>.test.ts`，传入构造的数据或临时目录
-- `tests/loader.test.ts`：用内核实际使用的 loader 与 include 版本搭一个 home，跑取条目树、`create` / `update` / `remove` 写回 `cordis.yml`、停用再启用后 `ACTIVE`；另断言这几个版本和 `apps/desktop` 一致
-- `tests/fiber-state.test.ts`：条目状态名和内核只读状态页用的那份一致
-- `tests/self-report.test.ts`、`tests/artifact.test.ts`：清单自述与构建产物的检查
-- 安装、热升级的整条路径只能实机验证：`devkit.dev` 把开发版装进隔离 home，再调命令
+每个机制由哪几条测试守着，写在各机制页的「守住它的测试」里。这里只讲测试放在哪、怎么跑。
+
+{/* tree dir="../plugins/plugin-manager/tests" depth="1" */}
+
+- 在仓根运行 `pnpm check`：构建词汇表包，再对全仓做类型检查、lint 和测试。插件管理的测试和内核的一起跑
+- 除 `index.ts`、`vocab.ts` 外，每个源码文件都有同名的测试文件，传入构造的数据或临时目录，不需要 electron
+- `loader.test.ts` 用内核实际使用的 loader 与 include 版本搭一个 home，内核升级这两个包时它先失败；`fiber-state.test.ts` 核对条目状态名和内核的一致
+- 串行队列、建条目不等加载、卸载顺序、转归属、真正启动 pnpm 这些没有单元测试，只能实机验证：`devkit.dev` 把开发版装进隔离 home，再用 `devkit.cdp` 调命令
 
 ## 代码从哪读
 

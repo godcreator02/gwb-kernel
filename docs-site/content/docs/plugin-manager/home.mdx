@@ -22,6 +22,16 @@ home 里的插件分两层：**包**是 pnpm 装进 `package.json` 与 `node_mod
 
 {/* ref file="../plugins/plugin-manager/src/inventory.ts" lines="103-130" */}
 
+**守住它的测试**：
+
+{/* has file="../plugins/plugin-manager/tests/inventory.test.ts" text="装了包但一条条目都没有：如实报 0 条，不推断原因" */}
+
+{/* has file="../plugins/plugin-manager/tests/inventory.test.ts" text="条目指向一个没装的包：报 installed false，不丢掉" */}
+
+{/* has file="../plugins/plugin-manager/tests/inventory.test.ts" text="是否加载成功看的是 fiber 的状态，不是 fiber 在不在" */}
+
+{/* has file="../plugins/plugin-manager/tests/home.test.ts" text="读得出 dependencies；清单不在、坏了都当空表" */}
+
 ## 只有插件管理写 home
 
 改这两层的只有插件管理，而且各只有一条路：**包只经 `applyToHome` 运行 pnpm，条目只经 loader 的条目树**。
@@ -34,11 +44,17 @@ home 里的插件分两层：**包**是 pnpm 装进 `package.json` 与 `node_mod
 
 {/* ref file="../plugins/plugin-manager/src/index.ts" lines="726-733" */}
 
+串行队列写在 `index.ts` 里，没有单元测试；它是否起作用，只能在隔离 home 里连着发几次安装、升级来看。
+
 ### 条目：只经 loader 的条目树
 
 **怎么做**：条目的增删改只用条目树的 `create` / `update` / `remove`——它们把写回 `cordis.yml` 与当场加载、卸载一起做。启用传 `{ disabled: null }`（loader 把 null 当作删掉这个字段），停用传 `{ disabled: true }`；`remove-entry` 只删条目，包留在 home 里。条目树从哪来、有哪几个方法，是内核和插件管理之间的约定，见[home 与插件管理](/docs/seams/home#接口)。
 
 {/* ref file="../plugins/plugin-manager/src/index.ts" lines="617-628" */}
+
+**守住它的测试**：用内核实际使用的 loader 与 include 版本跑一遍条目树。
+
+{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="create、update、remove 改的是内存里的条目，也写回 cordis.yml" */}
 
 <Callout type="warn" title="别直接写 cordis.yml">
 绕过条目树改文件，内存里的条目不知道：改动要等下次重启才生效，而且中间任何一次写回都会用内存里的旧内容把它覆盖掉。
@@ -52,16 +68,15 @@ home 里的插件分两层：**包**是 pnpm 装进 `package.json` 与 `node_mod
 
 {/* ref file="../plugins/plugin-manager/src/busy.ts" lines="7-22" */}
 
+**守住它的测试**：
+
+{/* has file="../plugins/plugin-manager/tests/busy.test.ts" text="有改动在运行时重入回 BUSY，不执行" */}
+
+{/* has file="../plugins/plugin-manager/tests/busy.test.ts" text="执行中抛错也释放标志，下一次能执行" */}
+
 <Diagram name="pm-busy" title="两道关：改动命令过 BUSY，所有 pnpm 过串行队列">
 - 命令 A（`install`）通过 BUSY 检查、占住标志，它的 `pnpm add` 进队列开始运行
 - 命令 B（`uninstall`）进来时标志被占着，不排队，马上得到 `{ ok: false, error: "BUSY…" }`
 - 命令 C（`outdated`）只读，不经过 BUSY，但它的 `pnpm outdated` 排在 A 后面等
 - A 返回回执时释放标志（抛错也会释放），队列里 C 的 pnpm 开始运行
 </Diagram>
-
-## 怎么单独测
-
-- `tests/inventory.test.ts`：`list` 两边都不丢、`active` 按状态判断、分组条目标出来
-- `tests/home.test.ts`：读 home 的 `package.json`，清单不在、坏了都当空表
-- `tests/busy.test.ts`：重入返回 BUSY；运行中抛错也会释放
-- `tests/loader.test.ts`：用真实的 loader 跑 `create` / `update` / `remove`，确认写回了 `cordis.yml`

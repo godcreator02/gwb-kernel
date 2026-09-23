@@ -36,6 +36,14 @@ description: 12 条命令是插件管理唯一的调用方式；服务 gwbPlugin
 
 {/* ref file="../plugins/plugin-manager/src/index.ts" lines="183-188" */}
 
+**守住它的测试**：插件管理只取 cordis、词汇表包和四个可选插件的类型，构建产物里一个包名 import 都不该有；注入的四个服务名要在文档里写到。
+
+{/* has file="../plugins/plugin-manager/tests/artifact.test.ts" text="除了 node 内置模块，一个包名 import 都没有" */}
+
+{/* has file="../plugins/plugin-manager/tests/self-report.test.ts" text="registerSelfReportGuard" */}
+
+命令实际注册上、调得通，只能实机验证：`devkit.dev` 装进隔离 home 后，用 `devkit.cdp` 调命令。
+
 <Diagram name="pm-commands" title="页面、agent、别的插件都经命令调用；别的插件只 inject 这个服务来跟着它加载、卸载">
 - 三类调用方——插件管理窗格、经 MCP 入口的 agent、主进程里的别的插件——都经命令插件按名字调用 `plugin-manager.*`
 - 插件管理里是 12 条命令，改动命令都过同一道 BUSY 检查
@@ -61,9 +69,3 @@ description: 12 条命令是插件管理唯一的调用方式；服务 gwbPlugin
 **为什么**：下游（插件管理窗格、别的插件、agent 的说明书）按命令名与回执形状写死了调用；x 变了，它们写的版本范围就不再匹配，要各自确认、适配后再升。`contract` 让 inject 了服务的插件在运行时也能看出插件管理换了一代。
 
 **怎么做**：升版本号、发版照 devkit 的说明书 `gwb-release` 做。删掉 `update`、`shared` 与服务上的方法就是一次 x。
-
-## 怎么单独测
-
-- `tests/artifact.test.ts`：构建产物里除了 node 内置模块，没有别的包名 import——cordis、词汇表包、四个可选插件都只取类型
-- `tests/self-report.test.ts`：清单自述与文档一致（注入的服务名要在文档里出现）
-- 命令的实际注册与调用只能实机验证：`devkit.dev` 装进隔离 home 后，用 `devkit.cdp` 调命令

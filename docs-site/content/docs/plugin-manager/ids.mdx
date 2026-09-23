@@ -17,6 +17,12 @@ description: 条目 id 是身份，一经确定不改；选 id 时看数据插�
 - 默认 id 是包名去掉 scope 与 `gwb-` 前缀：`@godcreator/gwb-py-cli` → `py-cli`；重名时加数字后缀 `py-cli-2`
 - 一定显式给 loader 传 id：不给的话 loader 每次启动生成一个新的随机 id，设置与数据每启动一次就新建一份
 
+**守住它的测试**：
+
+{/* has file="../plugins/plugin-manager/tests/ids.test.ts" text="和 gwb-data、gwb-settings 的校验是同一套——生成的 id 在那边要存得下数据" */}
+
+{/* has file="../plugins/plugin-manager/tests/ids.test.ts" text="去掉 scope 与 gwb- 前缀" */}
+
 ## 选 id 时看磁盘上的归属记录
 
 **是什么**：数据插件、设置插件都记录了每个 id 属于哪个包，删了条目也还在。插件管理选 id（`install`、不给 id 的 `add-entry`）时把这份记录和条目树一起看。
@@ -38,6 +44,14 @@ description: 条目 id 是身份，一经确定不改；选 id 时看数据插�
 - 同一个包装两次：`py-cli` 属于本包但正被占着，不能沿用，拿到 `py-cli-2`
 </Diagram>
 
+**守住它的测试**：选 id 是纯函数，上图的每个例子都有对应的测试。前三条最能说明规则：
+
+{/* ref file="../plugins/plugin-manager/tests/ids.test.ts" lines="105-123" */}
+
+{/* has file="../plugins/plugin-manager/tests/ids.test.ts" text="条目树上正被占着的不沿用——那是同一个包正在用的另一条条目" */}
+
+{/* has file="../plugins/plugin-manager/tests/ids.test.ts" text="磁盘上属于别的包：拒绝，错误里写明属于谁与 transfer-owner" */}
+
 ## 转归属：transfer-owner
 
 **是什么**：同一个插件改了包名、要继续用旧数据时，用 `transfer-owner`（`{ id, pkg }`）把这个 id 的数据目录与设置分区一起转给新包名，再 `remount` 那条条目。
@@ -52,6 +66,8 @@ description: 条目 id 是身份，一经确定不改；选 id 时看数据插�
 那等于把前一个包的数据与设置交给另一个插件。不是同一个插件就换一个 id：`remove-entry` 之后带 `id` 调 `add-entry`。
 </Callout>
 
+转归属没有单元测试：它只是依次调两个插件的服务，要在隔离 home 里装上数据插件、设置插件后调 `transfer-owner` 验证。
+
 ## 显示名存在自己的数据里
 
 **是什么**：`set-label` 给条目起一个给人看的名字（中文也行），空字符串是清除；`list` 里带出来。
@@ -60,8 +76,6 @@ description: 条目 id 是身份，一经确定不改；选 id 时看数据插�
 
 **怎么做**：经数据插件读写一份「id → 显示名」的文档，内存里那份为准；第一次读完之前的改名会等它读完，免得被读回来的旧内容覆盖。没装数据插件时 `set-label` 返回 `ok: false`，界面只显示 id。
 
-## 怎么单独测
+**守住它的测试**：
 
-- `tests/ids.test.ts`：id 字符集、默认 id、后缀、沿用旧 id、避开别的包、手动给的 id 被拒
-- `tests/inventory.test.ts`：显示名文档格式不对的项丢掉，不作废整份
-- 转归属与显示名要实机验证：隔离 home 里装上数据插件、设置插件后调 `transfer-owner`、`set-label`
+{/* has file="../plugins/plugin-manager/tests/inventory.test.ts" text="格式不对的项丢掉，不作废整份" */}
