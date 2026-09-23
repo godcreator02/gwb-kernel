@@ -3,7 +3,7 @@ title: 找 pnpm 与运行 pnpm
 description: 用内核经 config 交来的那份 pnpm（安装包里固定版本的原生可执行文件），不看设置、不看 PATH；直接启动那个文件、环境原样传下去、不设超时；卸载时不结束正在运行的 pnpm
 ---
 
-**本页回答**：插件管理用的是哪个 pnpm、从哪来；怎么启动它、输出怎么收；卸载时正在运行的 pnpm 为什么不结束。pnpm 什么时候运行、为什么排队，见[唯一写入者](/docs/plugin-manager/home#包只经-applytohome排进一个串行队列)。
+**本页回答**：插件管理用的是哪个 pnpm、从哪来；怎么启动它、输出怎么收集；卸载时正在运行的 pnpm 为什么不结束。pnpm 什么时候运行、为什么排队，见[唯一写入者](/docs/plugin-manager/home#包只经-applytohome排进一个串行队列)。
 
 ## 用内核交来的那份 pnpm
 
@@ -40,11 +40,11 @@ description: 用内核经 config 交来的那份 pnpm（安装包里固定版本
 
 **为什么**：
 - 环境原样传下去，用户的 `~/.npmrc`、pnpm 配置（`@godcreator` 的包源、包龄豁免）照常读到；只去掉 `ELECTRON_RUN_AS_NODE`——它只对 electron 有意义，留着会传给 pnpm 启动的依赖构建脚本
-- 装一个大包本来就可能要几分钟，定一个时限只会在慢网络上误杀正常的安装；网络层的超时 pnpm 自己有。真卡住了，由人去结束进程
+- 装一个大包本来就可能要几分钟，定一个时限只会在慢网络上错误地结束正常的安装；网络层的超时 pnpm 自己有。真卡住了，由人去结束进程
 
 **怎么做**：改 home 的那几次（`add` / `remove`）成功时不保留输出（几十行进度没人看），失败时回执带 stdout 与 stderr 合起来的最后 12 行——pnpm 把原因写在最后。`outdated` 要读 stdout 上的 JSON，用另一个函数完整保留 stdout；两边对输出的取舍相反，所以不合成一个。
 
-**守住它的测试**：启动参数与环境、输出只留最后几行有单元测试；真正启动进程、收集输出只能实机验证（`devkit.dev` 装进隔离 home 后调 `plugin-manager.install` / `outdated`）。
+**守住它的测试**：启动参数与环境、输出只留最后几行有单元测试；真正启动进程、收集输出只能实机验证（从源码启动内核、用隔离 home，调 `plugin-manager.install` / `outdated`）。
 
 {/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="只去掉 ELECTRON_RUN_AS_NODE" */}
 
@@ -52,8 +52,8 @@ description: 用内核经 config 交来的那份 pnpm（安装包里固定版本
 
 ## 卸载时不结束 pnpm
 
-**是什么**：插件管理卸载时（包括内核退出），正在运行的 pnpm 不结束，让它跑完。
+**是什么**：插件管理卸载时（它内置在内核里，只在内核退出时卸载），正在运行的 pnpm 不结束，让它运行完。
 
-**为什么**：pnpm 正在改 home 的 `package.json` 与 `node_modules`，中途结束会留下装了一半的 home，比让它跑完更难收拾；它跑完之后回执没人接，改动照样生效。
+**为什么**：pnpm 正在改 home 的 `package.json` 与 `node_modules`，中途结束会留下装了一半的 home，比让它运行完更难收拾；它运行完之后回执没人接收，改动照样生效。
 
 **例外**：插件启动的子进程，卸载时本该杀掉整棵进程树、等它真正退出。这是允许的例外，理由写在 `runPnpm` 的注释里——例外都要在代码里写明。

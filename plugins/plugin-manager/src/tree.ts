@@ -1,6 +1,3 @@
-import type { GwbContext } from '@godcreator/gwb-plugin-api'
-// 只取类型：loader 的 EntryTree，以及它给 cordis 的 Fiber 补上的 entry 字段。产物里没有这个包名，d.ts 里也没有
-import type { EntryTree } from '@cordisjs/plugin-loader'
 import { isRecord } from './vocab.js'
 
 /**
@@ -17,8 +14,8 @@ import { isRecord } from './vocab.js'
  */
 
 /**
- * loader 的 `EntryTree` 收窄到用得着的那几样。`treeOf` 里把 loader 的树直接赋给它：loader 改了这几个
- * 方法的签名，类型检查就在那里失败。对外的类型只用这份收窄，使用方不需要装 loader
+ * loader 的 `EntryTree` 收窄到用得着的那几样。内核取 `ctx.loader.resolve('home').subtree` 经 config 交来，
+ * 交来的就是 loader 的那棵树。对外的类型只用这份收窄，使用方不需要装 loader
  */
 export interface EntryTreeLike {
   /** 不带前缀的 id → Entry 的表，不分层。同一棵树里的分组也在这张表上，没有嵌套 */
@@ -36,7 +33,7 @@ export interface EntryTreeLike {
 /** 那四个方法都在才算一棵树。少一个就立即说清楚——比后面某一步莫名其妙地失败好排查 */
 export function asTree(candidate: unknown): EntryTreeLike {
   if (!isRecord(candidate)) {
-    throw new Error('取不到承载 cordis.yml 的条目树——这个插件只能通过 cordis.yml 里的条目加载，不能被别的插件直接 ctx.plugin 加载。')
+    throw new Error('内核没有经 config.tree 交来承载 cordis.yml 的条目树——这个插件由内核在加载 cordis.yml 之前直接加载，树由内核交给它。')
   }
   for (const key of ['create', 'remove', 'update', 'resolve']) {
     if (typeof candidate[key] !== 'function') {
@@ -44,29 +41,4 @@ export function asTree(candidate: unknown): EntryTreeLike {
     }
   }
   return candidate as unknown as EntryTreeLike
-}
-
-/**
- * 本插件所在的那棵树。
- *
- * `ctx.fiber.entry.parent` 是 `EntryGroup`，它的 `tree` 就是承载 `cordis.yml` 的那个
- * Include 实例。**这么取不需要硬编码**——不用知道内核那条 include 条目叫 `home`
- * （那是内核的 `ENTRY_ROOT` 常量，插件不该依赖它）。
- *
- * **在构造时取**：那时 `this.ctx` 还是提供方自己的；方法里的 `this.ctx` 是调用方的，
- * 从那里取会拿到别人的条目。
- */
-export function treeOf(ctx: GwbContext): EntryTreeLike {
-  const tree: EntryTree | undefined = ctx.fiber.entry?.parent.tree
-  const narrowed: EntryTreeLike | undefined = tree
-  return asTree(narrowed)
-}
-
-/** 本插件自己那条条目的完整 id。取不到就抛——身份取不到的话后面每一步都没有依据 */
-export function ownEntryId(ctx: GwbContext): string {
-  const id = ctx.fiber.entry?.id
-  if (id === undefined || id === '') {
-    throw new Error('取不到自己那条条目的 id——这个插件只能通过 cordis.yml 里的条目加载。')
-  }
-  return id
 }

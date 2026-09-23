@@ -1,4 +1,4 @@
-import { bareId, installSpec } from './ids.js'
+import { installSpec } from './ids.js'
 import { readEntries } from './inventory.js'
 import type { OutdatedMap } from './outdated.js'
 
@@ -11,13 +11,9 @@ import type { OutdatedMap } from './outdated.js'
  * **每次重新 `tree.import(name)`**——所以「停用再启用」就是一次干净的重新 import，不用
  * remove / create，条目在 yml 里的位置与 id 完全不变。
  *
- * **升级了的每个包的每条条目都要各自重新加载，不能指望级联**：被其他插件 inject 的插件（commands /
+ * **升级了的每个包的每条条目都要各自重新加载，不能指望级联**：被其他插件 inject 的插件（data /
  * settings…）重新加载时 cordis 会把依赖它的插件停用再启动，但那是重跑**内存里的旧代码**，磁盘上的
  * 新版本完全没有加载。
- *
- * **本插件自己排最后**：处理器里停用自己等于把正在执行的这条 await 链整个终止，回执就没了。
- * 所以计划里把自己那条条目单独标出来（`self`），执行时先把回执返回、再在下一个宏任务
- * 里处理它。
  */
 
 /** 一条要重新加载的条目 */
@@ -26,8 +22,6 @@ export interface PlannedEntry {
   id: string
   /** 本来就停用的：保持停用，不动它（记 skipped） */
   disabled: boolean
-  /** 这条就是本插件自己的条目 */
-  self: boolean
 }
 
 /** 一个要升的包 */
@@ -35,10 +29,8 @@ export interface PlannedPackage {
   pkg: string
   from: string
   to: string
-  /** 它在条目树上的全部条目（分组条目不算），按树里的先后；本插件自己那条挪到最后 */
+  /** 它在条目树上的全部条目（分组条目不算），按树里的先后 */
   entries: PlannedEntry[]
-  /** 本插件自己在这个包里 */
-  self: boolean
 }
 
 export interface UpdateAllPlan {
@@ -48,25 +40,14 @@ export interface UpdateAllPlan {
    * 装成回执上没写的那个）。清单为空时是空数组
    */
   pnpmArgs: string[]
-  /** 要升级的包，按包名排，**本插件自己所在的包排最后** */
+  /** 要升级的包，按包名排 */
   packages: PlannedPackage[]
-  /** 本插件自己在不在这次升级里 */
-  selfIncluded: boolean
   /** `only` 里点了名、却不在过期清单里的包——回执里说明，免得人以为它升级了 */
   ignored: string[]
 }
 
-/**
- * 生成计划。`ownEntryId` 是本插件自己那条条目的完整 id（`home:plugins`）或不带前缀的 id 都接受。
- * `only` 给了就只升级点名的那几个。
- */
-export function planUpdateAll(
-  outdated: Readonly<OutdatedMap>,
-  store: unknown,
-  ownEntryId: string,
-  only?: readonly string[],
-): UpdateAllPlan {
-  const own = bareId(ownEntryId)
+/** 生成计划。`only` 给了就只升级点名的那几个 */
+export function planUpdateAll(outdated: Readonly<OutdatedMap>, store: unknown, only?: readonly string[]): UpdateAllPlan {
   const wanted = only === undefined ? undefined : new Set(only)
   const ignored = only === undefined ? [] : only.filter((pkg) => outdated[pkg] === undefined)
 
@@ -78,19 +59,13 @@ export function planUpdateAll(
     if (info === undefined) continue
     const mine = entries
       .filter((entry) => entry.pkg === pkg)
-      .map<PlannedEntry>((entry) => ({ id: entry.id, disabled: entry.disabled, self: entry.id === own }))
-    // 自己那条挪到包内最后：同包的其它实例照常在处理器里重新加载，自己那条留到回执之后
-    const others = mine.filter((entry) => !entry.self)
-    const self = mine.filter((entry) => entry.self)
-    packages.push({ pkg, from: info.current, to: info.latest, entries: [...others, ...self], self: self.length > 0 })
+      .map<PlannedEntry>((entry) => ({ id: entry.id, disabled: entry.disabled }))
+    packages.push({ pkg, from: info.current, to: info.latest, entries: mine })
   }
-  // 自己所在的包排最后：它前面的每一条都在处理器里做完，回执才完整
-  packages.sort((a, b) => Number(a.self) - Number(b.self))
 
   return {
     pnpmArgs: packages.length === 0 ? [] : ['add', ...packages.map((p) => installSpec(p.pkg, p.to))],
     packages,
-    selfIncluded: packages.some((p) => p.self),
     ignored,
   }
 }

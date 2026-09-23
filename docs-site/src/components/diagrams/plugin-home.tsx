@@ -9,10 +9,10 @@ export function PluginHome() {
   return (
     <svg viewBox="0 0 760 330" role="img" aria-label="plugin-manager 与内核之间交换什么">
       <Note x={22} y={26} size={12} color={FG} weight={600}>
-        plugin-manager（插件，源码在内核仓 plugins/）
+        plugin-manager（内核内置的插件，源码在 plugins/）
       </Note>
       <rect x={14} y={36} width={246} height={152} rx={10} fill="none" stroke={BORDER} />
-      <Box x={26} y={56} w={222} h={50} lines={['EntryTreeLike', '从自己的条目上取条目树']} />
+      <Box x={26} y={56} w={222} h={50} lines={['EntryTreeLike', '内核经 config 交来的条目树']} />
       <Box x={26} y={124} w={222} h={50} lines={['applyToHome', '唯一运行 pnpm 的入口，串行排队']} />
 
       <Note x={508} y={26} size={12} color={FG} weight={600}>
@@ -44,7 +44,7 @@ export function PluginHome() {
         包经 pnpm，条目经 loader 的条目树
       </Note>
       <Note x={380} y={318} anchor="middle" size={11.5} color={MUTED}>
-        条目树的结构、home 的布局、解析规则都由内核决定——所以 plugin-manager 和内核放在同一个仓，测试一起跑
+        条目树的结构、home 的布局、解析规则都由内核决定；plugin-manager 内置在内核里，测试和内核一起跑
       </Note>
     </svg>
   )

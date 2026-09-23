@@ -2,13 +2,13 @@
 
 /**
  * 一键热升级的时间线：横轴是时间，每条横道是一个参与方。每一步在它那条横道上点亮一个方框；
- * 已经发生的保持显示，还没发生的调淡。竖虚线是回执发出的时刻：插件管理自己排在它之后。
+ * 已经发生的保持显示，还没发生的调淡。竖虚线是回执发出的时刻：前面每一步都在这条命令里做完。
  */
 
 import { Box, BORDER, FG, MUTED, Note, StepCaption } from './parts'
 import { StepControls, useSteps } from './steps'
 
-const LANES = ['调用方', 'plugin-manager', '磁盘 node_modules', '条目 A（被升级的插件）', '插件管理自己的条目', '外壳']
+const LANES = ['调用方', 'plugin-manager', '磁盘 node_modules', '条目 A（被升级的插件）', '外壳']
 
 interface Event {
   lane: number
@@ -18,7 +18,7 @@ interface Event {
 const STEPS: { title: string; detail: string; events: Event[] }[] = [
   {
     title: '调用 update-all，定计划',
-    detail: '先查过期包，再由纯函数算出计划：升哪些包、每个包的每条条目都要重新加载、插件管理自己排最后。',
+    detail: '先查过期包，再由纯函数算出计划：升哪些包、每个包的每条条目都要重新加载。插件管理与命令插件内置在内核里，不在计划里。',
     events: [
       { lane: 0, lines: ['update-all'] },
       { lane: 1, lines: ['查过期包', '定计划'] },
@@ -38,34 +38,29 @@ const STEPS: { title: string; detail: string; events: Event[] }[] = [
     events: [{ lane: 3, lines: ['停用→启用', 'ACTIVE'] }],
   },
   {
-    title: '回执发出',
-    detail: '回执里写着 selfDeferred: true、reload: deferred。在这之前停用插件管理自己，回执就发不出去了。',
-    events: [{ lane: 0, lines: ['收到回执', 'selfDeferred'] }],
-  },
-  {
-    title: '下一个宏任务：重新加载插件管理自己',
-    detail: '这段代码只持有条目树、id、命令插件的引用与 logger——插件管理原来的实例已经卸载，ctx 上什么都不能用。',
-    events: [{ lane: 4, lines: ['停用→启用', '新版本'] }],
-  },
-  {
     title: '整页重新加载',
     detail: '经命令插件调用外壳的 shell.reload，窗格拿到新版本的页面代码。命令表里没有它时，回执里的 reload 是 unavailable。',
-    events: [{ lane: 5, lines: ['shell', '.reload'] }],
+    events: [{ lane: 4, lines: ['shell', '.reload'] }],
+  },
+  {
+    title: '回执发出',
+    detail: '回执里是每个包升级前后的版本、每条条目重新加载后的状态，以及 reload 是 done 还是 unavailable。',
+    events: [{ lane: 0, lines: ['收到回执'] }],
   },
 ]
 
 const LANE_Y = (lane: number) => 34 + lane * 48
-const COL_X = (step: number) => 176 + step * 96
+const COL_X = (step: number) => 176 + step * 110
 
 export function PmUpgrade() {
-  const all = [{ title: '全貌', detail: '一条命令里按时间先后做完：定计划 → 一次 pnpm add → 逐条停用再启用 → 回执 → 重新加载插件管理自己 → 整页重新加载。', events: [] as Event[] }, ...STEPS]
+  const all = [{ title: '全貌', detail: '一条命令里按时间先后做完：定计划 → 一次 pnpm add → 逐条停用再启用 → 整页重新加载 → 回执。', events: [] as Event[] }, ...STEPS]
   const state = useSteps(all.length, 3000)
   const current = all[state.step]!
-  const replyX = COL_X(3) - 4
+  const replyX = COL_X(4) - 8
 
   return (
     <>
-      <svg viewBox="0 0 760 414" role="img" aria-label="一键热升级的时间线">
+      <svg viewBox="0 0 760 366" role="img" aria-label="一键热升级的时间线">
         {LANES.map((lane, index) => (
           <g key={lane}>
             <line x1={14} y1={LANE_Y(index) + 40} x2={746} y2={LANE_Y(index) + 40} stroke={BORDER} />
@@ -84,14 +79,14 @@ export function PmUpgrade() {
           const tone = state.step === at ? 'a' : undefined
           const dim = state.step !== 0 && at > state.step
           return step.events.map((event) => (
-            <Box key={`${at}-${event.lane}`} x={COL_X(index)} y={LANE_Y(event.lane) + 4} w={78} h={34} lines={event.lines} tone={tone} dim={dim} />
+            <Box key={`${at}-${event.lane}`} x={COL_X(index)} y={LANE_Y(event.lane) + 4} w={84} h={34} lines={event.lines} tone={tone} dim={dim} />
           ))
         })}
 
         <Note x={746} y={LANE_Y(LANES.length - 1) + 56} anchor="end" size={11} color={MUTED}>
           时间 →
         </Note>
-        <StepCaption x={20} y={356} w={720} title={current.title} detail={current.detail} />
+        <StepCaption x={20} y={308} w={720} title={current.title} detail={current.detail} />
       </svg>
       <StepControls count={all.length} state={state} />
     </>

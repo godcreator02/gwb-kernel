@@ -6,14 +6,14 @@
 import { Arrow, Box, BORDER, FG, MUTED, Note } from './parts'
 
 const PURE: { file: string; what: string }[] = [
-  { file: 'tree.ts', what: '取条目树' },
+  { file: 'tree.ts', what: '校验条目树' },
   { file: 'inventory.ts', what: '包与条目对照' },
   { file: 'ids.ts', what: 'id 规则与选 id' },
   { file: 'uninstall.ts', what: '卸载删哪些条目' },
   { file: 'outdated.ts', what: '读 outdated' },
   { file: 'update-all.ts', what: '热升级的计划' },
   { file: 'remount.ts', what: '停用再启用' },
-  { file: 'pnpm-path.ts', what: 'pnpm 包名与参数' },
+  { file: 'pnpm-path.ts', what: 'pnpm 启动参数' },
   { file: 'busy.ts', what: 'BUSY 互斥' },
   { file: 'vocab.ts', what: '取内核服务' },
 ]
@@ -51,8 +51,8 @@ export function PmModules() {
       </Note>
       <rect x={380} y={252} width={366} height={70} rx={10} fill="none" stroke={BORDER} />
       <Box x={392} y={264} w={110} h={46} lines={['home 目录', 'package.json 等']} />
-      <Box x={512} y={264} w={110} h={46} lines={['条目树', 'loader 提供']} />
-      <Box x={632} y={264} w={104} h={46} lines={['可选插件', 'commands 等 4 个']} />
+      <Box x={512} y={264} w={110} h={46} lines={['条目树', '内核经 config 交来']} />
+      <Box x={632} y={264} w={104} h={46} lines={['内置命令插件', 'data 等 3 个可选']} />
       <Arrow from={[356, 287]} to={[392, 287]} />
 
       <Note x={380} y={342} anchor="middle" size={11.5} color={MUTED}>

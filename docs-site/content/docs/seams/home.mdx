@@ -1,51 +1,56 @@
 ---
 title: home 与插件管理
-description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_modules，loader 条目树改 cordis.yml；它依赖的 loader 结构与解析规则由内核决定，所以和内核同仓
+description: 只有 plugin-manager 写 home——pnpm 改 package.json 与 node_modules，loader 条目树改 cordis.yml；它内置在内核里，条目树与 pnpm 路径由内核经 config 交来
 ---
 
-**本页回答**：内核和 plugin-manager 之间交换什么、各保证什么；为什么这条接缝的另一边放在内核仓。plugin-manager 自己怎么分块、每块功能怎么工作，见[插件管理](/docs/plugin-manager)。
+**本页回答**：内核和 plugin-manager 之间交换什么、各保证什么。plugin-manager 自己怎么分块、每块功能怎么工作，见[插件管理](/docs/plugin-manager)。
 
 <Diagram name="plugin-home" title="只有 plugin-manager 写 home：包经 pnpm，条目经 loader 的条目树">
-- 左边是 plugin-manager 用到的两样：从自己的条目上取的条目树（`EntryTreeLike`）、唯一运行 pnpm 的入口 `applyToHome`
+- 左边是 plugin-manager 用到的两样：内核经 config 交来的条目树（`EntryTreeLike`）、唯一运行 pnpm 的入口 `applyToHome`
 - 右边是内核里对应的两样：loader 与 include（条目树的结构、读写 `cordis.yml`）、按真实路径解析包名
 - 跨过接缝的是条目树的 `create` / `update` / `remove` / `resolve`——loader 没写进文档的内部结构
 - 下面是 home：`applyToHome` 经 pnpm 改 `package.json` 与 `node_modules`；条目树写回 `cordis.yml` 并当场加载；loader import 包名时按真实路径读 `node_modules`
-- 条目树的结构、home 的布局、解析规则都由内核决定，所以 plugin-manager 和内核放在同一个仓，测试一起跑
+- 条目树的结构、home 的布局、解析规则都由内核决定；plugin-manager 内置在内核里，和内核同仓、测试一起跑
 </Diagram>
 
 ## 接口
 
 对调用方，plugin-manager 是 12 条命令，参数与回执见[对外只有命令](/docs/plugin-manager/commands)。
 
-对内核，它依赖的是一份**没有写进 `gwbKernel` 的约定**——loader 条目树的这几样：
+对内核，plugin-manager 是一个内置插件：内核在加载 `cordis.yml` 之前直接加载它（它不是 `cordis.yml` 的条目），经 config 交来两样东西——承载 `cordis.yml` 的条目树与 pnpm 可执行文件的路径：
 
-{/* ref file="../plugins/plugin-manager/src/tree.ts" lines="23-34" */}
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="170-176" */}
 
-树从插件自己的条目上取，不需要知道内核那条 include 条目叫什么。取的时候按 loader 自己的类型 `EntryTree` 取，再赋给上面的收窄接口：loader 改了这几个方法的签名，类型检查就在这里失败。
+条目树是一份**没有写进 `gwbKernel` 的约定**——plugin-manager 用到 loader 条目树的这几样：
 
-{/* ref file="../plugins/plugin-manager/src/tree.ts" lines="59-63" */}
+{/* ref file="../plugins/plugin-manager/src/tree.ts" lines="16-31" */}
+
+内核加载 include 之后用 `ctx.loader.resolve('home').subtree` 取到这棵树（实验见 `probes/2609231905_kernel-passes-entry-tree/`），树的前缀 `home` 只有内核知道；plugin-manager 要条目的完整 id 时，读 loader 条目对象上已经拼好前缀的 `id`。交来的树在构造时校验一次，少了哪个方法当场说清楚：
+
+{/* ref file="../plugins/plugin-manager/src/tree.ts" lines="33-44" */}
 
 改 `cordis.yml` 只走这棵树：它把写回文件和当场加载一起做；绕过它直接写文件，内存里的条目不知道，下一次写回会把磁盘上的改动覆盖掉。
 
 ## 两边各保证什么
 
 内核保证：
+- 在加载 `cordis.yml` 之前加载命令插件与 plugin-manager，经 config 交来条目树与 pnpm 路径
 - home 的布局：`package.json` 列出装了哪些包，`cordis.yml` 列出条目，包在 `node_modules`（见[插件与内核](/docs/seams/plugins)）
-- loader 与 include 的版本固定在 `apps/desktop/package.json`；升级它们时先跑 plugin-manager 的测试
+- loader 与 include 的版本固定在 `apps/desktop/package.json`；升级它们时先运行 plugin-manager 的测试
 - 包名按真实路径解析：包换了版本、真实路径跟着换，停用再启用就能拿到新版本
 
 plugin-manager 保证：
 - **只有它写 home**：所有 `pnpm add` / `pnpm remove` 都经同一个入口 `applyToHome` 排进串行队列（见[唯一写入者](/docs/plugin-manager/home#只有插件管理写-home)）
-- 升级与重新加载在**同一条命令**里做完，自己排在最后、回执发出之后才重新加载自己（见[热升级](/docs/plugin-manager/upgrade)、[重新加载一条条目](/docs/plugin-manager/remount)）
+- 升级与重新加载在**同一条命令**里做完（见[热升级](/docs/plugin-manager/upgrade)、[重新加载一条条目](/docs/plugin-manager/remount)）；它自己与命令插件不在 home 里，不在它升级、重新加载的范围内
 - 卸载先删条目、后卸包，pnpm 失败不回滚；数据与设置留在磁盘上（见[卸载](/docs/plugin-manager/install#卸载先删条目后卸包)）
 
 ## 怎么单独测
 
-`plugins/plugin-manager/tests/loader.test.ts` 用内核实际使用的 loader 与 include 版本，照 `main.ts` 的顺序搭一个 home，把上面这份约定跑一遍；内核升级这两个包、改了条目树的结构，它先失败：
+`plugins/plugin-manager/tests/loader.test.ts` 用内核实际使用的 loader 与 include 版本，照 `main.ts` 的顺序搭一个 home：加载 include、取 `resolve('home').subtree` 经 config 交给直接加载的插件，再把上面这份约定运行一遍；内核升级这两个包、改了条目树的结构，它先失败：
 
 {/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="的版本与 apps/desktop 写的完全相同" */}
 
-{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="从插件自己的上下文取到条目树与自己的 entryId" */}
+{/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="内核取到的树经 config 交给直接加载的插件" */}
 
 {/* has file="../plugins/plugin-manager/tests/loader.test.ts" text="改的是内存里的条目，也写回 cordis.yml" */}
 
@@ -55,4 +60,4 @@ plugin-manager 保证：
 
 ## 代码从哪读
 
-`plugins/plugin-manager/src/tree.ts` 是这份约定的全部；用它的地方在 `index.ts` 与 `remount.ts`。
+`plugins/plugin-manager/src/tree.ts` 是条目树这份约定的全部；`index.ts` 的 `PluginManagerConfig` 是内核交来的全部；用条目树的地方在 `index.ts` 与 `remount.ts`。

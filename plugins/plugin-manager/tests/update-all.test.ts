@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { fiberStateOf, planUpdateAll, settleFiber } from '../src/update-all.js'
 
 /**
- * 一键热升的计划：pnpm 参数与重挂顺序。fixture 照 uninstall.test 的样式——store 是
+ * 一键热升级的计划：pnpm 参数与重新加载顺序。假数据照 uninstall.test 的写法——store 是
  * `Object.create(null)` 的平表，包名在 `options.name`，停用在 `disabled`。
  */
 
@@ -50,59 +50,42 @@ const outdated = {
 
 describe('planUpdateAll：一次 pnpm add，精确版本', () => {
   it('pnpm 参数是一次 add，每个包用 outdated 查到的版本号，不用 @latest 标签', () => {
-    const plan = planUpdateAll(outdated, store, 'home:plugin-manager')
+    const plan = planUpdateAll(outdated, store)
     expect(plan.pnpmArgs).toEqual(['add', `${COMMANDS}@0.2.2`, `${HELLO}@0.2.1`, `${MANAGER}@0.3.0`])
   })
 
-  it('空清单：pnpmArgs 空、packages 空、自己不在里面', () => {
-    const plan = planUpdateAll({}, store, 'home:plugin-manager')
-    expect(plan).toEqual({ pnpmArgs: [], packages: [], selfIncluded: false, ignored: [] })
+  it('空清单：pnpmArgs 空、packages 空', () => {
+    const plan = planUpdateAll({}, store)
+    expect(plan).toEqual({ pnpmArgs: [], packages: [], ignored: [] })
   })
 })
 
-describe('planUpdateAll：重新加载的顺序，插件管理自己最后', () => {
-  it('包按名排、自己所在的包挪到最后；包内自己那条条目也在最后', () => {
-    const plan = planUpdateAll(outdated, store, 'home:plugin-manager')
+describe('planUpdateAll：重新加载的顺序', () => {
+  it('包按名排，包内条目按树里的先后', () => {
+    const plan = planUpdateAll(outdated, store)
     expect(plan.packages.map((p) => p.pkg)).toEqual([COMMANDS, HELLO, MANAGER])
-    expect(plan.selfIncluded).toBe(true)
-    const self = plan.packages[2]!
-    expect(self.self).toBe(true)
-    // plugin-manager-2 在树里排在 plugin-manager 后面，但自己那条得让到最后
-    expect(self.entries.map((e) => e.id)).toEqual(['plugin-manager-2', 'plugin-manager'])
-    expect(self.entries.map((e) => e.self)).toEqual([false, true])
-  })
-
-  it('裸 id 与完整 entryId 都认得出自己', () => {
-    expect(planUpdateAll(outdated, store, 'plugin-manager').selfIncluded).toBe(true)
-    expect(planUpdateAll(outdated, store, 'home:plugin-manager').selfIncluded).toBe(true)
-  })
-
-  it('自己不在清单里：selfIncluded 假、没有哪条标 self', () => {
-    const plan = planUpdateAll({ [HELLO]: outdated[HELLO] }, store, 'home:plugin-manager')
-    expect(plan.selfIncluded).toBe(false)
-    expect(plan.packages.flatMap((p) => p.entries).every((e) => !e.self)).toBe(true)
+    expect(plan.packages[2]!.entries.map((e) => e.id)).toEqual(['plugin-manager', 'plugin-manager-2'])
   })
 })
 
 describe('planUpdateAll：每条条目怎么处理', () => {
   it('停用的条目带 disabled——执行时保持停用，不重新加载', () => {
-    const plan = planUpdateAll(outdated, store, 'home:plugin-manager')
+    const plan = planUpdateAll(outdated, store)
     const hello = plan.packages.find((p) => p.pkg === HELLO)!
     expect(hello.entries).toEqual([
-      { id: 'hello', disabled: false, self: false },
-      { id: 'hello-2', disabled: true, self: false },
+      { id: 'hello', disabled: false },
+      { id: 'hello-2', disabled: true },
     ])
-    expect(hello).toMatchObject({ from: '0.2.0', to: '0.2.1', self: false })
+    expect(hello).toMatchObject({ from: '0.2.0', to: '0.2.1' })
   })
 
   it('装了包、一条条目都没有的照样升，entries 为空；分组条目不归任何包', () => {
-    const plan = planUpdateAll({ ...outdated, '@x/gwb-tokens': { current: '0.0.5', latest: '0.0.6' } }, store, 'home:plugin-manager')
+    const plan = planUpdateAll({ ...outdated, '@x/gwb-tokens': { current: '0.0.5', latest: '0.0.6' } }, store)
     expect(plan.packages.find((p) => p.pkg === '@x/gwb-tokens')).toEqual({
       pkg: '@x/gwb-tokens',
       from: '0.0.5',
       to: '0.0.6',
       entries: [],
-      self: false,
     })
     expect(plan.packages.flatMap((p) => p.entries.map((e) => e.id))).not.toContain('grp')
   })
@@ -110,15 +93,14 @@ describe('planUpdateAll：每条条目怎么处理', () => {
 
 describe('planUpdateAll：only 限定', () => {
   it('只升点了名的；点了名却不在过期清单里的进 ignored，不进 pnpm 参数', () => {
-    const plan = planUpdateAll(outdated, store, 'home:plugin-manager', [HELLO, '@x/gwb-not-outdated'])
+    const plan = planUpdateAll(outdated, store, [HELLO, '@x/gwb-not-outdated'])
     expect(plan.pnpmArgs).toEqual(['add', `${HELLO}@0.2.1`])
     expect(plan.packages.map((p) => p.pkg)).toEqual([HELLO])
     expect(plan.ignored).toEqual(['@x/gwb-not-outdated'])
-    expect(plan.selfIncluded).toBe(false)
   })
 
   it('only 是空数组：什么都不升，也不是「全升」', () => {
-    const plan = planUpdateAll(outdated, store, 'home:plugin-manager', [])
+    const plan = planUpdateAll(outdated, store, [])
     expect(plan.pnpmArgs).toEqual([])
     expect(plan.packages).toEqual([])
   })

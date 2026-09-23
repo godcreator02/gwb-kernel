@@ -1,15 +1,17 @@
 ---
 title: 热升级
-description: outdated 查过期包；update-all 一次 pnpm add 精确版本，同一条命令里逐条停用再启用、插件管理自己最后，再整页重新加载，不重启
+description: outdated 查过期包；update-all 一次 pnpm add 精确版本，同一条命令里逐条停用再启用，再整页重新加载，不重启；内置的插件管理与命令插件随内核升级，不在其中
 ---
 
 **本页回答**：怎么查出哪些包有新版本；为什么升级与重新加载必须在同一条命令里；升级计划按什么排；一次热升级从头到尾依次发生什么。重新加载一条条目的时序在[上一页](/docs/plugin-manager/remount)。
+
+热升级只管 home 里的包。插件管理与命令插件内置在内核里，不在 home 的 `package.json` 里，`outdated` 查不到它们、`update-all` 不升级它们；它们随内核一起升级（装新版安装包、重启工作台）。
 
 ## 查新版本
 
 **是什么**：`outdated` 运行一次 `pnpm outdated --json`，返回「包名 → `{ current, latest }`」，空对象表示全都最新。
 
-**怎么做**：退出码 1 表示「有过期包」，是结果不是失败；找不到 pnpm、输出解析不了都转成 `ok: false` 的回执，界面上只显示一句提示。它只读不写，不过 BUSY，但 pnpm 照样排进串行队列（见[唯一写入者](/docs/plugin-manager/home#同一时刻只允许一个改动busy)）。
+**怎么做**：退出码 1 表示「有过期包」，是结果不是失败；找不到 pnpm、输出解析不了都转成 `ok: false` 的回执，界面上只显示一句提示。它只读不写，不经过 BUSY 检查，但 pnpm 照样排进串行队列（见[唯一写入者](/docs/plugin-manager/home#同一时刻只允许一个改动busy)）。
 
 **守住它的测试**：
 
@@ -34,19 +36,18 @@ description: outdated 查过期包；update-all 一次 pnpm add 精确版本，�
 
 ## 升级计划
 
-**是什么**：升哪些包、重新加载哪些条目、谁排最后，由一个纯函数算出，单独测。
+**是什么**：升哪些包、重新加载哪些条目、按什么顺序，由一个纯函数算出，单独测。
 
-{/* ref file="../plugins/plugin-manager/src/update-all.ts" lines="63-96" */}
+{/* ref file="../plugins/plugin-manager/src/update-all.ts" lines="49-71" */}
 
 - **精确版本**：用 `outdated` 查到的版本号，不用 `@latest` 标签——两次查询之间又发了一版，也不会装成回执上没写的那个
 - **每条条目各自重新加载**：被别的插件 inject 的插件重新加载时，cordis 会把依赖它的插件停用再启动，但那是重跑内存里的旧代码，磁盘上的新版本没有加载，所以不能指望这种连带
-- 本来就停用的条目保持停用，记为 `skipped`
-- 插件管理自己那条排在它的包里最后，它的包排在所有包最后（理由见[回执之后再动](/docs/plugin-manager/remount#目标是插件管理自己回执之后再动)）
+- 包按包名排，包内的条目按条目树里的先后；本来就停用的条目保持停用，记为 `skipped`
 - 给了 `only` 就只升点名的几个；点了名却不在过期清单里的，回执的 `note` 里列出来
 
-**守住它的测试**：计划是纯函数，每一条都有测试。排序这条最能说明规则：
+**守住它的测试**：计划是纯函数，每一条都有测试。
 
-{/* ref file="../plugins/plugin-manager/tests/update-all.test.ts" lines="63-73" */}
+{/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="包按名排，包内条目按树里的先后" */}
 
 {/* has file="../plugins/plugin-manager/tests/update-all.test.ts" text="每个包用 outdated 查到的版本号" */}
 
@@ -60,11 +61,10 @@ description: outdated 查过期包；update-all 一次 pnpm add 精确版本，�
 - 调用方调用 `update-all`；插件管理查过期包，定计划
 - 插件管理一次 `pnpm add` 精确版本；磁盘上 A@1.0 的目录删掉、A@1.1 装上
 - 条目 A 停用再启用，重新解析拿到 A@1.1，回到 `ACTIVE`
-- 回执发出（`selfDeferred: true`），调用方收到
-- 下一个宏任务：重新加载插件管理自己的条目
 - 外壳 `shell.reload` 整页重新加载，窗格拿到新版本的页面代码
+- 回执发出，调用方收到
 </Diagram>
 
-**整页重新加载**：经命令插件调用外壳的 `shell.reload`，按命令名查找，不 import 外壳。回执的 `reload`：`done` 已经重新加载；`deferred` 等插件管理自己重新加载完再做；`unavailable` 命令表里没有它或它失败了，界面要手动刷新，原因在 `note` 里。
+**整页重新加载**：经命令插件调用外壳的 `shell.reload`，按命令名查找，不 import 外壳。回执的 `reload`：`done` 已经重新加载；`unavailable` 命令表里没有它或它失败了，界面要手动刷新，原因在 `note` 里。
 
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="114-133" */}
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="117-133" */}

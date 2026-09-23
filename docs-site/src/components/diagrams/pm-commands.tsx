@@ -30,7 +30,7 @@ export function PmCommands() {
         lines={['12 条命令 plugin-manager.*', 'list · install · uninstall · outdated', 'update-all · add-entry · remove-entry', 'enable · disable · remount', 'set-label · transfer-owner']}
         tone="a"
       />
-      <Box x={482} y={166} w={252} h={56} lines={['服务 gwbPluginManager', '{ contract: 1 }，上面没有方法']} dashed />
+      <Box x={482} y={166} w={252} h={56} lines={['服务 gwbPluginManager', '{ contract: 2 }，上面没有方法']} dashed />
       <Arrow from={[184, 206]} to={[482, 196]} dashed label="inject：跟着它一起加载、卸载" labelAt="below" />
 
       <Note x={380} y={262} anchor="middle" size={11.5} color={MUTED}>

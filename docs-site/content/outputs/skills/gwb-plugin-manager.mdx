@@ -9,6 +9,10 @@ description: 要装插件、升级插件、启用停用、重新加载一条条�
 这个 home 里装了哪些插件、各自加载了没有、谁有新版本，归 `gwb-plugin-manager` 管。十二条命令，
 agent 经 MCP 入口的 `run` 按名字调用；插件管理没有别的调用方式。查源上有什么可装、配第三方包源，见说明书 `gwb-plugin-sources`。
 
+**插件管理与命令插件内置在内核里**：内核在加载 `cordis.yml` 之前直接加载它们，它们不在 home 里、不是
+`cordis.yml` 的条目，所以不出现在 `list` 里，`update-all` 不升级它们，也不能停用、卸载、重新加载，随内核一起升级
+（装新版安装包、重启工作台）。
+
 ## 先分清两层：包与条目
 
 - **包**：npm 包，`pnpm add` 进 home 的 `node_modules`。装了包**什么都不会发生**，它只是在磁盘上
@@ -37,11 +41,10 @@ agent 经 MCP 入口的 `run` 按名字调用；插件管理没有别的调用�
 升了的每个包的**每条条目**停用再启用（loader 重新 import，运行的就是新版本；本来停用的保持停用）→
 `shell.reload` 整页重新加载界面。没有「只升包、不重新加载」的命令。
 
-- 回执 `{ updated: [{ pkg, from, to, entries: [{ id, action, state }] }], selfDeferred, reload, note? }`：
-  `action` 是 remounted / skipped / deferred / failed，`state` 是重新加载后的状态（ACTIVE 才算加载成功）
-- **升到 `gwb-plugin-manager` 自己**（`selfDeferred: true`）：它那条条目在回执发出之后才重新加载，别等它
-  出现在 `entries` 里显示 remounted
-- **升到 `gwb-mcp` 自己**：进行中的 MCP 请求会中断（MCP 入口随插件一起重新加载）。MCP 是会话状态的，
+- 回执 `{ updated: [{ pkg, from, to, entries: [{ id, action, state }] }], reload, note? }`：
+  `action` 是 remounted / skipped / failed，`state` 是重新加载后的状态（ACTIVE 才算加载成功）；`reload` 是
+  done（界面已整页重新加载）或 unavailable（要手动刷新，原因在 `note` 里）
+- **升到 `gwb-mcp`**：进行中的 MCP 请求会中断（MCP 入口随插件一起重新加载）。MCP 是会话状态的，
   **要重连一次**，不会自己恢复；重连后用 `plugin-manager.list` 核对版本与 active，再调一遍 `index`
 - pnpm 失败返回 `ok: false` 带最后几行输出，**一条条目都没动**；`note` 里有话就读（全都是最新的、
   only 里指定了却不在清单里的、界面要手动刷新）
@@ -72,18 +75,15 @@ agent 经 MCP 入口的 `run` 按名字调用；插件管理没有别的调用�
 ## 启用与停用
 
 用 `{ "entryId": "..." }` 调 `plugin-manager.enable` / `plugin-manager.disable`。停用的条目不加载，
-立即生效。entryId 写完整的（`home:commands` 那种）或只写 id（`commands`）都可以。
+立即生效。entryId 写完整的（`home:hello` 那种）或只写 id（`hello`）都可以。
 
 ## 重新加载一条：plugin-manager.remount
 
 `{ "entryId": "..." }`。停用 → 等卸载完 → 启用 → 等加载完，**一条命令做完**（本来停用的，最后是启用的）。
-要让一条条目重新 import 就调它，**别用 disable 加 enable 两条拼**：目标是
-plugin-manager 自己或命令插件（`gwb-commands`）时，disable 一返回命令表就没了，enable 调不进去，条目停在停用状态。
+要让一条条目重新 import 就调它，别分成 disable、enable 两条命令调：目标是 MCP 入口（`gwb-mcp`）时，disable
+一返回连接就断了，enable 调不进去，条目停在停用状态。
 
-- 回执 `{ id, action, state }`。`remounted`：在这条命令里做完，`state` 是重新加载后的状态，ACTIVE 才算成功。
-  重新加载命令插件（`commands` 条目）也属于这一种
-- `deferred`：目标是 **plugin-manager 自己**。回执先发出，下一个宏任务才重新加载，`state` 是动手前的状态；
-  不会有第二份回执，过一会儿用 `plugin-manager.list` 核对 `active`
+- 回执 `{ id, action, state }`。`remounted`：`state` 是重新加载后的状态，ACTIVE 才算成功
 - 修改条目树时抛错返回 `ok: false`，`data.action` 是 `failed`；条目不存在返回 `ok: false` 和一句说明
 
 ## 同一时刻只允许一个改动

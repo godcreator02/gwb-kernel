@@ -11,10 +11,10 @@ import { readEntries, reconcile, toLabels, type PluginPackageView } from './inve
 import { describeAddFailure, describePnpm, locatePnpm, runPnpm, runPnpmCapture, type PnpmResult } from './pnpm.js'
 import { parseOutdated, type UpdateInfo } from './outdated.js'
 import { entriesForPackage } from './uninstall.js'
-import { ownEntryId, treeOf, type EntryTreeLike } from './tree.js'
+import { asTree, type EntryTreeLike } from './tree.js'
 import { BusyGate } from './busy.js'
-import { fiberStateOf, planUpdateAll, type PlannedEntry } from './update-all.js'
-import { remountNow, remountOne, remountSelfLater, type RemountedEntry } from './remount.js'
+import { planUpdateAll, type PlannedEntry } from './update-all.js'
+import { remountNow, type RemountedEntry } from './remount.js'
 
 export type { EntrySnapshot, PluginEntryView, PluginPackageView } from './inventory.js'
 export type { RemountedEntry } from './remount.js'
@@ -22,6 +22,9 @@ export type { RemountedEntry } from './remount.js'
 /**
  * 管理 home 里的**包**和 `cordis.yml` 里的**条目**。包由 pnpm 装进 home，条目由 loader 写进 `cordis.yml`
  * ——只装包、不加条目，插件不会运行。
+ *
+ * **内核内置**：内核在加载 `cordis.yml` 之前直接加载本插件，经 config 交来条目树与 pnpm 路径。本插件不是
+ * `cordis.yml` 里的条目，不在自己管理的范围里，随内核一起升级。
  *
  * **对外只有命令**（`plugin-manager.*`）。服务 `gwbPluginManager` 只表示「插件管理装了」，上面没有方法：
  * 同一件事只提供一种调用方式，所有改动都经过命令，也就都经过同一道 BUSY 检查。
@@ -34,7 +37,7 @@ export type { RemountedEntry } from './remount.js'
  *
  * **一键热升级（`update-all`）= 一次 pnpm 升级过期包，再逐条停用→启用重新加载，不重启。** 计划由
  * `update-all.ts` 里的纯函数算出。升级与重新加载必须在**同一条命令**里完成：pnpm 会删除旧版本目录，
- * 两者之间只要隔着一条命令，旧版插件读磁盘就读不到文件。本插件自己的条目排在最后、回执发出后才处理。
+ * 两者之间只要隔着一条命令，旧版插件读磁盘就读不到文件。
  *
  * 找插件、配置包源在 `@godcreator/gwb-plugin-sources`；操作面板在 `@godcreator/gwb-baseui`。
  */
@@ -71,7 +74,7 @@ export interface PluginManagerPresence {
   contract: number
 }
 
-const PRESENCE: PluginManagerPresence = { contract: 1 }
+const PRESENCE: PluginManagerPresence = { contract: 2 }
 
 /** 转移归属的回执。`data` / `settings` 是 false 说明对应的插件没装、那部分没有处理 */
 export interface TransferOwnerResult {
@@ -116,14 +119,11 @@ export interface UpdateAllResult {
   ok: boolean
   /** 升级了的包。pnpm 失败时为空——没有升级任何包、没有改动任何条目 */
   updated: UpdatedPackage[]
-  /** 本插件自己在升级清单里：它的条目在回执发出后才重新加载，重新加载完再整页重载 */
-  selfDeferred: boolean
   /**
-   * 整页重载是否执行：`done` 表示 `shell.reload` 已经执行；`deferred` 表示等本插件自己重新加载完再执行；
-   * `unavailable` 表示命令表里没有它（或它执行失败），界面要手动刷新——原因在 `note` 里。
-   * 没有升级任何包或整体失败时，没有这个字段
+   * 整页重载是否执行：`done` 表示 `shell.reload` 已经执行；`unavailable` 表示命令表里没有它（或它执行失败），
+   * 界面要手动刷新——原因在 `note` 里。没有升级任何包或整体失败时，没有这个字段
    */
-  reload?: 'done' | 'deferred' | 'unavailable'
+  reload?: 'done' | 'unavailable'
   /** 需要提醒的情况：全都最新、only 里列出但不在过期清单里的包、界面要手动刷新 */
   note?: string
   /** 失败时的原因 */
@@ -169,6 +169,8 @@ export const name = NAME
 
 /** 内核加载插件管理时经 config 交来的东西 */
 export interface PluginManagerConfig {
+  /** 承载 `cordis.yml` 的条目树：内核加载 include 之后取 `ctx.loader.resolve('home').subtree` */
+  tree: EntryTreeLike
   /** pnpm 原生可执行文件的路径：安装包资源目录里那个，从源码运行时是内核仓依赖里那个 */
   pnpm: string
 }
@@ -177,7 +179,7 @@ export function apply(ctx: GwbContext, config: PluginManagerConfig): void {
   const manager = new PluginManager(ctx, config)
   ctx.effect(() => ctx.provide('gwbPluginManager', PRESENCE))
   manager.wire()
-  ctx.logger(NAME).info(`插件管理已就绪，自己那条条目是 ${ownEntryId(ctx)}，查看列表调用 ${LIST_COMMAND}`)
+  ctx.logger(NAME).info(`插件管理已就绪，查看列表调用 ${LIST_COMMAND}`)
 }
 
 class PluginManager {
@@ -186,10 +188,6 @@ class PluginManager {
   private readonly home: string
   /** cordis.yml 对应的条目树 */
   private readonly tree: EntryTreeLike
-  /**
-   * 事先拿到的 logger。一键热升级里最后重新加载本插件那一步运行时，本插件的 fiber 已经卸载——
-   * 那时 ctx 上什么都不能访问，只能用事先持有的这个 logger
-   */
   private readonly log: { info(message: string): void; warn(message: string): void }
 
   /** 装了数据插件才有。没装时只显示 id，`set-label` 返回「没装数据插件」 */
@@ -197,7 +195,7 @@ class PluginManager {
   /** 数据插件、设置插件各自的归属记录，装了才有 */
   private dataBook: OwnerBook | undefined
   private settingsBook: OwnerBook | undefined
-  /** 命令插件存在才有。一键热升级用它查找并执行 `shell.reload`——包括本插件自己重新加载之后那一次 */
+  /** 命令都登记在它上面。一键热升级用它查找并执行 `shell.reload` */
   private cli: GwbCommands | undefined
 
   /** 同一 home 同一时刻最多一个安装、卸载、升级或重新加载，重入时返回 BUSY */
@@ -219,7 +217,7 @@ class PluginManager {
     this.ctx = ctx
     this.pnpmFile = config.pnpm
     this.home = requireKernel(ctx).dataDir
-    this.tree = treeOf(ctx)
+    this.tree = asTree(config.tree)
     this.log = ctx.logger(NAME)
   }
 
@@ -268,7 +266,10 @@ class PluginManager {
     })
   }
 
-  /** 命令插件是可选的，但没有它插件管理就没有任何对外接口 */
+  /**
+   * 命令插件由内核内置、先于本插件加载。用嵌套注入：命令插件的 fiber 卸载时这些命令跟着注销，再加载时重新登记。
+   * inject 回调拿到的类型是 cordis 的 `Context`，`gwbCommands` 声明在 `GwbContext` 上，所以按它取
+   */
   private wireCommands(): void {
     this.ctx.inject(['gwbCommands'], (ctx) => {
       const cli = (ctx as GwbContext).gwbCommands
@@ -285,7 +286,7 @@ class PluginManager {
       }
       const busy = '同一时刻只允许一个变更，重入回 { ok:false, error:"BUSY…" }'
 
-      on(LIST_COMMAND, 'home 里装了哪些包、各有哪些条目', '回执按包列：包名、spec、条目（id、entryId、启停、是否 ACTIVE、显示名）。无参数', () => this.list())
+      on(LIST_COMMAND, 'home 里装了哪些包、各有哪些条目', '回执按包列：包名、spec、条目（id、entryId、启停、是否 ACTIVE、显示名）。内核内置的命令插件与插件管理不在 home 里，不在回执里。无参数', () => this.list())
 
       onGuarded(
         INSTALL_COMMAND,
@@ -332,7 +333,7 @@ class PluginManager {
       onGuarded(
         REMOUNT_COMMAND,
         '重新加载一条条目：停用→等卸载完→启用→等加载完，一条命令做完',
-        `参数 { entryId }（完整 entryId 或不带前缀的 id）。回执 { id, action, state }：action 是 remounted（在这条命令里做完，state 是重新加载后的 fiber 状态，ACTIVE 才算加载成功）或 deferred（目标是插件管理自己：先返回回执，下一个宏任务才重新加载，state 是动手前的状态，之后用 plugin-manager.list 核对 active）；操作条目树时抛错则回 ok: false，data 里 action 是 failed。原本停用的条目重新加载后是启用的；重新加载命令插件（gwb-commands）也在这条命令里做完；${busy}`,
+        `参数 { entryId }（完整 entryId 或不带前缀的 id）。回执 { id, action, state }：action 是 remounted，state 是重新加载后的 fiber 状态，ACTIVE 才算加载成功；操作条目树时抛错则回 ok: false，data 里 action 是 failed。原本停用的条目重新加载后是启用的；${busy}`,
         async (args) => {
           const result = await this.remount(text(asRecord(args), 'entryId'))
           if (result.action === 'failed') return { ok: false, error: `条目 ${result.id} 重新加载失败：${result.state}`, data: result }
@@ -354,7 +355,7 @@ class PluginManager {
       onGuarded(
         UPDATE_ALL_COMMAND,
         '一键热升级过期包，不重启',
-        `一次 pnpm add 把过期包升到 outdated 返回的精确版本，再逐条停用→启用，重新加载成新版本（原本停用的跳过；插件管理自己排最后、回执发出后才重新加载），最后 shell.reload 整页重新加载。回执 { updated: [{ pkg, from, to, entries: [{ id, action, state }] }], selfDeferred, reload, note? }。参数 { only?: string[] }（只升这几个包；不给就全升）；${busy}`,
+        `一次 pnpm add 把过期包升到 outdated 返回的精确版本，再逐条停用→启用，重新加载成新版本（原本停用的跳过），最后 shell.reload 整页重新加载。回执 { updated: [{ pkg, from, to, entries: [{ id, action, state }] }], reload, note? }。参数 { only?: string[] }（只升这几个包；不给就全升）；${busy}`,
         async (args) => {
           const result = await this.updateAll(onlyList(args))
           return withTail(result)
@@ -435,16 +436,16 @@ class PluginManager {
   /** `only` 里包名不合规直接抛；下面每一种失败都是正常结果，转成回执 */
   async updateAll(only?: readonly string[]): Promise<UpdateAllResult> {
     for (const pkg of only ?? []) assertPkgName(pkg)
-    const bare = (extra?: string): UpdateAllResult => ({ ok: false, updated: [], selfDeferred: false, ...(extra === undefined ? {} : { error: extra }) })
+    const bare = (extra?: string): UpdateAllResult => ({ ok: false, updated: [], ...(extra === undefined ? {} : { error: extra }) })
 
     const checked = await this.outdated()
     if (!checked.ok || checked.updates === undefined) return bare(checked.error ?? '查不出过期清单')
 
-    const plan = planUpdateAll(checked.updates, this.tree.store, ownEntryId(this.ctx), only)
+    const plan = planUpdateAll(checked.updates, this.tree.store, only)
     const notes: string[] = []
     if (plan.ignored.length > 0) notes.push(`only 里这几个不在过期清单里，没动：${plan.ignored.join('、')}`)
     if (plan.packages.length === 0) {
-      return { ok: true, updated: [], selfDeferred: false, note: ['全都最新', ...notes].join('；') }
+      return { ok: true, updated: [], note: ['全都最新', ...notes].join('；') }
     }
 
     const found = locatePnpm(this.pnpmFile)
@@ -466,45 +467,17 @@ class PluginManager {
 
     // 从这里开始旧版本目录已经删除：升级了的每条条目都必须在**这条命令里**重新加载，中间不留间隔
     const updated: UpdatedPackage[] = []
-    let deferred: PlannedEntry | undefined
     for (const pkg of plan.packages) {
       const entries: RemountedEntry[] = []
-      for (const entry of pkg.entries) {
-        if (entry.self && !entry.disabled) {
-          deferred = entry
-          entries.push({ id: entry.id, action: 'deferred', state: fiberStateOf(this.tree.store[entry.id]) })
-          continue
-        }
-        entries.push(await this.remountPlanned(entry))
-      }
+      for (const entry of pkg.entries) entries.push(await this.remountPlanned(entry))
       updated.push({ pkg: pkg.pkg, from: pkg.from, to: pkg.to, entries })
     }
     const summary = updated.map((p) => `${p.pkg} ${p.from} → ${p.to}`).join('，')
-    const cli = this.cli
 
-    if (deferred === undefined) {
-      const reload = await reloadVia(cli)
-      if (reload.note !== undefined) notes.push(reload.note)
-      this.log.info(`一键热升级完成：${summary}${reload.reload === 'done' ? '；界面已整页重载' : ''}`)
-      return { ok: true, updated, selfDeferred: false, reload: reload.reload, ...noteOf(notes) }
-    }
-
-    /**
-     * **本插件自己最后处理，而且在回执之后。** 在命令处理函数里停用自己，await 链随 fiber 一起卸载，回执永远
-     * 到不了调用方。所以先返回回执，下一个宏任务再处理——那时命令的应答早已发出。
-     * 闭包**只持有 tree、id、命令插件的引用与 logger**：本插件的 fiber 卸载之后，ctx 上的
-     * 东西都不能访问（获取服务会报「inactive context」）；闭包里也不调用 `this` 上的其他方法
-     */
-    const id = deferred.id
-    const log = this.log
-    remountSelfLater(this.tree, id, log, async () => {
-      const reload = await reloadVia(cli)
-      if (reload.note !== undefined) log.warn(reload.note)
-    })
-    const canReload = hasCommand(cli, SHELL_RELOAD_COMMAND)
-    if (!canReload) notes.push(`命令表里没有 ${SHELL_RELOAD_COMMAND}，界面要手动刷新`)
-    this.log.info(`一键热升级：${summary}；插件管理自己（${id}）在回执之后重新加载${canReload ? '，随后整页重载' : ''}`)
-    return { ok: true, updated, selfDeferred: true, reload: canReload ? 'deferred' : 'unavailable', ...noteOf(notes) }
+    const reload = await reloadVia(this.cli)
+    if (reload.note !== undefined) notes.push(reload.note)
+    this.log.info(`一键热升级完成：${summary}${reload.reload === 'done' ? '；界面已整页重载' : ''}`)
+    return { ok: true, updated, reload: reload.reload, ...noteOf(notes) }
   }
 
   /** 按计划重新加载一条：本来就停用的跳过（保持停用），修改条目树时抛出的错误转成 failed */
@@ -514,8 +487,7 @@ class PluginManager {
   }
 
   async remount(entryId: string): Promise<RemountedEntry> {
-    const id = this.locate(entryId)
-    return remountOne(this.tree, id, bareId(ownEntryId(this.ctx)), this.log)
+    return remountNow(this.tree, this.locate(entryId), this.log)
   }
 
   /** 包没装（调用方写错了）直接抛；删条目与 pnpm 两步的失败转成回执 */
@@ -687,15 +659,13 @@ class PluginManager {
   }
 
   /**
-   * 不带前缀的 id → 完整 entryId。
-   *
-   * `tree.create` 没有被 await，拿不到它返回的完整 id，所以在这里自己拼。前缀是**本插件条目的前缀**——
-   * 同一个条目树上的条目共用它。
+   * 不带前缀的 id → 完整 entryId。`tree.create` 没有被 await，拿不到它返回的完整 id；但 create 在第一个 await
+   * 之前就把条目放进了 `store`，loader 的条目对象上 `id` 是按所在的树拼好前缀的，从那里读
    */
   private fullId(bare: string): string {
-    const own = ownEntryId(this.ctx)
-    const cut = own.lastIndexOf(':')
-    return cut === -1 ? bare : `${own.slice(0, cut + 1)}${bare}`
+    const entry = this.tree.store[bare]
+    const id = isRecord(entry) ? entry['id'] : undefined
+    return typeof id === 'string' && id !== '' ? id : bare
   }
 
   /**
