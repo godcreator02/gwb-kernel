@@ -42,7 +42,7 @@ home 里的插件分两层：**包**是 pnpm 装进 `package.json` 与 `node_mod
 
 **怎么做**：安装、卸载、升级都经 `applyToHome` 运行 pnpm，它把每一次运行排进同一个队列，前一个跑完下一个才开始；只读的 `pnpm outdated` 也排进去，省得另外处理两个 pnpm 同时运行。前一个失败不影响后面排队的。
 
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="726-733" */}
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="696-703" */}
 
 串行队列写在 `index.ts` 里，没有单元测试；它是否起作用，只能在隔离 home 里连着发几次安装、升级来看。
 
@@ -50,7 +50,7 @@ home 里的插件分两层：**包**是 pnpm 装进 `package.json` 与 `node_mod
 
 **怎么做**：条目的增删改只用条目树的 `create` / `update` / `remove`——它们把写回 `cordis.yml` 与当场加载、卸载一起做。启用传 `{ disabled: null }`（loader 把 null 当作删掉这个字段），停用传 `{ disabled: true }`；`remove-entry` 只删条目，包留在 home 里。条目树从哪来、有哪几个方法，是内核和插件管理之间的约定，见[home 与插件管理](/docs/seams/home#接口)。
 
-{/* ref file="../plugins/plugin-manager/src/index.ts" lines="617-628" */}
+{/* ref file="../plugins/plugin-manager/src/index.ts" lines="593-604" */}
 
 **守住它的测试**：用内核实际使用的 loader 与 include 版本跑一遍条目树。
 

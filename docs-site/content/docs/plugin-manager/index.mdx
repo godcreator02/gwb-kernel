@@ -21,7 +21,7 @@ description: plugin-manager 是唯一写 home 的插件——装卸包、增删�
 | 重新加载一条条目 | 停用 → 等旧的卸载完 → 启用；插件管理自己排到回执之后 | [重新加载一条条目](/docs/plugin-manager/remount) |
 | 热升级 | 升级与重新加载在同一条命令里；精确版本、每条条目各自重新加载、自己最后 | [热升级](/docs/plugin-manager/upgrade) |
 | id 与归属 | id 是身份不能改；选 id 时看磁盘上的归属记录，不读到别的包的数据 | [id 与归属](/docs/plugin-manager/ids) |
-| 找 pnpm 与运行 pnpm | 只用原生可执行文件、设置项优先；直接启动、不设超时；卸载时不结束 pnpm | [找 pnpm 与运行 pnpm](/docs/plugin-manager/pnpm) |
+| 找 pnpm 与运行 pnpm | 只用自己依赖里固定版本的 pnpm；直接启动、不设超时；卸载时不结束 pnpm | [找 pnpm 与运行 pnpm](/docs/plugin-manager/pnpm) |
 
 ## 不管什么
 
@@ -54,8 +54,8 @@ description: plugin-manager 是唯一写 home 的插件——装卸包、增删�
 | `outdated.ts` | 解析 `pnpm outdated` 的输出 | [热升级](/docs/plugin-manager/upgrade) |
 | `update-all.ts` | 一键热升级的计划；条目状态名 | [热升级](/docs/plugin-manager/upgrade) |
 | `ids.ts` | id 规则、默认 id、选 id；包名与版本范围的校验 | [id 与归属](/docs/plugin-manager/ids) |
-| `pnpm-path.ts` | 找 pnpm（磁盘信息由调用方传入） | [pnpm](/docs/plugin-manager/pnpm) |
-| `pnpm.ts` | 查磁盘、启动 pnpm、收集输出（启动进程） | [pnpm](/docs/plugin-manager/pnpm) |
+| `pnpm-path.ts` | 本机平台的 pnpm 包名与文件名、启动参数 | [pnpm](/docs/plugin-manager/pnpm) |
+| `pnpm.ts` | 从自己的依赖里找到 pnpm、启动它、收集输出（启动进程） | [pnpm](/docs/plugin-manager/pnpm) |
 | `vocab.ts` | 取内核服务、判断是不是对象 | — |
 
 ## 命令一览

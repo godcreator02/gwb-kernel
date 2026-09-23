@@ -10,7 +10,7 @@ docfirst: none
 
 - [x] 实验：只拷一个 `pnpm.exe` 能在新 home 里按模板装好；装到一半中断能补齐；插件管理升级时连带升 pnpm 不会被锁住（下面「第 1 步」）
 - [ ] 命令插件在内核仓 `plugins/commands/`，`pnpm check` 通过；基础插件仓不再有它
-- [ ] 插件管理依赖固定版本的 pnpm，删掉设置项 `pnpm-path` 与 PATH 查找
+- [x] 插件管理依赖固定版本的 pnpm，删掉设置项 `pnpm-path` 与 PATH 查找
 - [ ] 内核仓有一份 home 模板，测试保证模板里两个插件的版本号与仓里两个包的版本号相同，内核自带的 pnpm 与插件管理依赖的 pnpm 版本相同
 - [ ] 装好 app、第一次启动一个全新的 home（机器上没装 pnpm，用户级 `.npmrc` 照 `INSTALL.md` 配好了包源）：两个插件的条目都是 `ACTIVE`
 - [ ] 在这个 home 里：`package.json` 写的是版本号；`list`、`outdated`、`update-all`、`uninstall` 与别的插件表现一样
@@ -62,7 +62,7 @@ docfirst: none
 ## 分几步做
 
 1. **实验**（已做完）：`probes/2609231950_pnpm-exe-home-install/`，结论已写进上面各节
-2. **插件管理用固定版本的 pnpm**：`dependencies` 加 `@pnpm/exe.win32-x64`；查找只剩「从自己的依赖里找原生可执行文件」；删掉设置项 `pnpm-path`、PATH 查找与它们的测试；文档「找 pnpm 与运行 pnpm」一页跟着改
+2. **插件管理用固定版本的 pnpm**（已做完）：`dependencies` 加 `@pnpm/exe.win32-x64`；查找只剩「从自己的依赖里找原生可执行文件」；删掉设置项 `pnpm-path`、PATH 查找与它们的测试；文档「找 pnpm 与运行 pnpm」一页与 `INSTALL.md` 里 `pnpm-path` 的两处跟着改。安装包 SPEC 里「pnpm 来路」那一行留到第 6 步一起改
 3. **命令插件搬进内核仓**：源码、测试、说明书、文档原样搬到 `plugins/commands/`，包名不变；基础插件仓删掉它（先读那个仓的 AGENTS）。命令回执的外层类型挪回命令插件自己的包里，内核 `import type` 引它
 4. **内核**：模板目录进内核仓；`main.ts` 补 home 的那一段改成「新 home 复制模板」加「包缺了就运行 `pnpm install`」；两份版本号的测试。单元测试用临时目录与假的 pnpm
 5. **构建安装包**：electron-builder 把模板目录与 `pnpm.exe` 放进资源目录；装一次，按验收清单逐条验

@@ -1,41 +1,38 @@
 ---
 title: 找 pnpm 与运行 pnpm
-description: 只用 pnpm 12 起的原生可执行文件，设置项 pnpm-path 优先、PATH 回退；直接启动那个文件、环境原样传下去、不设超时；卸载时不结束正在运行的 pnpm
+description: 只用自己依赖里固定版本的 @pnpm/exe.win32-x64，不看设置、不看 PATH；直接启动那个文件、环境原样传下去、不设超时；卸载时不结束正在运行的 pnpm
 ---
 
-**本页回答**：插件管理用的是哪个 pnpm、按什么顺序找；怎么启动它、输出怎么收；卸载时正在运行的 pnpm 为什么不结束。pnpm 什么时候运行、为什么排队，见[唯一写入者](/docs/plugin-manager/home#包只经-applytohome排进一个串行队列)。
+**本页回答**：插件管理用的是哪个 pnpm、怎么找到它；怎么启动它、输出怎么收；卸载时正在运行的 pnpm 为什么不结束。pnpm 什么时候运行、为什么排队，见[唯一写入者](/docs/plugin-manager/home#包只经-applytohome排进一个串行队列)。
 
-## 只用原生可执行文件，设置项优先
+## 只用自己依赖里的那份 pnpm
 
-**是什么**：只用 **pnpm 12 起的原生可执行文件**。填了设置项 `pnpm-path` 就只按它找；没填才按 PATH 的顺序找。找到的 pnpm 包大版本低于 12 时明确报错，不试着运行。
+**是什么**：插件管理的 `dependencies` 写固定版本的 `@pnpm/exe.win32-x64`，随插件管理一起装进 home。运行时从插件管理自己的位置解析这个包，启动里面的 `pnpm.exe`。不读设置、不找 PATH，机器上装没装 pnpm、装的哪个版本，都和插件管理无关。
 
 **为什么**：
-- 原生可执行文件可以直接启动。Windows 上 PATH 里的 `pnpm.cmd` / `pnpm.ps1` 是垫片，不是可执行文件，要开 shell 才能运行，而开 shell 会带来参数引号转义的问题
-- 填了设置项就不回退 PATH：填错了要立即看到，而不是悄悄用了另一个 pnpm
+- 各人机器上装的 pnpm 版本不同，出过兼容问题。固定一份，所有 home 改动时用的都是同一个版本
+- 依赖的是可执行文件包，不是 `pnpm` 包：`pnpm` 包带安装脚本，pnpm 默认不运行依赖的安装脚本，每次改 home 都会以 `ERR_PNPM_IGNORED_BUILDS` 退出码 1 结束；`@pnpm/exe.win32-x64` 的包里只有一个 `pnpm.exe`（实验见[pnpm.exe 装新 home](/trajectory/2026-09-23-pnpm-exe-home-install-probe)）
+- 原生可执行文件可以直接启动，不用开 shell，也就没有参数引号转义的问题
 
 **怎么做**：
 
-<Diagram name="pm-pnpm-lookup" title="找 pnpm：设置项优先，PATH 回退，最后都落到本机平台的原生二进制">
-- 填了设置项 `pnpm-path`：按它找，可以是原生可执行文件、`pnpm.cmd` 垫片或它所在的目录、pnpm 包目录；找不到直接报错，不回退 PATH
-- 没填：按 PATH 的顺序逐个目录找。Windows 上目录里的 `pnpm.exe` 直接用；`pnpm.cmd`（别的平台是 `pnpm`）是垫片，从它推出 npm 全局安装的目录布局，再找到里面本机平台的那份原生二进制（`@pnpm/exe.<平台>-<架构>`）。一处推不出就接着找下一处
-- 每一处都不行：报错，列出每一处为什么不行，并说明怎么装、怎么填设置
+<Diagram name="pm-pnpm-lookup" title="插件管理从自己的依赖里找到 pnpm">
+- home 按 pnpm 的布局存放：插件管理和它依赖的 `@pnpm/exe.win32-x64` 在 `node_modules/.pnpm/` 下同一个目录里
+- 插件管理从自己的位置按 node 的规则解析 `@pnpm/exe.win32-x64/package.json`，旁边的 `pnpm.exe` 就是要启动的文件，工作目录是 home
+- 包或文件找不到：报错，让人重装插件管理
+- 插件管理升级时 pnpm 版本可能跟着变。pnpm 只把链接换到新版本目录，旧目录和正在运行的那个文件留在原处，不会因为文件被占用而失败
 </Diagram>
 
-{/* ref file="../plugins/plugin-manager/src/pnpm-path.ts" lines="165-180" */}
+{/* ref file="../plugins/plugin-manager/src/pnpm.ts" lines="48-57" */}
 
-- corepack、volta 装出来的不是 npm 全局安装的目录布局，自动查找认不出，要手动填 `pnpm-path`
-- 设置项按 home 保存：换一个 home 要重填一次
-- 查找是纯逻辑，磁盘上的信息由调用方传进三个函数（这个路径是文件还是目录、真实路径、pnpm 包的版本号），所以能用假的目录布局测各个平台
+- 包名带平台：现在只依赖了 Windows x64 那份，别的平台上找不到，直接报错
+- 回执与日志里写的是用了哪个版本、哪个文件
 
-**守住它的测试**：各平台的目录布局与设置项的几种写法都有测试，下面是和规则直接相关的几条。
+**守住它的测试**：
 
-{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="填了设置项就不再回退 PATH" */}
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="从本插件的位置解析到依赖里那个可执行文件" */}
 
-{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="从垫片推出原生 pnpm.exe" */}
-
-{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="第一个垫片推不出 pnpm 包时接着往后找" */}
-
-{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="版本低于 12 明确报错" */}
+{/* has file="../plugins/plugin-manager/tests/pnpm-path.test.ts" text="依赖里只有 pnpm 的可执行文件包" */}
 
 ## 直接启动、不设超时
 

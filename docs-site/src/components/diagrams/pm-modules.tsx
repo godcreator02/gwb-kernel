@@ -13,7 +13,7 @@ const PURE: { file: string; what: string }[] = [
   { file: 'outdated.ts', what: '读 outdated' },
   { file: 'update-all.ts', what: '热升级的计划' },
   { file: 'remount.ts', what: '停用再启用' },
-  { file: 'pnpm-path.ts', what: '找 pnpm' },
+  { file: 'pnpm-path.ts', what: 'pnpm 包名与参数' },
   { file: 'busy.ts', what: 'BUSY 互斥' },
   { file: 'vocab.ts', what: '取内核服务' },
 ]
