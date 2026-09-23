@@ -112,6 +112,12 @@ importers:
 
   plugins/plugin-manager:
     devDependencies:
+      '@cordisjs/plugin-include':
+        specifier: 1.0.5
+        version: 1.0.5(@cordisjs/plugin-loader@1.0.0-rc.6)(cordis@4.0.0-rc.9)
+      '@cordisjs/plugin-loader':
+        specifier: 1.0.0-rc.6
+        version: 1.0.0-rc.6(cordis@4.0.0-rc.9)
       '@godcreator/gwb-commands':
         specifier: ^0.4.6
         version: 0.4.6(@godcreator/gwb-plugin-api@packages+gwb-plugin-api)
