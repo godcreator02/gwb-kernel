@@ -1,5 +1,5 @@
 {
   "title": "接缝",
-  "description": "不改这里的代码就能换掉一边实现的位置：两侧各是谁、交换什么、各保证什么、在哪里换",
-  "pages": ["plugins", "home", "shell", "shared", "commands"]
+  "description": "内核仓的包之间靠哪十二条接缝连起来：两侧各是谁、交换什么、各保证什么、怎么单独测",
+  "pages": ["index", "loading", "kernel", "command-bus", "ipc", "shell", "shared", "builtin", "home", "pnpm", "skills", "runtime", "log"]
 }

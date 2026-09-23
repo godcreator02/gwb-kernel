@@ -21,22 +21,16 @@ description: 内核是什么、一次启动依次发生什么、带着不同的�
 
 god 工作台的内核：一个 Electron 应用，只做**第一个插件运行之前必须完成的事**，外加内置的两个平台核心：命令总线（[命令插件](/docs/commands)）与负责装卸插件的[插件管理](/docs/plugin-manager)。界面、数据、设置、给 agent 用的 MCP 入口，全部是 `cordis.yml` 里的插件。内核为什么切成这样、刻意不做哪些事，见[关键设计](/docs/design)。
 
-内核和插件、页面之间只有五条接缝：
-
-| 接缝 | 一句话 |
-| --- | --- |
-| [插件与内核](/docs/seams/plugins) | 插件从 `cordis.yml` 进来、按 home 解析、由 cordis 加载，从 `ctx.gwbKernel` 与命令总线 `ctx.gwbCommands` 拿到内核给的东西 |
-| [home 与插件管理](/docs/seams/home) | 只有内置的插件管理写 home：一次 pnpm，再经 loader 条目树改 `cordis.yml`；它是内置在内核里的 loader 根层条目 |
-| [外壳接管页面](/docs/seams/shell) | 谁调用 `setShell`，页面的 `#root` 就交给谁；没有外壳时显示只读状态页 |
-| [页面上的包名](/docs/seams/shared) | 包在清单里声明 `gwb.shared`，内核拼成 importmap，页面上 `import 'react'` 靠它找到文件 |
-| [命令与事件](/docs/seams/commands) | 页面调命令，内核原样转交给内置的命令总线 `gwbCommands`；插件发事件，内核原样推给页面 |
+内核仓拆成几个包：内核应用、词汇表包、两个内置插件（命令插件、插件管理）、安装包；它们和页面、cordis、`cordis.yml` 里的插件、home 之间靠十二条接缝连起来。一张图看全貌，见[接缝图](/docs/seams)。
 
 ## 按要做的事读
 
 - **想知道内核为什么长这样**：[关键设计](/docs/design)
-- **写插件**：先读[插件与内核](/docs/seams/plugins)；写插件的完整流程在 devkit 的说明书 `gwb-devkit`
-- **做界面**：[外壳接管页面](/docs/seams/shell)、[页面上的包名](/docs/seams/shared)、[命令与事件](/docs/seams/commands)
-- **改内核**：[系统地图](/docs/map)看每个文件对外提供什么、谁依赖谁；动手前必须遵守的硬约束在仓根 AGENTS
-- **改命令总线**（登记、注销、执行命令）：[命令插件](/docs/commands)，页面怎么把命令交过来在[命令与事件](/docs/seams/commands)
-- **改插件管理**（安装、升级、条目与 id、找 pnpm）：[插件管理](/docs/plugin-manager)，它和内核之间的约定在[home 与插件管理](/docs/seams/home)
-- **排查故障**：日志在 home 里的 `gwb.log`；外壳起不来时页面显示的只读状态页见[外壳接管页面](/docs/seams/shell)；找进程看 home 里的 `runtime.json`（见[插件与内核](/docs/seams/plugins)）
+- **在本仓动手**（怎么跑、怎么测、怎么打安装包、怎么发版）：[开发](/docs/develop)；硬约束在仓根 AGENTS
+- **写插件**：先读[插件加载](/docs/seams/loading)、[内核服务](/docs/seams/kernel)、[命令总线](/docs/seams/command-bus)；写插件的完整流程在 devkit 的说明书 `gwb-devkit`
+- **做界面**：[IPC 通道](/docs/seams/ipc)、[外壳接管](/docs/seams/shell)、[页面上的包名](/docs/seams/shared)
+- **改内核应用**：[内核应用](/docs/desktop)看每个文件管什么、谁依赖谁
+- **改命令总线**：[命令插件](/docs/commands)；它和插件之间交换什么在[命令总线](/docs/seams/command-bus)
+- **改插件管理**（安装、升级、条目与 id）：[插件管理](/docs/plugin-manager)；它和内核、pnpm 之间的约定在[内置插件的加载](/docs/seams/builtin)、[条目树与 home 布局](/docs/seams/home)、[pnpm](/docs/seams/pnpm)
+- **改安装包**：[安装包](/docs/installer)
+- **排查故障**：日志在 home 里的 `gwb.log`（[日志](/docs/seams/log)）；外壳起不来时页面显示的只读状态页见[外壳接管](/docs/seams/shell)；找进程看 home 里的 `runtime.json`（[runtime.json](/docs/seams/runtime)）

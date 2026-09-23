@@ -29,21 +29,21 @@ const config = {
     // 现状区按模块重写（2026-09-23）后已经没有的页，指到现在包含它内容的那一页
     { source: '/docs/four-things', destination: '/docs', permanent: true },
     { source: '/docs/kernel/processes', destination: '/docs', permanent: true },
-    { source: '/docs/kernel/cordis', destination: '/docs/seams/plugins', permanent: true },
-    { source: '/docs/plugins/:path*', destination: '/docs/seams/plugins', permanent: true },
-    { source: '/docs/plugin', destination: '/docs/seams/plugins', permanent: true },
+    { source: '/docs/kernel/cordis', destination: '/docs/seams/loading', permanent: true },
+    { source: '/docs/plugins/:path*', destination: '/docs/seams/loading', permanent: true },
+    { source: '/docs/plugin', destination: '/docs/seams/loading', permanent: true },
     { source: '/docs/getting-started/:path*', destination: '/docs', permanent: true },
     { source: '/docs/dev-loop', destination: '/docs', permanent: true },
     { source: '/docs/docfirst/:path*', destination: '/docs', permanent: true },
     // 现状区按接缝重写（2026-09-23）：边界并进关键设计，六个模块页并进四条接缝与系统地图
     { source: '/docs/boundary', destination: '/docs/design', permanent: true },
-    { source: '/docs/kernel', destination: '/docs/map', permanent: true },
-    { source: '/docs/kernel/home', destination: '/docs/seams/plugins', permanent: true },
-    { source: '/docs/kernel/loading', destination: '/docs/seams/plugins', permanent: true },
-    { source: '/docs/kernel/contract', destination: '/docs/seams/plugins', permanent: true },
+    { source: '/docs/kernel', destination: '/docs/desktop', permanent: true },
+    { source: '/docs/kernel/home', destination: '/docs/desktop/home', permanent: true },
+    { source: '/docs/kernel/loading', destination: '/docs/seams/loading', permanent: true },
+    { source: '/docs/kernel/contract', destination: '/docs/vocab', permanent: true },
     { source: '/docs/kernel/importmap', destination: '/docs/seams/shared', permanent: true },
     { source: '/docs/kernel/bridge', destination: '/docs/seams/shell', permanent: true },
-    { source: '/docs/kernel/logs', destination: '/docs/map', permanent: true },
+    { source: '/docs/kernel/logs', destination: '/docs/seams/log', permanent: true },
     // 关键判据并进插件管理各页的提示框、准入判据并进关键设计（2026-09-23）。用临时跳转：永久跳转会被浏览器缓存，
     // 以后这些网址再用上就打不开
     { source: '/docs/criteria/k1', destination: '/docs/design', permanent: false },
@@ -51,9 +51,15 @@ const config = {
     { source: '/docs/criteria/:path*', destination: '/docs/plugin-manager', permanent: false },
     // 插件管理按机制拆页（2026-09-23）：条目页拆进「home 的两层」与「id 与归属」
     { source: '/docs/plugin-manager/entries', destination: '/docs/plugin-manager/ids', permanent: false },
+    // 现状区按接缝图重排（2026-09-23）：系统地图并进接缝图与内核应用，插件与内核、命令与事件两页拆成几条接缝，
+    // 找 pnpm 一页成为接缝 pnpm
+    { source: '/docs/map', destination: '/docs/seams', permanent: false },
+    { source: '/docs/seams/plugins', destination: '/docs/seams/loading', permanent: false },
+    { source: '/docs/seams/commands', destination: '/docs/seams/ipc', permanent: false },
+    { source: '/docs/plugin-manager/pnpm', destination: '/docs/seams/pnpm', permanent: false },
   ],
   // 旧配置曾把 /docs 永久重定向到 /docs/system-map，浏览器缓存着那条 308：这里再重定向回 /docs
-  // 就成环。改写不发 30x，缓存了旧跳转的浏览器也看得到入口页。系统地图现在的网址是 /docs/map
+  // 就成环。改写不发 30x，缓存了旧跳转的浏览器也看得到入口页
   rewrites: async () => [{ source: '/docs/system-map', destination: '/docs' }],
 }
 

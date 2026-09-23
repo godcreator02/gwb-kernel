@@ -1,11 +1,14 @@
 {
   "pages": [
     "index",
+    "develop",
     "design",
-    "map",
     "seams",
+    "desktop",
+    "vocab",
     "commands",
     "plugin-manager",
+    "installer",
     "glossary"
   ]
 }

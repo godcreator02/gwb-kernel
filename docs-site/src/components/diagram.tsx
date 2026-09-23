@@ -24,10 +24,12 @@ import { PmRemount } from './diagrams/pm-remount'
 import { PmUninstall } from './diagrams/pm-uninstall'
 import { PmUpgrade } from './diagrams/pm-upgrade'
 import { PmUpgradeGap } from './diagrams/pm-upgrade-gap'
+import { SeamMap } from './diagrams/seam-map'
 import { SharedNames } from './diagrams/shared-names'
 import { ShellHandover } from './diagrams/shell-handover'
 
 const drawings: Record<string, () => ReactNode> = {
+  'seam-map': () => <SeamMap />,
   'kernel-boot': () => <KernelBoot />,
   'module-map': () => <ModuleMap />,
   'plugin-seam': () => <PluginSeam />,
