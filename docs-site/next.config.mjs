@@ -53,7 +53,9 @@ const config = {
     { source: '/docs/plugin-manager/entries', destination: '/docs/plugin-manager/ids', permanent: false },
     // 现状区按接缝图重排（2026-09-23）：系统地图并进接缝图与内核应用，插件与内核、命令与事件两页拆成几条接缝，
     // 找 pnpm 一页成为接缝 pnpm
-    { source: '/docs/map', destination: '/docs/seams', permanent: false },
+    // 接缝图并进入口页（2026-09-23）
+    { source: '/docs/map', destination: '/docs', permanent: false },
+    { source: '/docs/seams', destination: '/docs', permanent: false },
     { source: '/docs/seams/plugins', destination: '/docs/seams/loading', permanent: false },
     { source: '/docs/seams/commands', destination: '/docs/seams/ipc', permanent: false },
     { source: '/docs/plugin-manager/pnpm', destination: '/docs/seams/pnpm', permanent: false },

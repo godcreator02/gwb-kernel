@@ -1,14 +1,15 @@
 {
   "pages": [
     "index",
-    "develop",
     "design",
+    "develop",
+    "glossary",
     "seams",
+    "---包---",
     "desktop",
     "vocab",
     "commands",
     "plugin-manager",
-    "installer",
-    "glossary"
+    "installer"
   ]
 }

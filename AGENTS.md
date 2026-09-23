@@ -1,8 +1,8 @@
 # gwb-kernel
 
 god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只做第一个插件运行前必须完成的事，外加内置的命令插件与插件管理，其余都做成插件。
-现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：只做什么、刻意不做什么见同目录 `design.mdx`，
-包与包之间的十二条接缝见 `seams/`（首页是接缝图，也是全部包的总索引），怎么跑、怎么测、怎么发版见 `develop.mdx`，内核应用每个文件管什么见 `desktop/`，命令插件见 `commands.mdx`，插件管理靠哪几个机制工作见 `plugin-manager/`，安装包见 `installer.mdx`
+现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：入口页就是接缝图，画出八个包与十二条接缝，也是全部包的总索引；只做什么、刻意不做什么见同目录 `design.mdx`，
+十二条接缝各一页见 `seams/`，怎么跑、怎么测、怎么发版见 `develop.mdx`，内核应用每个文件管什么见 `desktop/`，命令插件见 `commands.mdx`，插件管理靠哪几个机制工作见 `plugin-manager/`，安装包见 `installer.mdx`
 （每页讲一个机制：是什么、为什么这么做、怎么做的——peer 怎么写、服务还是命令、契约归谁、卸载时清理什么、版本号怎么升都在里面）。
 
 ## 准入判据

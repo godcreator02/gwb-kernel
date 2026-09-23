@@ -1,5 +1,5 @@
 ---
-title: 插件加载
+title: 1 插件加载 cordis.yml
 description: 插件是 home 里的一个 npm 包，由 cordis.yml 的一条条目点名；内核注册 cordis 的 loader，替它把包名按 home 的真实路径解析成文件，cordis 调用插件的 apply 或实例化它的 Service 类
 ---
 
@@ -39,13 +39,7 @@ export function apply(ctx: GwbContext): void { /* … */ }
 
 ## home 里和加载有关的文件
 
-| 文件 | 谁写 |
-| --- | --- |
-| `package.json` | 缺了内核补一份最小清单，之后归 pnpm 和插件管理 |
-| `cordis.yml` | 缺了内核补一个空表，之后归 include 和插件管理 |
-| `node_modules/` | pnpm |
-
-home 怎么选定、另外几个文件（`gwb.log`、`runtime.json`、插件的数据目录）见 [home 的准备](/docs/desktop/home)。写 home 的只有插件管理，见[条目树与 home 布局](/docs/seams/home)。
+和加载有关的是 home 里的三样：`package.json`、`cordis.yml`、`node_modules/`。home 里每样东西归谁写列在[条目树与 home 布局](/docs/seams/home)；home 怎么选定见 [home 的准备与单实例锁](/docs/desktop/home)。
 
 ## 两边各保证什么
 

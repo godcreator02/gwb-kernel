@@ -1,5 +1,5 @@
 ---
-title: 条目树与 home 布局
+title: 8 条目树与 home 布局 loader
 description: 插件管理从自己条目所在的那一层按 config 给的 id 取出承载 cordis.yml 的条目树，只用它的 create / update / remove / resolve 与 store 改条目；包的一层读 home 的 package.json、经 pnpm 改；这些都是 loader 与内核没写进文档的内部结构，由同仓测试守住
 ---
 
@@ -34,7 +34,19 @@ description: 插件管理从自己条目所在的那一层按 config 给的 id �
 
 {/* ref file="../plugins/plugin-manager/src/index.ts" lines="680-688" */}
 
-**home 的文件布局**：`package.json` 列出装了哪些包（pnpm 维护），`cordis.yml` 列出条目（loader 维护），包在 `node_modules`。插件管理读 `package.json` 的依赖表，读不到当空表；它不直接读写 `cordis.yml`：
+**home 的文件布局**：home 里每样东西归谁写，全站只在这里列一份：
+
+| 文件 | 谁写 |
+| --- | --- |
+| `package.json` | 列出装了哪些包。缺了内核补一份最小清单，之后归 pnpm 和插件管理 |
+| `cordis.yml` | 列出条目。缺了内核补一个空表，之后归 include 和插件管理 |
+| `node_modules/` | pnpm，由插件管理调用（见 [pnpm](/docs/seams/pnpm)） |
+| `gwb.log`、`gwb.log.1` | 内核（见[日志文件](/docs/desktop/log-file)） |
+| `runtime.json` | 内核每次启动整份重写，退出时不删（见 [runtime.json](/docs/seams/runtime)） |
+| `electron/` | Chromium 的 userData，每个 home 一份（见 [home 的准备与单实例锁](/docs/desktop/home)） |
+| 其余目录 | 各插件自己的数据 |
+
+插件管理读 `package.json` 的依赖表，读不到当空表；它不直接读写 `cordis.yml`：
 
 {/* ref file="../plugins/plugin-manager/src/home.ts" lines="29-37" */}
 
@@ -43,7 +55,7 @@ description: 插件管理从自己条目所在的那一层按 config 给的 id �
 内核一侧保证：
 - 承载 `cordis.yml` 的 include 条目和插件管理在 loader 的同一层（根层），id 经 config 交来
 - `create` / `update` / `remove` 把写回 `cordis.yml` 与当场加载、卸载一起做；`update` 的值给 `null` 是删掉那个字段
-- home 的布局如上；布局与 home 里有什么的全貌见[插件加载](/docs/seams/loading)
+- home 的布局如上表
 - 包名按真实路径解析：包换了版本、真实路径跟着换，停用再启用就能拿到新版本
 - loader 与 include 的版本固定在 `apps/desktop/package.json`；升级它们时先运行插件管理的测试
 
@@ -75,7 +87,7 @@ description: 插件管理从自己条目所在的那一层按 config 给的 id �
 
 {/* has file="../plugins/plugin-manager/tests/tree.test.ts" text="少一样当场说清楚少的是哪个" */}
 
-其余测试见[插件管理](/docs/plugin-manager#怎么测)。
+其余测试见[插件管理](/docs/plugin-manager#怎么单独测)。
 
 ## 代码从哪读
 
