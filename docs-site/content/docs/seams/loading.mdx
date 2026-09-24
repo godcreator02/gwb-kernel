@@ -38,7 +38,7 @@ export function apply(ctx: GwbContext): void { /* … */ }
 
 `bareImportFromHome` 先把 `<home>/node_modules/<包名>` 解析成磁盘上的真实路径，再从那里按包的 `exports` 找到入口文件：
 
-{/* ref file="../apps/desktop/src/bare-import.ts" lines="17-29" */}
+{/* ref file="../apps/desktop/src/bare-import.ts" lines="12-24" */}
 
 从真实路径开始，是为了运行中换了版本能拿到新版本：pnpm 布局里真实路径带版本号，不会命中 Node 为上一版记下的解析缓存。页面上的包名用的是同一个 `resolveFromHome`（见[页面上的包名](/docs/seams/shared)）。
 
