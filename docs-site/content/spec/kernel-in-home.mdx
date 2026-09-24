@@ -1,0 +1,68 @@
+---
+title: 内核装进 home：内核作为 npm 包装进每个 home，exe 只负责启动 Electron
+description: 待人决定做不做。做的话验收标准是：插件的 cordis 与内核用的是 home 里同一份；内核新版能装进隔离 home 验证，不重打安装包
+---
+
+# 内核装进 home
+
+**本页回答**：把内核从 `app.asar` 挪进每个 home 的 `node_modules` 要改什么、换来什么、要推翻哪些已有决定，还有哪些问题要人先定。
+
+**状态：待人决定做不做。** 这一页只是方案，还没有任何代码改动。
+
+## 由来
+
+2026-09-24 在总控台的会话里查实：内核用 `app.asar` 里的 cordis 4.0.0-rc.9 创建 cordis 实例，插件写 `import { Service } from 'cordis'`
+时按 home 解析，拿到的是 pnpm 按 peer 在 home 里补装的 rc.10。插件手里的 `ctx` 与它继承的 `Service` 来自两份不同版本的 cordis。
+devkit 仓的全生态机制定案第一节记下了这件事，判断是「没有实际发生的故障，不做」。
+
+一般的 Node 插件生态（eslint、vite、koishi 的插件）靠 peer 解决这两件事：宿主是一个 npm 包，和插件装在同一个 `node_modules` 里，
+pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版本范围。gwb 做不到，因为宿主在 `app.asar` 里，pnpm 看不见它：
+解析上它另装一份，版本检查只能比到自己装的那份。所以另有 `gwb.testedKernel` 这个字段，由插件管理拿运行中的内核版本来比。
+
+同一次会话里先讨论过由内核在主进程里注册解析钩子，把包名 `cordis` 固定解析到 `app.asar` 里那一份；之后人选择先讨论本页的做法，
+因为它同时去掉两个问题：cordis 只剩一份，peer 的版本检查也重新有效。
+
+## 方案
+
+- **启动器**：安装包只带 Electron 和一段启动脚本。启动脚本选定 home（规则不变），从
+  `<home>/node_modules/@godcreator/gwb-kernel-desktop` import 内核；home 里没有内核包就弹框说明、退出码 1，**不替人安装**
+- **home**：`package.json` 除了插件，再列内核包和 `cordis`，版本号与内核包依赖的一致；内核包把 cordis 写成 peer。
+  这样 pnpm 只装一份 cordis，内核和所有插件解析到同一份
+- **谁把内核装进 home**：和插件一样，由创建 home 的一方装。default 由装机的 agent 照 `INSTALL.md` 装，测试 home 由
+  `devkit.home.new` 装。启动器与内核都不运行 pnpm
+- **内核发版**：内核包重新发到团队源；安装包只在 Electron 版本或启动脚本变了时重打
+- **开发内核**：内核的开发版和插件一样用 `devkit.dev` 装进隔离 home 验证，不用重新安装 exe，也不碰 default
+
+## 待决定
+
+- [ ] **做不做**：人读完本页后决定
+- [ ] **Electron 版本怎么对上**：Electron 在启动器里，内核包在 home 里，内核升级可能要求新版 Electron。内核包在清单里声明它要的
+  Electron 版本范围，启动脚本 import 之前比对、不满足就弹框拒绝启动？还是另有做法
+- [ ] **兼容性声明换不换**：内核进了 home，插件可以用 peer 写内核包的版本范围，由 pnpm 安装时检查，`gwb.testedKernel`
+  与插件管理、`devkit.release` 里两份比对规则可以删掉。换，还是继续用 `testedKernel`
+- [ ] **内核怎么升级**：`plugin-manager.update-all` 升到内核包时，主进程里的内核换不掉，要重启应用。插件管理怎么提示、
+  要不要把内核排除出一键更新、只允许单独升级
+- [ ] **各个 home 的内核版本各自独立**：每个 home 可以装不同版本的内核。这是想要的，还是要求机器上所有 home 用同一版
+
+## 要推翻或改写的已有决定
+
+- [撤 npm 管道](/trajectory/2026-09-18-withdraw-npm-channel)：内核重新发 npm 包
+- 「发版就是发 exe」（`installer/SPEC.md`）：exe 变成只装 Electron 的启动器，内核版本不再跟着 exe 走
+- [内核 0.1.0 上架本机 registry](/trajectory/2026-09-12-kernel-on-registry)里的「固定安装位」不回来：内核装在每个 home 里，不装在单独的目录里
+- devkit 定案第二节「home 里只有插件」：home 里多了内核包与 cordis 两个不是插件的包
+- [内核只放内核](/trajectory/2026-09-24-kernel-repo-only-kernel)里的兼容性做法：看上面「兼容性声明换不换」怎么定
+- home 布局变了，按接缝约定内核升 x
+
+## 代价
+
+- 内核重新有了一条 npm 发版线，加上启动器，发版物从一个变成两个
+- 多出启动器与内核之间的 Electron 版本兼容问题
+- 装机步骤多一步（往 home 里装内核包），`INSTALL.md`、`devkit.home.new` 都要改
+- 内核升级从「重新安装 exe」变成「装进 home 后重启」，插件管理要处理这种只能重启才生效的升级
+
+## 做的话怎么验收
+
+- [ ] 隔离 home 里，内核与每个写 peer `cordis` 的插件解析到的 cordis 是同一个真实路径，home 的 `node_modules/.pnpm` 里只有一份 cordis
+- [ ] 内核的开发版经 `devkit.dev` 装进隔离 home，重启后 `gwbKernel.version` 是新版，没有重新安装 exe
+- [ ] home 里没有内核包时，启动器弹框说明并以退出码 1 退出
+- [ ] 照新的 `INSTALL.md` 由不带上下文的子代理往临时 home 装一遍，MCP 入口连得上、条目全部 ACTIVE
