@@ -533,8 +533,8 @@
   "content/docs/develop.mdx": {
     "../apps/desktop/package.json:14-18": {
       "kind": "git",
-      "blob": "2a28e514b221130c4674ab772b275a859e231f78",
-      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "blob": "896e2394761cd5bf41250f83437fa1ad9ebda5d3",
+      "commit": "5dd3d4b5ae46d0ea83910ea341a45c76a36e64ac",
       "lines": [
         14,
         18
@@ -544,27 +544,17 @@
     "../package.json:6-14": {
       "kind": "git",
       "blob": "f90dc47b7233c442031dc7f1ae0a7c54b22e2a82",
-      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "commit": "5dd3d4b5ae46d0ea83910ea341a45c76a36e64ac",
       "lines": [
         6,
         14
       ],
       "hash": "cb0a6cb222ec705108009e9214072409abe326c31fcb084f82f3c7948cab5851"
     },
-    "../installer/scripts/build.ps1:21-23": {
-      "kind": "git",
-      "blob": "54a1c24c683065e4ad79d69545f9ca913fba5b01",
-      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
-      "lines": [
-        21,
-        23
-      ],
-      "hash": "5c7508bccc7607f4408a32234a2ee2a539efe6bfe47264a56502334837cdd64e"
-    },
     "../installer/electron-builder.yml:all": {
       "kind": "git",
       "blob": "fd0527af292cce5a474795366126cf4425a8ea2b",
-      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "commit": "5dd3d4b5ae46d0ea83910ea341a45c76a36e64ac",
       "lines": [
         1,
         25
@@ -574,43 +564,53 @@
     "has ../installer/tests/make-icon.test.ts \"make-icon.ps1 生成的图标与仓里的 icons/icon.ico 逐字节相同\"": {
       "kind": "has"
     },
-    "../installer/scripts/build.ps1:25-29": {
+    "../installer/scripts/build.ps1:18-19": {
       "kind": "git",
-      "blob": "54a1c24c683065e4ad79d69545f9ca913fba5b01",
-      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "blob": "8619c5dad65bcda754e6103d366716c25ed5dd85",
+      "commit": "5dd3d4b5ae46d0ea83910ea341a45c76a36e64ac",
       "lines": [
-        25,
-        29
+        18,
+        19
+      ],
+      "hash": "0c908c861c86a3fbce059a70892f954b64ed188a7a49af0f193eae25f922a315"
+    },
+    "../installer/scripts/build.ps1:21-25": {
+      "kind": "git",
+      "blob": "8619c5dad65bcda754e6103d366716c25ed5dd85",
+      "commit": "5dd3d4b5ae46d0ea83910ea341a45c76a36e64ac",
+      "lines": [
+        21,
+        25
       ],
       "hash": "f4b3cf8c5180673cc7abc9da158918f41978da1c302b8b11a0a37777ae1173cd"
     },
-    "../installer/scripts/build.ps1:31-33": {
+    "../installer/scripts/build.ps1:27-29": {
       "kind": "git",
-      "blob": "54a1c24c683065e4ad79d69545f9ca913fba5b01",
-      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "blob": "8619c5dad65bcda754e6103d366716c25ed5dd85",
+      "commit": "5dd3d4b5ae46d0ea83910ea341a45c76a36e64ac",
       "lines": [
-        31,
-        33
+        27,
+        29
       ],
       "hash": "0ded539efcf45c538124de218e7329b9b18bd5d7e132a64a9c648e386d1064e2"
     },
-    "../installer/scripts/build.ps1:35-56": {
+    "../installer/scripts/build.ps1:31-51": {
       "kind": "git",
-      "blob": "54a1c24c683065e4ad79d69545f9ca913fba5b01",
-      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "blob": "8619c5dad65bcda754e6103d366716c25ed5dd85",
+      "commit": "5dd3d4b5ae46d0ea83910ea341a45c76a36e64ac",
       "lines": [
-        35,
-        56
+        31,
+        51
       ],
-      "hash": "815c60130b3de24697f0ad274a6a347b975df673efe8c51b7a5ca5337e7a1d59"
+      "hash": "93e409b2a06ffcdba697f82c69238577c65b57a68a3657ccd7a5ee249541faaf"
     },
-    "../installer/scripts/build.ps1:58-66": {
+    "../installer/scripts/build.ps1:53-61": {
       "kind": "git",
-      "blob": "54a1c24c683065e4ad79d69545f9ca913fba5b01",
-      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "blob": "8619c5dad65bcda754e6103d366716c25ed5dd85",
+      "commit": "5dd3d4b5ae46d0ea83910ea341a45c76a36e64ac",
       "lines": [
-        58,
-        66
+        53,
+        61
       ],
       "hash": "509d2766e4e77b7bf0de27614dbc979c9ab40a6189c997df52b11af1c3877221"
     }
