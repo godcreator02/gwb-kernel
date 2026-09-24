@@ -6,7 +6,7 @@
     <style>
       /* 与 main.ts 的窗口底色、安装包图标的底色是同一个值，改就一起改 */
       html { background: #151518; }
-      /* 只给没有外壳时的只读状态页用；外壳就位后 #root 整个归它。暗底上用亮字 */
+      /* 只给没有外壳时的只读状态页用；外壳挂载后 #root 整个归它。暗底上用亮字 */
       .gwb-report { color: #fafafa; font: 13px/1.6 ui-monospace, Consolas, monospace; padding: 16px 20px; white-space: pre-wrap; }
       .gwb-report ul { padding-left: 1.5em; margin: 0.5em 0; }
       .gwb-report pre { margin: 0.5em 0 0; white-space: pre-wrap; }
@@ -18,8 +18,10 @@
       const root = document.getElementById('root')
       let currentShell = null
       let importmapInjected = false
+      // 不能用 null：null 是「没有外壳」的推送值，用它当初值会把第一条 url: null 当成重复推送忽略掉
+      const NOTHING_BEING_LOADED = Symbol('没有外壳地址在加载')
       // 正在 import、还没挂上的外壳地址：挂上之前 currentShell 还是旧的，靠它认出同一个地址又推来了一次
-      let shellUrlBeingLoaded = null
+      let shellUrlBeingLoaded = NOTHING_BEING_LOADED
 
       // importmap 只能注入一次，而且要在第一个包名 import 之前：注入之后，已经解析过的名字改不了
       function injectImportmapOnce(imports) {
@@ -89,7 +91,7 @@
       window.gwb.onShell(async (shell) => {
         const url = shell?.url ?? null
         injectImportmapOnce(shell?.imports ?? {})
-        // 订阅时请求的一条与去抖推送的一条可能都在 import 完成之前到达，只比 currentShell 的话外壳会挂两遍
+        // 订阅时请求的一条与去抖推送的一条可能都在 import 完成之前到达，只比 currentShell 的话外壳会挂载两遍
         if (currentShell?.url === url || shellUrlBeingLoaded === url) return
         shellUrlBeingLoaded = url
         try {
@@ -100,7 +102,7 @@
           }
           await mountShell(url, shell?.report)
         } finally {
-          shellUrlBeingLoaded = null
+          shellUrlBeingLoaded = NOTHING_BEING_LOADED
         }
       })
     </script>

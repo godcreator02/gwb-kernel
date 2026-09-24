@@ -5,7 +5,7 @@ description: 连接内核应用（页面入口与主进程里的 setShell）与�
 
 **本页回答**：页面怎么交给一个插件来渲染；外壳换了、卸载了、启动失败时页面显示什么；内核应用和外壳插件各保证什么。
 
-<Diagram name="shell-handover" title="页面先问外壳是谁，外壳就位后把 #root 交出去，外壳卸载后回到只读状态页">
+<Diagram name="shell-handover" title="页面先问外壳是谁，外壳插件调用 setShell 后把 #root 交出去，外壳卸载后回到只读状态页">
 - 页面订阅 `onShell`，订阅时发一次 `gwb:hello` 问当前外壳是谁；内核每次都回一条 `gwb:shell`：外壳地址（没有时是 `null`）、importmap、只读状态页的数据
 - 还没有外壳时页面显示只读状态页
 - 外壳插件调用 `setShell(url)`，内核记下地址、再推一次；页面注入 importmap，import 这个地址，把 `#root` 交给它的默认导出
@@ -46,13 +46,15 @@ type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 页面入口 `index.html` 收到 `gwb:shell` 后：
 
 1. 注入 importmap——只注入一次、而且必须在第一句包名 import 之前，注入之后已经解析过的名字无法再改（importmap 从哪来见[页面上的包名](/docs/seams/shared)）
-2. 地址和当前外壳相同、或同一个地址正在加载，就什么都不做：订阅时请求的一条与去抖推送的一条可能都在 import 完成之前到达，只比当前外壳的话外壳会挂载两遍
+2. 地址和当前外壳相同、或同一个地址正在加载，就什么都不做：订阅时请求的一条与去抖推送的一条可能都在 import 完成之前到达，只比当前外壳的话外壳会挂载两遍。「没有地址在加载」用一个专门的 Symbol 表示，不用 `null`——`null` 是「没有外壳」的推送值，拿它当初值会把 `url: null` 当成重复推送忽略掉
 3. 调用旧外壳的 `dispose`（出错只打印），清空 `#root`
 4. 地址是 `null`，显示只读状态页；否则 import 这个地址，把 `#root` 交给默认导出
 
-{/* ref file="../apps/desktop/src/index.html" lines="89-105" */}
+{/* ref file="../apps/desktop/src/index.html" lines="21-24" */}
 
-{/* ref file="../apps/desktop/src/index.html" lines="68-87" */}
+{/* ref file="../apps/desktop/src/index.html" lines="91-107" */}
+
+{/* ref file="../apps/desktop/src/index.html" lines="70-89" */}
 
 ### 没有外壳时
 
@@ -61,7 +63,7 @@ type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 ## 约定
 
 内核应用（主进程与页面入口）保证：
-- 页面一订阅就能拿到当前外壳，不会因为外壳插件比页面先就位而错过
+- 页面一订阅就能拿到当前外壳，不会因为外壳插件比页面先调用 `setShell` 而错过
 - 同一时刻只有一个外壳；换外壳时旧外壳先 `dispose` 再清空 `#root`
 - 同一个地址连续推来两次，外壳只加载一次
 - 外壳出任何问题，页面都回到只读状态页，不会白屏
@@ -80,16 +82,14 @@ type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 
 ## 测试
 
-页面接管的逻辑写在 `index.html` 里，由 `apps/desktop/tests/index-html.test.ts` 保护：把页面脚本放进一个极简的假 DOM 求值，外壳模块从测试里的模块表取，证明外壳挂载、同一地址不重复挂载（在途时也一样）、换外壳先 `dispose` 旧的、`dispose` 抛错与 import 失败的处理。外壳模块的形状由类型检查保护（外壳从词汇表包取 `ShellBoot`）。
+页面接管的逻辑写在 `index.html` 里，由 `apps/desktop/tests/index-html.test.ts` 保护：把页面脚本放进一个极简的假 DOM 求值，外壳模块从测试里的模块表取，证明外壳挂载、同一地址不重复挂载（在途时也一样）、换外壳先 `dispose` 旧的、外壳撤销（推来 `url: null`）时 `dispose` 旧外壳并回到只读状态页、撤销后同一地址再推来会重新挂载、`dispose` 抛错与 import 失败的处理。外壳模块的形状由类型检查保护（外壳从词汇表包取 `ShellBoot`）。
 
 {/* has file="../apps/desktop/tests/index-html.test.ts" text="同一个地址在 import 完成前连推两次，只挂载一次" */}
 
 {/* has file="../apps/desktop/tests/index-html.test.ts" text="换外壳：先 dispose 旧的、清空 #root，再挂新的" */}
 
-<Callout title="已知问题">
-页面脚本记录「正在加载的地址」的变量初值是 `null`，推来 `url: null` 时与它相等，被当成「同一个地址正在加载」直接忽略：空 home 里只读状态页画不出来，外壳撤销后旧外壳也不 `dispose`，与上面「约定」里写的不符。测试里名字带「现状（bug）」的两条用例锁着这个现状，修好时一起改。
-</Callout>
+{/* has file="../apps/desktop/tests/index-html.test.ts" text="外壳在用时推来 url: null（外壳撤销）：dispose 旧外壳，回到只读状态页" */}
 
-{/* has file="../apps/desktop/tests/index-html.test.ts" text="现状（bug）：外壳在用时推来 url: null 也被忽略" */}
+{/* has file="../apps/desktop/tests/index-html.test.ts" text="外壳撤销后同一个地址再推来，重新挂载" */}
 
-真实窗口里的显示在隔离 home 里实机验证（见[开发](/docs/develop)）：装上外壳后页面被接管，外壳启动失败时看到只读状态页；没有外壳插件时看到只读状态页、停用外壳后回到只读状态页，要等上面的已知问题修好才成立。
+真实窗口里的显示在隔离 home 里实机验证（见[开发](/docs/develop)）：没有外壳插件时看到只读状态页，装上外壳后页面被接管，外壳启动失败时看到只读状态页，停用外壳后回到只读状态页。

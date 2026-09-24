@@ -4,7 +4,7 @@ import vm from 'node:vm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
- * index.html 里那段页面脚本的行为锁：脚本原文交给一个极简的假 DOM 求值，脚本里的 `import(url)` 换成从下面的
+ * index.html 里那段页面脚本的行为测试：脚本原文交给一个极简的假 DOM 求值，脚本里的 `import(url)` 换成从下面的
  * 模块表里取（vm 求值的脚本里，动态 import 在测试进程里没有加载器）。页面上真正画出来的样子只能实机验证
  */
 
@@ -183,10 +183,19 @@ describe('index.html：只读状态页', () => {
     expect(reportBox(page.root).children.map((child) => child.tagName)).toEqual(['p'])
   })
 
-  it('现状（bug）：没有外壳在加载时推来 url: null，被当成「同一个地址正在加载」直接忽略，只读状态页画不出来', async () => {
+  it('没有外壳时推来 url: null：画出只读状态页，第一句说明没有外壳插件', async () => {
     const page = loadPageScript()
     await page.deliver({ url: null, imports: {}, report: sampleReport })
-    expect(page.root.children).toHaveLength(0)
+    const box = reportBox(page.root)
+    expect(box.children.map((child) => child.tagName)).toEqual(['p', 'p', 'ul', 'p', 'pre'])
+    expect(box.children[0]!.textContent).toContain('没有外壳插件')
+  })
+
+  it('url: null 连推两次，状态页按后一次的 report 重画', async () => {
+    const page = loadPageScript()
+    await page.deliver({ url: null, imports: {}, report: { home: 'C:\\homes\\empty', entries: [], errors: [] } })
+    await page.deliver({ url: null, imports: {}, report: sampleReport })
+    expect(reportBox(page.root).children[2]!.tagName).toBe('ul')
   })
 })
 describe('index.html：外壳接管', () => {
@@ -217,13 +226,24 @@ describe('index.html：外壳接管', () => {
     expect(shellEvents.__gwbPageTestEvents).toEqual(['mount C', 'dispose C', 'mount D'])
   })
 
-  it('现状（bug）：外壳在用时推来 url: null 也被忽略，旧外壳不 dispose，页面不回到只读状态页', async () => {
+  it('外壳在用时推来 url: null（外壳撤销）：dispose 旧外壳，回到只读状态页', async () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
     await page.deliver({ url: shellModuleUrl('G'), imports: {} })
     await page.deliver({ url: null, imports: {}, report: sampleReport })
-    expect(shellEvents.__gwbPageTestEvents).toEqual(['mount G'])
-    expect(page.root.textContent).toBe('shell G')
+    expect(shellEvents.__gwbPageTestEvents).toEqual(['mount G', 'dispose G'])
+    expect(reportBox(page.root).children[0]!.textContent).toContain('没有外壳插件')
+  })
+
+  it('外壳撤销后同一个地址再推来，重新挂载', async () => {
+    shellEvents.__gwbPageTestEvents = []
+    const page = loadPageScript()
+    const url = shellModuleUrl('H')
+    await page.deliver({ url, imports: {} })
+    await page.deliver({ url: null, imports: {}, report: sampleReport })
+    await page.deliver({ url, imports: {} })
+    expect(shellEvents.__gwbPageTestEvents).toEqual(['mount H', 'dispose H', 'mount H'])
+    expect(page.root.textContent).toBe('shell H')
   })
 
   it('旧外壳 dispose 抛错：打一行 console.error，照样换上新的', async () => {

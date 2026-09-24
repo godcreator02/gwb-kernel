@@ -65,7 +65,7 @@ cd apps\desktop; pnpm start
 
    内核把调试端口写进 home 的 `runtime.json`（[runtime.json](/docs/seams/runtime)），`devkit.cdp` 从那里找到它；后一个开关让窗口被遮住时页面照常刷新，截图不会拿到旧画面
 2. 用 `devkit.cdp` 在这个 home 的页面上调命令、截图、读页面状态，例如 `devkit.cdp {"args":["<home 名>","cmd","plugin-manager.list"]}`
-3. 看结果：home 里的 `gwb.log`；外壳启动失败时页面上的[只读状态页](/docs/desktop/status-page)列出每个条目加载到哪一步（没有外壳时它目前画不出来，见[外壳接管](/docs/seams/shell)测试一节的已知问题）
+3. 看结果：home 里的 `gwb.log`；没有外壳或外壳启动失败时，页面上的[只读状态页](/docs/desktop/status-page)列出每个条目加载到哪一步
 
 实验材料放 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm workspace。
 
