@@ -246,7 +246,7 @@ function fakeHomeWithPlugins(): string {
     'node_modules/gwb-test-shared/package.json': JSON.stringify({
       name: 'gwb-test-shared',
       exports: { './x.js': './x.mjs' },
-      gwb: { shared: { 'shared-name': './x.js' } },
+      gwb: { shared: { 'shared-name': './x.js', react: './x.js' } },
     }),
     'node_modules/gwb-test-shared/x.mjs': 'export default 1\n',
   })
@@ -443,7 +443,7 @@ describe('main.ts：IPC 通道', () => {
     const [channel, message] = sender.send.mock.calls[0] as [string, { url: unknown; imports: unknown; report: { home: string; entries: { id: string; name: string; state: string }[]; errors: unknown[] } }]
     expect(channel).toBe('gwb:shell')
     expect(message.url).toBeNull()
-    expect(message.imports).toEqual({})
+    expect(Object.keys(message.imports as Record<string, string>).sort()).toEqual(['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime'])
     expect(message.report.home).toBe(booted.dataDir)
     expect(message.report.entries).toContainEqual({ id: 'home', name: 'cordis:include', state: 'ACTIVE' })
     await quitAndWaitForCleanup(booted)
@@ -460,6 +460,22 @@ describe('main.ts：插件看到的内核', () => {
     expect(probe.kernel?.version).toBe(kernelPackageVersion)
     const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
     expect(await relayCommand({}, 'demo.echo', { a: 1 })).toEqual({ ok: true, data: { command: 'demo.echo', args: { a: 1 } } })
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('importmap：react 用内核的那份，插件的同名声明忽略；这句警告推了几次都只记一行', async () => {
+    silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
+    const kernel = probeGlobal.__gwbMainTestProbe.kernel!
+    const window = booted.electron.windows[0]!
+    const revoke = kernel.setShell('file:///shell.js')
+    kernel.setShell('file:///another-shell.js')
+    revoke()
+    const pushes = shellMessagesSent(window)
+    expect(pushes.length).toBeGreaterThanOrEqual(2)
+    expect(pushes.at(-1)?.imports['react']).toMatch(/\/dist\/react\/react\.js$/)
+    expect(booted.readLog().split('包名 react 由内核提供，忽略 gwb-test-shared 的声明').length - 1).toBe(1)
     await quitAndWaitForCleanup(booted)
   })
 

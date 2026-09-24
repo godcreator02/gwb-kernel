@@ -10,12 +10,17 @@ function requireSpecifierFor(packageName: string, subpath: string): string {
 }
 
 /**
- * 把 home 里的包名（可带 exports 子路径）解析成文件路径；插件加载与页面 importmap 共用。
+ * 按包目录与包名解析 exports 子路径（包引用自己的名字）。
  * 必须先 realpath 再从真实目录解析：Node 的 CJS 解析缓存按「请求名 + 起点」记，逻辑路径不变时会返回上一版的文件
  */
-export function resolveFromHome(dataDir: string, packageName: string, subpath = '.'): string {
-  const realPackageDir = fs.realpathSync.native(path.join(dataDir, 'node_modules', ...packageName.split('/')))
+export function resolveFromPackageDir(packageDir: string, packageName: string, subpath = '.'): string {
+  const realPackageDir = fs.realpathSync.native(packageDir)
   return createRequire(path.join(realPackageDir, 'package.json')).resolve(requireSpecifierFor(packageName, subpath))
+}
+
+/** 把 home 里的包名（可带 exports 子路径）解析成文件路径；插件加载与页面 importmap 共用 */
+export function resolveFromHome(dataDir: string, packageName: string, subpath = '.'): string {
+  return resolveFromPackageDir(path.join(dataDir, 'node_modules', ...packageName.split('/')), packageName, subpath)
 }
 
 /** 给 cordis loader 当 `internal.import` 用：按 home 解析包名，再按 ESM import */

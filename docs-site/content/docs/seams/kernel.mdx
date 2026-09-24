@@ -33,7 +33,7 @@ description: 连接内核应用与任何插件；接口是内核应用在 cordis
 
 {/* ref file="../apps/desktop/src/main.ts" lines="53-54" */}
 
-{/* ref file="../apps/desktop/src/main.ts" lines="16-17" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="16-20" */}
 
 内核应用在自己的代码里给 cordis 的 `Context` 写了类型声明：除了 `gwbKernel`，还写了一个可选的 `gwbCommands`，只声明转交命令用到的 `run`。没装命令插件、或它加载失败时，`gwbCommands` 不存在，内核应用转交命令前要判断这一点。
 

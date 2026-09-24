@@ -6,7 +6,7 @@ import { Context, type Fiber } from 'cordis'
 import Loader, { type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator/gwb-plugin-api'
-import { collectImports } from './imports.js'
+import { collectImports, kernelSharedImports } from './imports.js'
 import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
@@ -15,7 +15,10 @@ import { limitFromEnv, openLogFile } from './log-file.js'
 const { app, BrowserWindow, Menu, dialog, ipcMain } = electron
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 /** 本包清单在 dist/ 的上一级；不读安装包外层应用的清单 */
-const kernelVersion = (JSON.parse(fs.readFileSync(path.join(moduleDir, '..', 'package.json'), 'utf8')) as { version: string }).version
+const kernelPackageDir = path.join(moduleDir, '..')
+const kernelManifest = JSON.parse(fs.readFileSync(path.join(kernelPackageDir, 'package.json'), 'utf8')) as { name: string; version: string }
+const kernelVersion = kernelManifest.version
+const kernelImports = kernelSharedImports(kernelPackageDir)
 
 declare module 'cordis' {
   interface Context {
@@ -186,10 +189,19 @@ interface ShellMessage {
   report: StatusPageReport
 }
 
+/** importmap 每次推给页面都重算一遍，同一句警告只记第一次，不然开机时每次推送都刷一遍日志 */
+const importmapWarningsLogged = new Set<string>()
+
+function warnOnceAboutImportmap(message: string): void {
+  if (importmapWarningsLogged.has(message)) return
+  importmapWarningsLogged.add(message)
+  kernelLog.warn(message)
+}
+
 function currentShellMessage(): ShellMessage {
   return {
     url: currentShellUrl,
-    imports: collectImports({ dataDir, warn: (message) => kernelLog.warn(message) }),
+    imports: collectImports({ dataDir, kernelImports, kernelPackageName: kernelManifest.name, warn: warnOnceAboutImportmap }),
     report: statusPageReport(),
   }
 }

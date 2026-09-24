@@ -38,15 +38,15 @@ cd apps\desktop; pnpm start
 
 ### 构建做了什么
 
-`pnpm start` 先构建再启动 electron。构建依次是：词汇表包 `tsc`，内核 `tsc`，最后把页面的两个文件 `index.html`、`preload.cjs` 从 `src/` 复制进 `dist/`：
+`pnpm start` 先构建再启动 electron。构建依次是：词汇表包 `tsc`，内核 `tsc`，把页面的两个文件 `index.html`、`preload.cjs` 从 `src/` 复制进 `dist/`，最后运行 `scripts/build-react.ts`，用 esbuild 把 react 的四个包名打进 `dist/react/`，页面的 importmap 用的就是它们（[页面上的包名](/docs/seams/shared)）：
 
-{/* ref file="../apps/desktop/package.json" lines="14-18" */}
+{/* ref file="../apps/desktop/package.json" lines="33-37" */}
 
 ## 提交前的检查
 
 {/* ref file="../package.json" lines="6-14" */}
 
-- **`pnpm check`**（仓根）：先构建词汇表包，再对全仓做类型检查、lint 和测试。测试是 `apps`、`packages`、`installer` 下各 `tests/` 目录里的测试（`installer` 那一个要调用本机的 pwsh 7）；词汇表包的类型写坏了，内核的类型检查跟着失败
+- **`pnpm check`**（仓根）：先构建内核包（连同词汇表包与 react 的打包产物：`main.test.ts` 用真实的打包产物启动内核），再对全仓做类型检查、lint 和测试。测试是 `apps`、`packages`、`installer` 下各 `tests/` 目录里的测试（`installer` 那一个要调用本机的 pwsh 7）；词汇表包的类型写坏了，内核的类型检查跟着失败
 - **`pnpm doc`**（仓根）：文档站的检查，不在 `pnpm check` 里：文档页引用的代码改了、生成物和正本不一致，都会报出来。引用的代码改了、页上的说法仍成立时，先提交代码，再只点名自己改过的页确认：`pnpm doc:confirm <页的路径…>`（路径相对 `docs-site/`）。不带路径会把别人还没复核的页一起确认掉
 
 每个机制有哪些测试、证明什么，写在各页的「怎么测」或「怎么验证」一节，从[内核应用](/docs/desktop)的功能列表进去。

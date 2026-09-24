@@ -74,11 +74,11 @@ export function SeamMap() {
       <PackageLabel x={222} y={120} name="内核应用" path="apps/desktop · 装进 home" />
       <Box x={222} y={132} w={276} h={36} lines={['包名解析', 'bare-import.ts']} tone="a" mono />
       <Box x={222} y={180} w={276} h={36} lines={['组装', 'main.ts']} tone="a" mono />
-      <Box x={222} y={228} w={276} h={36} lines={['页面上的包名', 'imports.ts']} tone="a" mono />
+      <Box x={222} y={228} w={276} h={36} lines={['页面上的包名 · 带 react', 'imports.ts · dist/react/']} tone="a" mono />
       <Box x={222} y={276} w={276} h={36} lines={['日志', 'log-file.ts']} tone="a" mono />
       <Box x={222} y={324} w={276} h={36} lines={['只读状态页的数据', 'entry-state.ts']} tone="a" mono />
 
-      <Box x={552} y={132} w={84} h={36} lines={['外壳', '带 react']} />
+      <Box x={552} y={132} w={84} h={36} lines={['外壳']} />
       <Box x={646} y={132} w={92} h={36} lines={['MCP 入口']} />
       <Box x={552} y={180} w={186} h={132} lines={['任何插件', '数据 · 设置 · 说明书 …']} />
       <Box x={552} y={322} w={90} h={40} lines={['命令插件', 'gwb-commands']} />

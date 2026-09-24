@@ -1,0 +1,41 @@
+---
+title: react 收进内核：内核包构建时打出 react 的四个包名、在自己清单的 gwb.shared 里声明，同名时内核优先；内核与词汇表包升 0.4.1
+born-at: 2026-09-24T17:05
+type: choice
+parent: [2026-09-24-kernel-in-home]
+label: react 收进内核
+domain: 这条线
+---
+
+## 背景
+
+内核装进 home 之后，页面上的 react 仍由外壳插件 `gwb-shell` 提供：外壳构建时把 react 打成浏览器能直接 import 的文件，在清单的
+`gwb.shared` 里声明四个包名，内核拼进 importmap。外壳、基础界面、块笔记的窗格都用这一份。人决定把它收进内核（交接页「内核装进 home」第五步）：
+react 是整个页面只能有一份的运行时，和 cordis 一样该由宿主给；少一个「谁来提供 react」的约定，升 react 也就是升内核。
+
+## 结论与边界
+
+- 内核包构建时用 `scripts/build-react.ts`（esbuild）把 react 与 react-dom 打进 `dist/react/`，react-dom 两个文件外置 `react`、修补 esbuild
+  留下的 `__require`；做法照搬外壳原来的构建脚本
+- **声明写在内核包自己的清单里**：`gwb.shared` 加 `exports` 子路径，与插件的写法相同。这样 devkit 的发版检查与 `devkit.capabilities` 不用改：
+  它们本来就读依赖（含 peer）的 `gwb.shared`，插件 peer 写了内核包，pnpm 把它装进插件仓的 `node_modules`
+- 内核启动时从自己的包目录读这份声明、解析成 `file://` 地址，解析不到就启动失败（内核包本身不完整）；每次推送先放进 importmap。
+  home 清单里列着的内核包不再读一遍。插件声明了这四个名字一律忽略、记一条 warn，不按「同名全部拒绝」处理——旧版外壳还声明着
+  react，新内核配旧外壳时 react 照样可用
+- importmap 的警告同一句只记一次：每次推送都重算，开机时推送十几次，原来每次都刷一遍
+- 没选的路：内核代码里写死四个包名与文件路径。这样 devkit 要另外知道「内核提供 react」，插件构建时也没有清单可读
+- **版本 0.4.1**：人定。按本仓「改了 `gwb.shared` 的读法就升 x」的字面规则该升 0.5.0；但现有的读法没有一处被推翻——其余包名的规则不变，
+  这四个名字仍解析得到、只是换了提供方，旧外壳照常运行，升 x 反而让刚追到 `^0.4.0` 的全部插件出范围
+
+## 代价与遗留
+
+- 内核包多了 react 与 react-dom 两个 dev 依赖和 esbuild；根目录 `pnpm check` 改成先构建内核包，`main.test.ts` 要用真实的打包产物启动
+- 外壳 0.13.7 撤掉 react 与 `gwb.shared`，peer 写内核包 `^0.4.1`（它不再带 react，配旧内核页面就没有 react）；同仓的基础界面、外观下次发版时
+  peer 要抬到 `^0.4.1`，不然 devkit 的发版检查从装着的内核包清单里读不到 react 的名字
+- `gwb.shared` 这套机制还留着，给块笔记线用；它按 devkit 定案第三期撤掉声明后再删
+
+## 依据
+
+- `apps/desktop/tests/imports.test.ts`「内核给的包名」一组、`main.test.ts`「importmap：react 用内核的那份」；`pnpm check` 88 个用例全绿
+- 实测：`devkit.dev` 把内核开发版 `0.4.1-dev.202609241655` 装进隔离 home `kernel-dev-2609241631`（外壳还是 0.13.5，声明着 react）：
+  页面 importmap 里四个名字都指向内核包 `dist/react/`，插件管理窗格正常显示，日志只有「由内核提供，忽略 @godcreator/gwb-shell 的声明」这类 warn

@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it, vi } from 'vitest'
-import { collectImports } from '../src/imports'
+import { collectImports, kernelSharedImports } from '../src/imports'
 
 /**
  * collectImports 的判据：不起 electron、不起 cordis，只喂一个临时 home 目录看输出。
@@ -35,10 +35,17 @@ function sharedPackage(pkg: string, shared: unknown, exports: Record<string, str
   }
 }
 
-function run(files: Record<string, string>): { imports: Record<string, string>; warn: ReturnType<typeof vi.fn> } {
+const KERNEL_PACKAGE = '@godcreator/gwb-kernel-desktop'
+
+/** 内核自己没给任何包名时的调用参数；内核优先的几条用例另给 kernelImports */
+function importsOf(dataDir: string, warn: (msg: string) => void, kernelImports: Record<string, string> = {}): Record<string, string> {
+  return collectImports({ dataDir, kernelImports, kernelPackageName: KERNEL_PACKAGE, warn })
+}
+
+function run(files: Record<string, string>, kernelImports: Record<string, string> = {}): { imports: Record<string, string>; warn: ReturnType<typeof vi.fn> } {
   const home = makeHome(files)
   const warn = vi.fn()
-  return { imports: collectImports({ dataDir: home, warn }), warn }
+  return { imports: importsOf(home, warn, kernelImports), warn }
 }
 
 const homeManifest = (deps: string[]): string => JSON.stringify({ dependencies: Object.fromEntries(deps.map((d) => [d, '1.0.0'])) })
@@ -70,7 +77,7 @@ describe('collectImports', () => {
       'package.json': homeManifest(['shared-a']),
       ...sharedPackage('shared-a', { react: 'react.js' }, { './react.js': './out.mjs' }),
     })
-    const imports = collectImports({ dataDir: home, warn: vi.fn() })
+    const imports = importsOf(home, vi.fn())
     expect(imports['react']).toBe(pathToFileURL(path.join(fs.realpathSync.native(home), 'node_modules', 'shared-a', 'out.mjs')).href)
   })
 
@@ -79,7 +86,7 @@ describe('collectImports', () => {
       'package.json': homeManifest(['shared-a']),
       ...sharedPackage('shared-a', { react: './react.js' }, { './react.js': './out.mjs' }),
     })
-    const imports = collectImports({ dataDir: home, warn: vi.fn() })
+    const imports = importsOf(home, vi.fn())
     expect(imports['react']).toBe(pathToFileURL(path.join(fs.realpathSync.native(home), 'node_modules', 'shared-a', 'out.mjs')).href)
   })
 
@@ -124,11 +131,11 @@ describe('collectImports', () => {
     fs.mkdirSync(path.dirname(link), { recursive: true })
     fs.symlinkSync(target('1.0.0'), link, 'junction')
     const warn = vi.fn()
-    expect(collectImports({ dataDir: home, warn })['react']).toBe(pathToFileURL(path.join(target('1.0.0'), 'out.mjs')).href)
+    expect(importsOf(home, warn)['react']).toBe(pathToFileURL(path.join(target('1.0.0'), 'out.mjs')).href)
 
     fs.rmSync(link, { force: true })
     fs.symlinkSync(target('2.0.0'), link, 'junction')
-    expect(collectImports({ dataDir: home, warn })['react']).toBe(pathToFileURL(path.join(target('2.0.0'), 'out.mjs')).href)
+    expect(importsOf(home, warn)['react']).toBe(pathToFileURL(path.join(target('2.0.0'), 'out.mjs')).href)
     expect(warn).not.toHaveBeenCalled()
   })
 
@@ -143,5 +150,65 @@ describe('collectImports', () => {
     })
     expect(imports).toEqual({})
     expect(warn).not.toHaveBeenCalled()
+  })
+})
+
+describe('内核给的包名', () => {
+  const KERNEL_REACT = { react: 'file:///kernel/dist/react/react.js' }
+
+  it('内核给了的包名：插件同名的声明忽略并 warn 一声，不算撞名，内核那份留着', () => {
+    const { imports, warn } = run(
+      {
+        'package.json': homeManifest(['shared-a', 'shared-b']),
+        ...sharedPackage('shared-a', { react: './react.js' }, { './react.js': './out.mjs' }),
+        ...sharedPackage('shared-b', { react: './react.js', other: './react.js' }, { './react.js': './out.mjs' }),
+      },
+      KERNEL_REACT,
+    )
+    expect(imports['react']).toBe(KERNEL_REACT.react)
+    expect(Object.keys(imports).sort()).toEqual(['other', 'react'])
+    expect(warn).toHaveBeenCalledTimes(2)
+    expect(String(warn.mock.calls[0]?.[0])).toContain('由内核提供')
+  })
+
+  it('home 清单里列着的内核包不再读一遍：它的声明已经在内核给的表里，不 warn', () => {
+    const { imports, warn } = run(
+      {
+        'package.json': homeManifest([KERNEL_PACKAGE]),
+        ...sharedPackage(KERNEL_PACKAGE, { react: './react.js' }, { './react.js': './out.mjs' }),
+      },
+      KERNEL_REACT,
+    )
+    expect(imports).toEqual(KERNEL_REACT)
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('kernelSharedImports：按内核包自己的 exports 解析出真实文件', () => {
+    const dir = makeHome({
+      'package.json': JSON.stringify({ name: KERNEL_PACKAGE, exports: { './react': './dist/react.js' }, gwb: { shared: { react: './react' } } }),
+      'dist/react.js': 'export default 1\n',
+    })
+    expect(kernelSharedImports(dir)).toEqual({ react: pathToFileURL(path.join(fs.realpathSync.native(dir), 'dist', 'react.js')).href })
+  })
+
+  it('kernelSharedImports：声明的文件不在就抛出——内核包本身不完整，不能带着缺了 react 的 importmap 启动', () => {
+    const dir = makeHome({
+      'package.json': JSON.stringify({ name: KERNEL_PACKAGE, exports: { './react': './dist/react.js' }, gwb: { shared: { react: './react' } } }),
+    })
+    expect(() => kernelSharedImports(dir)).toThrow()
+  })
+
+  it('本仓的内核包：react 的四个包名都声明了，exports 指到打包脚本产出的文件', () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'package.json'), 'utf8')) as {
+      exports: Record<string, string>
+      gwb: { shared: Record<string, string> }
+    }
+    const script = fs.readFileSync(path.join(import.meta.dirname, '..', 'scripts', 'build-react.ts'), 'utf8')
+    expect(Object.keys(manifest.gwb.shared).sort()).toEqual(['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime'])
+    for (const subpath of Object.values(manifest.gwb.shared)) {
+      const target = manifest.exports[subpath]
+      expect(target).toMatch(/^\.\/dist\/react\/[a-z-]+\.js$/)
+      expect(script).toContain(`out: '${path.basename(target ?? '')}'`)
+    }
   })
 })

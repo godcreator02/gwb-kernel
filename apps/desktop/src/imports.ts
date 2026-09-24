@@ -1,11 +1,15 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { resolveFromHome } from './bare-import.js'
+import { resolveFromHome, resolveFromPackageDir } from './bare-import.js'
 
 export interface CollectImportsDeps {
   /** home 的目录：home 清单与 node_modules 都在它下面 */
   dataDir: string
+  /** 内核自己给的条目（`kernelSharedImports` 算的）。这几个包名内核优先，插件的同名声明忽略 */
+  kernelImports: Record<string, string>
+  /** 内核包的包名：home 清单里列着它，它的声明已经在 `kernelImports` 里，不再读一遍 */
+  kernelPackageName: string
   warn: (msg: string) => void
 }
 
@@ -25,7 +29,15 @@ function homeDependencyNames(dataDir: string): string[] {
   }
 }
 
-/** 包清单里 `gwb.shared` 的「包名 → exports 子路径」；包不在、没有声明、形状不对的条目一律跳过 */
+/** `gwb.shared` 的「包名 → exports 子路径」；不是对象、键是空串、值不是非空字符串的条目一律跳过 */
+function validSharedDeclarations(declared: unknown): [bareName: string, subpath: string][] {
+  if (typeof declared !== 'object' || declared === null) return []
+  return Object.entries(declared as Record<string, unknown>).filter(
+    (declaration): declaration is [string, string] => declaration[0] !== '' && typeof declaration[1] === 'string' && declaration[1] !== '',
+  )
+}
+
+/** home 里一个包的 `gwb.shared` 声明；包不在、清单读不出来就当没有声明 */
 function sharedDeclarationsOf(dataDir: string, packageName: string): [bareName: string, subpath: string][] {
   let declared: unknown
   try {
@@ -36,18 +48,33 @@ function sharedDeclarationsOf(dataDir: string, packageName: string): [bareName: 
   } catch {
     return []
   }
-  if (typeof declared !== 'object' || declared === null) return []
-  return Object.entries(declared as Record<string, unknown>).filter(
-    (declaration): declaration is [string, string] => declaration[0] !== '' && typeof declaration[1] === 'string' && declaration[1] !== '',
-  )
+  return validSharedDeclarations(declared)
 }
 
-/** 页面的 importmap：home 里各包 `gwb.shared` 声明的包名 → 真实文件的 `file://` 地址；同一个包名有多个提供方时全部不收 */
-export function collectImports(deps: CollectImportsDeps): Record<string, string> {
+/** 内核包自己 `gwb.shared` 声明的包名 → 打包产物的 `file://` 地址。进程启动时算一次；解析不到说明内核包本身不完整，直接抛出 */
+export function kernelSharedImports(kernelPackageDir: string): Record<string, string> {
+  const manifest = readJson(path.join(kernelPackageDir, 'package.json')) as { name: string; gwb?: { shared?: unknown } }
   const fileUrlsByBareName: Record<string, string> = {}
+  for (const [bareName, subpath] of validSharedDeclarations(manifest.gwb?.shared)) {
+    fileUrlsByBareName[bareName] = pathToFileURL(resolveFromPackageDir(kernelPackageDir, manifest.name, subpath)).href
+  }
+  return fileUrlsByBareName
+}
+
+/**
+ * 页面的 importmap：内核自己的条目，加上 home 里各包 `gwb.shared` 声明的包名 → 真实文件的 `file://` 地址。
+ * 内核给了的包名，插件的声明忽略；其余包名有多个提供方时全部不收
+ */
+export function collectImports(deps: CollectImportsDeps): Record<string, string> {
+  const fileUrlsByBareName: Record<string, string> = { ...deps.kernelImports }
   const bareNamesWithSeveralProviders = new Set<string>()
   for (const packageName of homeDependencyNames(deps.dataDir)) {
+    if (packageName === deps.kernelPackageName) continue
     for (const [bareName, subpath] of sharedDeclarationsOf(deps.dataDir, packageName)) {
+      if (deps.kernelImports[bareName] !== undefined) {
+        deps.warn(`包名 ${bareName} 由内核提供，忽略 ${packageName} 的声明`)
+        continue
+      }
       if (fileUrlsByBareName[bareName] !== undefined || bareNamesWithSeveralProviders.has(bareName)) {
         delete fileUrlsByBareName[bareName]
         bareNamesWithSeveralProviders.add(bareName)

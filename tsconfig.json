@@ -14,5 +14,5 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["apps/*/src/**/*.ts", "apps/*/tests/**/*.ts", "apps/*/*.config.ts", "installer/tests/**/*.ts", "*.config.ts"]
+  "include": ["apps/*/src/**/*.ts", "apps/*/tests/**/*.ts", "apps/*/scripts/**/*.ts", "apps/*/*.config.ts", "installer/tests/**/*.ts", "*.config.ts"]
 }

@@ -13,7 +13,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 - 创建 cordis 实例，按 `cordis.yml` 加载插件；退出时卸载整棵插件树，最多等 5 秒——[启动与退出](/docs/desktop/boot)
 - 插件按包名 import 时，按 home 里的真实路径找到文件；换了版本的包重新加载时拿到新版本——[插件加载](/docs/seams/loading)
 - 打开唯一的窗口，把页面交给调用 `setShell` 的外壳插件；没有外壳或外壳启动失败时，页面显示各条目加载到哪一步和最近的错误行——[只读状态页](/docs/desktop/status-page)
-- 把 home 里各包声明的 `gwb.shared` 拼成页面的 importmap，外壳在页面上写 `import 'react'` 就能找到文件——[页面上的包名](/docs/seams/shared)
+- 把内核包自己与 home 里各包声明的 `gwb.shared` 拼成页面的 importmap；react 的四个包名由内核包提供，外壳与插件在页面上写 `import 'react'` 就能找到文件——[页面上的包名](/docs/seams/shared)
 - 把页面发来的命令转交命令总线，把插件发出的事件推给页面——[IPC 通道](/docs/seams/ipc)
 - 插件、内核、页面 console 的日志汇成一条，写到 stderr 和 home 里的 `gwb.log`；文件上限 128 MB、只留一份旧的——[日志文件](/docs/desktop/log-file)
 - 每次启动把这次运行的 pid、启动时刻、版本、应用目录、调试端口写进 home 里的 `runtime.json`——[runtime.json](/docs/seams/runtime)
