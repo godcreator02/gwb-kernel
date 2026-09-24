@@ -23,11 +23,11 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 
 页面上只有 `window.gwb`，页面上运行的任何代码都能直接调用：
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="36-48" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="38-50" */}
 
 `command` 返回的 promise 得到的是命令的回执：
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="9-14" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="11-16" */}
 
 `preload.cjs` 把这三个函数接到四个 IPC 通道上，整个文件就是这些：
 
