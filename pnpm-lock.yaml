@@ -32,16 +32,35 @@ importers:
       '@cordisjs/plugin-loader':
         specifier: 1.0.0-rc.6
         version: 1.0.0-rc.6(cordis@4.0.0-rc.9)
+    devDependencies:
       '@godcreator/gwb-plugin-api':
         specifier: workspace:*
         version: link:../../packages/gwb-plugin-api
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.4
       cordis:
         specifier: 4.0.0-rc.9
         version: 4.0.0-rc.9(@cordisjs/plugin-include@1.0.5)(@cordisjs/plugin-loader@1.0.0-rc.6)
+      electron:
+        specifier: 44.1.1
+        version: 44.1.1
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  apps/launcher:
+    dependencies:
+      semver:
+        specifier: ^7.7.2
+        version: 7.8.5
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.4
+      '@types/semver':
+        specifier: ^7.7.0
+        version: 7.8.0
       electron:
         specifier: 44.1.1
         version: 44.1.1
@@ -1070,6 +1089,9 @@ packages:
 
   '@types/react@19.3.0':
     resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
+
+  '@types/semver@7.8.0':
+    resolution: {integrity: sha512-1mAINjtQCXXeLkJ9ehXkwOcBpqtLxiVtKhpUf83DdRNdQKV0iXZpaHYqRr7nj+wvxuJzoAmAwXI+sCNMv1CzLQ==}
 
   '@types/unist@2.0.11':
     resolution: {integrity: sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA==}
@@ -3201,6 +3223,8 @@ snapshots:
   '@types/react@19.3.0':
     dependencies:
       csstype: 3.2.3
+
+  '@types/semver@7.8.0': {}
 
   '@types/unist@2.0.11': {}
 

@@ -6,17 +6,17 @@ description: 仓根 AGENTS.md 由这一页生成——每次会话都要知道�
 # gwb-kernel
 
 god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只做第一个插件运行前必须完成的事，其余都做成插件。
-本仓只放三样：内核应用 `apps/desktop`、词汇表包 `packages/gwb-plugin-api`、安装包 `installer/`。插件一个也不放——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`，都是 `cordis.yml` 里的普通插件。
+本仓只放三样：内核应用 `apps/desktop`、词汇表包 `packages/gwb-plugin-api`、安装包（启动器 `apps/launcher` 与打包脚本 `installer/`）。内核包和插件一样装在 home 里，安装包只带启动器与 Electron。插件一个也不放——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`，都是 `cordis.yml` 里的普通插件。
 
 现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：入口页就是接缝图，也是全部包的总索引；只做什么、刻意不做什么、插件怎么写明测过哪个内核见同目录 `design.mdx`，
-八条接缝各一页见 `seams/`，怎么跑、怎么测、怎么发版见 `develop.mdx`；三个包各一页：内核应用见 `desktop/`，词汇表包见 `vocab.mdx`，安装包见 `installer.mdx`。
+八条接缝各一页见 `seams/`，怎么跑、怎么测、怎么发版见 `develop.mdx`；三个包各一页：内核应用见 `desktop/`，词汇表包见 `vocab.mdx`，安装包（含启动器）见 `installer.mdx`。
 
 ## 准入判据
 
 1. **只有「第一个插件运行之前必须完成的事」才进内核。** 其余一律做成插件
 2. **确实遇到需求才加。** 现在就做不成，而且说得出场景：谁、在做什么、卡在哪
 
-拿不准按「不进」处理。这个仓最容易出的问题是慢慢长回旧版工作台仓 god-workbench 的样子——查旧仓是为了知道坑在哪，不是照抄它的变通做法。
+拿不准按「不进」处理。这个仓最容易出的问题是慢慢变回旧版工作台仓 god-workbench 的样子——查旧仓是为了知道哪里出过问题，不是照抄它的变通做法。
 
 ## 遇到过的问题：别改回去
 
@@ -29,7 +29,7 @@ god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只�
 
 正本 `packages/gwb-plugin-api/src/index.ts`，与内核同版本号。升版本号前读 devkit 的 skill「gwb-release」：
 **改了接缝上已有的东西就升 x**（改名或删除、改形状或含义，以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` 的版本、改 home 布局），只加东西、改内部或修 bug 升 y——插件在 `package.json` 的 `gwb.testedKernel` 里写测过的内核版本，插件管理按版本线比对。
-发版用 `devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}`，别在包目录手动 `pnpm publish`（会跳过 git 干净与构建产物白名单检查）。
+发版用 `devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api","apps/desktop"]}`（词汇表包与内核包按依赖序），别在包目录手动 `pnpm publish`（会跳过 git 干净与构建产物白名单检查）。
 
 ## 怎么跑
 

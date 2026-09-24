@@ -7,15 +7,17 @@ description: 一个 home 是一个独立的目录：GWB_HOME 怎么选定它、�
 
 ## 一个 home 是一个独立的目录
 
-home 是磁盘上的一个目录，也是一个普通的 npm 项目根：装了哪些插件、加载哪些条目、各插件的数据、日志、本次运行的记录，全在里面。不同的 home 可以同时运行，插件、端口、数据互不影响；开发和验证用单独创建的隔离 home，不碰日常用的 `default`。插件要 home 路径只从 `ctx.gwbKernel.dataDir` 取（[内核服务](/docs/seams/kernel)）。
+home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核包自己、装了哪些插件、加载哪些条目、各插件的数据、日志、本次运行的记录，全在里面。不同的 home 可以同时运行，插件、端口、数据互不影响；开发和验证用单独创建的隔离 home，不碰日常用的 `default`。插件要 home 路径只从 `ctx.gwbKernel.dataDir` 取（[内核服务](/docs/seams/kernel)）。
 
 ## 选定 home
 
 环境变量 `GWB_HOME` 选定用哪个 home，不设时是 `default`。给的是名字，home 在 `<appData>/gwb-kernel/homes/<名字>`；带路径分隔符，就当成目录本身。目录不存在就创建。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="39-42" */}
+{/* ref file="../apps/desktop/src/home-path.ts" */}
 
-{/* ref file="../apps/desktop/src/main.ts" lines="51-54" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="47-50" */}
+
+从安装包启动时，启动器要先知道 home 在哪才能从里面加载内核：它按同一条规则选一次，把得到的绝对路径写回 `GWB_HOME`，内核再选时就落在同一个目录（[安装包](/docs/installer)）。
 
 路径最后经 `realpathSync.native` 统一成磁盘上的真实路径：大小写、junction、斜杠写法不同的同一个 home 必须得到同一个字符串，下面的单实例锁才认得出「同一个 home」。
 

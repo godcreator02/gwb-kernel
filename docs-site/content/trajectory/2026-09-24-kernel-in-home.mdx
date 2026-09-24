@@ -1,0 +1,55 @@
+---
+title: 内核装进 home：内核作为 npm 包装进每个 home，安装包只带启动器与 Electron
+born-at: 2026-09-24T14:40
+type: choice
+parent: [2026-09-24-kernel-repo-only-kernel, 2026-09-18-withdraw-npm-channel]
+label: 内核装进 home
+domain: 这条线
+---
+
+supersedes:: [撤 npm 管道](2026-09-18-withdraw-npm-channel.md)
+
+## 背景
+
+2026-09-24 在总控台的会话里查实：内核用 `app.asar` 里的 cordis 4.0.0-rc.9 创建 cordis 实例，插件写 `import { Service } from 'cordis'`
+时按 home 解析，拿到的是 pnpm 按 peer 在 home 里补装的 4.0.0-rc.10。插件手里的 `ctx` 与它继承的 `Service` 来自两份版本不同的 cordis。
+同样的原因，插件与内核的兼容性只能另造一个字段 `gwb.testedKernel`：宿主在 `app.asar` 里，pnpm 看不见它，peer 既管不到解析、
+也比不到运行中的内核。
+
+人问：一般的 Node 应用是不是靠 peer 解决的？是——eslint、vite、koishi 的插件都写 peer 宿主，前提是宿主和插件装在同一个
+`node_modules` 里。要让 gwb 也这样，宿主就得进 home。人认为这样干净，决定做。
+
+## 结论与边界
+
+- **内核是 npm 包 `@godcreator/gwb-kernel-desktop`，装在每个 home 的 `node_modules` 里**；home 根上同时列 `cordis`，内核包把
+  `cordis` 写成 peer，内核与插件解析到同一份
+- **安装包只带启动器与 Electron**：启动器（`apps/launcher`，不发布）按和内核同一条规则选定 home，把绝对路径写回 `GWB_HOME`，
+  确认 home 里有内核包、内核包 `engines.electron` 包含当前 Electron，再 import 内核；不满足就弹框、退出码 1，不替人安装
+- **谁把内核装进 home**：和插件一样，由创建 home 的一方装（default 照 `INSTALL.md`，测试 home 由 `devkit.home.new`）
+- **Electron 版本**：写在内核包的 `engines.electron`；`engines` 是标准字段，键可以自定，VS Code 扩展的 `engines.vscode` 是同样的用法
+- **兼容性换成 peer**：插件写 peer 内核包的 `^` 范围，插件管理拿它和 home 里的内核比，`gwb.testedKernel` 删掉（devkit 仓的活）
+- **内核单独升级**：一键更新跳过内核包，另有升内核的命令，回执带「要重启」；重启由人决定
+- **各个 home 的内核版本各自独立**：新内核先装进隔离 home 验证，default 验完再升
+
+内核重新发 npm 包，所以推翻「撤 npm 管道」；那张卡撤掉的是一个没人用的「内部管道」，这次内核包是每个 home 的直接依赖。
+[上架与安装位](2026-09-12-kernel-on-registry.md)里的「固定安装位」不回来：内核装在每个 home 里，不装在一个单独的目录里。
+
+## 否掉的候选
+
+- **内核在主进程注册解析钩子，把包名 `cordis` 固定解析到 `app.asar` 里那一份**：只解决两份 cordis，版本检查还得靠 `testedKernel`；
+  也没解决「改内核要重打安装包」
+- **维持现状**（devkit 仓全生态机制定案第一节原来的判断：没有实际发生的故障，不做）：rc.9 与 rc.10 已经不同版本，而 `testedKernel`
+  是为宿主不在 home 才造出来的字段
+
+## 代价与遗留
+
+- 内核重新有一条 npm 发版线，加上启动器，发版物从一个变成两个；启动器与内核之间多一条 Electron 版本兼容
+- 装机多一步：往 home 里装内核包与 `cordis`；`INSTALL.md` 与 README 在内核包发到团队源、新安装包发布时一起改，之前仍描述已发布的旧安装包
+- 内核升级从「重新安装 exe」变成「装进 home 后重启」，插件管理要处理只能重启才生效的升级
+- 分四步做，进度在交接页「内核装进 home」
+
+## 依据
+
+- 本仓 `apps/launcher/tests/launch-plan.test.ts`：选 home 的规则与内核逐个输入比对、四种拒绝与一种放行、启动器 Electron 满足内核的 `engines.electron`
+- `@cordisjs/plugin-loader` 1.0.0-rc.6 与 `@cordisjs/plugin-include` 1.0.5 都把 `cordis` 写成 peer，内核也写 peer 之后，理论上整个 home 只解析出一份；
+  隔离 home 里的实测记在交接页的进度里

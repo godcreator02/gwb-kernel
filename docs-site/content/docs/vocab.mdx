@@ -50,18 +50,15 @@ description: "@godcreator/gwb-plugin-api 是内核对插件和页面的全部契
 
 **与内核同版本号**：`packages/gwb-plugin-api/package.json` 和 `apps/desktop/package.json` 的 `version` 一起升、写同一个号。升哪一位照 devkit 的说明书 `gwb-release`，每次升之前都读。
 
-两者发到不同的地方：
+两者都发到团队包源，同一条命令按依赖序发：
 
-- **词汇表包发到团队包源**，插件从那里装：
+```
+devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api","apps/desktop"]}
+```
 
-  ```
-  devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}
-  ```
+插件从团队包源装词汇表包；内核包由创建 home 的一方装进 home（安装包只带启动器，见[安装包](/docs/installer)）。别在包目录手动 `pnpm publish`：那会跳过 git 工作区干净检查与构建产物白名单检查。
 
-  别在包目录手动 `pnpm publish`：那会跳过 git 工作区干净检查与构建产物白名单检查
-- **内核发 exe**，见[安装包](/docs/installer)
-
-内核包 `apps/desktop` 把词汇表包写在 `dependencies` 里（`workspace:*`，`pnpm pack` 时换成实际版本号），打安装包时 npm 从团队包源装同一个版本的词汇表包，所以要先发词汇表包、再打安装包。
+内核包 `apps/desktop` 把词汇表包写在 `devDependencies` 里（`workspace:*`）：内核只 `import type`，运行时用不到它。
 
 改了契约时先装新内核，再发用到新契约的插件：插件先到、内核还是旧的，插件拿到的 `gwbKernel` 就缺它要的东西。完整步骤见[开发](/docs/develop#发版)。
 

@@ -18,7 +18,7 @@ god 工作台的内核：一个 Electron 应用，只做**第一个插件运行�
 - 内核应用（`apps/desktop`）：包名解析、组装（`main.ts`）、页面上的包名、日志、只读状态页的数据
 - cordis.yml 里的插件（各自的仓）：外壳、MCP 入口、命令插件 `gwb-commands`（基础插件仓）、插件管理 `gwb-plugin-manager`（devkit 仓），以及数据、设置、说明书插件等任何插件
 - 词汇表包（`packages/gwb-plugin-api`）：只有类型，接缝 2、3、4 连接的模块都用它的类型；它自己不算一条接缝
-- 安装包（`installer/`）：外层引导脚本
+- 安装包（`apps/launcher` 与 `installer/`）：启动器，从 home 里加载内核包
 - cordis（外部依赖）：cordis 实例、loader、include
 - home（磁盘上的目录）：`package.json`、`cordis.yml`、`node_modules/`、`gwb.log`、`runtime.json`
 - 包外面：人、AI、外部工具（devkit、装机的 agent）
@@ -45,7 +45,7 @@ god 工作台的内核：一个 Electron 应用，只做**第一个插件运行�
 | --- | --- | --- | --- |
 | `@godcreator/gwb-kernel-desktop` | `apps/desktop` | 内核应用：选定 home、日志、单实例锁、创建 cordis 实例、加载 `cordis.yml`、窗口与 IPC、退出清理 | [内核应用](/docs/desktop) |
 | `@godcreator/gwb-plugin-api` | `packages/gwb-plugin-api` | 词汇表包：内核给插件与页面的全部接口类型，只增不减 | [词汇表包](/docs/vocab) |
-| `gwb-installer` | `installer/` | 安装包：产出什么、装好之后是什么样 | [安装包](/docs/installer) |
+| `gwb-kernel-launcher` 与 `gwb-installer` | `apps/launcher`、`installer/` | 安装包：启动器怎么从 home 加载内核、产出什么、装好之后是什么样 | [安装包](/docs/installer) |
 
 cordis 与 cordis.yml 里的插件不在本仓：cordis 是外部依赖；命令插件在基础插件仓，插件管理在 devkit 仓，其余插件各在自己的仓里。
 

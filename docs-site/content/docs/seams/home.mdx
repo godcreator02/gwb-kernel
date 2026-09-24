@@ -16,7 +16,7 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 
 | 文件 | 谁写 |
 | --- | --- |
-| `package.json` | 列出装了哪些包。缺了内核补一份最小清单，之后归插件管理（经它带的 pnpm） |
+| `package.json` | 列出装了哪些包：内核包 `@godcreator/gwb-kernel-desktop`、内核包 peer 要的那个版本的 `cordis`、各个插件。从源码启动时缺了它内核补一份最小清单；之后归插件管理（经它带的 pnpm） |
 | `cordis.yml` | 列出条目。缺了内核补一个空表，之后归 include 和插件管理 |
 | `node_modules/` | pnpm，由插件管理调用 |
 | `gwb.log`、`gwb.log.1` | 内核（见[日志文件](/docs/desktop/log-file)） |
@@ -30,9 +30,13 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 
 {/* ref file="../apps/desktop/src/main.ts" lines="44-49" */}
 
+**cordis 只有一份**：内核包把 `cordis` 写成 peer，由 home 根上列的那一份满足；loader、include 也把它写成 peer，所以内核、loader、include 与写 peer `cordis` 的插件解析到同一份。从安装包启动时内核本身就装在 home 里，启动器从 `<home>/node_modules` 加载它（[安装包](/docs/installer)）：
+
+{/* ref file="../apps/desktop/package.json" lines="23-26" */}
+
 **loader 与 include 的版本**：内核应用在自己的包清单里写明这两个包的确切版本，不带范围：
 
-{/* ref file="../apps/desktop/package.json" lines="22-23" */}
+{/* ref file="../apps/desktop/package.json" lines="28-29" */}
 
 条目树（loader 条目的 `create` / `update` / `remove` / `resolve`，以及条目对象上带前缀的 `id`）既没有写进 `gwbKernel`，也没有写进词汇表包：它的形状就是这两个版本的 loader 与 include 的内部结构。loader 根层只有一条 include 条目，id 是 `home`，`cordis.yml` 里的条目都在它的子树里（见[插件加载](/docs/seams/loading)）。
 
@@ -42,6 +46,7 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 
 内核应用保证：
 - home 的文件布局如上表
+- `cordis` 写在内核包的 peer 里，版本如 `apps/desktop/package.json` 所写
 - loader 与 include 的版本如 `apps/desktop/package.json` 所写，条目树的结构随这两个版本走
 - 包名一律从 home 的 `node_modules` 按真实路径解析，不从内核自己的目录找
 - 这三样任何一样变了，就是内核改了对外承诺：内核版本号升 x（0.x 的第二位）

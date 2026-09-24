@@ -75,7 +75,7 @@ cd apps\desktop; pnpm start
 pwsh installer\scripts\build.ps1
 ```
 
-在仓根运行，产物在 `installer\build\dist\`。安装包产出什么、装好之后是什么样见[安装包](/docs/installer)。输入全部来自本仓（内核的 tarball、`apps/desktop` 开发依赖里的 electron 版本号），不从包源下载内核。
+在仓根运行，产物在 `installer\build\dist\`。安装包产出什么、装好之后是什么样见[安装包](/docs/installer)。安装包只带启动器与 Electron，输入全部来自本仓的 `apps/launcher`；内核不打进安装包，装在 home 里。只有 Electron 版本或启动器本身变了才需要重新打。
 
 ### 打包流程
 
@@ -83,28 +83,27 @@ pwsh installer\scripts\build.ps1
 
 {/* ref file="../installer/scripts/build.ps1" lines="21-23" */}
 
-**2. 构建内核并 `pnpm pack`**：`pnpm build` 构建词汇表包和内核；`pnpm pack` 按 `files` 过滤打出 tarball。**必须用 pnpm 打包**：内核清单里的 `workspace:*` 只有 pnpm pack 会替换成实际版本，npm pack 原样打进去，安装时报 `EUNSUPPORTEDPROTOCOL`。
+**2. 构建启动器**：`apps/launcher` 里 `pnpm build`。
 
-{/* ref file="../installer/scripts/build.ps1" lines="25-39" */}
+{/* ref file="../installer/scripts/build.ps1" lines="25-29" */}
 
-**3. 读版本号**：内核版本与 electron 版本都从 `apps/desktop/package.json` 读。electron 的版本只写在它的 `devDependencies.electron` 这一处，经命令行传给 electron-builder——electron-builder 只在项目根找 electron 版本、不看 `directories.app`，所以 `electron-builder.yml` 里不写。
+**3. 读版本号**：启动器版本与 electron 版本都从 `apps/launcher/package.json` 读；安装包的版本号就是启动器的版本号。electron 的版本只写在它的 `devDependencies.electron` 这一处，经命令行传给 electron-builder——electron-builder 只在项目根找 electron 版本、不看 `directories.app`，所以 `electron-builder.yml` 里不写。内核要的 Electron 范围写在内核包的 `engines.electron`，启动器的测试检查两边对得上。
 
-{/* ref file="../installer/scripts/build.ps1" lines="41-44" */}
+{/* ref file="../installer/scripts/build.ps1" lines="31-33" */}
 
-**4. 组装应用目录**：把外层应用的模板 `installer/app-template/` 复制到 `build\app`，把清单里的 `version` 占位换成内核版本（产物文件名带它；内核报的版本读内核包自己的清单，不读外层），把 `__TGZ__` 占位换成刚打出的 tarball 的相对路径，再 `npm install`。依赖必须写进清单：electron-builder 按清单收集 `node_modules`，`--no-save` 装的包它不收。装完检查内核包在。
+**4. 组装应用目录**：把启动器的构建产物复制到 `build\app`，按启动器的清单写一份只留运行字段的 `package.json`（入口 `main.js`、依赖照抄），再 `npm install`。依赖必须写进清单：electron-builder 按清单收集 `node_modules`，`--no-save` 装的包它不收。
 
-{/* ref file="../installer/scripts/build.ps1" lines="46-65" */}
+{/* ref file="../installer/scripts/build.ps1" lines="35-56" */}
 
 **5. electron-builder**：`installer/node_modules` 里没有 electron-builder 就先 `npm install`，再按下面的配置打出 `gwb-setup-<版>.exe` 与 `gwb-portable-<版>.zip`，最后列出产物和大小。
 
-{/* ref file="../installer/scripts/build.ps1" lines="67-75" */}
+{/* ref file="../installer/scripts/build.ps1" lines="58-66" */}
 
 {/* ref file="../installer/electron-builder.yml" */}
 
 ### 不能删的检查
 
 - **每条 npm / pnpm 之后检查退出码**：pwsh 对原生命令的非零退出码默认不停，不检查的话前一步失败（比如组装目录是空的）也会一路打出安装包
-- **检查产物存在**：tarball、组装目录里的内核包，缺一样就停
 
 ### 验证
 
@@ -114,7 +113,8 @@ pwsh installer\scripts\build.ps1
 
 打包脚本自己在每一步检查退出码和产物，打完之后这样验证：
 
-- **打包形态能启动**：设一个临时的 `GWB_HOME`（给路径）运行 `installer\build\dist\win-unpacked\` 里的 exe，引导脚本能从 asar 里 import 内核，`gwb.log` 里有「up」那一行、没有 error。不设 `GWB_HOME` 运行它会打开真正的 default home
+- **打包形态能启动**：准备一个临时 home（`GWB_HOME` 给路径），`package.json` 里列内核包（本仓 `apps/desktop` 用 `pnpm pack` 打出的 tarball，以 `file:` 写进去）与内核要的 `cordis`，`pnpm install`；运行 `installer\build\dist\win-unpacked\` 里的 exe，启动器从 home import 内核，`gwb.log` 里有「up」那一行、没有 error。不设 `GWB_HOME` 运行它会打开真正的 default home
+- **启动器拒绝得了**：把那个 home 里的内核包删掉再启动，弹框说明缺内核包、退出码 1
 - **单实例锁**：同一个 home 再启动一次，退出码 1、`runtime.json` 不变
 - **安装说明**：派一个没有上下文的子代理，只给它 `INSTALL.md`，让它往一个临时 home（`GWB_HOME` 给路径）里照做一遍、启动 `win-unpacked` 的内核，MCP 入口能调通、条目全部 ACTIVE 才算通过；它不得不问的每个问题都是说明的漏洞
 
@@ -126,9 +126,9 @@ pwsh installer\scripts\build.ps1
 2. **升版本号并提交**：`apps/desktop/package.json` 与 `packages/gwb-plugin-api/package.json` 写同一个号（[词汇表包](/docs/vocab#版本号与发版)）。git 工作区要干净。升哪一位按改没改接缝判断：
    - **改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）：八条接缝上已有的任何一样被改名、删除、改了形状或含义——词汇表包里的类型、IPC 通道、`gwb.shared` 的读法、home 布局、`runtime.json` 的字段、日志行格式——以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` 的版本（拿不准会不会弄坏插件管理，一律按会弄坏算）。插件在 `package.json` 的 `gwb.testedKernel` 里写它测过的内核版本，插件管理按「同一条版本线」比对（[插件写明在哪个内核版本上测过](/docs/design#插件写明在哪个内核版本上测过)）；升了 x，所有插件都会被标成没在这个内核上测过，要先照 `gwb-release` 通知下游
    - **只给接缝加东西（加类型、加可选字段）、只改内核内部或修 bug，升 y**：测过的插件仍算测过
-3. **发词汇表包到团队包源**：`devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api"]}`，别在包目录手动 `pnpm publish`
-4. **打安装包、发布到 gitea releases**：打包见上面[打安装包](#打安装包)。发布仓 `godcreator/gwb-kernel` 公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包；push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
+3. **发词汇表包与内核包到团队包源**：`devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api","apps/desktop"]}`（按依赖序），别在包目录手动 `pnpm publish`
+4. **启动器或 Electron 变了才打安装包、发布到 gitea releases**：打包见上面[打安装包](#打安装包)。发布仓 `godcreator/gwb-kernel` 公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包；push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
    - **release 只上传 `gwb-setup-<版>.exe`**：便携 zip 只在本地构建、不上传
-   - tag 跟内核版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
+   - tag 跟安装包（启动器）的版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
    - **推送 tag 会让同名的草稿 release 自动公开**：要先存草稿、人工确认后再公开，就最后推 tag
-5. **本机升级**：重新运行新版安装包。升了 x 时，先装新内核，再在新内核上测插件、改它们的 `gwb.testedKernel` 并发版——插件发版时 `devkit.release` 会检查这个字段
+5. **本机升级**：先在隔离 home 里装新内核包验证，再升 default home 里的内核包并重启工作台；启动器变了才重新运行新版安装包。升了 x 时，再在新内核上测插件、改它们的 `gwb.testedKernel` 并发版——插件发版时 `devkit.release` 会检查这个字段

@@ -1,0 +1,24 @@
+{
+  "name": "gwb-kernel-launcher",
+  "productName": "gwb-kernel",
+  "version": "0.1.0",
+  "private": true,
+  "author": {"name": "godcreator"},
+  "type": "module",
+  "main": "dist/main.js",
+  "description": "安装包里的启动器：选定 home，确认 home 里装了内核包、内核要的 Electron 版本对得上，再从 home 加载内核。不发布，只打进安装包",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "start": "pnpm build && electron ."
+  },
+  "dependencies": {
+    "semver": "^7.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/semver": "^7.7.0",
+    "electron": "44.1.1",
+    "typescript": "^7.0.2"
+  }
+}

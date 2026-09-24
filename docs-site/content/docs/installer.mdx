@@ -1,30 +1,38 @@
 ---
 title: gwb-installer · 安装包
-description: 内核发版就是发 exe——installer/ 把本仓的内核打成 NSIS 安装包与便携 zip，只带内核，不带插件、不带 pnpm；本页讲它产出什么、装好之后是什么样，谁在用它产出的东西（安装程序、安装目录、外层引导脚本、发布物），它依赖什么，哪些事不归它做
+description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 安装包与便携 zip，内核和插件都不带——它们装在 home 里；启动器选定 home、确认内核包在且 Electron 版本对得上，再从 home 加载内核。本页讲它产出什么、装好之后是什么样，谁在用它产出的东西，它依赖什么，哪些事不归它做
 ---
 
-**本页回答**：安装包产出什么、装好之后是什么样；它产出的东西谁在用、定义在哪；它依赖什么、缺了会怎样；哪些事不归它做。包名 `gwb-installer`，源码目录 `installer/`（不在 pnpm 工作区里），入口文件 `installer/scripts/build.ps1`。
+**本页回答**：安装包产出什么、装好之后是什么样；启动器怎么从 home 里找到内核；它产出的东西谁在用、定义在哪；它依赖什么、缺了会怎样；哪些事不归它做。两部分：启动器 `gwb-kernel-launcher`（源码目录 `apps/launcher/src`，入口文件 `main.ts`，不发布），打包脚本 `installer/`（不在 pnpm 工作区里，入口文件 `installer/scripts/build.ps1`）。
 
-安装包把本仓的内核打成 Windows 安装程序，内核发版就是发这个 exe，内核不发 npm 包（[撤掉 npm 发布](/trajectory/2026-09-18-withdraw-npm-channel)）。怎么运行打包脚本、它一步步做什么见[开发](/docs/develop#打安装包)。
+安装包只带启动器与 Electron。内核是 npm 包 `@godcreator/gwb-kernel-desktop`，和插件一样装在每个 home 的 `node_modules` 里：这样插件的 peer `cordis` 与内核用的是 home 里同一份，各个 home 的内核版本也可以不同（[内核装进 home](/trajectory/2026-09-24-kernel-in-home)）。怎么运行打包脚本、它一步步做什么见[开发](/docs/develop#打安装包)。
 
 ## 功能
 
-- **产出两种安装包**：在 `installer\build\dist\` 下生成 NSIS 安装包 `gwb-setup-<版>.exe`（一键安装、按当前用户安装、不需要管理员权限）和便携 zip `gwb-portable-<版>.zip`，`<版>` 是内核版本。同目录的 `win-unpacked\` 是两种产物共用的未打包目录，只用来验证；每次打包整个重新生成，别日常直接运行它
-- **只带内核**：本仓 `apps/desktop` 的构建产物和它的运行时依赖。插件一个也不带，pnpm 也不带：`cordis.yml` 里的插件一律从包源装、经插件管理热升级，插件放进安装包的话，每发一个插件版本就得重打 exe，热升级也就没有用了；不带插件，同一个版本号的安装包内容就唯一，home 从一开始就由 pnpm 管理（[不带插件，装机交给 agent](/trajectory/2026-09-18-no-seed-agent-installs)）
-- **装好之后**：安装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，开始菜单出现「gwb-kernel」。外层应用（清单、引导脚本、装好的 `node_modules`）在 `resources\app.asar` 里。home 在 `%APPDATA%\gwb-kernel\homes\` 下，和安装目录分开：内核启动时只补 home 缺的文件、不覆盖（[home 的准备与单实例锁](/docs/desktop/home)）
-- **升级内核**：重新运行新版安装包，home 不动
-- **装机**：由 agent 照仓根 `INSTALL.md` 做：配用户级 pnpm 配置 → 装 exe → 往 default home 写 `package.json` 与 `cordis.yml`、用机器上的 pnpm 装命令插件、插件管理、MCP 入口等插件 → 启动 → 连 MCP 入口
+- **产出两种安装包**：在 `installer\build\dist\` 下生成 NSIS 安装包 `gwb-setup-<版>.exe`（一键安装、按当前用户安装、不需要管理员权限）和便携 zip `gwb-portable-<版>.zip`，`<版>` 是启动器的版本号。同目录的 `win-unpacked\` 是两种产物共用的未打包目录，只用来验证；每次打包整个重新生成，别日常直接运行它
+- **启动器从 home 加载内核**：按和内核同一条规则选定 home（`GWB_HOME`），把绝对路径写回 `GWB_HOME`；读 home 里内核包的清单，内核要求的 Electron 版本（`engines.electron`）包含当前 Electron 才 import 内核的入口。home 里没有内核包、清单读不了、没声明 `engines.electron`、版本不满足、没有 `main`，一律弹框说明原因、退出码 1
+- **只带启动器**：内核、插件、pnpm 都不带。内核与插件由创建 home 的一方装进 home，经插件管理升级；安装包只在 Electron 版本或启动器本身变了时重打
+- **装好之后**：安装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，开始菜单出现「gwb-kernel」。启动器（清单、两个脚本、`semver`）在 `resources\app.asar` 里。home 在 `%APPDATA%\gwb-kernel\homes\` 下，和安装目录分开
 - **发布**：release 只上传 `gwb-setup-<版>.exe` 到 gitea 发布仓 `godcreator/gwb-kernel`，便携 zip 只在本地构建；顺序与注意事项见[开发](/docs/develop#发版)
+
+启动器判断 home 里的内核能不能启动：
+
+{/* ref file="../apps/launcher/src/launch-plan.ts" lines="28-53" */}
+
+入口按判断结果 import 内核或弹框退出：
+
+{/* ref file="../apps/launcher/src/main.ts" lines="17-29" */}
 
 ## 接口
 
-安装包本身不导出模块或类型，别的模块用的是它产出的东西，都不属于八条接缝。
+安装包本身不导出模块或类型，别的模块用的是它产出的东西与它读的清单字段，都不属于八条接缝。
 
 | 接口 | 谁在用、做什么 |
 | --- | --- |
-| 安装程序 `gwb-setup-<版>.exe` 与便携 zip | 人和装机的 agent 用它安装内核；按当前用户安装，产品名 `gwb-kernel` 决定安装目录与开始菜单项 |
-| 装好后的目录 | 内核应用从 `resources\app.asar` 启动 |
-| 外层引导脚本 `bootstrap.mjs` | 外层应用的入口，只 import 内核包，内核自己在 Electron ready 之后运行；import 失败时弹错误框、退出码 1 |
+| 安装程序 `gwb-setup-<版>.exe` 与便携 zip | 人和装机的 agent 用它安装启动器；按当前用户安装，产品名 `gwb-kernel` 决定安装目录与开始菜单项 |
+| home 里的内核包 `@godcreator/gwb-kernel-desktop` | 启动器从 `<home>/node_modules/@godcreator/gwb-kernel-desktop` 读清单、import `main` 指向的入口 |
+| 内核包清单的 `engines.electron` | 内核声明它要的 Electron 版本范围；启动器拿当前 Electron 比对 |
+| 环境变量 `GWB_HOME` | 启动器读它选定 home，再写回绝对路径交给内核 |
 | 给人和装机 agent 的发布物 | gitea release 上的 `gwb-setup-<版>.exe`、开始菜单里的「gwb-kernel」；装机步骤在仓根 `INSTALL.md` |
 
 {/* has file="../installer/electron-builder.yml" text="artifactName: gwb-setup-" */}
@@ -33,28 +41,30 @@ description: 内核发版就是发 exe——installer/ 把本仓的内核打成 
 
 {/* has file="../installer/electron-builder.yml" text="productName: gwb-kernel" */}
 
-{/* has file="../installer/electron-builder.yml" text="- bootstrap.mjs" */}
-
-{/* has file="../installer/app-template/bootstrap.mjs" text="import('@godcreator/gwb-kernel-desktop')" */}
-
-{/* has file="../installer/app-template/bootstrap.mjs" text="app.exit(1)" */}
+{/* has file="../apps/desktop/package.json" text="^44.1.1" */}
 
 ## 依赖
 
 | 依赖 | 用来做什么 | 缺了会怎样 |
 | --- | --- | --- |
-| 内核包 `@godcreator/gwb-kernel-desktop` | 打进安装包的内核本身：`apps/desktop` 的 `pnpm build` 与 `pnpm pack` 打出的 tarball | 构建或打包失败时脚本停下；内核仓有已跟踪文件的未提交改动时脚本在第一步就停下 |
-| 内核 tarball 的依赖（cordis、loader、include、词汇表包） | 在组装目录里装齐 `node_modules`，npm 从包源装 | `npm install` 失败时脚本停下；词汇表包的新版本要先发布，否则装不上（[版本号与发版](/docs/vocab#版本号与发版)） |
-| electron | 安装包里的运行时：版本只写在 `apps/desktop` 的 `devDependencies.electron`，二进制从 `electron-builder.yml` 的 `electronDownload` 镜像下载 | 下载不下来时 electron-builder 失败，脚本停下 |
+| 启动器 `apps/launcher` | 打进安装包的全部代码：`pnpm build` 的产物与它的运行时依赖 `semver` | 构建失败时脚本停下；内核仓有已跟踪文件的未提交改动时脚本在第一步就停下 |
+| electron | 安装包里的运行时：版本只写在 `apps/launcher` 的 `devDependencies.electron`，二进制从 `electron-builder.yml` 的 `electronDownload` 镜像下载 | 下载不下来时 electron-builder 失败，脚本停下 |
 | electron-builder | 打出 NSIS 安装包与便携 zip：`installer/package.json` 的开发依赖，工具二进制从 `ELECTRON_BUILDER_BINARIES_MIRROR` 下载，环境里没设就用脚本里的国内镜像 | `installer/node_modules` 里没有时脚本先 `npm install`；装不上或打包失败时脚本停下 |
 | git | `git status --porcelain` 检查内核仓没有未提交的改动 | 找不到 git 时脚本在第一步就报错停下 |
 | gitea | 发布 release：git 凭据管理器里的凭据、gwb-gitea 插件的 `gitea.http` | 发布不了；安装包照样能在本地打出来 |
 
 ## 不做的事
 
-- **不改内核运行时**：外层应用只有一份 `package.json` 和一个只负责启动内核的引导脚本，内核怎么选 home、怎么加载插件全由内核自己决定
-- **不带插件、不写 home**：安装包不知道 `cordis.yml` 里装哪些插件；home 缺的文件由内核启动时补上，插件由装机的 agent 照 `INSTALL.md` 用机器上的 pnpm 装
-- **不带 pnpm**：装机与插件管理都用机器上自己装的 pnpm
-- **不从包源下载内核**：内核来自本仓当场构建、`pnpm pack` 打出的 tarball；只有这个 tarball 自己的依赖由 npm 从包源装
-- **不自己定 electron 版本**：版本只写在 `apps/desktop/package.json` 的 `devDependencies.electron` 一处，打包时经命令行传给 electron-builder
-- **不发 npm 包**：内核只以安装包的形式发布
+- **不带内核、插件与 pnpm，不写 home**：启动器只读 home 里内核包的清单；home 里缺什么由创建 home 的一方照 `INSTALL.md` 装，启动器不替人安装
+- **不决定内核怎么运行**：内核怎么准备 home、怎么加载插件全由内核自己决定；启动器只保证交给内核的 `GWB_HOME` 是它选定的那个绝对路径
+- **不自己定 electron 版本**：版本只写在 `apps/launcher/package.json` 的 `devDependencies.electron` 一处，打包时经命令行传给 electron-builder
+
+## 测试
+
+`apps/launcher/tests/launch-plan.test.ts` 在临时目录上证明：选 home 的规则和内核 `home-path.ts` 逐个输入结果相同；home 里没有内核包、清单不是合法 JSON、没声明 `engines.electron`、Electron 版本不满足、没有 `main` 时各自拒绝并说明原因；版本满足时给出内核包的入口文件；启动器带的 Electron 满足内核包声明的范围。
+
+{/* has file="../apps/launcher/tests/launch-plan.test.ts" text="和内核选 home 的规则逐个输入结果相同" */}
+
+{/* has file="../apps/launcher/tests/launch-plan.test.ts" text="启动器带的 Electron 满足内核包声明的 engines.electron" */}
+
+弹框与从 home 真的加载起内核只能实机验证，见[开发](/docs/develop#验证)。

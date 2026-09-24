@@ -43,9 +43,10 @@ description: 决定内核长什么样的七条设计——各自是什么、推�
 
 ## 每个 home 相互独立
 
-home 是磁盘上的一个目录，也是一个普通的 npm 项目根：装了哪些插件、加载哪些条目、各插件的数据、日志、本次运行的记录，全在里面。`GWB_HOME` 选定用哪个 home，不设时是 `default`。
+home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核包自己、装了哪些插件、加载哪些条目、各插件的数据、日志、本次运行的记录，全在里面。`GWB_HOME` 选定用哪个 home，不设时是 `default`。
 
 - 不同的 home 可以同时运行，插件、端口、数据互不影响；开发和验证用单独创建的隔离 home，不碰日常用的 `default`
+- 内核装在 home 里，和插件在同一个 `node_modules`：插件写 peer 的 `cordis` 与内核用的是同一份；各个 home 的内核版本可以不同，新内核先装进隔离 home 验证（[内核装进 home](/trajectory/2026-09-24-kernel-in-home)）
 - 同一个 home 只能运行一个实例：第二次启动拿不到锁就退出（[同一 home 只允许一个实例](/trajectory/2026-09-12-one-home-one-instance)）
 - 插件要 home 路径只从 `ctx.gwbKernel.dataDir` 取
 
@@ -70,11 +71,11 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：装了�
 
 ## 内核仓只放内核，插件自己写明测过哪个内核
 
-内核仓只放三样：内核应用 `apps/desktop`（[内核应用](/docs/desktop)）、词汇表包 `packages/gwb-plugin-api`（[词汇表包](/docs/vocab)）、安装包 `installer/`（[安装包](/docs/installer)）。准入判据只有一句：**只有第一个插件运行之前必须完成的事才进内核。**
+内核仓只放三样：内核应用 `apps/desktop`（[内核应用](/docs/desktop)）、词汇表包 `packages/gwb-plugin-api`（[词汇表包](/docs/vocab)）、安装包——启动器 `apps/launcher` 与打包脚本 `installer/`（[安装包](/docs/installer)）。准入判据只有一句：**只有第一个插件运行之前必须完成的事才进内核。**
 
 插件一个也不放。命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`；插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`，和 devkit 一起开发。两者都是 `cordis.yml` 里的普通插件，和别的插件一样装在 home 里、经插件管理升级、可以停用和卸载。
 
-新 home 里的插件由创建这个 home 的一方安装：日常用的 `default` 由装机的 agent 照仓根 `INSTALL.md` 用 pnpm 安装；测试用的隔离 home 由 devkit 的 `devkit.home.new` 安装。安装包只带内核，不带插件，也不带 pnpm。
+新 home 里的内核包与插件由创建这个 home 的一方安装：日常用的 `default` 由装机的 agent 照仓根 `INSTALL.md` 用 pnpm 安装；测试用的隔离 home 由 devkit 的 `devkit.home.new` 安装。安装包只带启动器与 Electron，不带内核、插件，也不带 pnpm。
 
 ### 插件写明在哪个内核版本上测过
 

@@ -1,7 +1,7 @@
 # electron-builder 的配置。应用目录是 build.ps1 组装出来的 build/app（gitignore），产物在 build/dist。
-# **不写 electronVersion**——版本只写在 apps/desktop 的 devDependencies.electron 里，
+# **不写 electronVersion**——版本只写在 apps/launcher 的 devDependencies.electron 里，
 # build.ps1 读出来经 --config.electronVersion 传入，这里不再写一份。
-# 安装包只带内核，不带任何插件：插件由 agent 照仓根 INSTALL.md 安装
+# 安装包只带启动器：内核和插件都装在 home 里，由创建 home 的一方照仓根 INSTALL.md 装
 appId: online.tianshen02.gwb
 productName: gwb-kernel
 directories:
@@ -9,7 +9,7 @@ directories:
   output: build/dist
 files:
   - package.json
-  - bootstrap.mjs
+  - '*.js'
   - node_modules/**
 win:
   icon: icons/icon.ico
