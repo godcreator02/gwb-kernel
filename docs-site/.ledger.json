@@ -508,7 +508,7 @@
     "../apps/desktop/package.json:14-18": {
       "kind": "git",
       "blob": "ef01bdf151948e0fd06d8faa7aecd93ec1fa645a",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
       "lines": [
         14,
         18
@@ -518,7 +518,7 @@
     "../package.json:6-14": {
       "kind": "git",
       "blob": "f90dc47b7233c442031dc7f1ae0a7c54b22e2a82",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
       "lines": [
         6,
         14
@@ -528,7 +528,7 @@
     "../installer/scripts/build.ps1:21-23": {
       "kind": "git",
       "blob": "70f5783c84bc14a27c25dc46f1d96bcac4cf4511",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
       "lines": [
         21,
         23
@@ -538,7 +538,7 @@
     "../installer/scripts/build.ps1:25-39": {
       "kind": "git",
       "blob": "70f5783c84bc14a27c25dc46f1d96bcac4cf4511",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
       "lines": [
         25,
         39
@@ -548,7 +548,7 @@
     "../installer/scripts/build.ps1:41-44": {
       "kind": "git",
       "blob": "70f5783c84bc14a27c25dc46f1d96bcac4cf4511",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
       "lines": [
         41,
         44
@@ -558,7 +558,7 @@
     "../installer/scripts/build.ps1:46-65": {
       "kind": "git",
       "blob": "70f5783c84bc14a27c25dc46f1d96bcac4cf4511",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
       "lines": [
         46,
         65
@@ -568,7 +568,7 @@
     "../installer/scripts/build.ps1:67-75": {
       "kind": "git",
       "blob": "70f5783c84bc14a27c25dc46f1d96bcac4cf4511",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
       "lines": [
         67,
         75
@@ -578,12 +578,15 @@
     "../installer/electron-builder.yml:all": {
       "kind": "git",
       "blob": "4eb0470a2ae48a8c85c463375704a1fe070b8897",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
       "lines": [
         1,
         25
       ],
       "hash": "4a329a4f96861649d7f51038f25979a8743a0af3227070a890a594df1cdd7482"
+    },
+    "has ../installer/tests/make-icon.test.ts \"make-icon.ps1 生成的图标与仓里的 icons/icon.ico 逐字节相同\"": {
+      "kind": "has"
     }
   },
   "content/docs/installer.mdx": {
