@@ -26,9 +26,9 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 
 内核只在缺的时候补 `package.json` 与 `cordis.yml`，已有的不覆盖：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="32-35" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="33-36" */}
 
-{/* ref file="../apps/desktop/src/main.ts" lines="44-49" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="40-45" */}
 
 **cordis 只有一份**：内核包把 `cordis` 写成 peer，由 home 根上列的那一份满足；loader、include 也把它写成 peer，所以内核、loader、include 与写 peer `cordis` 的插件解析到同一份。从安装包启动时内核本身就装在 home 里，启动器从 `<home>/node_modules` 加载它（[安装包](/docs/installer)）：
 

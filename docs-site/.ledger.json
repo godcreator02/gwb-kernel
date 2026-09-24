@@ -121,35 +121,45 @@
     }
   },
   "content/docs/seams/home.mdx": {
-    "../apps/desktop/package.json:22-23": {
+    "../apps/desktop/src/main.ts:33-36": {
       "kind": "git",
-      "blob": "ef01bdf151948e0fd06d8faa7aecd93ec1fa645a",
-      "commit": "31efbc693773ac179b1abef0c6879d5c131415d2",
+      "blob": "ce321362d30c2ed7232d689b5f08a953b048db42",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
-        22,
-        23
-      ],
-      "hash": "419ad90ccc5f6c3893fe4e313f87e12636564b733abc41554b1b2486c71c550f"
-    },
-    "../apps/desktop/src/main.ts:32-35": {
-      "kind": "git",
-      "blob": "4719fccaec90ea80c7ecf92b28d332085dfcaa98",
-      "commit": "31efbc693773ac179b1abef0c6879d5c131415d2",
-      "lines": [
-        32,
-        35
+        33,
+        36
       ],
       "hash": "166f9d45512b4ad201bfcf34f19d46f2bf5cc2948f04bd5d5d669d97a22bd736"
     },
-    "../apps/desktop/src/main.ts:44-49": {
+    "../apps/desktop/src/main.ts:40-45": {
       "kind": "git",
-      "blob": "4719fccaec90ea80c7ecf92b28d332085dfcaa98",
-      "commit": "31efbc693773ac179b1abef0c6879d5c131415d2",
+      "blob": "ce321362d30c2ed7232d689b5f08a953b048db42",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
-        44,
-        49
+        40,
+        45
       ],
       "hash": "cd53d0f50244bd0d46e54b29b01fec69c9b3fd17226e7789dd39269e3dc7a8f1"
+    },
+    "../apps/desktop/package.json:23-26": {
+      "kind": "git",
+      "blob": "2a28e514b221130c4674ab772b275a859e231f78",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "lines": [
+        23,
+        26
+      ],
+      "hash": "b364cebf00a259da4b2fea39de8be3a8262ee01e417cabc89f57ca3f9b708938"
+    },
+    "../apps/desktop/package.json:28-29": {
+      "kind": "git",
+      "blob": "2a28e514b221130c4674ab772b275a859e231f78",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "lines": [
+        28,
+        29
+      ],
+      "hash": "3090c55f8c649f691787498597fd6c6b77ad2845a9b56188e712bbec8491f034"
     }
   },
   "content/docs/desktop/boot.mdx": {
@@ -227,73 +237,73 @@
     "has ../apps/desktop/tests/main.test.ts \"拿不到单实例锁：日志写明已有实例在运行，退出码 1\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/main.ts:39-42": {
+    "../apps/desktop/src/home-path.ts:all": {
       "kind": "git",
-      "blob": "4719fccaec90ea80c7ecf92b28d332085dfcaa98",
-      "commit": "31efbc693773ac179b1abef0c6879d5c131415d2",
+      "blob": "8f1ac8757a5375c975f3c478e044e6059382b793",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
-        39,
-        42
+        1,
+        6
       ],
-      "hash": "fab463f40616fd68550f350af85ab977854fe37b40e78b5b8c24b0d82f8822b3"
+      "hash": "482874f47488c470380a2e92214b992bfefcd99aa4f1a44668559a98ece612a6"
     },
-    "../apps/desktop/src/main.ts:51-54": {
+    "../apps/desktop/src/main.ts:47-50": {
       "kind": "git",
-      "blob": "4719fccaec90ea80c7ecf92b28d332085dfcaa98",
-      "commit": "31efbc693773ac179b1abef0c6879d5c131415d2",
+      "blob": "ce321362d30c2ed7232d689b5f08a953b048db42",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "lines": [
+        47,
+        50
+      ],
+      "hash": "cbec11ba9bd20328b8582ad00def982d912d76a6e84e52f8dec2a726c020199f"
+    },
+    "../apps/desktop/src/main.ts:51-51": {
+      "kind": "git",
+      "blob": "ce321362d30c2ed7232d689b5f08a953b048db42",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
         51,
-        54
-      ],
-      "hash": "435927f2d739003841e9eafb728acd61275487ac6f51fe1ad1b520aaff76d207"
-    },
-    "../apps/desktop/src/main.ts:55-55": {
-      "kind": "git",
-      "blob": "4719fccaec90ea80c7ecf92b28d332085dfcaa98",
-      "commit": "31efbc693773ac179b1abef0c6879d5c131415d2",
-      "lines": [
-        55,
-        55
+        51
       ],
       "hash": "31238880df3571f0beabc7f86f2d8faa8bc49fb4504d8ea9bd509be4cd4b7042"
     },
-    "../apps/desktop/src/main.ts:32-35": {
+    "../apps/desktop/src/main.ts:33-36": {
       "kind": "git",
-      "blob": "4719fccaec90ea80c7ecf92b28d332085dfcaa98",
-      "commit": "31efbc693773ac179b1abef0c6879d5c131415d2",
+      "blob": "ce321362d30c2ed7232d689b5f08a953b048db42",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
-        32,
-        35
+        33,
+        36
       ],
       "hash": "166f9d45512b4ad201bfcf34f19d46f2bf5cc2948f04bd5d5d669d97a22bd736"
     },
-    "../apps/desktop/src/main.ts:44-49": {
+    "../apps/desktop/src/main.ts:40-45": {
       "kind": "git",
-      "blob": "4719fccaec90ea80c7ecf92b28d332085dfcaa98",
-      "commit": "31efbc693773ac179b1abef0c6879d5c131415d2",
+      "blob": "ce321362d30c2ed7232d689b5f08a953b048db42",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
-        44,
-        49
+        40,
+        45
       ],
       "hash": "cd53d0f50244bd0d46e54b29b01fec69c9b3fd17226e7789dd39269e3dc7a8f1"
     },
-    "../apps/desktop/src/main.ts:78-81": {
+    "../apps/desktop/src/main.ts:74-77": {
       "kind": "git",
-      "blob": "4719fccaec90ea80c7ecf92b28d332085dfcaa98",
-      "commit": "31efbc693773ac179b1abef0c6879d5c131415d2",
+      "blob": "ce321362d30c2ed7232d689b5f08a953b048db42",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
-        78,
-        81
+        74,
+        77
       ],
       "hash": "af488fa27e1703feb746fccdcc6c8e117a2cb5696ee7e88cc9f926f3a9ccd74a"
     },
-    "../apps/desktop/src/main.ts:176-183": {
+    "../apps/desktop/src/main.ts:172-179": {
       "kind": "git",
-      "blob": "4719fccaec90ea80c7ecf92b28d332085dfcaa98",
-      "commit": "31efbc693773ac179b1abef0c6879d5c131415d2",
+      "blob": "ce321362d30c2ed7232d689b5f08a953b048db42",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
-        176,
-        183
+        172,
+        179
       ],
       "hash": "3ea99050b4f94f277d0e63fcc46235aa896148a1f269be9234a417658a3034a1"
     }
@@ -507,8 +517,8 @@
   "content/docs/develop.mdx": {
     "../apps/desktop/package.json:14-18": {
       "kind": "git",
-      "blob": "ef01bdf151948e0fd06d8faa7aecd93ec1fa645a",
-      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
+      "blob": "2a28e514b221130c4674ab772b275a859e231f78",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
         14,
         18
@@ -518,7 +528,7 @@
     "../package.json:6-14": {
       "kind": "git",
       "blob": "f90dc47b7233c442031dc7f1ae0a7c54b22e2a82",
-      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
         6,
         14
@@ -527,66 +537,66 @@
     },
     "../installer/scripts/build.ps1:21-23": {
       "kind": "git",
-      "blob": "70f5783c84bc14a27c25dc46f1d96bcac4cf4511",
-      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
+      "blob": "54a1c24c683065e4ad79d69545f9ca913fba5b01",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
         21,
         23
       ],
       "hash": "5c7508bccc7607f4408a32234a2ee2a539efe6bfe47264a56502334837cdd64e"
     },
-    "../installer/scripts/build.ps1:25-39": {
-      "kind": "git",
-      "blob": "70f5783c84bc14a27c25dc46f1d96bcac4cf4511",
-      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
-      "lines": [
-        25,
-        39
-      ],
-      "hash": "ff0b598e2c35de3884a94aa9dc5a6417dd6b2f879adb535abe59966e3c927068"
-    },
-    "../installer/scripts/build.ps1:41-44": {
-      "kind": "git",
-      "blob": "70f5783c84bc14a27c25dc46f1d96bcac4cf4511",
-      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
-      "lines": [
-        41,
-        44
-      ],
-      "hash": "8914e37d1eabb3b96dc901a7bb8acd026f689cd7f643171d09eb674b9ed1fb74"
-    },
-    "../installer/scripts/build.ps1:46-65": {
-      "kind": "git",
-      "blob": "70f5783c84bc14a27c25dc46f1d96bcac4cf4511",
-      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
-      "lines": [
-        46,
-        65
-      ],
-      "hash": "86e75d9b4cb8bcee39caf0a7e31a38f1a8e103e3a31a623fc5a270577ac37b7d"
-    },
-    "../installer/scripts/build.ps1:67-75": {
-      "kind": "git",
-      "blob": "70f5783c84bc14a27c25dc46f1d96bcac4cf4511",
-      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
-      "lines": [
-        67,
-        75
-      ],
-      "hash": "024297b2993cd00ac73f84aefded8a0a0b806cb444aec085debf0d7b9aaa8895"
-    },
     "../installer/electron-builder.yml:all": {
       "kind": "git",
-      "blob": "4eb0470a2ae48a8c85c463375704a1fe070b8897",
-      "commit": "dac59a4925fe21aee4996ca3ceba685a23a70cd5",
+      "blob": "fd0527af292cce5a474795366126cf4425a8ea2b",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
       "lines": [
         1,
         25
       ],
-      "hash": "4a329a4f96861649d7f51038f25979a8743a0af3227070a890a594df1cdd7482"
+      "hash": "f76da33f068822efd993f9146cc592885c692e482eb695a84ca433b9a58325b6"
     },
     "has ../installer/tests/make-icon.test.ts \"make-icon.ps1 生成的图标与仓里的 icons/icon.ico 逐字节相同\"": {
       "kind": "has"
+    },
+    "../installer/scripts/build.ps1:25-29": {
+      "kind": "git",
+      "blob": "54a1c24c683065e4ad79d69545f9ca913fba5b01",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "lines": [
+        25,
+        29
+      ],
+      "hash": "f4b3cf8c5180673cc7abc9da158918f41978da1c302b8b11a0a37777ae1173cd"
+    },
+    "../installer/scripts/build.ps1:31-33": {
+      "kind": "git",
+      "blob": "54a1c24c683065e4ad79d69545f9ca913fba5b01",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "lines": [
+        31,
+        33
+      ],
+      "hash": "0ded539efcf45c538124de218e7329b9b18bd5d7e132a64a9c648e386d1064e2"
+    },
+    "../installer/scripts/build.ps1:35-56": {
+      "kind": "git",
+      "blob": "54a1c24c683065e4ad79d69545f9ca913fba5b01",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "lines": [
+        35,
+        56
+      ],
+      "hash": "815c60130b3de24697f0ad274a6a347b975df673efe8c51b7a5ca5337e7a1d59"
+    },
+    "../installer/scripts/build.ps1:58-66": {
+      "kind": "git",
+      "blob": "54a1c24c683065e4ad79d69545f9ca913fba5b01",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "lines": [
+        58,
+        66
+      ],
+      "hash": "509d2766e4e77b7bf0de27614dbc979c9ab40a6189c997df52b11af1c3877221"
     }
   },
   "content/docs/installer.mdx": {
@@ -599,13 +609,33 @@
     "has ../installer/electron-builder.yml \"productName: gwb-kernel\"": {
       "kind": "has"
     },
-    "has ../installer/electron-builder.yml \"- bootstrap.mjs\"": {
+    "../apps/launcher/src/launch-plan.ts:28-53": {
+      "kind": "git",
+      "blob": "7dff040f70bdaa876e353c4f05b40bf9fbdd052e",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "lines": [
+        28,
+        53
+      ],
+      "hash": "29a02d7fa8f117282a3b11431b91cb224ea217b099d21e87b224e8384b2bd05c"
+    },
+    "../apps/launcher/src/main.ts:17-29": {
+      "kind": "git",
+      "blob": "f6547781d717176fa42bd978be16a85a31a7c5af",
+      "commit": "13ff04ab11cb49070a5a47ea91990e956da1dc3c",
+      "lines": [
+        17,
+        29
+      ],
+      "hash": "0f906fc09c3107566784f2c668b4d85673810fbc15a3b8e3ce2c08ea046449cf"
+    },
+    "has ../apps/desktop/package.json \"^44.1.1\"": {
       "kind": "has"
     },
-    "has ../installer/app-template/bootstrap.mjs \"import('@godcreator/gwb-kernel-desktop')\"": {
+    "has ../apps/launcher/tests/launch-plan.test.ts \"和内核选 home 的规则逐个输入结果相同\"": {
       "kind": "has"
     },
-    "has ../installer/app-template/bootstrap.mjs \"app.exit(1)\"": {
+    "has ../apps/launcher/tests/launch-plan.test.ts \"启动器带的 Electron 满足内核包声明的 engines.electron\"": {
       "kind": "has"
     }
   },
