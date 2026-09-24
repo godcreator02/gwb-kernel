@@ -1,6 +1,7 @@
 {
   "pages": [
     "index",
-    "kernel-in-home"
+    "kernel-in-home",
+    "drop-shared-scan"
   ]
 }

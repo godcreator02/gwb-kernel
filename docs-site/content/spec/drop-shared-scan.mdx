@@ -1,0 +1,96 @@
+---
+title: 删掉 gwb.shared 扫描：页面 importmap 只放内核给的包名
+description: 内核不再扫描 home 里各包的 gwb.shared，importmap 只剩内核包自己声明的 react 四个包名；块笔记 v2 的界面包撤掉声明、各插件自己打包方言；devkit 的发版检查只认内核包的声明
+---
+
+# 删掉 gwb.shared 扫描
+
+**本页回答**：「任何包都能在清单里写 `gwb.shared`、内核扫描 home 拼进 importmap」这套机制为什么还在、删掉它要改哪几个仓、按什么顺序、哪几件事要人先定。
+
+**状态：已写方案（2026-09-24），待决定的四条等人确认；还没动代码。**
+
+## 验收
+
+- [ ] 内核拼 importmap 不再读 home 清单：importmap 只有内核包自己清单里 `gwb.shared` 声明的名字，别的包写了 `gwb.shared` 不收录
+- [ ] 内核仓里扫描 home、同名冲突处理、「同一句警告只记一次」的代码与测试删掉；「页面上的包名」接缝页、接缝图、关键设计、内核应用页、词汇表、开发页改成只讲内核给的包名
+- [ ] 块笔记 v2 的界面包 `@godcreator/block-notebook-ui` 不再声明 `gwb.shared`；v2 各插件浏览器端产物把方言打包进去，外置名单只剩内核包声明的四个名字
+- [ ] 论文插件（`gwb-paper-fetch` 仓）浏览器端外置名单只剩内核包声明的四个名字
+- [ ] devkit 发版检查：浏览器端产物能 import 的名字只取内核包的 `gwb.shared`；非内核包写了 `gwb.shared` 就拒；`devkit.capabilities` 只对内核包报 importmap 外置名
+- [ ] default home 里除了内核包，没有任何已装的包在清单里写 `gwb.shared`，块笔记窗格照常显示
+
+## 由来
+
+devkit 仓全生态精简计划第五期原定「react 改由内核提供，删掉 `gwb.shared` 机制」。第五期提前做时（内核仓轨迹卡「react 收进内核」）只做了一半：
+
+- react 的四个包名由内核包提供，声明**仍写在内核包自己清单的 `gwb.shared` 里**。devkit 的发版检查、`devkit.capabilities`、各插件的 `build.ts` 本来就读这个字段，所以不用改
+- 扫描 home 的机制留着，因为块笔记的库 `@godcreator/block-note` 还声明着自己的包名。计划是等第三期块笔记撤掉声明再删
+
+现在还在声明的只有三处：内核包、块笔记 `main` 线的库 `lib/`、块笔记 v2 线的界面包 `packages/ui`。
+
+**跟块笔记 v2 线的冲突**：v2 线的轨迹卡「拆掉旧 lib」（2026-09-24）决定让方言入口进页面 importmap、接替旧库那一份，并且明确否掉了「各插件自己打包一份」，理由是每个插件都要多带一份 mdast / micromark，页面上会有好几份解析器。v2 计划页还列着「核心插件的 `./shared` 入口也进页面 importmap」。这和 devkit 第三期「block-note 撤掉自己的 `gwb.shared`、块笔记系列插件把解析库各自打包进构建产物」正好相反，要先定下来走哪边（见待决定第 1 条）。
+
+## 为什么删
+
+- **机制本身的成本**：内核要读 home 清单、逐个包读清单、处理同名冲突、记警告，还要保证解析不走 Node 缓存；接缝页的一半篇幅在讲这些规则
+- **它要求库装成 home 的直接依赖**：内核只扫 home 清单的直接依赖，库要进 importmap 就得装在 home 根上。这和全生态精简计划第四期「home 里只有插件」对不上
+- **多份拷贝不影响正确性**：方言是纯函数（清单写 `sideEffects: false`，模块顶层只有常量与函数），规矩里也禁止对别的插件的对象用 `instanceof`。页面上有几份解析器只多占体积，不会出错；页面从本地 `file://` 加载，体积不是瓶颈
+
+## 删掉之后的样子
+
+- 内核启动时从自己的包目录读 `gwb.shared`、解析成 `file://` 地址，这就是整张 importmap；解析不到照旧启动失败。不再读 home 清单，也不再每次推送都重算
+- `gwb:shell` 消息的 `imports` 字段形状不变，页面入口不用改
+- 内核包清单里的 `gwb.shared` 字段**保留**：它是「内核给页面哪些包名」的唯一来源，插件构建时照它外置、devkit 照它检查
+- 别的包写 `gwb.shared`，内核不看、不警告；拦截放在 devkit 发版检查上，发不出去
+
+## 待决定
+
+1. **块笔记 v2 走哪边**：推荐**界面包撤掉声明、各插件自己打包方言**。理由见上面「为什么删」；代价是每个带界面的块笔记插件多带一份 mdast / micromark，v2 线要写一张新轨迹卡推翻「拆掉旧 lib」里的这一条，计划页里「核心插件的 `./shared` 入口进 importmap」一并删掉。反过来保留机制的话，就要把 devkit 第三期那条改掉，接缝页把「库也能声明」写成长期约定
+2. **内核删扫描代码什么时候发**：推荐**等 default 换成 v2 之后**（v2 计划页 W6）。default 现在跑的是块笔记 `main` 线，它的库还靠这套机制；`main` 线只修关键 bug，不为这件事改它。另一种做法是内核先发、default 暂时不升内核，但只要有人在 default 上运行 `plugin-manager.update-kernel`，块笔记窗格就起不来
+3. **内核版本号升哪一位**：推荐**升 y**，但发之前按 gwb-release 再问一次人。按契约清单，「别的包的 `gwb.shared` 不再收录」属于调用方依赖着的语义变了，字面上该升 x；可发版时已经没有任何装着的包还依赖它（这正是第 2 条要等的前提），升 x 只会让全部插件 peer 里的 `^0.4.x` 出范围、逐个重发
+4. **devkit 拦不拦非内核包写 `gwb.shared`**：推荐**拦**。内核不再警告，这是唯一能让写错的人当场知道的地方。这条检查要等块笔记 `main` 线不再发版之后才能上（它的库还声明着，会被拦住）
+
+## 实施步骤
+
+**第一步：块笔记 v2 线**（`gwb-block-note` 仓的 `v2` 分支，工作区 `../gwb-block-note-v2`；动手前读那个仓的 AGENTS）
+
+- [ ] `packages/ui`：清单去掉 `gwb.shared`，删掉只给 importmap 用的 `shared/` 入口与它的产物检查
+- [ ] `tools/build-plugin.ts`：外置名单改成只从内核包清单的 `gwb.shared` 读（照 devkit 模板的 `build.ts`）；各插件产物检查里 importmap 名单跟着改
+- [ ] 文档：界面包入口页、贡献接缝页里「方言在页面 importmap 里」的说法；计划页删掉「核心插件的 `./shared` 入口进页面 importmap」；写轨迹卡，推翻「拆掉旧 lib」里方言进 importmap 那一条
+- [ ] 在隔离 home 里验证：各窗格正常显示，页面 importmap 里只有 react 四个名字，日志没有 error
+
+**第二步：论文插件**（随 v2 计划页 W3 改接 v2 时一起做；动手前读 `gwb-paper-fetch` 仓的 AGENTS）
+
+- [ ] `tools/build-plugin.ts`：外置名单只剩内核包声明的名字，块笔记的界面包打包进去
+
+**第三步：等 default 换成 v2**（v2 计划页 W5、W6）
+
+- [ ] 核对 default home：`node_modules` 下除内核包外，没有已装的包在清单里写 `gwb.shared`；旧库 `@godcreator/block-note` 已从 home 清单里去掉
+
+**第四步：内核仓**
+
+- [ ] `apps/desktop/src/imports.ts` 只留 `kernelSharedImports`，`main.ts` 启动时算一次、推送时直接用；删掉扫描、同名冲突与警告去重，测试跟着删改
+- [ ] 现状页：「页面上的包名」接缝页、接缝图（去掉「声明 gwb.shared 的库」那一框）、`shared-names` 图、关键设计、内核应用页、词汇表、开发页；写轨迹卡
+- [ ] 版本号按待决定第 3 条问人后发版；default 用 `plugin-manager.update-kernel` 升上去并重启，核对块笔记窗格
+
+**第五步：devkit 仓**（动手前读 `gwb-devkit` 仓的 AGENTS）
+
+- [ ] `artifact-check.ts`：浏览器端产物能 import 的名字只取内核包清单的 `gwb.shared`；非内核包写了 `gwb.shared` 就拒（待决定第 4 条）
+- [ ] `capabilities.ts` 与 `devkit.capabilities` 的说明：importmap 外置名只对内核包报
+- [ ] 说明书 gwb-release、gwb-devkit 的正本与附件 `references/rules.md`、模板、「页面代码与 importmap」规矩页改写后重新生成；全生态精简计划第三期、第五期里对应的几项勾掉或改写
+- [ ] 核对 `plugin-manager.shared` 命令：计划页写着要删，源码里已经搜不到，确认后把计划页那一项勾掉
+
+**第六步：界面插件仓**（动手前读 `gwb-ui-plugins` 仓的 AGENTS）
+
+- [ ] 外壳页里「按各包 `gwb.shared` 算好的 importmap」改成内核包提供；`importmap-flow` 图跟着改
+
+## 不做的事
+
+- 块笔记 `main` 线的库不改：它只修关键 bug，default 换成 v2 后就不再用
+- 不把 `gwb.shared` 字段改名：内核包清单里的这个字段继续当名单来源，改名要让 devkit 与全部插件的构建跟着改，没有收益
+- 不给内核加「发现别的包写了 `gwb.shared` 就警告」：那就又要扫描 home，拦截放在 devkit 发版检查
+
+## 进度
+
+新的在上。
+
+- 2026-09-24｜写方案：查到还在声明的只有内核包、块笔记 `main` 线的库、v2 线的界面包三处；v2 线的「拆掉旧 lib」与 devkit 第三期方向相反，列为待决定第 1 条｜总控台会话
