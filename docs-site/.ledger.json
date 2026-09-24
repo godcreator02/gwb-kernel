@@ -8,61 +8,23 @@
     },
     "../apps/desktop/src/api.ts:23-27": {
       "kind": "git",
-      "blob": "50f523191d4066b668737d98dc3a0a9c1f7c4181",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
+      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
       "lines": [
         23,
         27
       ],
       "hash": "e98393537c67ef51f7d6f14d8d3cf29ff55190fc06c4eb6d20894b21b66f9caa"
     },
-    "../apps/desktop/src/api.ts:49-50": {
+    "../apps/desktop/src/api.ts:48-49": {
       "kind": "git",
-      "blob": "50f523191d4066b668737d98dc3a0a9c1f7c4181",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
+      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
       "lines": [
-        49,
-        50
+        48,
+        49
       ],
       "hash": "ec9ecc8997fe82dfb12a9146ee1789bd4d855067e4ca664e23217e79a192d885"
-    }
-  },
-  "content/docs/seams/shared.mdx": {
-    "../apps/desktop/package.json:27-35": {
-      "kind": "git",
-      "blob": "eaa82385df27d70e7f1b2b5ddf1845ee106b7c54",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
-      "lines": [
-        27,
-        35
-      ],
-      "hash": "f97e729ebae664748f1d947c98817f742aab54485463caf7bdfc0ae7131a4f73"
-    },
-    "../apps/desktop/src/imports.ts:18-29": {
-      "kind": "git",
-      "blob": "a5b08cadd1ce9e7c614affede3e1fce06cee9194",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
-      "lines": [
-        18,
-        29
-      ],
-      "hash": "65bb410a86d1fe3179c6f2c7e449012b88bc84e53761f57696420152d3e715d3"
-    },
-    "has ../apps/desktop/tests/main.test.ts \"importmap 只有内核包声明的四个包名：home 里别的包写了 gwb.shared 也不收\"": {
-      "kind": "has"
-    },
-    "has ../apps/desktop/tests/imports.test.ts \"kernelSharedImports：声明的文件不在就抛出\"": {
-      "kind": "has"
-    },
-    "../apps/desktop/src/api.ts:41-46": {
-      "kind": "git",
-      "blob": "50f523191d4066b668737d98dc3a0a9c1f7c4181",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
-      "lines": [
-        41,
-        46
-      ],
-      "hash": "8aac91267256d4eba7dc89a639efd7208c6e6c978448c349916bf6f073bc2498"
     }
   },
   "content/docs/seams/home.mdx": {
@@ -105,9 +67,6 @@
     "has ../apps/desktop/src/preload.cjs \"contextBridge.exposeInMainWorld('gwb', {\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/src/imports.ts \"manifest.gwb?.shared\"": {
-      "kind": "has"
-    },
     "has ../apps/desktop/src/main.ts \"path.join(dataDir, 'runtime.json')\"": {
       "kind": "has"
     },
@@ -136,6 +95,9 @@
       "kind": "has"
     },
     "has ../apps/desktop/src/main.ts \"gwbCommands?: {\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/index.html \"./react/react-dom-client.js\"": {
       "kind": "has"
     }
   },
@@ -270,7 +232,7 @@
     "../apps/desktop/src/preload.cjs:all": {
       "kind": "git",
       "blob": "2d5226970031e639456de3d32f9bb03fdc1d3cf2",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
       "lines": [
         1,
         19
@@ -288,23 +250,23 @@
     },
     "../apps/desktop/src/api.ts:6-11": {
       "kind": "git",
-      "blob": "50f523191d4066b668737d98dc3a0a9c1f7c4181",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
+      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
       "lines": [
         6,
         11
       ],
       "hash": "034d4296ceede8e903c6fbd56db439be1ff23fc325e3526191ed4f2ce45c44b2"
     },
-    "../apps/desktop/src/api.ts:35-47": {
+    "../apps/desktop/src/api.ts:35-46": {
       "kind": "git",
-      "blob": "50f523191d4066b668737d98dc3a0a9c1f7c4181",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
+      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
       "lines": [
         35,
-        47
+        46
       ],
-      "hash": "3680b5b385d5c5c6e6bc75e4c0d3a0edeb19107ecb3f93e54c77011cf5498da5"
+      "hash": "904ad0d121e8f68238016773b3974b0d1931cf0fdde6d72fbb3583ffa1250361"
     }
   },
   "content/docs/seams/kernel.mdx": {
@@ -483,18 +445,18 @@
   "content/docs/desktop/api.mdx": {
     "../apps/desktop/src/api.ts:all": {
       "kind": "git",
-      "blob": "50f523191d4066b668737d98dc3a0a9c1f7c4181",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
+      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
       "lines": [
         1,
-        59
+        58
       ],
-      "hash": "cedc4955d56fd72341b54fd762fc4b1d567125784591d2cecbe0087c0752f50b"
+      "hash": "d500d93146af2a34f341dd1d1db367409ef476959341313b4ab8b2ced64204f6"
     },
     "../apps/desktop/package.json:9-16": {
       "kind": "git",
-      "blob": "eaa82385df27d70e7f1b2b5ddf1845ee106b7c54",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "04c7521cbfdf29c4eb441d60f2e796e6f6c6e0da",
+      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
       "lines": [
         9,
         16
@@ -504,7 +466,7 @@
     "../apps/desktop/tsconfig.api.json:all": {
       "kind": "git",
       "blob": "2e25391fcdf34b7c1fccf4be998991210e2ed46e",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
       "lines": [
         1,
         11
@@ -514,10 +476,28 @@
     "has ../apps/desktop/package.json \"tsc -p tsconfig.api.json\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/tests/imports.test.ts \"包根的 types 指向接口类型那份 d.ts，default 是内核入口\"": {
+    "has ../apps/desktop/package.json \"4.0.0-rc.10\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/package.json \"4.0.0-rc.10\"": {
+    "has ../apps/desktop/tests/importmap.test.ts \"包根的 types 指向接口类型那份 d.ts，default 是内核入口\"": {
+      "kind": "has"
+    }
+  },
+  "content/docs/seams/page-react.mdx": {
+    "../apps/desktop/src/index.html:14-24": {
+      "kind": "git",
+      "blob": "1f17d062f94ea9bce68e9034219e0d32d88b28c2",
+      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
+      "lines": [
+        14,
+        24
+      ],
+      "hash": "407e83c3cc9659356e6110a69f55f597c615bc1c699e8949276587184a310d58"
+    },
+    "has ../apps/desktop/tests/importmap.test.ts \"index.html 里只有 react 的四个包名，写在页面脚本之前\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/tests/importmap.test.ts \"每个地址都是相对 index.html 的 ./react/<文件>，文件由 scripts/build-react.ts 产出\"": {
       "kind": "has"
     }
   }
