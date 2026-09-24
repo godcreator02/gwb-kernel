@@ -1,7 +1,7 @@
 {
   "name": "gwb-kernel-launcher",
   "productName": "gwb-kernel",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "author": {"name": "godcreator"},
   "type": "module",
