@@ -4,10 +4,9 @@
     <meta charset="UTF-8" />
     <title>gwb</title>
     <style>
-      /* 反闪兜底：与 main.ts 的窗底同一个值，也是令牌暗色 --background 那档井色。
-         令牌表没到、外壳没来的每一帧（含整页 reload 的第一帧）都按它画，不露白 */
+      /* 与 main.ts 的窗口底色、安装包图标的底色是同一个值，改就一起改 */
       html { background: #151518; }
-      /* 只给没有外壳时那份只读现状用；外壳一来 #root 整个归它。暗底上要亮字 */
+      /* 只给没有外壳时的只读状态页用；外壳就位后 #root 整个归它。暗底上用亮字 */
       .gwb-report { color: #fafafa; font: 13px/1.6 ui-monospace, Consolas, monospace; padding: 16px 20px; white-space: pre-wrap; }
       .gwb-report ul { padding-left: 1.5em; margin: 0.5em 0; }
       .gwb-report pre { margin: 0.5em 0 0; white-space: pre-wrap; }
@@ -16,84 +15,92 @@
   <body>
     <div id="root"></div>
     <script type="module">
-      // 渲染层本体：听外壳是谁，注 importmap，import 它，把 #root 交出去。没有外壳就画一份只读现状。再没别的
       const root = document.getElementById('root')
-      let current = null
-      let injected = false
-      // 在途那次 import 的 url：还没落定的换壳不设 current，靠它认出「同一发正在来」
-      let pending = null
+      let currentShell = null
+      let importmapInjected = false
+      // 正在 import、还没挂上的外壳地址：挂上之前 currentShell 还是旧的，靠它认出同一个地址又推来了一次
+      let shellUrlBeingLoaded = null
 
-      // importmap 只注一次，而且必须赶在第一句裸名 import 之前——注过之后再注盖不掉已经解析过的名字
-      function injectImportmap(imports) {
-        if (injected || Object.keys(imports).length === 0) return
-        const el = document.createElement('script')
-        el.type = 'importmap'
-        el.textContent = JSON.stringify({ imports })
-        document.head.appendChild(el)
-        injected = true
+      // importmap 只能注入一次，而且要在第一个包名 import 之前：注入之后，已经解析过的名字改不了
+      function injectImportmapOnce(imports) {
+        if (importmapInjected || Object.keys(imports).length === 0) return
+        const importmapScript = document.createElement('script')
+        importmapScript.type = 'importmap'
+        importmapScript.textContent = JSON.stringify({ imports })
+        document.head.appendChild(importmapScript)
+        importmapInjected = true
       }
 
-      // 只读现状：一句话说明局面，然后是内核推来的条目清单与错误行。全是 textContent，没有按钮
-      function showReport(headline, report) {
+      function appendTextElement(parent, tagName, text) {
+        const element = document.createElement(tagName)
+        element.textContent = text
+        parent.appendChild(element)
+      }
+
+      function entryList(entries) {
+        const list = document.createElement('ul')
+        for (const entry of entries) appendTextElement(list, 'li', `${entry.id}  ${entry.name}  ${entry.state}`)
+        return list
+      }
+
+      function appendReportDetails(box, report) {
+        appendTextElement(box, 'p', `home：${report.home}`)
+        if (report.entries.length === 0) {
+          appendTextElement(box, 'p', 'cordis.yml 里一条条目都没有。装一个调用 setShell 的外壳插件并加一条条目，见文档站。')
+        } else {
+          box.appendChild(entryList(report.entries))
+        }
+        if (report.errors.length > 0) {
+          appendTextElement(box, 'p', '最近的错误与警告（全文在 home 里的 gwb.log）：')
+          appendTextElement(box, 'pre', report.errors.join('\n'))
+        }
+      }
+
+      function showStatusPage(headline, report) {
         root.textContent = ''
         const box = document.createElement('div')
         box.className = 'gwb-report'
-        const add = (tag, text) => {
-          const el = document.createElement(tag)
-          el.textContent = text
-          box.appendChild(el)
-        }
-        add('p', headline)
-        if (report) {
-          add('p', `home：${report.home}`)
-          if (report.entries.length === 0) {
-            add('p', 'cordis.yml 里一条条目都没有。装一个 provide 页面的件并加一条条目，见文档站。')
-          } else {
-            const ul = document.createElement('ul')
-            for (const e of report.entries) {
-              const li = document.createElement('li')
-              li.textContent = `${e.id}  ${e.name}  ${e.state}`
-              ul.appendChild(li)
-            }
-            box.appendChild(ul)
-          }
-          if (report.errors.length > 0) {
-            add('p', '最近的错误与警告（全文在 home 里的 gwb.log）：')
-            add('pre', report.errors.join('\n'))
-          }
-        }
+        appendTextElement(box, 'p', headline)
+        if (report) appendReportDetails(box, report)
         root.appendChild(box)
+      }
+
+      function disposeCurrentShell() {
+        try {
+          currentShell?.handle?.dispose?.()
+        } catch (err) {
+          console.error(`旧外壳 dispose 失败：${String(err)}`)
+        }
+        currentShell = null
+        root.textContent = ''
+      }
+
+      async function mountShell(url, report) {
+        try {
+          const shellModule = await import(url)
+          if (typeof shellModule.default !== 'function') throw new Error(`${url} 的默认导出不是函数`)
+          currentShell = { url, handle: shellModule.default(root) ?? null }
+        } catch (err) {
+          console.error(`外壳启动失败：${String(err)}`)
+          showStatusPage(`外壳启动失败：${String(err)}`, report)
+        }
       }
 
       window.gwb.onShell(async (shell) => {
         const url = shell?.url ?? null
-        injectImportmap(shell?.imports ?? {})
-        // 同 url 在途也放不得：订阅时问一次与去抖推送各发一次 gwb:shell，两次都落在 import
-        // 落定之前的话守卫双双放行，外壳挂两遍（井影、布局档 EPERM 的向量，见反馈 09-12）
-        if (current?.url === url || pending === url) return
-        pending = url
+        injectImportmapOnce(shell?.imports ?? {})
+        // 订阅时请求的一条与去抖推送的一条可能都在 import 完成之前到达，只比 currentShell 的话外壳会挂两遍
+        if (currentShell?.url === url || shellUrlBeingLoaded === url) return
+        shellUrlBeingLoaded = url
         try {
-          try {
-            current?.handle?.dispose?.()
-          } catch (err) {
-            console.error(`旧外壳拆不干净：${String(err)}`)
-          }
-          current = null
-          root.textContent = ''
+          disposeCurrentShell()
           if (url === null) {
-            showReport('没有外壳件（没有件调 setShell）。', shell?.report)
+            showStatusPage('没有外壳插件（没有插件调用 setShell）。', shell?.report)
             return
           }
-          try {
-            const mod = await import(url)
-            if (typeof mod.default !== 'function') throw new Error(`${url} 的默认导出不是函数`)
-            current = { url, handle: mod.default(root) ?? null }
-          } catch (err) {
-            console.error(`外壳起不来：${String(err)}`)
-            showReport(`外壳起不来：${String(err)}`, shell?.report)
-          }
+          await mountShell(url, shell?.report)
         } finally {
-          pending = null
+          shellUrlBeingLoaded = null
         }
       })
     </script>

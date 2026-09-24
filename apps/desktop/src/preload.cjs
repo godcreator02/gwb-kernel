@@ -1,19 +1,19 @@
-// 桥的浏览器那半：window.gwb 三个函数，再没别的。沙箱里跑，所以是 CJS。形状钉在词汇表包的 GwbWindowApi
+// 页面上的 window.gwb，形状见词汇表包的 GwbWindowApi；preload 在沙箱里运行，只能是 CJS
 const { contextBridge, ipcRenderer } = require('electron')
+
+function subscribe(channel, callback) {
+  const listener = (_event, payload) => callback(payload)
+  ipcRenderer.on(channel, listener)
+  return () => ipcRenderer.off(channel, listener)
+}
 
 contextBridge.exposeInMainWorld('gwb', {
   command: (command, args) => ipcRenderer.invoke('gwb:command', command, args),
-  on: (cb) => {
-    const listener = (_event, payload) => cb(payload)
-    ipcRenderer.on('gwb:event', listener)
-    return () => ipcRenderer.off('gwb:event', listener)
-  },
-  onShell: (cb) => {
-    // 收到的是 { url, imports, report }：外壳地址、页面级 importmap、只读现状（无外壳时页面画它）
-    const listener = (_event, shell) => cb(shell)
-    ipcRenderer.on('gwb:shell', listener)
-    // 订上就问一次当前值，免得件在页面起来之前就 setShell 过了
+  on: (callback) => subscribe('gwb:event', callback),
+  onShell: (callback) => {
+    const unsubscribe = subscribe('gwb:shell', callback)
+    // 订阅后马上问一次当前值：外壳插件可能在页面就位之前就调过 setShell
     ipcRenderer.send('gwb:hello')
-    return () => ipcRenderer.off('gwb:shell', listener)
+    return unsubscribe
   },
 })
