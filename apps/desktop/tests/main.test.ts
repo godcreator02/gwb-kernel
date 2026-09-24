@@ -224,7 +224,7 @@ async function bootUntilUp(options: BootOptions): Promise<BootedKernel> {
 function fakeHomeWithPlugins(): string {
   const home = makeTemporaryDir('gwb-main-home-')
   writeFiles(home, {
-    'package.json': JSON.stringify({ name: 'gwb-home', private: true, dependencies: { 'gwb-test-shared': '1.0.0' } }),
+    'package.json': JSON.stringify({ name: 'gwb-home', private: true }),
     'cordis.yml': '- id: probe\n  name: gwb-test-probe\n- id: commands\n  name: gwb-test-commands\n',
     'node_modules/gwb-test-probe/package.json': JSON.stringify({ name: 'gwb-test-probe', type: 'module', exports: { '.': './index.mjs' } }),
     'node_modules/gwb-test-probe/index.mjs': [
@@ -245,17 +245,11 @@ function fakeHomeWithPlugins(): string {
       '}',
       '',
     ].join('\n'),
-    'node_modules/gwb-test-shared/package.json': JSON.stringify({
-      name: 'gwb-test-shared',
-      exports: { './x.js': './x.mjs' },
-      gwb: { shared: { 'shared-name': './x.js', react: './x.js' } },
-    }),
-    'node_modules/gwb-test-shared/x.mjs': 'export default 1\n',
   })
   return home
 }
 
-function shellMessagesSent(window: FakeWindow): { url: string | null; imports: Record<string, string>; report: { home: string; entries: { id: string; name: string; state: string }[]; errors: string[] } }[] {
+function shellMessagesSent(window: FakeWindow): { url: string | null; report: { home: string; entries: { id: string; name: string; state: string }[]; errors: string[] } }[] {
   return window.webContents.send.mock.calls.filter((call) => call[0] === 'gwb:shell').map((call) => call[1] as never)
 }
 
@@ -443,10 +437,10 @@ describe('main.ts：IPC 通道', () => {
     const sender = { send: vi.fn() }
     booted.electron.ipcListeners.get('gwb:hello')!({ sender })
     expect(sender.send).toHaveBeenCalledTimes(1)
-    const [channel, message] = sender.send.mock.calls[0] as [string, { url: unknown; imports: unknown; report: { home: string; entries: { id: string; name: string; state: string }[]; errors: unknown[] } }]
+    const [channel, message] = sender.send.mock.calls[0] as [string, { url: unknown; report: { home: string; entries: { id: string; name: string; state: string }[]; errors: unknown[] } }]
     expect(channel).toBe('gwb:shell')
+    expect(Object.keys(message).sort()).toEqual(['report', 'url'])
     expect(message.url).toBeNull()
-    expect(Object.keys(message.imports as Record<string, string>).sort()).toEqual(['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime'])
     expect(message.report.home).toBe(booted.dataDir)
     expect(message.report.entries).toContainEqual({ id: 'home', name: 'cordis:include', state: 'ACTIVE' })
     await quitAndWaitForCleanup(booted)
@@ -480,25 +474,6 @@ describe('main.ts：插件看到的内核', () => {
     probeGlobal.__gwbMainTestProbe = { events: [] }
     const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
     expect(probeGlobal.__gwbMainTestProbe.kernel?.launcherVersion).toBeUndefined()
-    await quitAndWaitForCleanup(booted)
-  })
-
-  it('importmap 只有内核包声明的四个包名：home 里别的包写了 gwb.shared 也不收，不读、不记日志', async () => {
-    silenceStderr()
-    probeGlobal.__gwbMainTestProbe = { events: [] }
-    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
-    const kernel = probeGlobal.__gwbMainTestProbe.kernel!
-    const window = booted.electron.windows[0]!
-    const revoke = kernel.setShell('file:///shell.js')
-    kernel.setShell('file:///another-shell.js')
-    revoke()
-    const pushes = shellMessagesSent(window)
-    expect(pushes.length).toBeGreaterThanOrEqual(2)
-    for (const push of pushes) {
-      expect(Object.keys(push.imports).sort()).toEqual(['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime'])
-    }
-    expect(pushes.at(-1)?.imports['react']).toMatch(/\/dist\/react\/react\.js$/)
-    expect(booted.readLog()).not.toContain('gwb-test-shared')
     await quitAndWaitForCleanup(booted)
   })
 

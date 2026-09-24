@@ -1,0 +1,46 @@
+---
+title: importmap 写死在页面入口：删掉 gwb.shared 字段与 ./react 出口，内核升 0.6.0
+born-at: 2026-09-25T01:30
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: importmap 写死
+domain: 这条线
+---
+
+## 背景
+
+[删掉 gwb.shared 扫描](2026-09-24-drop-shared-scan.md)之后，`gwb.shared` 只剩内核包自己清单里的一份，列着 react 的四个包名。这个字段还留着，理由是它是「内核给页面哪些包名」的唯一来源：内核启动时读它算 importmap、随 `gwb:shell` 推给页面，各插件的 `build.ts` 读它当外置名单，devkit 发版检查读它核对浏览器端产物。
+
+2026-09-25 人问：页面上只有 react 需要共享，别的都不需要，为什么还要一套「名单」机制。复盘下来，这套机制是「任何包都能声明、内核合并」那个阶段留下的形状：
+
+- 同一份名单写了两遍（`exports` 的 `./react*` 与 `gwb.shared`），读它的三方各自写了一段 JSON 解析，内核那段对不合法的条目还静默跳过
+- devkit 为这个字段专门长出一条「非内核包写 `gwb.shared` 就拒」的检查，只因为字段名看起来谁都能写
+- 内核启动时解析、每次推送都带上、页面「只注入一次、要赶在第一个 import 之前」，全是为一张不会变的表做的
+
+pivots-from:: [删掉 gwb.shared 扫描](2026-09-24-drop-shared-scan.md)
+
+## 结论与边界
+
+- importmap 写死在页面入口 `index.html` 的 `<head>` 里，地址是相对 `index.html` 的 `./react/…`，和构建时打进 `dist/react/` 的四个文件同在内核包里
+- 删掉：内核包清单的 `gwb.shared` 字段与 `./react*` 四个出口、`imports.ts`、`gwb:shell` 消息与 `onShell` 类型里的 `imports` 字段、页面脚本里注入 importmap 的逻辑，连同它们的测试
+- 页面代码的外置名单直接写这四个名字，不再从内核包读：它们是 react 自己的入口名，只随 react 大版本变，而换 react 本来就是内核升 x
+- 不为「以后可能有第二个共享库」留接口。真出现时改 `index.html`、devkit 模板与发版检查三处
+- 删字段、删出口、改消息形状都是改接缝已有的东西，内核升 x 到 0.6.0。代价很小：发版时除 devkit 与插件管理外，所有插件的 peer 还停在 `^0.4.x`，本来就要适配 0.5，直接跳到 0.6 只改一次
+
+上一张卡里「内核包清单的 `gwb.shared` 字段保留、当名单来源」这一条到此推翻，其余结论不变。
+
+## 否掉的候选
+
+- **名单改成内核包导出的一个常量模块**（`page-imports` 这类出口，插件构建与 devkit 都 import 它）：仍是在给「名单」留接口，只是换了载体
+- **名单从 `exports` 的前缀推出来**（`./page/react` 这类）：同上，而且是一条读代码看不出来的约定
+- **先升 y、字段留着给下游过渡，下一次升 x 再删**：下游本来就要跟 0.5，这时并进 0.6 只多改一个数字；留着一个内核自己不读的字段反而要解释它为什么还在
+
+## 代价与遗留
+
+- devkit 的发版检查与模板 `build.ts` 还在读内核包的 `gwb.shared`：在内核 0.6.0 上构建或发版的插件会被拒，devkit 要先改（外置名单写死、检查只认这四个名字、删掉「非内核包写 `gwb.shared` 就拒」），已投 devkit 收件页
+- 各插件仓 `build.ts` 里从内核包清单读 `gwb.shared` 的那段，要在适配 0.6 时换成写死的四个名字
+
+## 依据
+
+- 隔离 home `static-importmap-2609250107`（基础插件与外壳构建于内核 0.4.1）从源码启动内核 0.6.0：页面只有一段 importmap，react 19.2.8 加载到，外壳与插件管理窗格正常显示，日志没有 error
+- 本仓 `apps/desktop/tests/importmap.test.ts`

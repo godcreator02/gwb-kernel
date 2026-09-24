@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 
 /**
- * react 的四个包名打成浏览器能直接 import 的 ESM，放进 dist/react/，经本包 `gwb.shared` 进页面的 importmap。
+ * react 的四个包名打成浏览器能直接 import 的 ESM，放进 dist/react/；页面 index.html 里写死的 importmap 指向这四个文件。
  * 用 esbuild：rolldown 在 browser 平台对「CJS require 外置包」保留 require，产物进浏览器就报错；esbuild 会把它提升成 import
  */
 

@@ -20,9 +20,9 @@ interface Step {
 
 const STEPS: Step[] = [
   { title: '第 1 步：页面订阅 onShell', detail: '页面加载后订阅 onShell；订阅时发一次 gwb:hello，问当前外壳是谁。', message: { text: 'gwb:hello', toPage: false }, shellUrl: 'null', shellLit: false, shellGone: false, root: '（空）' },
-  { title: '第 2 步：还没有外壳', detail: '内核推 gwb:shell：url 是 null，附带 importmap 和只读状态页的数据。页面显示只读状态页。', message: { text: '{ url: null, imports, report }', toPage: true }, shellUrl: 'null', shellLit: false, shellGone: false, root: '只读状态页' },
-  { title: '第 3 步：外壳插件调用 setShell(url)', detail: 'shell 插件加载后，把自己页面一侧模块的地址交给内核；内核记下它，再推一次 gwb:shell。', message: { text: '{ url, imports, report }', toPage: true }, shellUrl: '…/client.js', shellLit: true, shellGone: false, root: '只读状态页' },
-  { title: '第 4 步：页面交给外壳', detail: '页面先注入 importmap，再 import 这个地址，把 #root 交给它的默认导出，留下它返回的 dispose。', shellUrl: '…/client.js', shellLit: false, shellGone: false, root: '外壳' },
+  { title: '第 2 步：还没有外壳', detail: '内核推 gwb:shell：url 是 null，附带只读状态页的数据。页面显示只读状态页。', message: { text: '{ url: null, report }', toPage: true }, shellUrl: 'null', shellLit: false, shellGone: false, root: '只读状态页' },
+  { title: '第 3 步：外壳插件调用 setShell(url)', detail: 'shell 插件加载后，把自己页面一侧模块的地址交给内核；内核记下它，再推一次 gwb:shell。', message: { text: '{ url, report }', toPage: true }, shellUrl: '…/client.js', shellLit: true, shellGone: false, root: '只读状态页' },
+  { title: '第 4 步：页面交给外壳', detail: '页面 import 这个地址，把 #root 交给它的默认导出，留下它返回的 dispose。', shellUrl: '…/client.js', shellLit: false, shellGone: false, root: '外壳' },
   { title: '第 5 步：外壳插件卸载', detail: 'setShell 返回的撤销函数执行，内核推 url 为 null；页面调用旧外壳的 dispose，回到只读状态页。', message: { text: '{ url: null, … }', toPage: true }, shellUrl: 'null', shellLit: false, shellGone: true, root: '只读状态页' },
 ]
 

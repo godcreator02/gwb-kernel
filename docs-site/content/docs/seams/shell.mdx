@@ -6,9 +6,9 @@ description: 连接页面入口与调用 setShell 的外壳插件；接口是 se
 **本页回答**：页面怎么交给一个插件来渲染；外壳换了、卸载了、启动失败时页面显示什么；页面入口和外壳插件各保证什么。
 
 <Diagram name="shell-handover" title="页面先问外壳是谁，外壳插件调用 setShell 后把 #root 交出去，外壳卸载后回到只读状态页">
-- 页面入口订阅 `onShell`，订阅时发一次 `gwb:hello` 问当前外壳是谁；内核每次都回一条 `gwb:shell`：外壳地址（没有时是 `null`）、importmap、只读状态页的数据
+- 页面入口订阅 `onShell`，订阅时发一次 `gwb:hello` 问当前外壳是谁；内核每次都回一条 `gwb:shell`：外壳地址（没有时是 `null`）、只读状态页的数据
 - 还没有外壳时页面显示只读状态页
-- 外壳插件调用 `setShell(url)`，内核记下地址、再推一次；页面入口注入 importmap，import 这个地址，把 `#root` 交给它的默认导出
+- 外壳插件调用 `setShell(url)`，内核记下地址、再推一次；页面入口 import 这个地址，把 `#root` 交给它的默认导出
 - 外壳插件卸载时撤销函数执行，内核推 `url: null`；页面入口调用旧外壳的 `dispose`，回到只读状态页
 - 后调用 `setShell` 的替换先调用的
 </Diagram>
@@ -33,16 +33,15 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 
 页面入口 import 这个地址，只认它的默认导出：拿到 `#root`，返回可选的 `dispose`。
 
-{/* ref file="../apps/desktop/src/api.ts" lines="49-50" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="48-49" */}
 
-外壳模块 import 之前，页面上已经注入了 importmap，react 的四个包名可以直接 import（[页面上的包名](/docs/seams/shared)）。
+页面入口里写死了 importmap，外壳模块里 react 的四个包名可以直接 import（[页面上的 react](/docs/seams/page-react)）。
 
 ## 约定
 
 **页面入口**保证：
 
 - 订阅时先问一次当前外壳，外壳插件比页面先调用 `setShell` 也不会错过
-- import 外壳之前先注入 importmap；importmap 只注入一次（第一条带非空 `imports` 的推送），内核这次运行里它不会变
 - 同一时刻只有一个外壳：换外壳时先调用旧外壳的 `dispose`、清空 `#root`，再挂新的；旧外壳的 `dispose` 抛错只打一行 `console.error`，照样换
 - 同一个地址连推两次，外壳只挂载一次，上一次还在 import 时也一样
 - 地址是 `null`、import 失败、默认导出不是函数时，显示只读状态页，失败时第一行写明原因；不会白屏。失败后同一个地址再推来会重新 import。只读状态页显示什么见[内核应用](/docs/desktop)

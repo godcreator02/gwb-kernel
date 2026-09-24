@@ -40,10 +40,9 @@ export interface GwbWindowApi {
   on(cb: (payload: unknown) => void): () => void
   /**
    * 外壳换了。订阅时先收到当前值（没有外壳时 url 是 null），返回取消订阅的函数。
-   * `imports` 是页面的 importmap：内核包 `gwb.shared` 声明的包名 → file:// 地址。
-   * 页面先注入它再 import 外壳。只有内核自己的页面用这一条
+   * 只有内核自己的页面用这一条
    */
-  onShell(cb: (shell: { url: string | null; imports: Record<string, string> }) => void): () => void
+  onShell(cb: (shell: { url: string | null }) => void): () => void
 }
 
 /** 外壳模块的默认导出：接管页面根，返回一个可选的清理句柄 */

@@ -6,7 +6,6 @@ import { Context, type Fiber } from 'cordis'
 import Loader, { type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from './api.js'
-import { kernelSharedImports } from './imports.js'
 import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
@@ -18,7 +17,6 @@ const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 const kernelPackageDir = path.join(moduleDir, '..')
 const kernelManifest = JSON.parse(fs.readFileSync(path.join(kernelPackageDir, 'package.json'), 'utf8')) as { version: string }
 const kernelVersion = kernelManifest.version
-const kernelImports = kernelSharedImports(kernelPackageDir)
 /** 启动器写进环境变量的安装包版本；读完就删，插件启动的子进程（比如从源码启动的另一个内核）不继承它 */
 const launcherVersion = process.env.GWB_LAUNCHER_VERSION
 delete process.env.GWB_LAUNCHER_VERSION
@@ -188,14 +186,12 @@ let currentShellUrl: string | null = null
 
 interface ShellMessage {
   url: string | null
-  imports: Record<string, string>
   report: StatusPageReport
 }
 
 function currentShellMessage(): ShellMessage {
   return {
     url: currentShellUrl,
-    imports: kernelImports,
     report: statusPageReport(),
   }
 }

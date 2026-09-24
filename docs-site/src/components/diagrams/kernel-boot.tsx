@@ -18,7 +18,7 @@ const STEPS: { title: string; detail: string; lit: Part[]; root: string }[] = [
   { title: '第 3 步：创建 cordis 实例', detail: '根上下文指向 home，并提供 gwbKernel——早于任何插件。', lit: ['cordis', 'gwbKernel'], root: '' },
   { title: '第 4 步：创建窗口', detail: '页面加载入口 index.html。这时还没有外壳，页面显示只读状态页。', lit: ['page'], root: '只读状态页' },
   { title: '第 5 步：加载 cordis.yml 里的插件', detail: '注册 loader 与 include；include 读 cordis.yml，loader 按条目从 home 的 node_modules 按真实路径找到包并加载。命令插件、插件管理也是这样加载的。', lit: ['loader', 'yml', 'modules', 'plugins', 'shell'], root: '只读状态页' },
-  { title: '第 6 步：页面交给外壳', detail: '外壳插件调用 setShell；页面注入 importmap、import 外壳模块、把 #root 交给它。', lit: ['shell', 'gwbKernel', 'page'], root: '外壳' },
+  { title: '第 6 步：页面交给外壳', detail: '外壳插件调用 setShell；页面 import 外壳模块、把 #root 交给它。', lit: ['shell', 'gwbKernel', 'page'], root: '外壳' },
 ]
 
 export function KernelBoot() {

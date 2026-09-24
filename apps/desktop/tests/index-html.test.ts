@@ -12,7 +12,6 @@ class FakeElement {
   readonly tagName: string
   children: FakeElement[] = []
   className = ''
-  type = ''
   private ownText = ''
 
   constructor(tagName: string) {
@@ -41,7 +40,6 @@ interface ShellReport {
 }
 interface ShellState {
   url: string | null
-  imports: Record<string, string>
   report?: ShellReport
 }
 type OnShellCallback = (shell: ShellState) => Promise<void>
@@ -76,14 +74,12 @@ async function importFromModuleTable(url: string): Promise<unknown> {
   return load()
 }
 
-function loadPageScript(): { root: FakeElement; head: FakeElement; deliver: (shell: ShellState) => Promise<void>; consoleError: ReturnType<typeof vi.fn> } {
+function loadPageScript(): { root: FakeElement; deliver: (shell: ShellState) => Promise<void>; consoleError: ReturnType<typeof vi.fn> } {
   const html = fs.readFileSync(path.join(import.meta.dirname, '..', 'src', 'index.html'), 'utf8')
   const script = /<script type="module">([\s\S]*?)<\/script>/.exec(html)?.[1]
   if (script === undefined) throw new Error('index.html 里没有找到页面脚本')
   const root = new FakeElement('div')
-  const head = new FakeElement('head')
   const document = {
-    head,
     getElementById: (id: string) => (id === 'root' ? root : null),
     createElement: (tagName: string) => new FakeElement(tagName),
   }
@@ -103,7 +99,7 @@ ${scriptWithImportSeam}
   evaluatePageScript(document, window, { error: consoleError }, importFromModuleTable)
   if (onShell === undefined) throw new Error('页面脚本没有订阅 onShell')
   const subscribed = onShell
-  return { root, head, deliver: (shell) => subscribed(shell), consoleError }
+  return { root, deliver: (shell) => subscribed(shell), consoleError }
 }
 
 const sampleReport: ShellReport = {
@@ -127,27 +123,6 @@ afterEach(() => {
   modulesByUrl.clear()
 })
 
-describe('index.html：importmap', () => {
-  it('第一条带 imports 的推送注入一次 importmap，之后的推送不再注入', async () => {
-    const page = loadPageScript()
-    await page.deliver({ url: null, imports: { react: 'file:///r1.js' }, report: sampleReport })
-    await page.deliver({ url: null, imports: { react: 'file:///r2.js' }, report: sampleReport })
-    expect(page.head.children).toHaveLength(1)
-    const importmap = page.head.children[0]!
-    expect(importmap.tagName).toBe('script')
-    expect(importmap.type).toBe('importmap')
-    expect(JSON.parse(importmap.textContent)).toEqual({ imports: { react: 'file:///r1.js' } })
-  })
-
-  it('imports 是空表时不注入，留到第一次非空时再注入', async () => {
-    const page = loadPageScript()
-    await page.deliver({ url: null, imports: {}, report: sampleReport })
-    expect(page.head.children).toHaveLength(0)
-    await page.deliver({ url: 'x', imports: { react: 'file:///r.js' }, report: sampleReport }).catch(() => {})
-    expect(page.head.children).toHaveLength(1)
-  })
-})
-
 function failingShellUrl(): string {
   return registerModule('test-shell:throws', async () => {
     throw new Error('外壳模块求值失败')
@@ -157,7 +132,7 @@ function failingShellUrl(): string {
 describe('index.html：只读状态页', () => {
   it('画出来的是一句说明、home、每个条目一行、最近的错误行，全是文本', async () => {
     const page = loadPageScript()
-    await page.deliver({ url: failingShellUrl(), imports: {}, report: sampleReport })
+    await page.deliver({ url: failingShellUrl(), report: sampleReport })
     const box = reportBox(page.root)
     expect(box.children.map((child) => child.tagName)).toEqual(['p', 'p', 'ul', 'p', 'pre'])
     expect(box.children[1]!.textContent).toContain(sampleReport.home)
@@ -171,7 +146,7 @@ describe('index.html：只读状态页', () => {
 
   it('一个条目都没有时画一句提示代替列表；没有错误行时不画错误那两段', async () => {
     const page = loadPageScript()
-    await page.deliver({ url: failingShellUrl(), imports: {}, report: { home: 'C:\\homes\\empty', entries: [], errors: [] } })
+    await page.deliver({ url: failingShellUrl(), report: { home: 'C:\\homes\\empty', entries: [], errors: [] } })
     const box = reportBox(page.root)
     expect(box.children.map((child) => child.tagName)).toEqual(['p', 'p', 'p'])
     expect(box.children[2]!.textContent).toContain('cordis.yml')
@@ -179,13 +154,13 @@ describe('index.html：只读状态页', () => {
 
   it('推送里没有 report 时只画那一句说明', async () => {
     const page = loadPageScript()
-    await page.deliver({ url: failingShellUrl(), imports: {} })
+    await page.deliver({ url: failingShellUrl() })
     expect(reportBox(page.root).children.map((child) => child.tagName)).toEqual(['p'])
   })
 
   it('没有外壳时推来 url: null：画出只读状态页，第一句说明没有外壳插件', async () => {
     const page = loadPageScript()
-    await page.deliver({ url: null, imports: {}, report: sampleReport })
+    await page.deliver({ url: null, report: sampleReport })
     const box = reportBox(page.root)
     expect(box.children.map((child) => child.tagName)).toEqual(['p', 'p', 'ul', 'p', 'pre'])
     expect(box.children[0]!.textContent).toContain('没有外壳插件')
@@ -193,8 +168,8 @@ describe('index.html：只读状态页', () => {
 
   it('url: null 连推两次，状态页按后一次的 report 重画', async () => {
     const page = loadPageScript()
-    await page.deliver({ url: null, imports: {}, report: { home: 'C:\\homes\\empty', entries: [], errors: [] } })
-    await page.deliver({ url: null, imports: {}, report: sampleReport })
+    await page.deliver({ url: null, report: { home: 'C:\\homes\\empty', entries: [], errors: [] } })
+    await page.deliver({ url: null, report: sampleReport })
     expect(reportBox(page.root).children[2]!.tagName).toBe('ul')
   })
 })
@@ -203,8 +178,8 @@ describe('index.html：外壳接管', () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
     const url = shellModuleUrl('A')
-    await page.deliver({ url, imports: {}, report: sampleReport })
-    await page.deliver({ url, imports: {}, report: sampleReport })
+    await page.deliver({ url, report: sampleReport })
+    await page.deliver({ url, report: sampleReport })
     expect(shellEvents.__gwbPageTestEvents).toEqual(['mount A'])
     expect(page.root.textContent).toBe('shell A')
   })
@@ -213,15 +188,15 @@ describe('index.html：外壳接管', () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
     const url = shellModuleUrl('B')
-    await Promise.all([page.deliver({ url, imports: {} }), page.deliver({ url, imports: {} })])
+    await Promise.all([page.deliver({ url }), page.deliver({ url })])
     expect(shellEvents.__gwbPageTestEvents).toEqual(['mount B'])
   })
 
   it('换外壳：先 dispose 旧的、清空 #root，再挂新的', async () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
-    await page.deliver({ url: shellModuleUrl('C'), imports: {} })
-    await page.deliver({ url: shellModuleUrl('D'), imports: {} })
+    await page.deliver({ url: shellModuleUrl('C') })
+    await page.deliver({ url: shellModuleUrl('D') })
     expect(page.root.textContent).toBe('shell D')
     expect(shellEvents.__gwbPageTestEvents).toEqual(['mount C', 'dispose C', 'mount D'])
   })
@@ -229,8 +204,8 @@ describe('index.html：外壳接管', () => {
   it('外壳在用时推来 url: null（外壳撤销）：dispose 旧外壳，回到只读状态页', async () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
-    await page.deliver({ url: shellModuleUrl('G'), imports: {} })
-    await page.deliver({ url: null, imports: {}, report: sampleReport })
+    await page.deliver({ url: shellModuleUrl('G') })
+    await page.deliver({ url: null, report: sampleReport })
     expect(shellEvents.__gwbPageTestEvents).toEqual(['mount G', 'dispose G'])
     expect(reportBox(page.root).children[0]!.textContent).toContain('没有外壳插件')
   })
@@ -239,9 +214,9 @@ describe('index.html：外壳接管', () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
     const url = shellModuleUrl('H')
-    await page.deliver({ url, imports: {} })
-    await page.deliver({ url: null, imports: {}, report: sampleReport })
-    await page.deliver({ url, imports: {} })
+    await page.deliver({ url })
+    await page.deliver({ url: null, report: sampleReport })
+    await page.deliver({ url })
     expect(shellEvents.__gwbPageTestEvents).toEqual(['mount H', 'dispose H', 'mount H'])
     expect(page.root.textContent).toBe('shell H')
   })
@@ -249,8 +224,8 @@ describe('index.html：外壳接管', () => {
   it('旧外壳 dispose 抛错：打一行 console.error，照样换上新的', async () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
-    await page.deliver({ url: shellModuleUrl('E', { disposeThrows: true }), imports: {} })
-    await page.deliver({ url: shellModuleUrl('F'), imports: {} })
+    await page.deliver({ url: shellModuleUrl('E', { disposeThrows: true }) })
+    await page.deliver({ url: shellModuleUrl('F') })
     expect(page.consoleError).toHaveBeenCalledTimes(1)
     expect(String(page.consoleError.mock.calls[0]?.[0])).toContain('dispose E 失败')
     expect(page.root.textContent).toBe('shell F')
@@ -261,7 +236,7 @@ describe('index.html：外壳接管', () => {
     const url = registerModule('test-shell:throws', async () => {
       throw new Error('外壳模块求值失败')
     })
-    await page.deliver({ url, imports: {}, report: sampleReport })
+    await page.deliver({ url, report: sampleReport })
     expect(page.consoleError).toHaveBeenCalledTimes(1)
     const box = reportBox(page.root)
     expect(box.children[0]!.textContent).toContain('外壳模块求值失败')
@@ -271,7 +246,7 @@ describe('index.html：外壳接管', () => {
   it('外壳的默认导出不是函数：同样回到只读状态页，第一句带着地址', async () => {
     const page = loadPageScript()
     const url = registerModule('test-shell:not-a-function', async () => ({ default: 42 }))
-    await page.deliver({ url, imports: {}, report: sampleReport })
+    await page.deliver({ url, report: sampleReport })
     expect(reportBox(page.root).children[0]!.textContent).toContain(url)
   })
 
@@ -279,8 +254,8 @@ describe('index.html：外壳接管', () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
     const url = registerModule('test-shell:not-a-function', async () => ({ default: 42 }))
-    await page.deliver({ url, imports: {} })
-    await page.deliver({ url, imports: {} })
+    await page.deliver({ url })
+    await page.deliver({ url })
     expect(page.consoleError).toHaveBeenCalledTimes(2)
   })
 })

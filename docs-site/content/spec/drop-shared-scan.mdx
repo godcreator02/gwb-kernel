@@ -9,6 +9,8 @@ description: 内核不再扫描 home 里各包的 gwb.shared，importmap 只剩�
 
 **状态：人定（2026-09-24）不等块笔记、内核直接删扫描，内核升 0.5.0（升 x）。块笔记 `main` 已在 9e0b674 撤掉界面包的 `gwb.shared`；内核 0.5.0 已发（内核仓 b17001f），default 还没升；devkit（第五步）已做完并发版（devkit 0.18.14、插件管理 0.8.4）；界面插件仓（第六步）未动，已往它的收件页投了通知。**
 
+**2026-09-25 更进一步：内核 0.6.0 连 `gwb.shared` 字段也删了**，importmap 写死在页面入口 `index.html` 里、只有 react 的四个包名，`./react*` 出口一并删掉（轨迹卡[importmap 写死在页面入口](/trajectory/2026-09-25-static-importmap)）。下面凡是「从内核包清单的 `gwb.shared` 读外置名单」的项，改成外置名单直接写死这四个名字；devkit 发版检查的对应改动已投 devkit 收件页。
+
 ## 验收
 
 - [x] 内核拼 importmap 不再读 home 清单：importmap 只有内核包自己清单里 `gwb.shared` 声明的名字，别的包写了 `gwb.shared` 不收录
@@ -93,6 +95,7 @@ devkit 仓全生态精简计划第五期原定「react 改由内核提供，删�
 
 新的在上。
 
+- 2026-09-25｜内核 0.6.0：删掉 `gwb.shared` 字段、`./react*` 出口、`imports.ts` 与 `gwb:shell` 的 `imports` 字段，importmap 写死在 `index.html`。隔离 home `static-importmap-2609250107`（装的基础插件与外壳构建于内核 0.4.1）从源码启动 0.6.0：页面只有一段 importmap，react 19.2.8 加载到，外壳与插件管理窗格正常显示，日志没有 error｜总控台会话
 - 2026-09-24｜发版：内核 0.5.0（内核仓 b17001f）；devkit 0.18.14、插件管理 0.8.4（devkit 仓 128c7f6，在跑内核 0.5.0 的隔离 home 里调 `devkit.release` 发的——default 还是 0.4.1，不在它们新的 peer 范围里）。隔离 home `kernel05-2609242251`：`plugin-manager.update-kernel {"version":"0.5.0"}` 后重启，页面 importmap 只有 react 四个名字，外壳正常挂上，日志没有 error；基础插件（peer 还写 `^0.4.x`）照常 active、标 `kernelUntested`，devkit 与插件管理新版 active、范围包含 0.5.0。default 没升。发之前往 15 个下游仓的收件页投了「要适配内核 0.5」（其中 4 个仓的收件页原本就有别人未提交的改动，写了没提交）｜总控台会话
 - 2026-09-24｜人定不等块笔记、内核直接删扫描、内核升 0.5.0。块笔记 `main` 已在 9e0b674 撤掉界面包的 `gwb.shared`、各插件把方言打包进去、浏览器端外置名单改从内核包清单读。内核仓：`imports.ts` 只留 `kernelSharedImports`，`main.ts` 启动时算一次、推送时直接用，扫描、同名冲突与警告去重连同测试删掉；同一版把词汇表包并进内核包（接口类型从内核包的包根导出）。现状页（页面上的包名、接缝图、`shared-names` 图、关键设计、开发、内核应用、术语表、入口页、新页「包根导出的接口类型」）与 AGENTS / README / INSTALL 已改，写了轨迹卡「删掉 gwb.shared 扫描」「词汇表包并进内核包」；待提交、发版、default 升级。代价：default 里的块笔记旧版 0.5.3 还靠扫描把自己的包名放进 importmap，default 升到内核 0.5.0 之前要先把块笔记升到不再声明的版本｜内核仓会话
 - 2026-09-24｜写方案：查到还在声明的只有内核包、块笔记 `main` 线的库、v2 线的界面包三处；v2 线的「拆掉旧 lib」与 devkit 第三期方向相反，列为待决定第 1 条｜总控台会话

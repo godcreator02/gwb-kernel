@@ -12,7 +12,7 @@ import { FirstInstall } from './diagrams/first-install'
 import { KernelBoot } from './diagrams/kernel-boot'
 import { PluginSeam } from './diagrams/plugin-seam'
 import { SeamMap } from './diagrams/seam-map'
-import { SharedNames } from './diagrams/shared-names'
+import { PageReact } from './diagrams/page-react'
 import { ShellHandover } from './diagrams/shell-handover'
 
 const drawings: Record<string, () => ReactNode> = {
@@ -20,7 +20,7 @@ const drawings: Record<string, () => ReactNode> = {
   'kernel-boot': () => <KernelBoot />,
   'plugin-seam': () => <PluginSeam />,
   'shell-handover': () => <ShellHandover />,
-  'shared-names': () => <SharedNames />,
+  'page-react': () => <PageReact />,
   'command-relay': () => <CommandRelay />,
   'first-install': () => <FirstInstall />,
 }

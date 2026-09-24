@@ -84,7 +84,7 @@ export function SeamMap() {
       <Box x={222} y={228} w={288} h={84} lines={['组装', 'main.ts', 'gwbKernel · IPC · 窗口 · runtime.json']} tone="a" mono />
       <Box x={222} y={324} w={288} h={36} lines={['日志', 'log-file.ts · 写 gwb.log']} tone="a" mono />
       <Box x={222} y={372} w={288} h={36} lines={['只读状态页的数据', 'entry-state.ts']} tone="a" mono />
-      <Box x={222} y={424} w={288} h={36} lines={['页面上的包名 · react', 'imports.ts · dist/react/']} tone="a" mono />
+      <Box x={222} y={424} w={288} h={36} lines={['页面上的 react', 'dist/react/ · index.html 的 importmap']} tone="a" mono />
       <Box x={222} y={472} w={288} h={36} lines={['接口类型（包根导出）', 'api.ts · GwbContext 等，只有类型']} tone="a" mono />
 
       <GroupLabel x={552} y={120} name="cordis.yml 里的插件" where="装进 home" />

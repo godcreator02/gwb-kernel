@@ -41,7 +41,7 @@ const config = {
     { source: '/docs/kernel/home', destination: '/docs/desktop', permanent: true },
     { source: '/docs/kernel/loading', destination: '/docs/seams/loading', permanent: true },
     { source: '/docs/kernel/contract', destination: '/docs/vocab', permanent: true },
-    { source: '/docs/kernel/importmap', destination: '/docs/seams/shared', permanent: true },
+    { source: '/docs/kernel/importmap', destination: '/docs/seams/page-react', permanent: true },
     { source: '/docs/kernel/bridge', destination: '/docs/seams/shell', permanent: true },
     { source: '/docs/kernel/logs', destination: '/docs/seams/log', permanent: true },
     // 以下都用临时跳转：永久跳转会被浏览器缓存，以后这些网址再用上就打不开。
@@ -63,6 +63,7 @@ const config = {
     { source: '/docs/map', destination: '/docs', permanent: false },
     { source: '/docs/seams', destination: '/docs', permanent: false },
     { source: '/docs/seams/plugins', destination: '/docs/seams/loading', permanent: false },
+    { source: '/docs/seams/shared', destination: '/docs/seams/page-react', permanent: false },
     // home 的准备、日志文件、只读状态页并进内核应用首页
     { source: '/docs/desktop/home', destination: '/docs/desktop', permanent: false },
     { source: '/docs/desktop/log-file', destination: '/docs/desktop', permanent: false },

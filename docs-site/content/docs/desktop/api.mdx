@@ -52,9 +52,9 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 
 {/* has file="../apps/desktop/package.json" text="tsc -p tsconfig.api.json" */}
 
-`apps/desktop/tests/imports.test.ts` 核对本仓内核包清单：包根的 `types` 指向 `dist/api.d.ts`、`default` 是 `dist/main.js`。
+`apps/desktop/tests/importmap.test.ts` 核对本仓内核包清单：包根的 `types` 指向 `dist/api.d.ts`、`default` 是 `dist/main.js`。
 
-{/* has file="../apps/desktop/tests/imports.test.ts" text="包根的 types 指向接口类型那份 d.ts，default 是内核入口" */}
+{/* has file="../apps/desktop/tests/importmap.test.ts" text="包根的 types 指向接口类型那份 d.ts，default 是内核入口" */}
 
 ## 依赖
 
@@ -80,4 +80,4 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 - **不定日志行的格式**：归[日志](/docs/seams/log)接缝，由内核应用写
 - **不放插件管理的回执类型**：这类类型由插件管理 `@godcreator/gwb-plugin-manager`（devkit 仓 `gwb-devkit`）自己导出
 - **不定 IPC 通道名**：`gwb:command` 这类通道名在内核应用里，页面代码只经 `window.gwb` 调用，见 [IPC 通道](/docs/seams/ipc)
-- **不写只读状态页的数据形状**：内核推给页面的 `gwb:shell` 里还有一个 `report` 字段，只给内核自己的页面入口画只读状态页用，`GwbWindowApi` 里 `onShell` 的参数只写了 `url` 与 `imports`
+- **不写只读状态页的数据形状**：内核推给页面的 `gwb:shell` 里还有一个 `report` 字段，只给内核自己的页面入口画只读状态页用，`GwbWindowApi` 里 `onShell` 的参数只写了 `url`

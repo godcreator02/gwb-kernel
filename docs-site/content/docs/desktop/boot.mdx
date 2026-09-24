@@ -12,7 +12,7 @@ description: 内核一次启动按什么顺序做事、哪几处顺序不能换�
 - 第 3 步：创建 cordis 实例，根上下文指向 home，并提供 `gwbKernel`——早于任何插件
 - 第 4 步：创建窗口；这时还没有外壳，页面显示只读状态页
 - 第 5 步：注册 loader，设好按 home 解析包名的 import，根层只放一条 include 条目 `home`，它读 `cordis.yml`；loader 按条目从 home 的 `node_modules` 找到插件包并加载
-- 第 6 步：外壳插件调用 `setShell`，页面注入 importmap、把 `#root` 交给外壳
+- 第 6 步：外壳插件调用 `setShell`，页面 import 外壳、把 `#root` 交给它
 </Diagram>
 
 ## 在这之前：启动器找到内核

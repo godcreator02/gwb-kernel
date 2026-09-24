@@ -16,7 +16,7 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 
 页面上只有 `window.gwb`，页面上运行的任何代码都能直接调用：
 
-{/* ref file="../apps/desktop/src/api.ts" lines="35-47" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="35-46" */}
 
 `command` 返回的 promise 得到的是命令的回执：
 
@@ -30,12 +30,12 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 | --- | --- | --- |
 | `gwb:command` | 页面 → 主进程，回执原路返回 | 命令名与参数；内核应用交给命令转交（[接缝 10](/docs/seams/commands)），回执 `GwbResult` 原样交回 |
 | `gwb:event` | 主进程 → 页面 | 插件经 `gwbKernel.emit` 发出的 payload，原样 |
-| `gwb:shell` | 主进程 → 页面 | 整份外壳状态 `{ url, imports, report }`：外壳地址、importmap、只读状态页的数据 |
+| `gwb:shell` | 主进程 → 页面 | 整份外壳状态 `{ url, report }`：外壳地址、只读状态页的数据 |
 | `gwb:hello` | 页面 → 主进程 | 不带内容；主进程向发来的那个页面回一条 `gwb:shell` |
 
 `gwb:shell` 在这几种时候发：页面发来 `gwb:hello`；插件调用 `setShell` 或撤销；插件加载完、条目状态变化、有新的 error 或 warn 日志（这三种在短时间内的多次合并成一次）。
 
-`GwbWindowApi` 里 `onShell` 的参数只写了 `url` 与 `imports`：`report` 只给内核自己的页面入口画只读状态页用，不在契约里（只读状态页显示什么见[内核应用](/docs/desktop)）。`url` 怎么用见[外壳接管](/docs/seams/shell)，`imports` 从哪来见[页面上的包名](/docs/seams/shared)。
+`GwbWindowApi` 里 `onShell` 的参数只写了 `url`：`report` 只给内核自己的页面入口画只读状态页用，不在契约里（只读状态页显示什么见[内核应用](/docs/desktop)）。`url` 怎么用见[外壳接管](/docs/seams/shell)。页面的 importmap 不经这个通道，写死在页面入口里（[页面上的 react](/docs/seams/page-react)）。
 
 ## 约定
 

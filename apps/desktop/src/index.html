@@ -11,27 +11,27 @@
       .gwb-report ul { padding-left: 1.5em; margin: 0.5em 0; }
       .gwb-report pre { margin: 0.5em 0 0; white-space: pre-wrap; }
     </style>
+    <!-- 页面上唯一的共享包名：react 由内核包打包进 dist/react/（scripts/build-react.ts），外壳与插件的浏览器端代码都外置这四个名字 -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "./react/react.js",
+          "react/jsx-runtime": "./react/react-jsx-runtime.js",
+          "react-dom": "./react/react-dom.js",
+          "react-dom/client": "./react/react-dom-client.js"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module">
       const root = document.getElementById('root')
       let currentShell = null
-      let importmapInjected = false
       // 不能用 null：null 是「没有外壳」的推送值，用它当初值会把第一条 url: null 当成重复推送忽略掉
       const NOTHING_BEING_LOADED = Symbol('没有外壳地址在加载')
       // 正在 import、还没挂上的外壳地址：挂上之前 currentShell 还是旧的，靠它认出同一个地址又推来了一次
       let shellUrlBeingLoaded = NOTHING_BEING_LOADED
-
-      // importmap 只能注入一次，而且要在第一个包名 import 之前：注入之后，已经解析过的名字改不了
-      function injectImportmapOnce(imports) {
-        if (importmapInjected || Object.keys(imports).length === 0) return
-        const importmapScript = document.createElement('script')
-        importmapScript.type = 'importmap'
-        importmapScript.textContent = JSON.stringify({ imports })
-        document.head.appendChild(importmapScript)
-        importmapInjected = true
-      }
 
       function appendTextElement(parent, tagName, text) {
         const element = document.createElement(tagName)
@@ -90,7 +90,6 @@
 
       window.gwb.onShell(async (shell) => {
         const url = shell?.url ?? null
-        injectImportmapOnce(shell?.imports ?? {})
         // 订阅时请求的一条与去抖推送的一条可能都在 import 完成之前到达，只比 currentShell 的话外壳会挂载两遍
         if (currentShell?.url === url || shellUrlBeingLoaded === url) return
         shellUrlBeingLoaded = url
