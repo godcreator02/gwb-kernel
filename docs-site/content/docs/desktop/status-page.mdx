@@ -29,11 +29,13 @@ description: 没有外壳或外壳启动失败时页面显示的只读状态页�
 
 `entry-state.ts` 的 `describeEntry` 把一个条目说成一句话。状态名照 cordis 的 fiber 状态原名；fiber 之外还有停用和「没有 fiber」（import 失败）两种。等待中的带上还缺哪个服务，失败的带上错误的第一行。
 
-{/* ref file="../apps/desktop/src/entry-state.ts" lines="29-40" */}
+{/* ref file="../apps/desktop/src/entry-state.ts" lines="36-45" */}
+
+{/* ref file="../apps/desktop/src/entry-state.ts" lines="23-30" */}
 
 cordis 的 fiber 状态是 `const enum`，在本仓的编译设置下引用不到，所以按它的定义照抄了一份名字表。本仓没有测试核对这张表，升级 cordis 时要对照它的 `FiberState` 声明看一遍；插件管理 `@godcreator/gwb-plugin-manager` 自己也抄了一份，由它自己的测试对照 cordis 的声明核对。
 
-{/* ref file="../apps/desktop/src/entry-state.ts" lines="18-20" */}
+{/* ref file="../apps/desktop/src/entry-state.ts" lines="10-11" */}
 
 ## 什么时候重新推送
 
@@ -45,7 +47,7 @@ cordis 的 fiber 状态是 `const enum`，在本仓的编译设置下引用不�
 
 ## 为什么只做到这一步
 
-状态页只显示内核已经有的数据，不分析失败原因、不重试、不放按钮：那些需要认识具体的插件，是外壳和插件管理窗格的事。它存在只为一件事——外壳没有就位或启动失败时页面不是一片空白，人能看到卡在哪个条目、最近报了什么错（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）。
+状态页只显示内核已经有的数据，不分析失败原因、不重试、不放按钮：那些需要认识具体的插件，是外壳和插件管理窗格的事。它存在只为一件事——外壳没有就位或启动失败时页面不是一片空白，人能看到停在哪个条目、最近报了什么错（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）。
 
 ## 怎么测
 
