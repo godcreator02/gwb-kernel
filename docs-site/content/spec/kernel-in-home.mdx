@@ -7,7 +7,7 @@ description: 验收标准：插件的 cordis 与内核用的是 home 里同一�
 
 **本页回答**：把内核从 `app.asar` 挪进每个 home 的 `node_modules` 要改什么、换来什么、要推翻哪些已有决定、分几步做、做到哪儿了。
 
-**状态：人已决定做（2026-09-24），五条待决定按推荐定下，第一步在做。**
+**状态：人已决定做（2026-09-24），五条待决定按推荐定下；第一步（内核仓）已完成，第二步（devkit 仓）没开始。**
 
 ## 由来
 
@@ -58,7 +58,7 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 - [x] 现状页（安装包、home 与插件管理、开发、关键设计、词汇表包、入口、AGENTS）改成新做法；写轨迹卡「内核装进 home」，`supersedes::` 指向撤 npm 管道那张
 - [x] 隔离 home 里验证：内核 tarball 与 `cordis` 装进一个新 home，用新启动器启动；内核与写 peer `cordis` 的插件解析到同一个真实路径，
   `.pnpm` 里只有一份 cordis；home 里没有内核包时启动器拒绝
-- [ ] 打出安装包，`win-unpacked` 的 exe 从同一个隔离 home 启动内核
+- [x] 打出安装包，`win-unpacked` 的 exe 从同一个隔离 home 启动内核
 
 **第二步：devkit 仓（与全生态机制定案第四期一起）**
 
@@ -77,6 +77,9 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 
 新的在上。
 
+- 2026-09-24｜第一步完成：`build.ps1` 打出 `gwb-setup-0.1.0.exe`（版本号是启动器的），`win-unpacked\gwb-kernel.exe` 从隔离 home `kernel-in-home-2609241429`
+  启动内核，`runtime.json` 的 `appDir` 是 `win-unpacked\resources\app.asar`，`gwb.log` 有 `kernel up`、命令插件与 logger 就绪、0 条 error，关窗口后正常清理退出。
+  下一步是 devkit 仓｜总控台会话
 - 2026-09-24｜第一步代码与文档：启动器 `apps/launcher`（8 个用例）、内核包 `cordis` 改 peer 与 `engines.electron`、`build.ps1` 只打启动器、
   删掉旧的外层引导脚本与清单模板；选 home 的规则先拆成 `home-path.ts`（单独提交，行为不变）。`pnpm check` 9 个测试文件 80 个用例全绿。
   隔离 home `kernel-in-home-2609241429`（内核 tarball + `cordis` 4.0.0-rc.9 + 命令插件 + logger 插件）：`.pnpm` 里只有一份 cordis，
