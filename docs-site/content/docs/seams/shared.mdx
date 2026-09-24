@@ -1,65 +1,65 @@
 ---
 title: 5 页面上的包名 gwb.shared
-description: 连接内核应用与在包清单里声明 gwb.shared 的包（内核包自己、块笔记的库 @godcreator/block-note）；接口是清单字段 gwb.shared，内核应用每次推送 gwb:shell 时把它拼成页面的 importmap；react 的四个包名由内核包声明、同名时内核优先，其余名字一个名字只能有一个提供方，同名就都不收录
+description: 连接内核应用与页面上运行的代码（外壳、插件的浏览器端产物）；接口是内核包清单里的 gwb.shared，内核启动时把它解析成页面的 importmap，随 gwb:shell 推给页面；importmap 只有内核包声明的名字（react 的四个），home 里别的包写的 gwb.shared 不读；页面代码构建时从装着的内核包清单读这份名单、把这几个名字外置
 ---
 
-**本页回答**：页面上运行的代码写 `import 'react'` 或 `import '@godcreator/block-note'` 时，页面凭什么找到文件；谁来声明、内核应用怎么拼、名字冲突怎么办；提供方换了版本什么时候生效。
+**本页回答**：页面上运行的代码写 `import 'react'` 时，页面凭什么找到文件；importmap 里有哪些名字、从哪来、什么时候算；页面代码构建时哪些名字不打进自己的产物；别的包在清单里写了 `gwb.shared` 会怎样。
 
-<Diagram name="shared-names" title="内核包与块笔记的库在包清单里声明，内核每次推送时拼成 importmap">
-- 内核包自己的清单声明 react 的四个包名，指向内核包 `dist/react/` 里的文件；内核启动时解析一次，每次推送都先放进表里
-- 块笔记的库在自己的清单里写 `gwb.shared` 声明它自己的包名；内核每次推送 `gwb:shell` 时扫描 home 清单里的每个包，按 home 解析成真实文件的 `file://` 地址
-- 别的包声明了内核给了的名字：忽略这条声明，记一条 warn（同一句只记一次）
-- 两个包声明同一个名字：两个都不收录，记一条 warn，页面 import 它直接报解析错误；别的名字不受影响
+<Diagram name="shared-names" title="内核包清单里声明的四个包名，内核启动时解析一次，随 gwb:shell 推给页面">
+- 内核包自己的清单在 `gwb.shared` 里声明 react 的四个包名，指向内核包 `dist/react/` 里的文件
+- 内核启动时解析一次，得到「包名 → `file://` 地址」的表；解析不到就启动失败（内核包本身不完整）
+- 这张表就是整张 importmap，每条 `gwb:shell` 推送都带着它；页面入口注入之后，外壳和插件的页面代码写 `import 'react'` 就找到内核包里的文件
+- home 里别的包在清单里写的 `gwb.shared`，内核不读
 </Diagram>
 
 ## 连接的模块
 
-- [内核应用](/docs/desktop)：扫描 home、拼 importmap、随 `gwb:shell` 推给页面入口；它自己的包清单也是一个提供方，声明 react 的四个包名
-- 在包清单里声明 `gwb.shared` 的包（提供方）：内核应用不区分插件和库，home 清单 `dependencies` 里的任何包都可以声明。目前是块笔记的库 `@godcreator/block-note`：一个库，不在 `cordis.yml` 里，声明的是它自己的包名
+- [内核应用](/docs/desktop)：它的包清单声明 react 的四个包名；启动时解析成 importmap，随 `gwb:shell` 推给页面入口
+- 页面上运行的代码：外壳和插件的浏览器端产物（窗格等）。构建时把这几个名字外置，运行时经 importmap 找到内核包里的文件
 
-页面上使用这些包名的代码（外壳、插件的窗格）不属于这条接缝，它的义务写在下面的「约定」里。
+页面入口什么时候注入 importmap，写在[外壳接管](/docs/seams/shell)。
 
 ## 接口
 
-提供方只写一个包清单字段 `gwb.shared`：包名 → 自己 `exports` 里的子路径。内核包写的是 react 的四个：
+内核包清单里的字段 `gwb.shared`：包名 → 内核包 `exports` 里的子路径。现在是 react 的四个：
 
 {/* ref file="../apps/desktop/package.json" lines="22-30" */}
 
-块笔记的库写的是 `"@godcreator/block-note": "./shared/index"`。react 的四个文件由内核包构建时生成，怎么生成见[开发](/docs/develop)。
+react 的四个文件由内核包构建时生成，怎么生成见[开发](/docs/develop#内核包怎么打包-react)。
 
-子路径按包的 `exports` 解析，从 `<home>/node_modules/<包名>` 的真实路径开始，和加载插件用同一套解析（见[插件加载](/docs/seams/loading)）。内核应用把结果拼成一张 importmap（包名 → 真实文件的 `file://` 地址），作为 `gwb:shell` 消息的 `imports` 字段推给页面；页面入口经 `window.gwb.onShell` 收到后注入成 `<script type="importmap">`（通道见 [IPC 通道](/docs/seams/ipc)）：
+内核启动时从内核包目录的真实路径出发，按内核包的 `exports` 解析这几个子路径，得到「包名 → 真实文件的 `file://` 地址」：
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="38-43" */}
+{/* ref file="../apps/desktop/src/imports.ts" lines="18-29" */}
 
-声明写在包清单里，不由提供方在运行时调用接口登记：共享出去的代码只在页面上运行，库在主进程里没有代码可以去登记，包清单是它唯一能声明的地方。
+这张表作为 `gwb:shell` 消息的 `imports` 字段推给页面；页面入口经 `window.gwb.onShell` 收到后注入成 `<script type="importmap">`（通道见 [IPC 通道](/docs/seams/ipc)）：
+
+{/* ref file="../apps/desktop/src/api.ts" lines="39-44" */}
+
+名单写在内核包清单里、不写死在内核代码里：页面代码的构建脚本和 devkit 的发版检查都要知道这份名单，它们读的是装着的内核包清单。
 
 ## 约定
 
 内核应用保证：
-- **react 的四个包名由内核给**：内核启动时解析一次，解析不到就启动失败（说明内核包本身不完整）；别的包对这几个名字的声明一律忽略、记一条 warn，不算同名冲突。内核包升级 react 就是内核升版
-- **其余名字一个名字只能有一个提供方**：两个包声明了同一个名字，全部不收、记一条 warn，不比版本、不挑谁更新
-- **一个提供方出问题只影响它自己**：声明解析不到只记 warn，形状不对的声明直接跳过，别的名字照常收录
-- **同一句警告只记一次**：importmap 每次推送都重新计算，不这样的话开机时每次推送都会把同一句警告再记一遍
-- **提供方换了版本，下一次推送就是新地址**：每次推送都从真实路径重新解析，不会拿到 Node 解析缓存里上一版的文件（[importmap 也会遇到 Node 解析缓存](/trajectory/2026-09-17-wall-importmap-resolver-cache)）。但页面上的 importmap 只注入一次，**整页重新加载**之后才用上新版本；内核自己的那几条要重启内核才换
+- **importmap 只有内核包声明的名字**：home 里别的包在清单里写了 `gwb.shared`，内核不读、不收，也不记日志。拦下这种写法是 devkit 发版检查的事，见 devkit 仓文档站
+- **启动时算一次**：解析不到就启动失败，说明内核包本身不完整；这次运行里每条推送带的都是同一张表。换 react 就是换内核包，重启内核后生效
+- **这份名单是接缝的一部分**：加一个名字是兼容的改动，内核升 y；删掉一个名字、改掉一个名字指向的东西，已经外置了它的页面代码会找不到文件，内核升 x
 
-{/* has file="../apps/desktop/tests/imports.test.ts" text="撞名全部拒绝" */}
+{/* has file="../apps/desktop/tests/main.test.ts" text="importmap 只有内核包声明的四个包名：home 里别的包写了 gwb.shared 也不收" */}
 
-{/* has file="../apps/desktop/tests/imports.test.ts" text="junction 换指向后再算一遍拿到新版本" */}
+{/* has file="../apps/desktop/tests/imports.test.ts" text="kernelSharedImports：声明的文件不在就抛出" */}
 
-提供方保证：
-- **声明的是整个页面只能有一份的运行时代码**：react、一个库的模型层这类要让页面上所有代码共用同一个实例的东西；不为了省体积把普通依赖声明出去
-- 声明的子路径在自己的 `exports` 里写明
-- 自己是 home 清单 `dependencies` 里的直接依赖：内核应用只扫这一层
-
-使用这些包名的页面代码保证：构建时把这些名字外置，不打进自己的产物、留给 importmap；外置名单从声明它的包的清单取，不手抄。插件在 peer 里写了内核包，react 的四个名字就从内核包的清单取。
+页面代码保证：
+- **构建时把这几个名字外置**，不打进自己的产物、留给 importmap；外置名单从装着的内核包清单的 `gwb.shared` 读，不手抄。插件的 peer 里写了内核包，pnpm 把它装进插件仓的 `node_modules`，构建脚本从那里读
+- **别的依赖都打进自己的产物**：页面上没有别的共享包名，两个插件用同一个库就各带一份
+- 自己的包清单里不写 `gwb.shared`
 
 ## 不负责的事
 
-- 内核应用不知道页面有没有真的 import 某个名字，也不检查声明的文件能不能在浏览器里运行
-- 内核应用不扫 home 清单的传递依赖，不区分提供方是插件还是库
-- 内核应用不替提供方打包：除了 react 的四个文件，声明指向的文件是什么样由提供方自己的构建决定
-- 提供方不管谁在用它声明的名字
+- 内核应用不知道页面有没有真的 import 某个名字，也不检查文件能不能在浏览器里运行
+- 内核应用不看 home 里别的包：不读它们的清单，也不因为它们写了 `gwb.shared` 而警告
+- 内核应用不替页面代码打包：除了 react 的四个文件，页面代码的产物由各自的构建决定
+- 检查插件产物只 import 这几个名字、拒绝非内核包写 `gwb.shared`，是 devkit 发版检查的事
 
 ## 测试
 
-`apps/desktop/tests/imports.test.ts` 用手工构造的临时 home 保护上面的约定：同名全部拒绝、内核给的名字优先、解析不到只报 warn、链接换指向后拿到新地址、内核包的声明解析不到时抛出。`apps/desktop/tests/main.test.ts` 用真实的内核包启动，确认推给页面的 react 指向内核包、同一句警告只记一行；`apps/desktop/tests/index-html.test.ts` 确认页面只注入一次 importmap。页面整页重新加载后用上新版本，只能在隔离 home 里实机验证（见[开发](/docs/develop)）。
+`apps/desktop/tests/imports.test.ts` 用手工构造的包目录保护 `kernelSharedImports`：按内核包自己的 `exports` 解析出真实文件，声明的文件不在就抛出；另外核对本仓内核包清单：react 的四个包名都声明了、`exports` 指到打包脚本产出的文件。`apps/desktop/tests/main.test.ts` 用真实的内核包启动，home 里装一个写了 `gwb.shared` 的测试包，确认每条推给页面的 importmap 都只有那四个名字、react 指向内核包、日志里没有那个包的名字；`apps/desktop/tests/index-html.test.ts` 确认页面只注入一次 importmap。页面上真的用上内核包里的 react，只能在隔离 home 里实机验证（见[开发](/docs/develop)）。

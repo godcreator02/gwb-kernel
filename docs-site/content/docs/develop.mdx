@@ -3,7 +3,7 @@ title: 开发
 description: 改内核本身时怎么准备、怎么从源码启动、隔离 home 里的插件从哪来、构建做了什么、提交前跑哪些检查、每个测试文件证明什么、怎么在隔离 home 里验证、内核包怎么打包 react、怎么打安装包（打包流程、不能删的检查、打完怎么验证）、怎么发版与发布到 gitea releases
 ---
 
-**本页回答**：什么时候才进这个仓；第一次怎么准备；怎么从源码启动内核、隔离 home 里的插件从哪来、构建时做了什么；提交前跑哪些检查；每个测试文件证明什么、哪些只能实机验证；怎么在隔离 home 里验证；内核包怎么把 react 打成页面能用的文件；怎么打安装包、打包脚本一步步做了什么、哪几道检查不能删、打完怎么验证；发版按什么顺序做、版本号升哪一位、词汇表包改动的规则、怎么发布到 gitea releases。
+**本页回答**：什么时候才进这个仓；第一次怎么准备；怎么从源码启动内核、隔离 home 里的插件从哪来、构建时做了什么；提交前跑哪些检查；每个测试文件证明什么、哪些只能实机验证；怎么在隔离 home 里验证；内核包怎么把 react 打成页面能用的文件；怎么打安装包、打包脚本一步步做了什么、哪几道检查不能删、打完怎么验证；发版按什么顺序做、版本号升哪一位、包根导出的接口类型改动的规则、怎么发布到 gitea releases。
 
 ## 什么时候进这个仓
 
@@ -38,7 +38,7 @@ cd apps\desktop; pnpm start
 
 ### 构建做了什么
 
-`pnpm start` 先构建再启动 electron。构建依次是：词汇表包 `tsc`，内核 `tsc`，把页面的两个文件 `index.html`、`preload.cjs` 从 `src/` 复制进 `dist/`，最后运行 `scripts/build-react.ts`，用 esbuild 把 react 的四个包名打进 `dist/react/`，页面的 importmap 用的就是它们（见下面[内核包怎么打包 react](#内核包怎么打包-react)）：
+`pnpm start` 先构建再启动 electron。构建依次是：内核 `tsc`；再用 `tsconfig.api.json` 只为 `src/api.ts` 生成包根导出的类型声明 `dist/api.d.ts`（[包根导出的接口类型](/docs/desktop/api)）；把页面的两个文件 `index.html`、`preload.cjs` 从 `src/` 复制进 `dist/`，最后运行 `scripts/build-react.ts`，用 esbuild 把 react 的四个包名打进 `dist/react/`，页面的 importmap 用的就是它们（见下面[内核包怎么打包 react](#内核包怎么打包-react)）：
 
 {/* ref file="../apps/desktop/package.json" lines="33-37" */}
 
@@ -46,7 +46,7 @@ cd apps\desktop; pnpm start
 
 {/* ref file="../package.json" lines="6-14" */}
 
-- **`pnpm check`**（仓根）：先构建内核包（连同词汇表包与 react 的打包产物：`main.test.ts` 用真实的打包产物启动内核），再对全仓做类型检查、lint 和测试。测试是 `apps`、`packages`、`installer` 下各 `tests/` 目录里的测试（`installer` 那一个要调用本机的 pwsh 7）；词汇表包的类型写坏了，内核的类型检查跟着失败
+- **`pnpm check`**（仓根）：先构建内核包（连同 react 的打包产物与包根的类型声明：`main.test.ts` 用真实的打包产物启动内核），再对全仓做类型检查、lint 和测试。测试是 `apps`、`installer` 下各 `tests/` 目录里的测试（`installer` 那一个要调用本机的 pwsh 7）；`src/api.ts` 里的类型写坏了，内核的类型检查跟着失败
 - **`pnpm doc`**（仓根）：文档站的检查，不在 `pnpm check` 里：文档页引用的代码改了、生成物和正本不一致，都会报出来。引用的代码改了、页上的说法仍成立时，先提交代码，再只点名自己改过的页确认：`pnpm doc:confirm <页的路径…>`（路径相对 `docs-site/`）。不带路径会把别人还没复核的页一起确认掉
 
 ## 测试
@@ -60,7 +60,7 @@ cd apps\desktop; pnpm start
 | `apps/desktop/tests/entry-state.test.ts` | 手工构造条目：只读状态页上每种条目状态说成什么（停用、没有 fiber、等待中缺哪个服务、失败的第一行、认不出的状态数字） |
 | `apps/desktop/tests/index-html.test.ts` | 页面入口：importmap 只注入一次；只读状态页画出一句说明、home、每个条目一行、错误行；外壳挂载、替换、撤销，外壳启动失败时回到只读状态页 |
 | `apps/desktop/tests/preload.test.ts` | 页面上只有一个 `window.gwb`、正好三个函数，各自走哪个通道 |
-| `apps/desktop/tests/bare-import.test.ts`、`imports.test.ts` | 按 home 解析包名（含 scoped 包、链接换指向后拿到新版本）；importmap 怎么拼（见[页面上的包名](/docs/seams/shared)） |
+| `apps/desktop/tests/bare-import.test.ts`、`imports.test.ts` | 按 home 解析包名（含 scoped 包、链接换指向后拿到新版本）；内核包声明的包名怎么解析成 importmap（见[页面上的包名](/docs/seams/shared)）；本仓内核包清单：react 的四个声明指到打包产物，包根的 `types` 指向 `dist/api.d.ts` |
 | `apps/desktop/tests/react-bundles.test.ts` | react 的打包产物，见下面[内核包怎么打包 react](#内核包怎么打包-react) |
 | `apps/launcher/tests/launch-plan.test.ts` | 在临时目录上证明：启动器选 home 的规则和内核的逐个输入结果相同；home 里没有内核包、清单不是合法 JSON、没声明 `engines.electron`、Electron 版本不满足、没有 `main` 时各自拒绝并说明原因；版本满足时给出内核包的入口文件；启动器带的 Electron 满足内核包声明的范围 |
 | `installer/tests/make-icon.test.ts` | 见下面「打安装包」里的[验证](#验证) |
@@ -86,7 +86,7 @@ cd apps\desktop; pnpm start
 devkit.dev {"home":"<隔离 home 名>","dir":"<本仓根>","packages":["apps/desktop"]}
 ```
 
-它在本仓根构建，把内核包发成开发版（`<patch+1>-dev.<时间戳>`，tag 是 `dev`，不动 `latest`），连同内核包 peer 里写的 `cordis` 写进那个 home 的清单装上并核对，然后停掉那个 home 再启动，直到页面上 `shell.env` 报出的内核版本就是这次发的号；回执的 `kernel.version` 就是它。不用重打安装包。内核包只在开发时依赖词汇表包（只 `import type`），所以只发 `apps/desktop` 就够了。
+它在本仓根构建，把内核包发成开发版（`<patch+1>-dev.<时间戳>`，tag 是 `dev`，不动 `latest`），连同内核包 peer 里写的 `cordis` 写进那个 home 的清单装上并核对，然后停掉那个 home 再启动，直到页面上 `shell.env` 报出的内核版本就是这次发的号；回执的 `kernel.version` 就是它。不用重打安装包。本仓要发的 npm 包只有内核包，所以 `packages` 只写 `apps/desktop`。
 
 **从源码启动**：改一次就想看一次、不想每次发开发版时用。
 
@@ -174,11 +174,11 @@ pwsh installer\scripts\build.ps1
 升哪一位版本号、依赖怎么写、发破坏性版本要多做什么，正本是 devkit 的说明书 `gwb-release`，**每次升版本号之前都读一遍**，这里只列本仓的要点：
 
 1. **隔离 home 里验证通过**，`pnpm check`、`pnpm doc` 都通过
-2. **升版本号并提交**：`apps/desktop/package.json` 与 `packages/gwb-plugin-api/package.json` 写同一个号：[词汇表包](/docs/vocab)与内核同版本号，一起升。git 工作区要干净。升哪一位按改没改接缝判断：
-   - **改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）：十条接缝上已有的任何一样被改名、删除、改了形状或含义——词汇表包里的类型、IPC 通道、`gwb.shared` 的读法、home 布局、`runtime.json` 的字段、日志行格式、内核包清单的 `engines.electron`——以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include`、`cordis` 的版本（拿不准会不会弄坏插件管理，一律按会弄坏算）。插件在 peer 里写内核包的 `^` 范围，插件管理拿它和运行中的内核比（[插件在 peer 里写兼容哪个内核](/docs/design#插件在-peer-里写兼容哪个内核)）；升了 x，所有插件的范围都不再包含新内核，要先照 `gwb-release` 通知下游
+2. **升版本号并提交**：改 `apps/desktop/package.json` 的 `version`，包根导出的接口类型跟内核包用同一个版本号。git 工作区要干净。升哪一位按改没改接缝判断：
+   - **改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）：十条接缝上已有的任何一样被改名、删除、改了形状或含义——包根导出的接口类型（`src/api.ts`）、IPC 通道、内核包 `gwb.shared` 里已有的包名、home 布局、`runtime.json` 的字段、日志行格式、内核包清单的 `engines.electron`——以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include`、`cordis` 的版本（拿不准会不会弄坏插件管理，一律按会弄坏算）。插件在 peer 里写内核包的 `^` 范围，插件管理拿它和运行中的内核比（[插件在 peer 里写兼容哪个内核](/docs/design#插件在-peer-里写兼容哪个内核)）；升了 x，所有插件的范围都不再包含新内核，要先照 `gwb-release` 通知下游
    - **只给接缝加东西（加类型、加可选字段）、只改内核内部或修 bug，升 y**：插件的 `^` 范围仍然包含新内核
-   - **词汇表包对插件只增不减**：能加一个可选字段、一个类型解决的，不删名字、不改形状（参数、返回值、回执字段的类型或含义）、不改调用方依赖的语义；非改不可时，照 `gwb-release` 的「发破坏版多做两步」先通知下游。契约之外的东西（日志行的格式、命令插件与插件管理的类型）不放进词汇表包。本仓 `pnpm check` 先构建它、再对内核做类型检查，所以内核这一侧当场发现形状不对；仓外的插件与页面代码要等它发到团队包源、装上新版之后，才在各自仓的类型检查里发现
-3. **发词汇表包与内核包到团队包源**：`devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api","apps/desktop"]}`（按依赖序），别在包目录手动 `pnpm publish`
+   - **包根导出的接口类型对插件只增不减**：能加一个可选字段、一个类型解决的，不删名字、不改形状（参数、返回值、回执字段的类型或含义）、不改调用方依赖的语义；非改不可时，照 `gwb-release` 的「发破坏版多做两步」先通知下游。契约之外的东西（日志行的格式、命令插件与插件管理的类型）不放进 `src/api.ts`。内核的 `main.ts` 自己用这些类型，本仓 `pnpm check` 当场发现内核这一侧形状不对；仓外的插件与页面代码要等新内核包发到团队包源、装上之后，才在各自仓的类型检查里发现（[包根导出的接口类型](/docs/desktop/api)）
+3. **发内核包到团队包源**：`devkit.release {"dir":"<本仓>","packages":["apps/desktop"]}`，别在包目录手动 `pnpm publish`
 4. **启动器或 Electron 变了才打安装包、发布到 gitea releases**：打包见上面[打安装包](#打安装包)。发布仓 `godcreator/gwb-kernel` 公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包；push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
    - **release 只上传 `gwb-setup-<版>.exe`**：便携 zip 只在本地构建、不上传
    - tag 跟安装包（启动器）的版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`

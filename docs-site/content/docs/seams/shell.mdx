@@ -29,20 +29,20 @@ const entry = new URL('./client.js', import.meta.url).href
 ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effect，插件卸载时交还页面
 ```
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="20-24" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="21-25" */}
 
 页面入口 import 这个地址，只认它的默认导出：拿到 `#root`，返回可选的 `dispose`。
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="46-47" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="47-48" */}
 
-外壳模块 import 之前，页面上已经注入了 importmap，react 这类页面上的包名可以直接 import（[页面上的包名](/docs/seams/shared)）。
+外壳模块 import 之前，页面上已经注入了 importmap，react 的四个包名可以直接 import（[页面上的包名](/docs/seams/shared)）。
 
 ## 约定
 
 **页面入口**保证：
 
 - 订阅时先问一次当前外壳，外壳插件比页面先调用 `setShell` 也不会错过
-- import 外壳之前先注入 importmap；importmap 只注入一次（第一条带非空 `imports` 的推送），之后新声明的包名要整页重新加载才生效
+- import 外壳之前先注入 importmap；importmap 只注入一次（第一条带非空 `imports` 的推送），内核这次运行里它不会变
 - 同一时刻只有一个外壳：换外壳时先调用旧外壳的 `dispose`、清空 `#root`，再挂新的；旧外壳的 `dispose` 抛错只打一行 `console.error`，照样换
 - 同一个地址连推两次，外壳只挂载一次，上一次还在 import 时也一样
 - 地址是 `null`、import 失败、默认导出不是函数时，显示只读状态页，失败时第一行写明原因；不会白屏。失败后同一个地址再推来会重新 import。只读状态页显示什么见[内核应用](/docs/desktop)
@@ -51,7 +51,7 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 
 - 把 `setShell` 返回的撤销函数交给 `ctx.effect`，插件卸载时交还页面
 - 在页面上运行的模块默认导出一个 `ShellBoot`；`dispose` 移除自己在页面上创建的一切
-- 用到 react 这类页面上的包名时，构建时不打进自己的包，留给 importmap
+- 用到 react 时，构建时不打进自己的包，留给 importmap
 
 ## 不负责的事
 
@@ -62,7 +62,7 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 
 ## 测试
 
-页面入口的接管逻辑由 `apps/desktop/tests/index-html.test.ts` 保护：把页面脚本放进一个极简的假 DOM 求值，证明外壳挂载、同一地址不重复挂载（在 import 时也一样）、换外壳先 `dispose` 旧的、外壳撤销时回到只读状态页、`dispose` 抛错与 import 失败的处理。外壳模块的形状由类型检查保护（外壳从词汇表包取 `ShellBoot`）。真实窗口里的显示在隔离 home 里实机验证（[开发](/docs/develop)）。
+页面入口的接管逻辑由 `apps/desktop/tests/index-html.test.ts` 保护：把页面脚本放进一个极简的假 DOM 求值，证明外壳挂载、同一地址不重复挂载（在 import 时也一样）、换外壳先 `dispose` 旧的、外壳撤销时回到只读状态页、`dispose` 抛错与 import 失败的处理。外壳模块的形状由类型检查保护（外壳从内核包 `import type` 取 `ShellBoot`）。真实窗口里的显示在隔离 home 里实机验证（[开发](/docs/develop)）。
 
 {/* has file="../apps/desktop/tests/index-html.test.ts" text="同一个地址在 import 完成前连推两次，只挂载一次" */}
 

@@ -18,7 +18,7 @@ export function resolveFromPackageDir(packageDir: string, packageName: string, s
   return createRequire(path.join(realPackageDir, 'package.json')).resolve(requireSpecifierFor(packageName, subpath))
 }
 
-/** 把 home 里的包名（可带 exports 子路径）解析成文件路径；插件加载与页面 importmap 共用 */
+/** 把 home 里的包名（可带 exports 子路径）解析成文件路径；插件加载用它 */
 export function resolveFromHome(dataDir: string, packageName: string, subpath = '.'): string {
   return resolveFromPackageDir(path.join(dataDir, 'node_modules', ...packageName.split('/')), packageName, subpath)
 }

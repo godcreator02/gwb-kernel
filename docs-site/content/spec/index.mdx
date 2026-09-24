@@ -18,7 +18,7 @@ docfirst: none
 | 页 | 是什么 |
 | --- | --- |
 | [内核装进 home](/spec/kernel-in-home) | 内核作为 npm 包装进每个 home、exe 只负责启动 Electron；分四步，第一步（内核仓）已完成，第二步（devkit 仓）代码与文档已完成、待发版 |
-| [删掉 gwb.shared 扫描](/spec/drop-shared-scan) | 内核不再扫描 home 里各包的 `gwb.shared`，importmap 只放内核给的包名；涉及块笔记 v2、论文插件、devkit、界面插件四个仓，待决定四条等人确认 |
+| [删掉 gwb.shared 扫描](/spec/drop-shared-scan) | 内核不再扫描 home 里各包的 `gwb.shared`，importmap 只放内核给的包名；人定不等块笔记、内核升 0.5.0，内核仓已改完待发版，块笔记 `main` 已撤掉声明；devkit、界面插件、论文插件还没做 |
 
 全生态机制定案（依赖怎么写、home 里只有插件、只由插件管理写 home）主要是 devkit 与各插件的活，在 devkit 仓的文档站。
 

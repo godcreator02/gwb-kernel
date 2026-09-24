@@ -1,25 +1,30 @@
 {
   "name": "@godcreator/gwb-kernel-desktop",
   "productName": "gwb-kernel",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "author": {
     "name": "godcreator"
   },
   "type": "module",
   "main": "dist/main.js",
+  "types": "dist/api.d.ts",
+  "//exports": "根入口的 types 是内核给插件与页面的接口类型（src/api.ts），插件只 import type；default 是内核入口，由启动器加载",
   "exports": {
-    ".": "./dist/main.js",
+    ".": {
+      "types": "./dist/api.d.ts",
+      "default": "./dist/main.js"
+    },
     "./react": "./dist/react/react.js",
     "./react-jsx-runtime": "./dist/react/react-jsx-runtime.js",
     "./react-dom": "./dist/react/react-dom.js",
     "./react-dom-client": "./dist/react/react-dom-client.js",
     "./package.json": "./package.json"
   },
-  "description": "gwb 内核：cordis 运行在 Electron 主进程里，整个应用只有主进程与渲染进程。只做第一个插件运行之前必须完成的事",
+  "description": "gwb 内核：cordis 运行在 Electron 主进程里，整个应用只有主进程与渲染进程。只做第一个插件运行之前必须完成的事；包根导出内核给插件与页面的接口类型",
   "files": [
     "dist"
   ],
-  "//gwb": "shared 是内核给页面 importmap 的 react 四个包名，内核自己先收；插件声明同名的一律忽略",
+  "//gwb": "shared 是页面 importmap 的全部包名（react 四个），内核启动时读这一份；别的包写 gwb.shared 不收",
   "gwb": {
     "shared": {
       "react": "./react",
@@ -31,7 +36,7 @@
   "scripts": {
     "//setup-electron": "postinstall 已拆（0.2.1）：作为依赖装进消费方时它找不到本仓的 electron，必炸。electron 包不带 postinstall，仓内 clone 后跑一次 setup:electron 装二进制",
     "setup:electron": "node node_modules/electron/install.js",
-    "build": "pnpm --filter @godcreator/gwb-plugin-api build && tsc -p tsconfig.build.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\" && node scripts/build-react.ts",
+    "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.api.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\" && node scripts/build-react.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "pnpm build",
     "start": "pnpm build && electron ."
@@ -39,7 +44,7 @@
   "engines": {
     "electron": "^44.1.1"
   },
-  "//peerDependencies": "cordis 由 home 根上的那一份满足，内核与插件解析到同一份；判据见文档站",
+  "//peerDependencies": "cordis 由 home 根上的那一份满足，内核与插件解析到同一份；它也出现在包根导出的类型里（GwbContext 继承 cordis 的 Context）；判据见文档站",
   "peerDependencies": {
     "cordis": "4.0.0-rc.10"
   },
@@ -48,7 +53,6 @@
     "@cordisjs/plugin-loader": "1.0.0-rc.7"
   },
   "devDependencies": {
-    "@godcreator/gwb-plugin-api": "workspace:*",
     "@types/node": "^24.0.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",

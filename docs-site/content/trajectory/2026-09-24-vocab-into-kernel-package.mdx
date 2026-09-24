@@ -1,0 +1,49 @@
+---
+title: 词汇表包并进内核包：接口类型从内核包的包根导出，删掉 @godcreator/gwb-plugin-api
+born-at: 2026-09-24T23:10
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 词汇表并进内核
+domain: 这条线
+---
+
+supersedes:: [词汇表是独立包、与内核同仓——不是件，也不走服务](2026-09-07-vocab-package-standalone.md)
+
+## 背景
+
+2026-09-07 把内核给插件与页面的接口类型做成独立的词汇表包 `@godcreator/gwb-plugin-api`，第一条依据是「类型是编译期的东西，
+跨仓就得有能 install 的载体」：插件在自己的仓里运行 tsc 时要解析到这些类型，而当时内核装在安装包里，不是能 install 的 npm 包。
+
+[内核装进 home](2026-09-24-kernel-in-home.md) 之后，内核本身就是 npm 包 `@godcreator/gwb-kernel-desktop`，插件在 peer 里写它，
+pnpm 把它装进插件仓的 `node_modules`。能 install 的载体已经有了，词汇表包只剩下成本：多一个要构建、要发版、要和内核对齐版本号的包，
+插件还要同时在 dev 里写词汇表包、在 peer 里写内核包。
+
+## 结论与边界
+
+- 删掉 `packages/gwb-plugin-api`；五个类型（`GwbResult`、`GwbKernelApi`、`GwbContext`、`GwbWindowApi` 与 `window.gwb` 的全局声明、
+  `ShellBoot`）原样搬进 `apps/desktop/src/api.ts`，内核的 `main.ts` 从同一个文件取 `GwbKernelApi`
+- 内核包的包根 `exports["."]` 分两个条件：`types` 指向 `dist/api.d.ts`，`default` 仍是内核入口 `dist/main.js`（启动器加载的那个）；
+  `dist/api.d.ts` 由单独一份 `tsconfig.api.json` 生成，只编译 `api.ts`、只出声明文件
+- 插件与页面代码写 `import type { GwbContext } from '@godcreator/gwb-kernel-desktop'`，不再另写 dev 依赖
+- 改这些类型的规则不变：只加东西是兼容的改动；删掉、改名、改形状是改接缝，内核升 x
+- 本仓只剩内核应用与安装包两样，发版只发 `apps/desktop`；和[删掉 gwb.shared 扫描](2026-09-24-drop-shared-scan.md)一起进内核 0.5.0
+
+旧卡的第二条依据「契约跟定义方走」仍然成立：类型还在内核这一边，只是换了一个载体。
+
+## 否掉的候选
+
+- **保留词汇表包**：载体问题已经不存在，留着只是每次发版多发一个包、多对一次版本号
+- **包根的 `types` 直接用内核入口的声明（`dist/main.d.ts`）**：`main.ts` 是内核入口，它的声明会带出内部实现的类型，
+  插件看到的就不只是接口；所以单独生成一份只含 `api.ts` 的声明
+
+## 代价与遗留
+
+- 所有插件都要改：`import type` 的来源从词汇表包换成内核包，删掉 dev 里的词汇表包；peer 里内核包的范围要改到 `^0.5.0`
+- 内核包根的运行时入口一加载就启动 Electron 应用，插件只能写 `import type`：写成普通 import（哪怕只是为了让 TypeScript
+  认得 `window.gwb` 而写的空 import），编译后留下的那句 import 会在运行时加载内核入口
+- 团队包源上已发布的词汇表包各版本留着，不再发新版
+
+## 依据
+
+- 本仓 `apps/desktop/tests/imports.test.ts` 里「本仓的内核包：包根的 types 指向接口类型那份 d.ts，default 是内核入口」
+- 前提的来历见[内核装进 home](2026-09-24-kernel-in-home.md)

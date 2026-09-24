@@ -1,4 +1,5 @@
 /// <reference lib="dom" preserve="true" />
+// 内核包根入口导出的类型（包清单 exports["."].types 指向这份的产物）：内核给插件与页面的全部接口，只有类型、没有运行时代码。
 // `ShellBoot` 与 `Window` 用到 DOM 类型；写在声明里，插件的 tsconfig 不带 DOM 库、且关掉 skipLibCheck 时也能通过类型检查
 import type { Context } from 'cordis'
 
@@ -37,7 +38,7 @@ export interface GwbWindowApi {
   on(cb: (payload: unknown) => void): () => void
   /**
    * 外壳换了。订阅时先收到当前值（没有外壳时 url 是 null），返回取消订阅的函数。
-   * `imports` 是页面的 importmap：home 里各包 `gwb.shared` 声明的包名 → file:// 地址，由内核收集。
+   * `imports` 是页面的 importmap：内核包 `gwb.shared` 声明的包名 → file:// 地址。
    * 页面先注入它再 import 外壳。只有内核自己的页面用这一条
    */
   onShell(cb: (shell: { url: string | null; imports: Record<string, string> }) => void): () => void
@@ -47,7 +48,7 @@ export interface GwbWindowApi {
 export type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 
 /**
- * 页面的全局声明：import 本包（哪怕只是 `import type {}`），TypeScript 就认得 `window.gwb`。
+ * 页面的全局声明：import 本包的类型（哪怕只是 `import type {}`），TypeScript 就认得 `window.gwb`。
  */
 declare global {
   interface Window {

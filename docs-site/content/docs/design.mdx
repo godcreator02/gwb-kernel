@@ -11,7 +11,7 @@ description: 决定内核长什么样的九条设计——各自是什么、推�
 
 - 选定 home、创建 cordis 实例、加载 `cordis.yml` 里的插件，退出时卸载整棵插件树——[插件加载](/docs/seams/loading)、[内核应用](/docs/desktop/boot)
 - 把页面交给外壳，没有外壳时显示只读状态页——[外壳接管](/docs/seams/shell)
-- 页面上的包名解析——[页面上的包名](/docs/seams/shared)
+- 页面上的 react：内核包带着 react，启动时解析成页面的 importmap——[页面上的包名](/docs/seams/shared)
 - 页面和插件之间传递消息：页面发来的命令转交给命令插件，插件发出的事件推给页面——[IPC 通道](/docs/seams/ipc)、[命令转交](/docs/seams/commands)
 - 内核自己出错时人能看到：唯一的日志输出，启动失败时弹错误框——[日志](/docs/seams/log)
 
@@ -67,9 +67,9 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核�
 
 ## 包名一律按 home 解析
 
-插件的包名 import（直接写包名、不带相对路径的 import，比如 `from 'cordis'`）一律到 home 的 `node_modules` 里找，主进程和页面用同一个解析函数：先把 `<home>/node_modules/<包名>` 解析成磁盘上的真实路径，再按包的 `exports` 找到文件。
+插件的包名 import（直接写包名、不带相对路径的 import，比如 `from 'cordis'`）一律到 home 的 `node_modules` 里找：先把 `<home>/node_modules/<包名>` 解析成磁盘上的真实路径，再按包的 `exports` 找到文件。页面上的包名只有内核包自己声明的那几个，内核启动时用同一套解析从内核包目录的真实路径找到文件。
 
-从真实路径开始，是为了运行中换了版本能拿到新版本：pnpm 布局里真实路径带版本号，不会命中 Node 为上一版记下的解析缓存（[Node 的 CJS 解析缓存会返回旧版本](/trajectory/2026-09-09-wall-resolver-cache)）。主进程怎么用见[插件加载](/docs/seams/loading)，页面怎么用见[页面上的包名](/docs/seams/shared)。
+从真实路径开始，是为了运行中换了版本能拿到新版本：pnpm 布局里真实路径带版本号，不会命中 Node 为上一版记下的解析缓存（[Node 的 CJS 解析缓存会返回旧版本](/trajectory/2026-09-09-wall-resolver-cache)）。插件怎么加载见[插件加载](/docs/seams/loading)，页面上的包名见[页面上的包名](/docs/seams/shared)。
 
 ## 页面整页交给外壳
 
@@ -79,14 +79,14 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核�
 
 - 加载哪些插件，由 `cordis.yml` 决定，内核用 cordis 官方的 include 去读
 - 页面发来的命令，内核不看命令名，原样转交给命令插件提供的 `ctx.gwbCommands`（[命令转交](/docs/seams/commands)）
-- 包清单里内核只读一个字段 `gwb.shared`（[页面上的包名](/docs/seams/shared)）
+- 内核不看插件包清单里的任何字段：页面的 importmap 只来自内核包自己清单里的 `gwb.shared`，home 里别的包写了这个字段也不读（[页面上的包名](/docs/seams/shared)）
 - 插件之间怎么交互——服务、命令、契约版本——内核不参与
 
 内核认识的服务名只有两个：自己提供的 `gwbKernel`，和转交页面命令时要找的 `gwbCommands`。`gwbCommands` 由 `cordis.yml` 里的命令插件提供，home 里没有它时，页面发来的每条命令都回失败回执。换掉 `cordis.yml` 里的任何一个插件（包括外壳、命令插件）都不用改内核，只要新插件提供同名的服务、接口不变。
 
 ## 内核仓只放内核
 
-内核仓只放三样：内核应用 `apps/desktop`（[内核应用](/docs/desktop)）、词汇表包 `packages/gwb-plugin-api`（[词汇表包](/docs/vocab)）、安装包——启动器 `apps/launcher` 与打包脚本 `installer/`（[安装包](/docs/installer)）。准入判据只有一句：**只有第一个插件运行之前必须完成的事才进内核。**
+内核仓只放两样：内核应用 `apps/desktop`（[内核应用](/docs/desktop)），它的包根同时导出内核给插件与页面的接口类型（[包根导出的接口类型](/docs/desktop/api)）；安装包——启动器 `apps/launcher` 与打包脚本 `installer/`（[安装包](/docs/installer)）。准入判据只有一句：**只有第一个插件运行之前必须完成的事才进内核。**
 
 插件一个也不放。命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`；插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`，和 devkit 一起开发。两者都是 `cordis.yml` 里的普通插件，和别的插件一样装在 home 里、经插件管理升级、可以停用和卸载。
 
@@ -97,7 +97,7 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核�
 内核和插件各自发版。插件兼容哪些内核，写在自己 `package.json` 的 `peerDependencies` 里，范围的下限是验证时那个内核的版本号：
 
 ```json
-{ "peerDependencies": { "@godcreator/gwb-kernel-desktop": "^0.4.1" } }
+{ "peerDependencies": { "@godcreator/gwb-kernel-desktop": "^0.5.0" } }
 ```
 
 内核装在 home 里，这就是 Node 生态里插件声明宿主版本的标准写法：pnpm 装插件时拿它和 home 里的内核包比，不满足只警告、照装。插件管理的 `plugin-manager.list` 拿它和运行中内核的 `gwbKernel.version` 比，范围不包含（或没写、写的不是 `^x.y.z`）的包在回执里标出来；只标出来，不拦加载，内核不读这个字段。devkit 的 `devkit.release` 发插件之前检查它。比对规则与这两处的做法在 devkit 仓文档站的「兼容哪个内核」。

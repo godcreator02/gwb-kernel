@@ -2,9 +2,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { EventEmitter } from 'node:events'
-import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
-import type { GwbKernelApi } from '@godcreator/gwb-plugin-api'
+import type { GwbKernelApi } from '../src/api.js'
 
 /**
  * main.ts 的行为锁：electron 换成假的，cordis、loader、include 用真的，home 是临时目录。
@@ -463,7 +462,7 @@ describe('main.ts：插件看到的内核', () => {
     await quitAndWaitForCleanup(booted)
   })
 
-  it('importmap：react 用内核的那份，插件的同名声明忽略；这句警告推了几次都只记一行', async () => {
+  it('importmap 只有内核包声明的四个包名：home 里别的包写了 gwb.shared 也不收，不读、不记日志', async () => {
     silenceStderr()
     probeGlobal.__gwbMainTestProbe = { events: [] }
     const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
@@ -474,8 +473,11 @@ describe('main.ts：插件看到的内核', () => {
     revoke()
     const pushes = shellMessagesSent(window)
     expect(pushes.length).toBeGreaterThanOrEqual(2)
+    for (const push of pushes) {
+      expect(Object.keys(push.imports).sort()).toEqual(['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime'])
+    }
     expect(pushes.at(-1)?.imports['react']).toMatch(/\/dist\/react\/react\.js$/)
-    expect(booted.readLog().split('包名 react 由内核提供，忽略 gwb-test-shared 的声明').length - 1).toBe(1)
+    expect(booted.readLog()).not.toContain('gwb-test-shared')
     await quitAndWaitForCleanup(booted)
   })
 
@@ -499,9 +501,6 @@ describe('main.ts：插件看到的内核', () => {
     expect(shellMessagesSent(window).at(-1)?.url).toBeNull()
 
     const latest = shellMessagesSent(window).at(-1)!
-    expect(latest.imports['shared-name']).toBe(
-      pathToFileURL(path.join(booted.dataDir, 'node_modules', 'gwb-test-shared', 'x.mjs')).href,
-    )
     expect(latest.report.entries).toContainEqual({ id: 'home:probe', name: 'gwb-test-probe', state: 'ACTIVE' })
     await quitAndWaitForCleanup(booted)
   })

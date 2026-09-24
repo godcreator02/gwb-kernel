@@ -128,7 +128,7 @@ $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json 
   （清单里原来写着 `^` 范围时，pnpm 会沿用范围、装上别的版本）。内核与所有插件用的是 home 根上这一份 `cordis`
 - `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次启动都会换一个随机字符串）；内核包与 `cordis` 不是插件，不写进去
 - 命令插件（`gwb-commands`，页面和 MCP 入口的命令都经它执行）与插件管理（`gwb-plugin-manager`，之后装卸、升级插件都经它）是普通插件，和别的插件一样写进 `cordis.yml`、装进 home
-- 除了内核包与 `cordis`，只装插件、不装库：词汇表包 `gwb-plugin-api` 只有类型，运行时用不到；页面用的 react 随内核包装上，
+- 除了内核包与 `cordis`，只装插件、不装库：页面用的 react 随内核包装上，
   设计令牌表随 `gwb-shell` 装上。**别再安装 `gwb-shared-react` / `gwb-tokens`**：这两个包已停止发布
 - 退出码为 0 就成功。输出里如果有一行 `Issues with peer dependencies found`：说明有插件还没适配它上游的新版本，
   包照样装上了，但那个插件可能启动不了——在 home 里运行 `& $pnpm peers check` 拿到明细，原样告诉用户

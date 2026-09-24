@@ -16,7 +16,7 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 
 | 文件 | 谁写 |
 | --- | --- |
-| `package.json` | 列出装了哪些包：内核包 `@godcreator/gwb-kernel-desktop`、内核包 peer 要的那个版本的 `cordis`、各个插件与库。缺了内核补一份最小清单（从仓里启动一个新 home 时会缺）；之后归插件管理（经它运行的 pnpm） |
+| `package.json` | 列出装了哪些包：内核包 `@godcreator/gwb-kernel-desktop`、内核包 peer 要的那个版本的 `cordis`、各个插件。缺了内核补一份最小清单（从仓里启动一个新 home 时会缺）；之后归插件管理（经它运行的 pnpm） |
 | `cordis.yml` | 列出条目。缺了内核补一个空表，之后归 include 和插件管理 |
 | `node_modules/` | pnpm，由插件管理调用 |
 | `gwb.log`、`gwb.log.1` | 内核（见[日志](/docs/seams/log)） |
@@ -28,7 +28,7 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 
 {/* ref file="../apps/desktop/package.json" lines="42-49" */}
 
-**条目树**：loader 条目的 `create` / `update` / `remove` / `resolve`，以及条目对象上带前缀的 `id`。它既没有写进 `gwbKernel`，也没有写进词汇表包：它的形状就是上面这两个版本的 loader 与 include 的内部结构，换版本就可能变。loader 根层只有一条 include 条目，id 是 `home`，`cordis.yml` 里的条目都在它的子树里（见[插件加载](/docs/seams/loading)）。
+**条目树**：loader 条目的 `create` / `update` / `remove` / `resolve`，以及条目对象上带前缀的 `id`。它既没有写进 `gwbKernel`，也没有写进内核包导出的接口类型：它的形状就是上面这两个版本的 loader 与 include 的内部结构，换版本就可能变。loader 根层只有一条 include 条目，id 是 `home`，`cordis.yml` 里的条目都在它的子树里（见[插件加载](/docs/seams/loading)）。
 
 **按真实路径解析包名**：loader import 一个包名时，内核应用从 `<home>/node_modules/<包名>` 的真实路径开始解析；包换了版本、真实路径跟着换，停用再启用这条条目就拿到新版本。解析规则见[插件加载](/docs/seams/loading)。
 

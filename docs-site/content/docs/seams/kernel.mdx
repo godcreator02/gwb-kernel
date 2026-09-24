@@ -1,6 +1,6 @@
 ---
 title: 2 内核服务 gwbKernel
-description: 连接内核应用与任何插件；接口是内核应用在 cordis 根上下文提供的服务 gwbKernel——dataDir、version、emit、setShell 四样，类型 GwbKernelApi 在词汇表包；内核应用保证它先于任何插件提供、永不撤销，插件保证数据只写在 dataDir 下自己的目录、卸载时交还页面
+description: 连接内核应用与任何插件；接口是内核应用在 cordis 根上下文提供的服务 gwbKernel——dataDir、version、emit、setShell 四样，类型 GwbKernelApi 从内核包的包根导出；内核应用保证它先于任何插件提供、永不撤销，插件保证数据只写在 dataDir 下自己的目录、卸载时交还页面
 ---
 
 **本页回答**：内核直接给插件的服务 `gwbKernel` 有哪几样、各是什么意思；内核应用和插件使用它时各保证什么。
@@ -10,17 +10,17 @@ description: 连接内核应用与任何插件；接口是内核应用在 cordis
 - [内核应用](/docs/desktop)：在 cordis 的根上下文上提供 `gwbKernel`
 - 任何插件：从 `ctx.gwbKernel` 直接取用
 
-类型在[词汇表包](/docs/vocab) `@godcreator/gwb-plugin-api` 里：只有类型，插件把它写进开发依赖、只用 `import type`。上下文上的命令服务 `gwbCommands` 不是内核服务：它由命令插件提供，内核应用只调用它转交页面发来的命令（[命令转交](/docs/seams/commands)）。
+类型从内核包的包根导出（[包根导出的接口类型](/docs/desktop/api)）：插件写 `import type { GwbContext } from '@godcreator/gwb-kernel-desktop'`，内核包本来就在插件的 peer 里，不用另加依赖。上下文上的命令服务 `gwbCommands` 不是内核服务：它由命令插件提供，内核应用只调用它转交页面发来的命令（[命令转交](/docs/seams/commands)）。
 
 ## 接口
 
 `gwbKernel` 的四样：
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="12-25" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="13-26" */}
 
 插件的 `apply` 拿到的上下文类型 `GwbContext`，上面由内核提供的只有 `gwbKernel`：
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="27-30" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="28-31" */}
 
 - `dataDir`：这个 home 目录的真实路径，大小写、链接、斜杠写法都已统一
 - `version`：内核包 `@godcreator/gwb-kernel-desktop` 清单里的版本号
@@ -52,7 +52,7 @@ description: 连接内核应用与任何插件；接口是内核应用在 cordis
 
 ## 测试
 
-`gwbKernel` 的形状由类型检查保护：内核应用里这个对象标成词汇表包的 `GwbKernelApi`，对不上 `pnpm check` 就失败。行为由 `apps/desktop/tests/main.test.ts` 保护：一个测试插件从 `cordis.yml` 加载进来取到 `gwbKernel`，证明 `dataDir` 是 home 的真实路径、`version` 是内核包的版本、`emit` 推到页面、`setShell` 后调用的替换先调用的、撤销只在自己仍是当前外壳时清空。
+`gwbKernel` 的形状由类型检查保护：内核应用里这个对象标成同包 `src/api.ts` 里的 `GwbKernelApi`，对不上 `pnpm check` 就失败。行为由 `apps/desktop/tests/main.test.ts` 保护：一个测试插件从 `cordis.yml` 加载进来取到 `gwbKernel`，证明 `dataDir` 是 home 的真实路径、`version` 是内核包的版本、`emit` 推到页面、`setShell` 后调用的替换先调用的、撤销只在自己仍是当前外壳时清空。
 
 {/* has file="../apps/desktop/src/main.ts" text="const kernel: GwbKernelApi = {" */}
 

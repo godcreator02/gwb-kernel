@@ -1,6 +1,6 @@
 ---
 title: gwb-kernel-desktop · 内核应用
-description: 内核应用 apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口，发布成 npm 包装在每个 home 里、由启动器加载；它有哪些功能（选定 home 与单实例锁、加载插件、窗口与只读状态页、日志文件与轮转、runtime.json、退出清理），插件、页面、启动器与外部工具经哪些接口用它，它依赖什么，哪些事不归它做
+description: 内核应用 apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口，发布成 npm 包装在每个 home 里、由启动器加载；它有哪些功能（选定 home 与单实例锁、加载插件、窗口与只读状态页、日志文件与轮转、runtime.json、退出清理），包根导出给插件与页面的接口类型，插件、页面、启动器与外部工具经哪些接口用它，它依赖什么，哪些事不归它做
 ---
 
 **本页回答**：内核应用有哪些功能；插件、页面和外部工具经哪些接口用它，各属于哪条接缝；它依赖什么、缺了会怎样；哪些事常被以为归它、其实归别的模块。包名 `@godcreator/gwb-kernel-desktop`，源码目录 `apps/desktop/src`，入口文件 `main.ts`。
@@ -14,7 +14,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 - **加载插件**：创建 cordis 实例，按 `cordis.yml` 加载插件；插件按包名 import 时，按 home 里的真实路径找到文件，换了版本的包重新加载时拿到新版本（[插件加载](/docs/seams/loading)）。一次启动依次做什么、哪几处顺序不能换，见[启动与退出](/docs/desktop/boot)
 - **窗口与外壳**：打开唯一的窗口，把页面交给调用 `setShell` 的外壳插件（[外壳接管](/docs/seams/shell)）
 - **只读状态页**：没有插件调用 `setShell`，或外壳启动失败（import 失败、默认导出不是函数）时，页面显示纯文本、没有按钮的只读状态页：页首一句说明是哪种情况，然后是 home 的路径、每个条目一行（id、包名、加载到哪一步：等待中的写还缺哪个服务，失败的写错误的第一行）、最近 20 行 error 与 warn 日志。条目状态变化、每来一行 error 或 warn，内核都重新推送整份状态，200 毫秒内的多次合并成一次；页面订阅时也会请求一次当前值，比插件晚加载完也不会错过
-- **页面上的包名**：把内核包自己与 home 里各包声明的 `gwb.shared` 拼成页面的 importmap；react 的四个包名由内核包提供，外壳与插件在页面上写 `import 'react'` 就能找到文件（[页面上的包名](/docs/seams/shared)）
+- **页面上的包名**：启动时把内核包自己清单里 `gwb.shared` 声明的包名（react 的四个）解析成页面的 importmap，外壳与插件在页面上写 `import 'react'` 就能找到内核包里的文件；home 里别的包写的 `gwb.shared` 不读（[页面上的包名](/docs/seams/shared)）
 - **转交命令、推送事件**：页面发来的命令交给命令插件提供的 `ctx.gwbCommands`（[命令转交](/docs/seams/commands)），插件发出的事件推给页面（[IPC 通道](/docs/seams/ipc)）
 - **日志**：插件、内核、页面 console 的日志汇成一条 cordis 日志流，每一行同时写 stderr 和 home 里的 `gwb.log`（[日志](/docs/seams/log)）。`gwb.log` 默认上限 128 MB，写到上限就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多 256 MB）再开一份新的；环境变量 `GWB_LOG_LIMIT_MB` 改上限，单位 MB，`0` 表示不轮转，不是非负整数时按默认值。文件打不开、写不进、轮转失败都只往 stderr 告警一句，内核照常运行
 - **记下这次运行**：每次启动把 pid、启动时刻、版本、应用目录、调试端口写进 home 里的 `runtime.json`（[runtime.json](/docs/seams/runtime)）
@@ -22,7 +22,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 ## 接口
 
-每条接缝交换什么、各模块保证什么，写在接缝页；本节只列内核应用提供了哪些接口、定义在哪里。本包不导出任何模块或类型，它实现的接口的类型都在[词汇表包](/docs/vocab)里。
+每条接缝交换什么、各模块保证什么，写在接缝页；本节只列内核应用提供了哪些接口、定义在哪里。包根只导出类型、不给插件任何运行时的值：它实现的接口的类型都在 `src/api.ts`，插件与页面代码从包根 `import type`（[包根导出的接口类型](/docs/desktop/api)）。
 
 ### 给插件的服务与日志
 
@@ -51,7 +51,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 | IPC 通道 `gwb:event` | `gwbKernel.emit` 推给页面的事件 | [3 IPC 通道](/docs/seams/ipc) |
 | IPC 通道 `gwb:shell` 与 `gwb:hello` | 内核推给页面的整份外壳状态：外壳地址、importmap、只读状态页的数据；页面订阅时发 `gwb:hello` 请求一次当前值 | [3 IPC 通道](/docs/seams/ipc) |
 | 外壳模块的默认导出 | 页面入口 import 外壳的地址，拿页面的 `#root` 调用它的默认导出；类型 `ShellBoot` | [4 外壳接管](/docs/seams/shell) |
-| 包清单里的 `gwb.shared` | 包声明「包名 → 自己的 exports 子路径」，内核拼成页面的 importmap | [5 页面上的包名](/docs/seams/shared) |
+| 内核包清单里的 `gwb.shared` | 内核包声明「包名 → 自己的 exports 子路径」（react 的四个），内核启动时解析成页面的 importmap；页面代码构建时照它外置这几个名字 | [5 页面上的包名](/docs/seams/shared) |
 
 {/* has file="../apps/desktop/src/preload.cjs" text="contextBridge.exposeInMainWorld('gwb', {" */}
 
@@ -89,6 +89,12 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 {/* has file="../apps/desktop/package.json" text="dist/main.js" */}
 
+### 包根导出的类型
+
+| 接口 | 做什么 | 接缝 |
+| --- | --- | --- |
+| `import type { … } from '@godcreator/gwb-kernel-desktop'` | 包根的 `types` 条件指向 `dist/api.d.ts`：`GwbResult`、`GwbKernelApi`、`GwbContext`、`GwbWindowApi` 与 `window.gwb` 的全局声明、`ShellBoot`；只有类型，详见[包根导出的接口类型](/docs/desktop/api) | [2 内核服务](/docs/seams/kernel)、[3 IPC 通道](/docs/seams/ipc)、[4 外壳接管](/docs/seams/shell) |
+
 ### 启动参数
 
 启动内核的人或程序经这三项控制它，不属于哪条接缝（从安装包启动时，启动器已经把 `GWB_HOME` 换成了绝对路径）：
@@ -115,7 +121,6 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 | 服务 `ctx.gwbCommands`，由 `cordis.yml` 里的命令插件 `@godcreator/gwb-commands` 提供 | 页面发来的命令一律交给它 | 内核照常运行；页面发来的每条命令都回失败回执「没有命令服务」 |
 | react 与 react-dom（开发依赖） | 构建时打进 `dist/react/`，给页面用（见[开发](/docs/develop#内核包怎么打包-react)） | 内核包里缺这几个文件时，内核启动时解析不到自己声明的包名，启动失败 |
 | home 目录与文件系统 | 读包清单、解析包名、写 `gwb.log` 与 `runtime.json` | 目录建不出来时启动失败；`runtime.json` 写不进只记一行警告；`gwb.log` 打不开时日志只写 stderr，一分钟后再试 |
-| 词汇表包 `@godcreator/gwb-plugin-api` | `GwbKernelApi` 的类型 | 只在编译时用；形状对不上时内核的类型检查失败，运行时没有影响 |
 
 ## 不做的事
 

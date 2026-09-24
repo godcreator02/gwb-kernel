@@ -42,15 +42,13 @@ function Badge({ x, y, n, byConvention }: { x: number; y: number; n: number; byC
 
 export function SeamMap() {
   return (
-    <svg viewBox="0 0 780 800" role="img" aria-label="内核仓的模块与十条接缝">
-      <Group x={20} y={100} w={170} h={380} />
-      <Group x={210} y={100} w={310} h={380} />
+    <svg viewBox="0 0 780 842" role="img" aria-label="内核仓的模块与十条接缝">
+      <Group x={20} y={100} w={170} h={420} />
+      <Group x={210} y={100} w={310} h={420} />
       <Group x={540} y={100} w={220} h={290} />
-      <Group x={540} y={404} w={220} h={76} />
-      <Group x={20} y={506} w={170} h={98} />
-      <Group x={210} y={506} w={310} h={76} />
-      <Group x={540} y={506} w={220} h={64} />
-      <Group x={20} y={660} w={740} h={76} />
+      <Group x={210} y={546} w={310} h={76} />
+      <Group x={540} y={546} w={220} h={64} />
+      <Group x={20} y={700} w={740} h={76} />
 
       <Arrow from={[60, 64]} to={[60, 132]} />
       <Arrow from={[704, 64]} to={[704, 132]} />
@@ -59,11 +57,11 @@ export function SeamMap() {
       <SeamLine d="M510,198 H552" />
       <SeamLine d="M178,270 H222" />
       <SeamLine d="M150,132 V84 H600 V132" />
-      <SeamLine d="M510,442 H552" />
+      <SeamLine d="M178,442 H222" />
       <SeamLine d="M510,294 H552" />
-      <SeamLine d="M675,626 V686" byConvention />
+      <SeamLine d="M675,666 V726" byConvention />
       <SeamLine d="M510,342 H552" />
-      <SeamLine d="M365,532 V480" byConvention />
+      <SeamLine d="M470,572 V520" byConvention />
       <SeamLine d="M510,246 H552" />
 
       <Box x={40} y={24} w={120} h={40} lines={['人']} />
@@ -72,12 +70,13 @@ export function SeamMap() {
       <GroupLabel x={32} y={120} name="页面" where="渲染进程" />
       <Box x={32} y={132} w={146} h={40} lines={['页面入口', 'index.html · #root']} tone="a" mono />
       <Box x={32} y={252} w={146} h={36} lines={['window.gwb', 'preload.cjs']} tone="a" mono />
-      <Note x={32} y={454} size={10.5}>
-        两个文件随内核包发布，
+      <Note x={32} y={308} size={10.5}>
+        这两个文件随内核包发布，
       </Note>
-      <Note x={32} y={470} size={10.5}>
+      <Note x={32} y={324} size={10.5}>
         在页面里运行
       </Note>
+      <Box x={32} y={422} w={146} h={40} lines={['页面代码', '外壳 · 插件的窗格']} />
 
       <GroupLabel x={222} y={120} name="内核应用" where="apps/desktop · 装进 home" />
       <Box x={222} y={132} w={288} h={36} lines={['包名解析', 'bare-import.ts']} tone="a" mono />
@@ -86,6 +85,7 @@ export function SeamMap() {
       <Box x={222} y={324} w={288} h={36} lines={['日志', 'log-file.ts · 写 gwb.log']} tone="a" mono />
       <Box x={222} y={372} w={288} h={36} lines={['只读状态页的数据', 'entry-state.ts']} tone="a" mono />
       <Box x={222} y={424} w={288} h={36} lines={['页面上的包名 · react', 'imports.ts · dist/react/']} tone="a" mono />
+      <Box x={222} y={472} w={288} h={36} lines={['接口类型（包根导出）', 'api.ts · GwbContext 等，只有类型']} tone="a" mono />
 
       <GroupLabel x={552} y={120} name="cordis.yml 里的插件" where="装进 home" />
       <Box x={552} y={132} w={92} h={36} lines={['外壳']} />
@@ -94,44 +94,35 @@ export function SeamMap() {
       <Box x={552} y={228} w={196} h={36} lines={['命令插件', 'gwb-commands']} mono />
       <Box x={552} y={276} w={196} h={100} lines={['任何插件', '数据 · 设置 · 说明书', '日志插件 …']} />
 
-      <GroupLabel x={552} y={420} name="声明 gwb.shared 的库" where="装进 home" />
-      <Box x={552} y={428} w={196} h={40} lines={['块笔记的库', '@godcreator/block-note']} mono />
+      <GroupLabel x={222} y={566} name="安装包" where="apps/launcher · installer/" />
+      <Box x={222} y={572} w={288} h={40} lines={['启动器', '安装包里只有它与 Electron']} tone="a" />
 
-      <GroupLabel x={32} y={526} name="词汇表包" />
-      <Note x={32} y={542} size={10.5} mono>
-        packages/gwb-plugin-api
-      </Note>
-      <Box x={32} y={550} w={146} h={46} lines={['只有类型', 'GwbKernelApi 等']} tone="a" />
+      <GroupLabel x={552} y={566} name="cordis" where="home 根上只有一份" />
+      <Box x={552} y={574} w={196} h={28} lines={['内核、loader、插件共用']} />
 
-      <GroupLabel x={222} y={526} name="安装包" where="apps/launcher · installer/" />
-      <Box x={222} y={532} w={288} h={40} lines={['启动器', '安装包里只有它与 Electron']} tone="a" />
+      <Box x={600} y={630} w={150} h={36} lines={['外部工具', 'devkit · 装机的 agent']} />
 
-      <GroupLabel x={552} y={526} name="cordis" where="home 根上只有一份" />
-      <Box x={552} y={534} w={196} h={28} lines={['内核、loader、插件共用']} />
-
-      <Box x={600} y={590} w={150} h={36} lines={['外部工具', 'devkit · 装机的 agent']} />
-
-      <GroupLabel x={32} y={680} name="home" where="磁盘上的目录" />
-      <Box x={32} y={690} w={120} h={32} lines={['package.json']} />
-      <Box x={162} y={690} w={100} h={32} lines={['cordis.yml']} />
-      <Box x={272} y={686} w={220} h={40} lines={['node_modules/', '内核包 · cordis · 插件 · 库']} />
-      <Box x={502} y={690} w={90} h={32} lines={['gwb.log']} />
-      <Box x={620} y={686} w={120} h={36} lines={['runtime.json']} />
+      <GroupLabel x={32} y={720} name="home" where="磁盘上的目录" />
+      <Box x={32} y={730} w={120} h={32} lines={['package.json']} />
+      <Box x={162} y={730} w={100} h={32} lines={['cordis.yml']} />
+      <Box x={272} y={726} w={220} h={40} lines={['node_modules/', '内核包 · cordis · 插件']} />
+      <Box x={502} y={730} w={90} h={32} lines={['gwb.log']} />
+      <Box x={620} y={726} w={120} h={36} lines={['runtime.json']} />
 
       <Badge x={527} y={150} n={1} />
       <Badge x={531} y={294} n={2} />
       <Badge x={200} y={270} n={3} />
       <Badge x={375} y={84} n={4} />
-      <Badge x={531} y={442} n={5} />
+      <Badge x={200} y={442} n={5} />
       <Badge x={531} y={198} n={6} />
-      <Badge x={675} y={656} n={7} byConvention />
+      <Badge x={675} y={696} n={7} byConvention />
       <Badge x={531} y={342} n={8} />
-      <Badge x={365} y={498} n={9} byConvention />
+      <Badge x={470} y={533} n={9} byConvention />
       <Badge x={531} y={246} n={10} />
 
-      <Note x={20} y={758}>虚线框按模块所在的位置分组；连线停在框边上表示接这一组里的每一个模块</Note>
-      <Note x={20} y={776}>实线接缝有代码接口，点线接缝只靠约定；灰色箭头是人与 AI 的入口，不算接缝</Note>
-      <Note x={20} y={794}>运行时内核包、cordis、插件与库都装在 home 的 node_modules 里；启动器按接缝 9 从那里加载内核</Note>
+      <Note x={20} y={798}>虚线框按模块所在的位置分组；连线停在框边上表示接这一组里的每一个模块</Note>
+      <Note x={20} y={816}>实线接缝有代码接口，点线接缝只靠约定；灰色箭头是人与 AI 的入口，不算接缝</Note>
+      <Note x={20} y={834}>运行时内核包、cordis 与插件都装在 home 的 node_modules 里；启动器按接缝 9 从那里加载内核</Note>
     </svg>
   )
 }

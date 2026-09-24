@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true,
+    "emitDeclarationOnly": true
+  },
+  // 包根入口导出的类型只有 src/api.ts 一份；别的源码不出 d.ts，内部实现不跟着类型发出去
+  "include": ["src/api.ts"]
+}
