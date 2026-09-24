@@ -61,4 +61,8 @@ cordis 的 fiber 状态是 `const enum`，在本仓的编译设置下引用不�
 
 {/* has file="../apps/desktop/tests/entry-state.test.ts" text="FAILED 带错误的第一行" */}
 
-页面上的显示与推送时机只能在隔离 home 里实机验证：空 home 启动看到「一条条目都没有」；装一个缺依赖的插件看到它等待中、缺哪个服务；装上外壳后页面被接管，卸载外壳后回到状态页。
+推送的数据与时机由 `apps/desktop/tests/main.test.ts` 保护：`report` 里有 home 与各条目的状态，连着两行 error 日志去抖后只推一次，错误行里带着这两行。
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="插件写一行 error：去抖后推一次 gwb:shell" */}
+
+页面上的显示只能在隔离 home 里实机验证：空 home 启动看到「一条条目都没有」；装一个缺依赖的插件看到它等待中、缺哪个服务；装上外壳后页面被接管，卸载外壳后回到状态页。

@@ -61,4 +61,8 @@ description: 连接内核应用与所有插件：插件、内核、页面 consol
 
 {/* has file="../apps/desktop/tests/log-file.test.ts" text="onWarn 自己抛也不许漏出去" */}
 
-汇成一条流与一行的格式在 `main.ts` 里、依赖 cordis 实例，只能在隔离 home 里实机验证（见[开发](/docs/develop)）：插件写的一行、页面 `console.error` 的一行都出现在 `gwb.log` 里，名字分别是插件的 logger 名与 `renderer`；没有外壳时，新的 error 行出现在只读状态页上。
+汇成一条流与一行的格式由 `apps/desktop/tests/main.test.ts` 保护：electron 换成假的、cordis 用真的，页面 console 的四个级别记成名字 `renderer` 的对应级别，插件写的 error 行进 `gwb.log`，并在去抖后随 `gwb:shell` 出现在只读状态页的错误行里。
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="页面 console 进 cordis 日志，名字是 renderer" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="插件写一行 error：去抖后推一次 gwb:shell" */}

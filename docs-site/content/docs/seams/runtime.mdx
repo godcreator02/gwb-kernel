@@ -55,4 +55,10 @@ MCP 入口插件 `gwb-mcp` 在它的端口开好之后往同一份文件里补�
 
 ## 测试
 
-没有代码接口，也就没有单元测试，只能实机验证（见[开发](/docs/develop)）：用 `--remote-debugging-port=<端口>` 在隔离 home 里启动，`pid` 是正在运行的内核进程、`cdp` 是给的那个端口、`version` 与内核包清单一致，关掉工作台后文件还在；不带调试端口再启动一次，文件里没有 `cdp`。
+内核写这份文件的那一段由 `apps/desktop/tests/main.test.ts` 保护：写哪几个字段、每次整份重写、调试端口只在是 1–65535 的整数时写进 `cdp`。
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="runtime.json 每次启动整份重写" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="开了合法的调试端口就写 cdp" */}
+
+读者一侧没有代码接口，只能实机验证（见[开发](/docs/develop)）：用 `--remote-debugging-port=<端口>` 在隔离 home 里启动，`pid` 是正在运行的内核进程、`cdp` 是给的那个端口，关掉工作台后文件还在。

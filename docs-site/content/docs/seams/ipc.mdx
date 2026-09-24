@@ -77,4 +77,10 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 
 ## 测试
 
-这条接缝在页面和主进程里都只有转交，没有可以单独抽出来测的逻辑：形状由类型检查保护（外壳与插件的页面代码从词汇表包取 `GwbWindowApi`、`GwbResult`；内核的页面入口 `index.html` 是不经类型检查的纯脚本），命令服务自己的行为由命令插件在基础插件仓里的测试保护。其余在隔离 home 里实机验证（见[开发](/docs/develop)；查看页面用 devkit 的 `devkit.cdp`）：页面能调到插件注册的命令，调不存在的命令收到 `ok: false`，home 里没有命令插件时收到「没有命令服务」的 `ok: false`，插件 `emit` 的事件页面收得到，页面整页重新加载后立刻收到当前外壳状态。
+主进程这一侧由 `apps/desktop/tests/main.test.ts` 保护：命令名不是字符串、没有命令服务时回失败回执，有命令服务时命令原样交给它、回执原样返回，`gwb:hello` 向发来的页面回一条整份外壳状态。
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="gwb:command：命令名不是字符串、没有命令服务时回失败回执" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="gwb:hello：向发来的页面回一条整份外壳状态" */}
+
+形状由类型检查保护（外壳与插件的页面代码从词汇表包取 `GwbWindowApi`、`GwbResult`；内核的页面入口 `index.html` 是不经类型检查的纯脚本），命令服务自己的行为由命令插件在基础插件仓里的测试保护。页面这一侧（`preload.cjs` 与页面入口）只能在隔离 home 里实机验证（见[开发](/docs/develop)；查看页面用 devkit 的 `devkit.cdp`）：页面能调到插件注册的命令，调不存在的命令收到 `ok: false`，插件 `emit` 的事件页面收得到，页面整页重新加载后立刻收到当前外壳状态。

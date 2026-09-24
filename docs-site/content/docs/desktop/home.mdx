@@ -43,4 +43,10 @@ home 里每样东西归谁写，列在 [home 布局与条目树](/docs/seams/hom
 
 ## 怎么验证
 
-这几段都在 `main.ts` 模块求值时执行，没有单元测试，只能实机验证：用同一个 `GWB_HOME` 启动两次，第二次退出码是 1、`gwb.log` 里有「已有实例在运行，本实例退出」一行、`runtime.json` 里仍是第一个实例的 pid；用一个新名字启动，home 目录里出现最小的 `package.json` 与 `cordis.yml`。
+`apps/desktop/tests/main.test.ts` 把 electron 换成假的，在临时目录上重新求值 `main.ts`，证明：名字与路径两种写法选定的 home、缺文件时补最小形态且不覆盖已有的、userData 放在 `<home>/electron`、拿不到单实例锁时写「已有实例在运行，本实例退出」一行并以退出码 1 退出、第二个实例启动时把已打开的窗口调到前面。
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="GWB_HOME 带路径分隔符就当目录本身" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="拿不到单实例锁：日志写明已有实例在运行，退出码 1" */}
+
+单实例锁本身是 Electron 提供的，只能实机验证：用同一个 `GWB_HOME` 启动两次，第二次退出码是 1、`runtime.json` 里仍是第一个实例的 pid。

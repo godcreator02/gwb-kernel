@@ -62,6 +62,12 @@ description: 连接内核应用与任何插件；接口是内核应用在 cordis
 
 ## 测试
 
-`kernel` 对象依赖窗口，没有单元测试；它的形状由类型检查保护：对象的类型标成词汇表包的 `GwbKernelApi`，仓根 `pnpm check` 先构建词汇表包再做类型检查，对不上就失败。行为只能在隔离 home 里实机验证（见[开发](/docs/develop)）：插件读到的 `dataDir` 是 home 的真实路径，`emit` 的事件页面收得到，装上外壳插件后页面被接管、卸载后回到只读状态页。
+`kernel` 对象的形状由类型检查保护：对象的类型标成词汇表包的 `GwbKernelApi`，仓根 `pnpm check` 先构建词汇表包再做类型检查，对不上就失败。行为由 `apps/desktop/tests/main.test.ts` 保护：electron 换成假的，一个测试插件从 `cordis.yml` 加载进来取到 `gwbKernel`，证明 `dataDir` 是 home 的真实路径、`version` 是内核包的版本、`emit` 推到页面、`setShell` 后调用的替换先调用的、撤销只在自己仍是当前外壳时清空。
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="插件拿到 gwbKernel" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="emit 推 gwb:event；setShell 立刻推整份状态" */}
+
+装上真的外壳插件后页面被接管、卸载后回到只读状态页，只能在隔离 home 里实机验证（见[开发](/docs/develop)）。
 
 {/* has file="../apps/desktop/src/main.ts" text="const kernel: GwbKernelApi = {" */}

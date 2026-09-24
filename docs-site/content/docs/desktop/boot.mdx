@@ -54,4 +54,10 @@ description: 内核一次启动按什么顺序做事、哪几处顺序不能换�
 
 ## 怎么验证
 
-启动顺序与退出清理没有单元测试，只能从源码启动、在隔离 home 里实机验证（做法见[开发](/docs/develop)）：看 `gwb.log` 里「up」那一行与各条目的状态；退出时看「清理完成，退出」那一行，以及插件启动的子进程是否都已结束。
+`apps/desktop/tests/main.test.ts` 把 electron 换成假的、cordis 与 loader 用真的，在临时 home 上证明：ready 之后去掉默认菜单、按上面的选项创建窗口、加载完写「up」一行；启动失败写日志、弹错误框、退出码 1；没被处理的异常只写 error 日志、不退出；退出时先拦下、卸载插件树（插件的清理执行完）、写「清理完成，退出」再退出，第二次进入直接放行。
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="启动失败：写一行 error、弹错误框" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="will-quit：先拦下退出，卸载整棵插件树" */}
+
+真实窗口里的显示、清理超时强制退出、插件启动的子进程是否都已结束，只能从源码启动、在隔离 home 里实机验证（做法见[开发](/docs/develop)）。

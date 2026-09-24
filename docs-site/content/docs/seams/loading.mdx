@@ -74,7 +74,7 @@ export function apply(ctx: GwbContext): void { /* … */ }
 
 ## 测试
 
-包名解析由 `apps/desktop/tests/bare-import.test.ts` 保护：用手工构造的临时 home 证明主入口、带 scope 的包、子路径都能解析并 import，链接改指向新版本后拿到新版本，包不存在时报错并带完整路径。loader 条目树的行为由插件管理在 devkit 仓里的测试保护（见[home 布局与条目树](/docs/seams/home)）；加载顺序、运行中重新加载、退出清理只能在隔离 home 里实机验证（见[开发](/docs/develop)）。
+包名解析由 `apps/desktop/tests/bare-import.test.ts` 保护：用手工构造的临时 home 证明主入口、带 scope 的包、子路径都能解析并 import，链接改指向新版本后拿到新版本，包不存在时报错并带完整路径。loader 条目树的行为由插件管理在 devkit 仓里的测试保护（见[home 布局与条目树](/docs/seams/home)）；内核按 `cordis.yml` 从 home 加载插件、插件拿到 `gwbKernel`、退出时卸载整棵插件树，由 `apps/desktop/tests/main.test.ts` 用真的 loader 与 include 验证；运行中重新加载只能在隔离 home 里实机验证（见[开发](/docs/develop)）。
 
 {/* has file="../apps/desktop/tests/bare-import.test.ts" text="裸名解析并 import 成功" */}
 
