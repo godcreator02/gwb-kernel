@@ -2,12 +2,6 @@
 // `ShellBoot` 与 `Window` 用到 DOM 类型；写在声明里，插件的 tsconfig 不带 DOM 库、且关掉 skipLibCheck 时也能通过类型检查
 import type { Context } from 'cordis'
 
-/**
- * 内核的词汇表：插件与页面用到的内核接口的类型。只有类型，没有运行时代码。
- * 插件与内核之间的全部契约都在这里：主进程一侧是 `gwbKernel`，页面一侧是 `window.gwb` 的三个函数，
- * 外壳是一个默认导出的形状。
- */
-
 /** 命令的回执形状 */
 export interface GwbResult<T = unknown> {
   ok: boolean
@@ -15,7 +9,7 @@ export interface GwbResult<T = unknown> {
   error?: string
 }
 
-/** 内核挂在根上下文的服务，只有内核提供、永不撤销。直接取 `ctx.gwbKernel`（不写进 `inject`） */
+/** 内核在根上下文上提供的服务，只有内核提供、永不撤销。直接取 `ctx.gwbKernel`（不写进 `inject`） */
 export interface GwbKernelApi {
   /** 这个 home 的目录 */
   dataDir: string
