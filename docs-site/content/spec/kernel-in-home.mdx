@@ -68,8 +68,7 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 
 **第三步：各插件（随定案第三期）**：`gwb.testedKernel` 换成 peer 内核包
 
-**第四步：发布（每一项动手前问人）**：内核的版本号升哪一位先问人（home 布局变了按规矩升 x，但词汇表包没改、与内核同版本号的规矩会让它
-也跟着升 x）→ 内核包与词汇表包发到团队源 → `INSTALL.md` 与 README 改成往 home 里装内核包与 `cordis`（在这之前它们描述的是已发布的旧安装包，
+**第四步：发布（每一项动手前问人）**：~~内核的版本号升哪一位先问人~~（人定：两个都升 0.3.0）→ ~~内核包与词汇表包发到团队源~~（已发）→ `INSTALL.md` 与 README 改成往 home 里装内核包与 `cordis`（在这之前它们描述的是已发布的旧安装包，
 团队源上没有内核包，提前改了照着装会 404）→ default home 的 `package.json` 加内核包与 `cordis`
 （旧安装包仍从 `app.asar` 加载内核，不读 home 里这份，先加没有影响）→ 装新安装包 → 插件逐个按第三步重发
 
@@ -77,6 +76,12 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 
 新的在上。
 
+- 2026-09-24｜第四步的「发内核包」提前做（第二步的 `home.new`、插件写 peer 内核包、升内核命令都要源上先有它）：人决定内核与词汇表包都升 0.3.0。
+  发之前往依赖词汇表包的 13 个仓的 `inbox.mdx` 投了「要追 0.3.0」（dev 抬到 `^0.3.0`、peer 删掉词汇表包、预告改用 peer 写内核包），没有收件页的
+  gwb-agent-hooks-skills 放进总控台中转站；devkit 与界面插件两个仓在第二步里一起改。`devkit.release` 发出 `@godcreator/gwb-plugin-api@0.3.0`、
+  `@godcreator/gwb-kernel-desktop@0.3.0`。从源上装进新的隔离 home `kernel-from-registry-2609241444`：只有一份 cordis，`win-unpacked` 启动后
+  `runtime.json` 报 0.3.0、插件就绪、0 条 error。default 没动；default 里残留的词汇表包 0.2.7 是直接依赖，一键更新会把它升到 0.3.0，
+  各插件 peer `^0.2.7` 随之报警告（只警告、照装，词汇表包只有类型）｜总控台会话
 - 2026-09-24｜第一步完成：`build.ps1` 打出 `gwb-setup-0.1.0.exe`（版本号是启动器的），`win-unpacked\gwb-kernel.exe` 从隔离 home `kernel-in-home-2609241429`
   启动内核，`runtime.json` 的 `appDir` 是 `win-unpacked\resources\app.asar`，`gwb.log` 有 `kernel up`、命令插件与 logger 就绪、0 条 error，关窗口后正常清理退出。
   下一步是 devkit 仓｜总控台会话
