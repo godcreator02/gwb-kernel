@@ -69,11 +69,23 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 - [x] 界面插件仓的插件管理窗格跟着回执字段 `kernelRange` 改
 - [ ] devkit 与插件管理发版（插件管理回执改名是破坏性变更，版本号发之前问人），装进 default
 
+**第二步收尾依赖第四步的前两项**（人同意提前做，2026-09-24）：default 里的旧 devkit 按旧规则拒发新版的两个插件，新 devkit 要求运行中的是内核 0.3.x；
+所以先在隔离 home 用新启动器跑一份与 default 相同的插件集验证，再给 default 装内核包与 `cordis`、装新安装包；然后用旧 devkit 的 `devkit.dev`
+把新 devkit 的开发版装进一个跑内核 0.3.0 的隔离 home，经 CDP 在那里调新 devkit 的 `devkit.release` 发正式版。版本号：插件管理 0.8.0（回执字段改名，
+`contract` 加一）、devkit 0.18.9（命令名与参数不变，检查规则变）、界面插件 baseui 升 y
+
 **第三步：各插件（随定案第三期）**：`gwb.testedKernel` 换成 peer 内核包
 
 **第四步：发布（每一项动手前问人）**：~~内核的版本号升哪一位先问人~~（人定：两个都升 0.3.0）→ ~~内核包与词汇表包发到团队源~~（已发）→ `INSTALL.md` 与 README 改成往 home 里装内核包与 `cordis`（在这之前它们描述的是已发布的旧安装包，
 团队源上没有内核包，提前改了照着装会 404）→ default home 的 `package.json` 加内核包与 `cordis`
 （旧安装包仍从 `app.asar` 加载内核，不读 home 里这份，先加没有影响）→ 装新安装包 → 插件逐个按第三步重发
+
+**第五步：react 收进内核**（人决定现在做，2026-09-24；原是 devkit 定案第五期、排在它第三期之后）
+
+- [ ] 内核包依赖 react 与 react-dom，importmap 里 react 的四个包名由内核直接给；同名时内核优先，插件对这几个名字的 `gwb.shared` 声明忽略并记一条 warn，
+  新内核配旧 shell 也不冲突
+- [ ] shell 撤掉 react 与它的 `gwb.shared`；`gwb.shared` 机制留给 block-note，等它按定案第三期撤掉声明后再删
+- [ ] 现状页（页面上的包名、关键设计、接缝图）与 devkit 定案第五期改写；写轨迹卡
 
 ## 进度
 
