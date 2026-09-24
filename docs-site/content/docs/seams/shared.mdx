@@ -25,7 +25,17 @@ description: 连接内核应用与在包清单里声明 gwb.shared 的包；接�
 
 {/* ref file="../apps/desktop/package.json" lines="10-31" */}
 
-这四个文件由 `scripts/build-react.ts` 在构建时用 esbuild 把 react 与 react-dom 打成浏览器能直接 import 的 ESM；react-dom 两个文件把 `react` 外置，页面上四个名字共用同一个 react 实例。
+这四个文件由 `scripts/build-react.ts` 在构建时用 esbuild 把 react 与 react-dom 打成浏览器能直接 import 的 ESM；react-dom 两个文件把 `react` 外置，页面上四个名字共用同一个 react 实例。打包有三处容易出错：
+
+- **react 没有 ESM 入口**：react 19 的包清单 `exports` 只有 `react-server` 与 `default`，`default` 指向 CJS 的 `index.js`，所以不能把 home 里的 react 按包名直接交给浏览器，必须先打包
+- **只能用 esbuild**：rolldown 在 browser 平台对「CJS 里 require 一个外置的包」有意保留 `require`，浏览器里没有 `require`，产物一加载就报错；esbuild 会把它提升成顶层 `import`
+- **react-dom 在工厂函数内部 `require('react')`**：esbuild 提不到顶层，产物里留一个 `__require` 探针。构建脚本在文件头加一句 `import * as __gwb_react from "react"`，再把探针换成只认 react 的同步解析器（返回 `default`，react-dom 要用 React 的内部成员）。认的是 esbuild 生成代码的样子，认不出就让构建失败，不把带探针的产物发出去：
+
+{/* ref file="../apps/desktop/scripts/build-react.ts" lines="22-44" */}
+
+入口文件里具名导出要逐个列出：esbuild 从 react 的 CJS 转发链上推不出具名成员，只打出一个 `default`。名单少一个，用到它的窗格加载时报「does not provide an export named」、整个窗格空白，构建与类型检查都发现不了；`apps/desktop/tests/react-bundles.test.ts` 查产物里没有探针、react-dom 的修补在、`react.js` 的具名导出齐。
+
+{/* has file="../apps/desktop/tests/react-bundles.test.ts" text="四个文件都在，里面没有 require 探针" */}
 
 内核应用把声明拼成一张普通的 importmap（形如 `{ "react": "file:///…/node_modules/.pnpm/…/dist/react/react.js", … }`）。内核自己的那几条在进程启动时算一次，解析不到就启动失败——那说明内核包本身不完整：
 

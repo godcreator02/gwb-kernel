@@ -7,7 +7,7 @@ description: 验收标准：插件的 cordis 与内核用的是 home 里同一�
 
 **本页回答**：把内核从 `app.asar` 挪进每个 home 的 `node_modules` 要改什么、换来什么、要推翻哪些已有决定、分几步做、做到哪儿了。
 
-**状态：人已决定做（2026-09-24），五条待决定按推荐定下；第一步（内核仓）、第二步（devkit 仓）已完成；第四步做完了前三项；第五步（react 收进内核）待做。**
+**状态：人已决定做（2026-09-24），五条待决定按推荐定下；第一步（内核仓）、第二步（devkit 仓）、第五步（react 收进内核）已完成；第四步做完了前三项；第三步（各插件迁移）待发通知。**
 
 ## 由来
 
@@ -74,22 +74,31 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 把新 devkit 的开发版装进一个跑内核 0.4.0 的隔离 home，经 CDP 在那里调新 devkit 的 `devkit.release` 发正式版。版本号：插件管理 0.8.0（回执字段改名，
 `contract` 加一）、devkit 0.18.9（命令名与参数不变，检查规则变）、界面插件 baseui 0.1.11
 
-**第三步：各插件（随定案第三期）**：`gwb.testedKernel` 换成 peer 内核包
+**第三步：各插件（随定案第三期）**：`gwb.testedKernel` 换成 peer 内核包。通知里要写明：带界面的插件把 dev 里的外壳抬到 `^0.13.7` 时，
+peer 必须同时写上内核包——外壳 0.13.7 起不再声明 react，devkit 的发版检查改从装着的内核包清单读 react 的四个包名，
+插件的 `node_modules` 里没有内核包就会报「importmap 里没有 react」
 
-**第四步：发布（每一项动手前问人）**：~~内核的版本号升哪一位先问人~~（人定：两个都升 0.3.0）→ ~~内核包与词汇表包发到团队源~~（已发）→ `INSTALL.md` 与 README 改成往 home 里装内核包与 `cordis`（在这之前它们描述的是已发布的旧安装包，
+**第四步：发布（每一项动手前问人）**：~~内核的版本号升哪一位先问人~~（人定：两个都升 0.3.0）→ ~~内核包与词汇表包发到团队源~~（已发）→ `INSTALL.md` 与 README 改成往 home 里装内核包与 `cordis`，「react 随 `gwb-shell` 装上」那句一起改成随内核包（在这之前它们描述的是已发布的旧安装包，
 团队源上没有内核包，提前改了照着装会 404）→ ~~default home 的 `package.json` 加内核包与 `cordis`~~（已做）→ ~~装新安装包~~（已装）→ 插件逐个按第三步重发
 
 **第五步：react 收进内核**（人决定现在做，2026-09-24；原是 devkit 定案第五期、排在它第三期之后）
 
-- [ ] 内核包依赖 react 与 react-dom，importmap 里 react 的四个包名由内核直接给；同名时内核优先，插件对这几个名字的 `gwb.shared` 声明忽略并记一条 warn，
+- [x] 内核包依赖 react 与 react-dom，importmap 里 react 的四个包名由内核直接给；同名时内核优先，插件对这几个名字的 `gwb.shared` 声明忽略并记一条 warn，
   新内核配旧 shell 也不冲突
-- [ ] shell 撤掉 react 与它的 `gwb.shared`；`gwb.shared` 机制留给 block-note，等它按定案第三期撤掉声明后再删
-- [ ] 现状页（页面上的包名、关键设计、接缝图）与 devkit 定案第五期改写；写轨迹卡
+- [x] shell 撤掉 react 与它的 `gwb.shared`；`gwb.shared` 机制留给 block-note，等它按定案第三期撤掉声明后再删
+- [x] 现状页（页面上的包名、关键设计、接缝图）与 devkit 定案第五期改写；写轨迹卡
+- [ ] default 升级：先 `plugin-manager.update-kernel {"version":"0.4.1"}` 并重启，再升外壳到 0.13.7。顺序反了页面上没有 react，外壳起不来
 
 ## 进度
 
 新的在上。
 
+- 2026-09-24｜第五步完成。人定内核与词汇表包 0.4.1、外壳升 y（0.13.6 被另一个会话占用，发的是 0.13.7）。内核包构建时用 esbuild 把 react 打进
+  `dist/react/`，在自己清单的 `gwb.shared` 里声明四个包名，启动时解析、importmap 里内核优先，插件的同名声明忽略并记一条 warn（同一句只记一次）；
+  根目录 `pnpm check` 改成先构建内核包（轨迹卡「react 收进内核」）。外壳 0.13.7 撤掉 react 与 `gwb.shared`，peer 写内核包 `^0.4.1`。实测：
+  隔离 home `kernel-dev-2609241631` 先用内核开发版配旧外壳 0.13.5，再换正式版内核 0.4.1 配外壳开发版，两次 importmap 的 react 都指向内核包
+  `dist/react/`，插件管理窗格正常显示，日志没有 error。devkit 的发版检查与 `devkit.capabilities` 本来就读依赖（含 peer）的 `gwb.shared`，不用改。
+  default 还没升：内核要重启才生效，由人决定｜总控台会话
 - 2026-09-24｜第二步完成。`devkit.release` 发出插件管理 0.8.0、devkit 0.18.9；界面插件 baseui 0.1.11（peer 写内核包 `^0.4.0`、删掉 `gwb.testedKernel`；
   同仓的外壳与外观只把 dev 的词汇表包与 cordis 跟到同一组，不然同一个工作区里两份 cordis 的类型增强对不上）；default 用 `plugin-manager.update-all`
   升上这三个，`list` 里三个包都读出 `kernelRange: ^0.4.0`。`devkit.dev` 能发内核包（devkit 0.18.10，已装进 default）：内核包连同它 peer 里的 `cordis`
