@@ -38,7 +38,7 @@ const config = {
     // 现状区按接缝重写（2026-09-23）：边界并进关键设计，六个模块页并进四条接缝与系统地图
     { source: '/docs/boundary', destination: '/docs/design', permanent: true },
     { source: '/docs/kernel', destination: '/docs/desktop', permanent: true },
-    { source: '/docs/kernel/home', destination: '/docs/desktop/home', permanent: true },
+    { source: '/docs/kernel/home', destination: '/docs/desktop', permanent: true },
     { source: '/docs/kernel/loading', destination: '/docs/seams/loading', permanent: true },
     { source: '/docs/kernel/contract', destination: '/docs/vocab', permanent: true },
     { source: '/docs/kernel/importmap', destination: '/docs/seams/shared', permanent: true },
@@ -63,7 +63,10 @@ const config = {
     { source: '/docs/map', destination: '/docs', permanent: false },
     { source: '/docs/seams', destination: '/docs', permanent: false },
     { source: '/docs/seams/plugins', destination: '/docs/seams/loading', permanent: false },
-    { source: '/docs/seams/commands', destination: '/docs/seams/ipc', permanent: false },
+    // home 的准备、日志文件、只读状态页并进内核应用首页
+    { source: '/docs/desktop/home', destination: '/docs/desktop', permanent: false },
+    { source: '/docs/desktop/log-file', destination: '/docs/desktop', permanent: false },
+    { source: '/docs/desktop/status-page', destination: '/docs/desktop', permanent: false },
   ],
   // 旧配置曾把 /docs 永久重定向到 /docs/system-map，浏览器缓存着那条 308：这里再重定向回 /docs
   // 就成环。改写不发 30x，缓存了旧跳转的浏览器也看得到入口页

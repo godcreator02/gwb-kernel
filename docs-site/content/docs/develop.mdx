@@ -1,9 +1,9 @@
 ---
 title: 开发
-description: 改内核本身时怎么准备、怎么从源码启动、隔离 home 里的插件从哪来、构建做了什么、提交前跑哪些检查、怎么在隔离 home 里验证、怎么打安装包（打包流程、不能删的检查、打完怎么验证）、怎么发版与发布到 gitea releases
+description: 改内核本身时怎么准备、怎么从源码启动、隔离 home 里的插件从哪来、构建做了什么、提交前跑哪些检查、每个测试文件证明什么、怎么在隔离 home 里验证、内核包怎么打包 react、怎么打安装包（打包流程、不能删的检查、打完怎么验证）、怎么发版与发布到 gitea releases
 ---
 
-**本页回答**：什么时候才进这个仓；第一次怎么准备；怎么从源码启动内核、隔离 home 里的插件从哪来、构建时做了什么；提交前跑哪些检查；怎么在隔离 home 里验证；怎么打安装包、打包脚本一步步做了什么、哪几道检查不能删、打完怎么验证；发版按什么顺序做、版本号升哪一位、怎么发布到 gitea releases。
+**本页回答**：什么时候才进这个仓；第一次怎么准备；怎么从源码启动内核、隔离 home 里的插件从哪来、构建时做了什么；提交前跑哪些检查；每个测试文件证明什么、哪些只能实机验证；怎么在隔离 home 里验证；内核包怎么把 react 打成页面能用的文件；怎么打安装包、打包脚本一步步做了什么、哪几道检查不能删、打完怎么验证；发版按什么顺序做、版本号升哪一位、词汇表包改动的规则、怎么发布到 gitea releases。
 
 ## 什么时候进这个仓
 
@@ -27,18 +27,18 @@ $env:GWB_HOME = '<这次验什么>-<yyMMddHHmm>'
 cd apps\desktop; pnpm start
 ```
 
-`GWB_HOME` 每次验证给一个新名字，home 会建在 `%APPDATA%\gwb-kernel\homes\<名字>`；**不设就是 `default`**，同一个 home 已有实例在运行时这次启动会直接退出（[home 的准备与单实例锁](/docs/desktop/home)）。
+`GWB_HOME` 每次验证给一个新名字，home 会建在 `%APPDATA%\gwb-kernel\homes\<名字>`；**不设就是 `default`**，同一个 home 已有实例在运行时这次启动会直接退出（[内核应用](/docs/desktop)）。
 
 ### 隔离 home 里的插件从哪来
 
-内核不带插件，全新的 home 里 `cordis.yml` 是空表：启动后页面只显示[只读状态页](/docs/desktop/status-page)，页面发来的命令都回「没有命令服务」。要验证命令、外壳、插件管理这些，先往这个 home 里装上命令插件等插件，两种做法：
+内核不带插件，全新的 home 里 `cordis.yml` 是空表：启动后页面只显示[只读状态页](/docs/desktop)，页面发来的命令都回「没有命令服务」。要验证命令、外壳、插件管理这些，先往这个 home 里装上命令插件等插件，两种做法：
 
 - **用 devkit**：`devkit.home.new {"short":"<这次验什么>"}` 新建一个隔离 home，装好内核包（运行这条命令的内核那个版本）、内核要的 `cordis`，以及命令插件、外壳、数据、设置、说明书、插件管理、基础窗格这一套基础插件，并用安装版的启动器打开它。关掉那个窗口，再把 `GWB_HOME` 设成它返回的 home 名，从源码启动
 - **照 `INSTALL.md` 手动装**：在 home 目录里写 `cordis.yml` 的条目、用机器上的 pnpm `pnpm add` 对应的包，步骤与仓根 `INSTALL.md` 第 3 步相同，只把 home 目录换成这个隔离 home
 
 ### 构建做了什么
 
-`pnpm start` 先构建再启动 electron。构建依次是：词汇表包 `tsc`，内核 `tsc`，把页面的两个文件 `index.html`、`preload.cjs` 从 `src/` 复制进 `dist/`，最后运行 `scripts/build-react.ts`，用 esbuild 把 react 的四个包名打进 `dist/react/`，页面的 importmap 用的就是它们（[页面上的包名](/docs/seams/shared)）：
+`pnpm start` 先构建再启动 electron。构建依次是：词汇表包 `tsc`，内核 `tsc`，把页面的两个文件 `index.html`、`preload.cjs` 从 `src/` 复制进 `dist/`，最后运行 `scripts/build-react.ts`，用 esbuild 把 react 的四个包名打进 `dist/react/`，页面的 importmap 用的就是它们（见下面[内核包怎么打包 react](#内核包怎么打包-react)）：
 
 {/* ref file="../apps/desktop/package.json" lines="33-37" */}
 
@@ -49,7 +49,32 @@ cd apps\desktop; pnpm start
 - **`pnpm check`**（仓根）：先构建内核包（连同词汇表包与 react 的打包产物：`main.test.ts` 用真实的打包产物启动内核），再对全仓做类型检查、lint 和测试。测试是 `apps`、`packages`、`installer` 下各 `tests/` 目录里的测试（`installer` 那一个要调用本机的 pwsh 7）；词汇表包的类型写坏了，内核的类型检查跟着失败
 - **`pnpm doc`**（仓根）：文档站的检查，不在 `pnpm check` 里：文档页引用的代码改了、生成物和正本不一致，都会报出来。引用的代码改了、页上的说法仍成立时，先提交代码，再只点名自己改过的页确认：`pnpm doc:confirm <页的路径…>`（路径相对 `docs-site/`）。不带路径会把别人还没复核的页一起确认掉
 
-每个机制有哪些测试、证明什么，写在各页的「怎么测」或「怎么验证」一节，从[内核应用](/docs/desktop)的功能列表进去。
+## 测试
+
+测试都用 vitest，由仓根 `pnpm test`（`pnpm check` 的最后一步）运行。每条接缝由哪些测试保护，写在各接缝页的「测试」一节；下表按文件列出各自证明什么：
+
+| 测试文件 | 证明什么 |
+| --- | --- |
+| `apps/desktop/tests/main.test.ts` | electron 换成假的，cordis 与 loader 用真的，用真实的 react 打包产物，在临时 home 上重新求值 `main.ts`：名字与路径两种写法选定 home、缺文件时补最小形态且不覆盖已有的、userData 在 `<home>/electron`；拿不到单实例锁时写一行 error、退出码 1，第二个实例启动时把窗口调到前面；`runtime.json` 的字段；启动顺序与启动失败（见[启动与退出](/docs/desktop/boot)）；页面 console 进日志；IPC 通道与命令转交；`gwbKernel` 的四个成员；importmap；插件写 error 日志后去抖推送一次只读状态页的数据；退出时卸载插件树 |
+| `apps/desktop/tests/log-file.test.ts` | 在临时目录里用真的文件系统、不打桩：`GWB_LOG_LIMIT_MB` 怎么解析；到上限轮转、只留一份旧的，轮转后写的行进新文件；启动时已超上限的文件第一行日志就轮转；上限 0 不轮转；轮转失败、打不开、写不进都不抛，写不进只告警一次。轮转失败用「目标文件的位置被一个目录占着」制造，这是 Windows 上真会遇到的形态 |
+| `apps/desktop/tests/entry-state.test.ts` | 手工构造条目：只读状态页上每种条目状态说成什么（停用、没有 fiber、等待中缺哪个服务、失败的第一行、认不出的状态数字） |
+| `apps/desktop/tests/index-html.test.ts` | 页面入口：importmap 只注入一次；只读状态页画出一句说明、home、每个条目一行、错误行；外壳挂载、替换、撤销，外壳启动失败时回到只读状态页 |
+| `apps/desktop/tests/preload.test.ts` | 页面上只有一个 `window.gwb`、正好三个函数，各自走哪个通道 |
+| `apps/desktop/tests/bare-import.test.ts`、`imports.test.ts` | 按 home 解析包名（含 scoped 包、链接换指向后拿到新版本）；importmap 怎么拼（见[页面上的包名](/docs/seams/shared)） |
+| `apps/desktop/tests/react-bundles.test.ts` | react 的打包产物，见下面[内核包怎么打包 react](#内核包怎么打包-react) |
+| `apps/launcher/tests/launch-plan.test.ts` | 在临时目录上证明：启动器选 home 的规则和内核的逐个输入结果相同；home 里没有内核包、清单不是合法 JSON、没声明 `engines.electron`、Electron 版本不满足、没有 `main` 时各自拒绝并说明原因；版本满足时给出内核包的入口文件；启动器带的 Electron 满足内核包声明的范围 |
+| `installer/tests/make-icon.test.ts` | 见下面「打安装包」里的[验证](#验证) |
+
+{/* has file="../apps/launcher/tests/launch-plan.test.ts" text="和内核选 home 的规则逐个输入结果相同" */}
+
+{/* has file="../apps/launcher/tests/launch-plan.test.ts" text="启动器带的 Electron 满足内核包声明的 engines.electron" */}
+
+{/* has file="../apps/desktop/tests/log-file.test.ts" text="轮转没成不致命" */}
+
+测试覆盖不到、要留意的几处：
+
+- **只读状态页的条目状态名**：cordis 的 fiber 状态是 `const enum`，本仓的编译设置下引用不到，`entry-state.ts` 照它的定义抄了一份名字表，没有测试核对。升级 cordis 时对照它的 `FiberState` 声明看一遍
+- **只能实机验证的**：真实窗口里画出来的样子、单实例锁本身（同一个 `GWB_HOME` 启动两次，第二次退出码 1、`runtime.json` 仍是第一个实例的 pid）、插件清理超过 5 秒时照常退出、启动器弹框与从 home 真的加载起内核，都在隔离 home 里验证，做法见下一节
 
 ## 在隔离 home 里验证
 
@@ -75,9 +100,25 @@ devkit.dev {"home":"<隔离 home 名>","dir":"<本仓根>","packages":["apps/des
 
    内核把调试端口写进 home 的 `runtime.json`（[runtime.json](/docs/seams/runtime)），`devkit.cdp` 从那里找到它；后一个开关让窗口被遮住时页面照常刷新，截图不会拿到旧画面
 2. 用 `devkit.cdp` 在这个 home 的页面上调命令、截图、读页面状态，例如 `devkit.cdp {"args":["<home 名>","cmd","plugin-manager.list"]}`
-3. 看结果：home 里的 `gwb.log`；没有外壳或外壳启动失败时，页面上的[只读状态页](/docs/desktop/status-page)列出每个条目加载到哪一步
+3. 看结果：home 里的 `gwb.log`；没有外壳或外壳启动失败时，页面上的[只读状态页](/docs/desktop)列出每个条目加载到哪一步
 
 实验材料放 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm workspace。
+
+## 内核包怎么打包 react
+
+页面上的 react 由内核包提供（[页面上的包名](/docs/seams/shared)）。构建的最后一步 `scripts/build-react.ts` 用 esbuild 把 react 与 react-dom 打成浏览器能直接 import 的 ESM，写进 `dist/react/` 的四个文件：`react.js`、`react-jsx-runtime.js`、`react-dom.js`、`react-dom-client.js`，内核包清单的 `exports` 与 `gwb.shared` 指向它们。react 与 react-dom 是内核包的开发依赖，升级 react 就是发一版内核。
+
+- **为什么要打包**：react 19 的清单 `exports` 只有 `react-server` 与 `default` 两个条件，`default` 指向 CJS 的 `index.js`，浏览器不能直接 import
+- **为什么用 esbuild**：rolldown 在 browser 平台对「CJS 里 require 一个外置的包」保留 `require`，浏览器里没有 `require`，产物一加载就报错；esbuild 会把它提升成顶层 `import`
+- **react-dom 的两个文件把 `react` 外置**：四个包名共用同一个 react 实例，页面的 importmap 把 `react` 指到 `react.js`
+- **替换 `__require` 探针**：react-dom 在工厂函数内部调 `require('react')`，esbuild 提不到顶层，产物里留一个 `__require` 探针，在浏览器里一运行就报错。构建脚本在这两个文件头加一句 `import * as __gwb_react from "react"`，再把探针换成只认 `react` 的同步解析器：返回 `__gwb_react.default`（react-dom 要用 React 的内部成员，要的是 CJS 的 `module.exports` 原对象），遇到别的名字就抛错。脚本按 esbuild 生成代码的样子认这个探针，产物里有 `__require` 却认不出来时构建失败，不把带探针的产物发出去
+- **入口文件逐个列出具名导出**：`src/react/` 下四个入口各自 import 对应的包，再一个一个 `export const`。esbuild 从 react 的 CJS 转发链上推不出具名成员，直接打只有一个 `default`。名单对齐 `@types/react` 19 的稳定 API，react 加了新 API 就补一行；少一个的话，用到它的窗格加载时报「does not provide an export named …」、整个窗格空白，构建与类型检查都发现不了
+
+{/* ref file="../apps/desktop/scripts/build-react.ts" lines="22-43" */}
+
+**测试**：`apps/desktop/tests/react-bundles.test.ts` 读真实的产物（仓根 `pnpm check` 先构建内核包），查三件事：四个文件里都没有 `typeof require` 探针；react-dom 的两个文件以那句 import 开头、带着修补后的 `__require`；`react.js` 的具名导出里有 `default`、`useState`、`useEffect`、`createElement`、`useEffectEvent`。`imports.test.ts` 另外查内核包清单的四个声明指到打包脚本产出的文件。
+
+{/* has file="../apps/desktop/tests/react-bundles.test.ts" text="react.js 带具名导出" */}
 
 ## 打安装包
 
@@ -133,12 +174,13 @@ pwsh installer\scripts\build.ps1
 升哪一位版本号、依赖怎么写、发破坏性版本要多做什么，正本是 devkit 的说明书 `gwb-release`，**每次升版本号之前都读一遍**，这里只列本仓的要点：
 
 1. **隔离 home 里验证通过**，`pnpm check`、`pnpm doc` 都通过
-2. **升版本号并提交**：`apps/desktop/package.json` 与 `packages/gwb-plugin-api/package.json` 写同一个号（[词汇表包](/docs/vocab#版本号与发版)）。git 工作区要干净。升哪一位按改没改接缝判断：
-   - **改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）：九条接缝上已有的任何一样被改名、删除、改了形状或含义——词汇表包里的类型、IPC 通道、`gwb.shared` 的读法、home 布局、`runtime.json` 的字段、日志行格式、内核包清单的 `engines.electron`——以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include`、`cordis` 的版本（拿不准会不会弄坏插件管理，一律按会弄坏算）。插件在 peer 里写内核包的 `^` 范围，插件管理拿它和运行中的内核比（[插件在 peer 里写兼容哪个内核](/docs/design#插件在-peer-里写兼容哪个内核)）；升了 x，所有插件的范围都不再包含新内核，要先照 `gwb-release` 通知下游
+2. **升版本号并提交**：`apps/desktop/package.json` 与 `packages/gwb-plugin-api/package.json` 写同一个号：[词汇表包](/docs/vocab)与内核同版本号，一起升。git 工作区要干净。升哪一位按改没改接缝判断：
+   - **改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）：十条接缝上已有的任何一样被改名、删除、改了形状或含义——词汇表包里的类型、IPC 通道、`gwb.shared` 的读法、home 布局、`runtime.json` 的字段、日志行格式、内核包清单的 `engines.electron`——以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include`、`cordis` 的版本（拿不准会不会弄坏插件管理，一律按会弄坏算）。插件在 peer 里写内核包的 `^` 范围，插件管理拿它和运行中的内核比（[插件在 peer 里写兼容哪个内核](/docs/design#插件在-peer-里写兼容哪个内核)）；升了 x，所有插件的范围都不再包含新内核，要先照 `gwb-release` 通知下游
    - **只给接缝加东西（加类型、加可选字段）、只改内核内部或修 bug，升 y**：插件的 `^` 范围仍然包含新内核
+   - **词汇表包对插件只增不减**：能加一个可选字段、一个类型解决的，不删名字、不改形状（参数、返回值、回执字段的类型或含义）、不改调用方依赖的语义；非改不可时，照 `gwb-release` 的「发破坏版多做两步」先通知下游。契约之外的东西（日志行的格式、命令插件与插件管理的类型）不放进词汇表包。本仓 `pnpm check` 先构建它、再对内核做类型检查，所以内核这一侧当场发现形状不对；仓外的插件与页面代码要等它发到团队包源、装上新版之后，才在各自仓的类型检查里发现
 3. **发词汇表包与内核包到团队包源**：`devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api","apps/desktop"]}`（按依赖序），别在包目录手动 `pnpm publish`
 4. **启动器或 Electron 变了才打安装包、发布到 gitea releases**：打包见上面[打安装包](#打安装包)。发布仓 `godcreator/gwb-kernel` 公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包；push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
    - **release 只上传 `gwb-setup-<版>.exe`**：便携 zip 只在本地构建、不上传
    - tag 跟安装包（启动器）的版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
    - **推送 tag 会让同名的草稿 release 自动公开**：要先存草稿、人工确认后再公开，就最后推 tag
-5. **本机升级**：先在隔离 home 里装新内核包验证，再升 default home 里的内核包并重启工作台；启动器变了才重新运行新版安装包。升了 x 时，再在新内核上测插件、把它们 peer 里内核包的范围改到新内核并发版——插件发版时 `devkit.release` 会检查这个范围
+5. **本机升级**：先在隔离 home 里装新内核包验证，再升 default home 里的内核包并重启工作台；启动器变了才重新运行新版安装包。改了契约时先装新内核，再发用到新契约的插件：插件先到、内核还是旧的，插件拿到的 `gwbKernel` 就缺它要的东西。升了 x 时，再在新内核上测插件、把它们 peer 里内核包的范围改到新内核并发版——插件发版时 `devkit.release` 会检查这个范围

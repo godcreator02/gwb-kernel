@@ -1,44 +1,49 @@
 /**
- * 命令与事件：上面一行是命令从页面到插件、回执原路返回；下面一行是事件从插件推到页面。
- * 两条竖虚线是两道分界：页面与主进程之间只有 window.gwb；内核与命令总线之间内核不认识命令名。
+ * 命令转交：上面一行是命令从页面经内核应用交给命令插件，回执原路返回；下面是内核应用直接回失败回执的两种情况。
+ * 两条竖虚线是接缝 3（页面只有 window.gwb）与接缝 10（内核应用只调用 gwbCommands.run）。
  */
 
 import { Arrow, Box, Note, SeamLine } from './parts'
 
 export function CommandRelay() {
   return (
-    <svg viewBox="0 0 760 300" role="img" aria-label="命令从页面转交给命令总线，事件从插件推给页面">
-      <Note x={16} y={20} size={12} color="var(--color-fd-foreground)" weight={600}>
-        命令
+    <svg viewBox="0 0 760 266" role="img" aria-label="页面发来的命令经内核应用交给命令插件，没有命令插件时内核应用直接回失败回执">
+      <Box x={10} y={34} w={140} h={58} lines={['页面里的代码', "gwb.command('x.ping')"]} mono />
+      <Box x={180} y={34} w={120} h={58} lines={['gwb:command', 'IPC 通道']} mono />
+      <Box x={330} y={34} w={140} h={58} lines={['内核应用', '读取 ctx.gwbCommands']} />
+      <Box x={510} y={34} w={115} h={58} lines={['命令插件', 'gwbCommands.run']} tone="a" mono />
+      <Box x={645} y={34} w={105} h={58} lines={['登记了', 'x.ping 的插件']} />
+      <Arrow from={[150, 63]} to={[180, 63]} />
+      <Arrow from={[300, 63]} to={[330, 63]} />
+      <Arrow from={[470, 63]} to={[510, 63]} />
+      <Arrow from={[625, 63]} to={[645, 63]} />
+
+      <SeamLine x1={165} y1={24} x2={165} y2={104} label="接缝 3：页面只有 window.gwb" labelX={10} labelY={16} anchor="start" />
+      <SeamLine x1={490} y1={24} x2={490} y2={104} label="接缝 10：内核应用只调用 run，不认识命令名" labelX={494} labelY={16} anchor="start" />
+
+      <Note x={750} y={120} anchor="end" size={11}>
+        {'回执 { ok, data, error } 原路返回页面'}
       </Note>
-      <Box x={10} y={30} w={140} h={58} lines={['页面里的代码', "gwb.command('x.ping')"]} mono />
-      <Box x={180} y={30} w={130} h={58} lines={['gwb:command', 'IPC 通道']} mono />
-      <Box x={340} y={30} w={130} h={58} lines={['内核', '原样转交']} />
-      <Box x={500} y={30} w={115} h={58} lines={['gwbCommands', '命令插件']} tone="a" />
-      <Box x={640} y={30} w={110} h={58} lines={['注册了', 'x.ping 的插件']} />
-      <Arrow from={[150, 52]} to={[180, 52]} />
-      <Arrow from={[310, 52]} to={[340, 52]} />
-      <Arrow from={[470, 52]} to={[500, 52]} />
-      <Arrow from={[615, 52]} to={[640, 52]} />
-      <Note x={400} y={114} anchor="middle" size={11}>
-        回执 {'{ ok, data, error }'} 原路返回；home 里没有命令插件、gwbCommands 不在时，内核直接回 ok: false
+      <Note x={750} y={136} anchor="end" size={11}>
+        命令不存在、处理函数抛错，命令插件也收成 ok: false
       </Note>
 
-      <Note x={16} y={150} size={12} color="var(--color-fd-foreground)" weight={600}>
-        事件
+      <Arrow from={[400, 92]} to={[400, 152]} />
+      <Box x={300} y={152} w={200} h={62} lines={['内核应用直接回 ok: false', '命令名不是字符串', '或 ctx.gwbCommands 不存在']} />
+      <Arrow from={[300, 183]} to={[150, 183]} />
+      <Box x={10} y={156} w={140} h={54} lines={['页面收到', '{ ok: false, error }']} mono />
+      <Note x={515} y={170} size={11}>
+        gwbCommands 不存在，是因为
       </Note>
-      <Box x={500} y={160} w={250} h={58} lines={['任何插件', 'ctx.gwbKernel.emit(payload)']} mono />
-      <Box x={340} y={160} w={130} h={58} lines={['内核', '原样推送']} />
-      <Box x={180} y={160} w={130} h={58} lines={['gwb:event', '只推送、不保留']} mono />
-      <Box x={10} y={160} w={140} h={58} lines={['页面里的代码', 'gwb.on(cb)']} mono />
-      <Arrow from={[500, 189]} to={[470, 189]} />
-      <Arrow from={[340, 189]} to={[310, 189]} />
-      <Arrow from={[180, 189]} to={[150, 189]} />
+      <Note x={515} y={186} size={11}>
+        home 里没装命令插件，
+      </Note>
+      <Note x={515} y={202} size={11}>
+        或它没加载成功、已停用
+      </Note>
 
-      <SeamLine x1={165} y1={14} x2={165} y2={236} label="页面这边只有 window.gwb 的三个函数" labelX={10} labelY={250} anchor="start" />
-      <SeamLine x1={485} y1={24} x2={485} y2={94} label="内核不认识任何命令名" labelX={492} labelY={18} anchor="start" />
-      <Note x={380} y={290} anchor="middle" size={11}>
-        命令插件是 cordis.yml 里的普通插件；内核只认得 gwbCommands 这一个服务名
+      <Note x={380} y={252} anchor="middle" size={11}>
+        命令插件是 cordis.yml 里的普通插件；换成别的插件，只要它提供同名服务、run 的形状不变
       </Note>
     </svg>
   )

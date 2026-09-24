@@ -1,6 +1,6 @@
 ---
 title: 7 runtime.json
-description: 连接内核应用与工作台进程之外的读者（devkit、照 INSTALL.md 安装工作台的 agent）：内核每次启动把这次运行的 pid、启动时刻、版本、应用目录、调试端口写进 home 里的 runtime.json；内核应用与读者之间只有这份约定，没有代码接口
+description: 连接内核应用与工作台进程之外的读者（devkit、照 INSTALL.md 安装工作台的 agent）：内核每次启动把这次运行的 pid、启动时刻、版本、应用目录、调试端口写进 home 里的 runtime.json；内核应用与读者之间只有这份约定，没有代码接口；文件在不等于进程在，读者自己确认
 ---
 
 **本页回答**：`runtime.json` 里写了什么、什么时候写、谁读；内核应用和读它的程序各保证什么。
@@ -10,7 +10,7 @@ description: 连接内核应用与工作台进程之外的读者（devkit、照 
 - [内核应用](/docs/desktop)：启动时写这份文件
 - 工作台进程之外的读者，不在本仓：
   - **devkit**（插件 `gwb-devkit` 的命令）：在一个工作台里按 home 名连接另一个正在运行的工作台时，从这份文件取调试端口，并用 `pid` 确认进程还在；删除一个 home 时按 `pid` 找到要结束的进程
-  - **安装工作台的 agent**：照 `INSTALL.md` 安装，第 4 步轮询到 `mcp` 字段出现就算启动完成，核对 `version`；用 `pid` 关闭窗口（正本 `docs-site/content/outputs/install.mdx`）
+  - **安装工作台的 agent**：照 `INSTALL.md` 安装，轮询到 `mcp` 字段出现就算启动完成，核对 `version`；用 `pid` 关闭窗口（正本 `docs-site/content/outputs/install.mdx`）
 
 内核应用与读者之间没有代码接口，只靠这份约定：字段名写在内核的 `main.ts` 里，读者在各自的仓里按名字读。
 
@@ -24,11 +24,11 @@ description: 连接内核应用与工作台进程之外的读者（devkit、照 
 | `startedAt` | 启动时刻，毫秒时间戳 |
 | `version` | 内核的版本号，与 `gwbKernel.version` 相同 |
 | `appDir` | 应用目录，即 Electron 的 `app.getAppPath()`：从安装包启动是启动器所在的 `resources\app.asar`，从仓里 `pnpm start` 运行是 `apps/desktop` |
-| `cdp` | Chromium 调试端口；启动时没给 `--remote-debugging-port` 就没有这个字段 |
+| `cdp` | Chromium 调试端口；启动时没给 `--remote-debugging-port`，或给的不是 1–65535 的整数，就没有这个字段 |
 
-{/* ref file="../apps/desktop/src/main.ts" lines="83-102" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="86-94" */}
 
-调试端口只有启动进程的一方知道，页面和插件都读不到，所以要由内核写下来。没开调试端口时不写这个字段，而不是写 0 或 `null`：读的一方只要看字段在不在，不用再判断这个值有没有意义。
+调试端口只有启动进程的一方知道，页面和插件都读不到，所以由内核写下来。没开调试端口时不写这个字段，而不是写 0 或 `null`：读的一方只看字段在不在，不用再判断这个值有没有意义。
 
 MCP 入口插件 `gwb-mcp` 在它的端口开好之后往同一份文件里补一个 `mcp` 字段（MCP 入口的地址）；安装工作台的 agent 就是等这个字段出现来判断工作台启动完成。
 
@@ -36,10 +36,10 @@ MCP 入口插件 `gwb-mcp` 在它的端口开好之后往同一份文件里补�
 
 内核应用保证：
 - **每次启动整份重写**：上一次运行留下的字段（包括别的插件补写的）都会被覆盖。home 里的 `package.json`、`cordis.yml` 是缺了才补，这一份不同，它描述的是当前这个进程
-- 同一个 home 已有实例在运行时，第二个实例拿不到单实例锁就退出，**不动**这份文件
+- 同一个 home 已有实例在运行时，第二个实例拿不到单实例锁就退出，不动这份文件：`app.exit(1)` 当场结束进程，后面写文件的代码不会执行（自动化测试用的假 electron 模拟不出这一点，靠隔离 home 里实机验证）
 - 退出时不删；写入失败只记一条 warn，不影响启动
 
-{/* ref file="../apps/desktop/src/main.ts" lines="78-81" */}
+{/* has file="../apps/desktop/tests/main.test.ts" text="runtime.json 每次启动整份重写" */}
 
 读者保证：
 - **自己确认进程还在**：文件在不等于工作台在运行——崩溃、被结束的进程来不及清理，这份文件总是留着上一次的内容。至少核对 `pid` 是一个活着的进程；要用调试端口的，还要核对这个端口确实属于这个 `pid`
@@ -57,8 +57,6 @@ MCP 入口插件 `gwb-mcp` 在它的端口开好之后往同一份文件里补�
 
 内核写这份文件的那一段由 `apps/desktop/tests/main.test.ts` 保护：写哪几个字段、每次整份重写、调试端口只在是 1–65535 的整数时写进 `cdp`。
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="runtime.json 每次启动整份重写" */}
-
 {/* has file="../apps/desktop/tests/main.test.ts" text="开了合法的调试端口就写 cdp" */}
 
-读者一侧没有代码接口，只能实机验证（见[开发](/docs/develop)）：用 `--remote-debugging-port=<端口>` 在隔离 home 里启动，`pid` 是正在运行的内核进程、`cdp` 是给的那个端口，关掉工作台后文件还在。
+读者那边没有代码接口，只能实机验证（见[开发](/docs/develop)）：用 `--remote-debugging-port=<端口>` 在隔离 home 里启动，`pid` 是正在运行的内核进程、`cdp` 是给的那个端口，关掉工作台后文件还在。

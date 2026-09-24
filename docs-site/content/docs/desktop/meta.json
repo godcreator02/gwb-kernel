@@ -1,5 +1,5 @@
 {
   "title": "gwb-kernel-desktop · 内核应用",
-  "description": "apps/desktop：Electron 主进程里的内核本身——首页是模块页，其余每页讲一件事：启动与退出、home 的准备与单实例锁、日志文件、只读状态页",
-  "pages": ["index", "boot", "home", "log-file", "status-page"]
+  "description": "apps/desktop：Electron 主进程里的内核本身——首页讲它的功能、接口、依赖与不做的事，子页讲启动与退出的顺序",
+  "pages": ["index", "boot"]
 }

@@ -1,16 +1,16 @@
 ---
 title: 2 内核服务 gwbKernel
-description: 连接内核应用与任何插件；接口是内核应用在 cordis 根上下文提供的 gwbKernel——dataDir、version、emit、setShell 四样，类型在词汇表包；内核应用保证它早于任何插件提供、永不撤销，插件保证数据只写在 dataDir 下自己的目录、卸载时交还页面
+description: 连接内核应用与任何插件；接口是内核应用在 cordis 根上下文提供的服务 gwbKernel——dataDir、version、emit、setShell 四样，类型 GwbKernelApi 在词汇表包；内核应用保证它先于任何插件提供、永不撤销，插件保证数据只写在 dataDir 下自己的目录、卸载时交还页面
 ---
 
-**本页回答**：内核直接给插件的服务 `gwbKernel` 有哪几样、各自的语义；内核应用和插件在使用它时各保证什么。
+**本页回答**：内核直接给插件的服务 `gwbKernel` 有哪几样、各是什么意思；内核应用和插件使用它时各保证什么。
 
 ## 连接的模块
 
-- [内核应用](/docs/desktop)：`main.ts` 里的 `kernel` 对象，在 cordis 的根上下文上提供成 `gwbKernel`
+- [内核应用](/docs/desktop)：在 cordis 的根上下文上提供 `gwbKernel`
 - 任何插件：从 `ctx.gwbKernel` 直接取用
 
-类型在[词汇表包](/docs/vocab) `@godcreator/gwb-plugin-api` 里：只有类型、没有运行时代码，插件在开发依赖里列它、只用 `import type`。上下文上的命令服务 `gwbCommands` 不是内核服务：它由命令插件 `@godcreator/gwb-commands`（在基础插件仓）提供，类型也由命令插件导出，不在词汇表包里；内核应用只经它转交页面发来的命令（见 [IPC 通道](/docs/seams/ipc)）。
+类型在[词汇表包](/docs/vocab) `@godcreator/gwb-plugin-api` 里：只有类型，插件把它写进开发依赖、只用 `import type`。上下文上的命令服务 `gwbCommands` 不是内核服务：它由命令插件提供，内核应用只调用它转交页面发来的命令（[命令转交](/docs/seams/commands)）。
 
 ## 接口
 
@@ -18,56 +18,44 @@ description: 连接内核应用与任何插件；接口是内核应用在 cordis
 
 {/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="12-25" */}
 
-插件的 `apply` 拿到的上下文类型 `GwbContext` 上只有 `gwbKernel` 这一个服务：
+插件的 `apply` 拿到的上下文类型 `GwbContext`，上面由内核提供的只有 `gwbKernel`：
 
 {/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="27-30" */}
 
-内核应用的实现就是一个对象，在根上下文上提供：
-
-{/* ref file="../apps/desktop/src/main.ts" lines="223-237" */}
-
-- `dataDir`：这个 home 目录的真实路径（大小写、链接、斜杠写法都已统一），home 怎么选定见 [home 的准备](/docs/desktop/home)
-- `version`：内核自己的版本号，读的是内核包的清单，不是应用外层的
-- `emit(payload)`：往页面推一条事件，页面用 `window.gwb.on` 收，通道见 [IPC 通道](/docs/seams/ipc)
-- `setShell(url)`：把页面交给这个地址指向的模块，返回撤销函数；页面怎么接管见[外壳接管](/docs/seams/shell)
-
-{/* ref file="../apps/desktop/src/main.ts" lines="52-53" */}
-
-{/* ref file="../apps/desktop/src/main.ts" lines="16-20" */}
-
-内核应用在自己的代码里给 cordis 的 `Context` 写了类型声明：除了 `gwbKernel`，还写了一个可选的 `gwbCommands`，只声明转交命令用到的 `run`。没装命令插件、或它加载失败时，`gwbCommands` 不存在，内核应用转交命令前要判断这一点。
-
-{/* ref file="../apps/desktop/src/main.ts" lines="23-30" */}
+- `dataDir`：这个 home 目录的真实路径，大小写、链接、斜杠写法都已统一
+- `version`：内核包 `@godcreator/gwb-kernel-desktop` 清单里的版本号
+- `emit(payload)`：往页面推一条事件，页面用 `window.gwb.on` 收（通道见 [IPC 通道](/docs/seams/ipc)）
+- `setShell(url)`：把页面交给这个地址指向的模块，返回撤销函数（页面怎么接管见[外壳接管](/docs/seams/shell)）
 
 ## 约定
 
-内核应用保证：
-- `gwbKernel` 在注册 loader 之前就在根上下文上提供，任何插件加载时都已存在；永不撤销，所以插件不用写进 `inject`
-- `dataDir` 在一次运行中不变，而且同一个 home 的不同写法得到同一个字符串
-- `emit` 只转交、不保留：窗口不在时事件就丢了
-- `setShell` 后调用的替换先调用的；撤销函数只在自己仍是当前外壳时才清空，已被别人替换就什么都不做。每次变化都向页面推一次整份状态
+**内核应用**保证：
 
-插件保证：
-- 数据写在 `dataDir` 下自己的目录里，不碰别的插件的目录，也不改 home 根上的 `package.json`、`cordis.yml`（那两份归插件管理，见 [home 布局与条目树](/docs/seams/home)）
+- `gwbKernel` 在加载 `cordis.yml` 之前就在根上下文上提供，任何插件加载时都已存在；永不撤销，所以插件不用写进 `inject`
+- `dataDir` 在一次运行中不变，同一个 home 的不同写法得到同一个字符串
+- `emit` 只转交、不保留：窗口不在时这条事件就丢了
+- `setShell` 后调用的替换先调用的；撤销函数只在当前外壳地址仍是它当初交出的那个地址时才清空，否则什么都不做；每次变化都向页面推一次整份外壳状态
+
+**插件**保证：
+
+- 数据写在 `dataDir` 下自己的目录里，不碰别的插件的目录，也不改 home 根上的 `package.json`、`cordis.yml`（那两份归插件管理，见[home 布局与条目树](/docs/seams/home)）
 - `emit` 的 payload 能经 Electron 的 IPC 传过去（结构化克隆：函数、Promise 传不过去）
 - 把 `setShell` 返回的撤销函数交给 `ctx.effect`，插件卸载时把页面交还
 
 ## 不负责的事
 
-- 内核应用不给每个插件分数据目录，也不检查插件写了哪里
+- 内核应用不给插件分数据目录，也不检查插件写了哪里
 - 内核应用的 `emit` 不知道谁在听，不区分事件类型，不给事件编号
-- 内核应用的 `setShell` 不挑外壳：谁调用谁就是；不检查地址指向的模块能不能加载
-- 内核应用的 `version` 只是内核的版本号，不管插件的版本（插件的版本在 home 的 `node_modules` 里，由插件管理报告）
-- 内核应用不提供命令服务：`gwbCommands` 的方法、命令的注册与执行都归命令插件
+- 内核应用的 `setShell` 不挑外壳：谁调用谁就是；也不检查地址指向的模块能不能加载
+- 内核应用的 `version` 只报内核自己的版本；插件的版本由插件管理报告
+- 内核应用不提供命令服务：命令的登记与执行归命令插件（[命令转交](/docs/seams/commands)）
 
 ## 测试
 
-`kernel` 对象的形状由类型检查保护：对象的类型标成词汇表包的 `GwbKernelApi`，仓根 `pnpm check` 先构建词汇表包再做类型检查，对不上就失败。行为由 `apps/desktop/tests/main.test.ts` 保护：electron 换成假的，一个测试插件从 `cordis.yml` 加载进来取到 `gwbKernel`，证明 `dataDir` 是 home 的真实路径、`version` 是内核包的版本、`emit` 推到页面、`setShell` 后调用的替换先调用的、撤销只在自己仍是当前外壳时清空。
+`gwbKernel` 的形状由类型检查保护：内核应用里这个对象标成词汇表包的 `GwbKernelApi`，对不上 `pnpm check` 就失败。行为由 `apps/desktop/tests/main.test.ts` 保护：一个测试插件从 `cordis.yml` 加载进来取到 `gwbKernel`，证明 `dataDir` 是 home 的真实路径、`version` 是内核包的版本、`emit` 推到页面、`setShell` 后调用的替换先调用的、撤销只在自己仍是当前外壳时清空。
+
+{/* has file="../apps/desktop/src/main.ts" text="const kernel: GwbKernelApi = {" */}
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="插件拿到 gwbKernel" */}
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="emit 推 gwb:event；setShell 立刻推整份状态" */}
-
-装上真的外壳插件后页面被接管、卸载后回到只读状态页，只能在隔离 home 里实机验证（见[开发](/docs/develop)）。
-
-{/* has file="../apps/desktop/src/main.ts" text="const kernel: GwbKernelApi = {" */}

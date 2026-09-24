@@ -1,6 +1,6 @@
 ---
 title: 术语表
-description: 这个仓里有特定含义的词，每个一句定义并指到详解页
+description: 这个仓的文档里有特定含义的词，每个一句定义并指到详解页
 ---
 
 # 术语表
@@ -9,29 +9,24 @@ description: 这个仓里有特定含义的词，每个一句定义并指到详�
 
 | 词 | 是什么 |
 | --- | --- |
-| **内核** | 这个仓的 Electron 应用本体：只做第一个插件运行之前必须完成的事，其余功能全部由 `cordis.yml` 里的插件实现，命令总线与插件管理也是。见[关键设计](/docs/design) |
+| **内核** | 这个仓的 Electron 应用本体：只做第一个插件运行之前必须完成的事，其余功能全部由 `cordis.yml` 里的插件实现，命令插件与插件管理也是。见[关键设计](/docs/design) |
 | **内核包** | 内核应用发布成的 npm 包 `@godcreator/gwb-kernel-desktop`，和插件一样装在每个 home 的 `node_modules` 里。见[关键设计](/docs/design#内核和插件一样装在-home-里) |
 | **启动器** | 安装包里唯一的代码 `apps/launcher`：选定 home，确认 home 里的内核包能在这个 Electron 上运行，再加载它。见[启动器加载内核](/docs/seams/launcher) |
-| **插件** | 一个普通的 npm 包，安装在 home 里，由 cordis 加载，运行在 Electron 主进程里。见[插件加载](/docs/seams/loading) |
-| **接缝** | 两个模块之间的连接处：只要接口不变，换掉其中一个模块，另一个不用改。一条接缝写清四件事：连接哪两个模块、接口是什么、双方各保证什么、在哪里替换。内核仓有九条，每条一页。见[接缝图](/docs#接缝图) |
+| **插件** | 一个普通的 npm 包，安装在 home 里、写在 `cordis.yml` 里，由 cordis 加载，运行在 Electron 主进程里。见[插件加载](/docs/seams/loading) |
+| **接缝** | 两个模块之间的连接处：只要接口不变，换掉其中一个模块，另一个不用改。内核仓有十条，每条一页，写清连接的模块、接口、各模块保证什么、谁不负责什么、由什么测试保护。见[接缝图](/docs#接缝图) |
 | **home** | 内核包与插件安装、存放数据的目录，一个普通的 npm 项目根；每个 home 有自己的内核、插件、端口和数据，互不影响。见[关键设计](/docs/design#每个-home-相互独立) |
 | **隔离 home** | 为了开发或验证单独创建的 home，和日常使用的 `default` 分开 |
-| **条目** | `cordis.yml` 里的一条配置（loader 里叫 entry）：`id` 是它的身份，手写；`name` 是要加载的包名。见[插件加载](/docs/seams/loading) |
+| **条目** | `cordis.yml` 里的一条配置（loader 里叫 entry）：`id` 是它的标识，手写；`name` 是要加载的包名。见[插件加载](/docs/seams/loading) |
 | **加载成功** | 条目对应的 fiber 进入 `ACTIVE` 状态；有 fiber 不等于加载成功。见[插件加载](/docs/seams/loading) |
 | **fiber** | cordis 为每个加载的插件建的运行单元，记录它的状态（等待依赖、运行中、失败等） |
 | **包名 import** | 直接写包名、不带相对路径的 import（英文叫 bare specifier），比如 `import { Service } from 'cordis'`。运行时要靠 Node 去 `node_modules` 里找，或靠页面的 importmap 查表。见[关键设计](/docs/design#包名一律按-home-解析) |
-| **构建产物** | 插件构建后发布出去的 `dist/` 里的文件，也就是运行时真正加载的代码 |
+| **构建产物** | 包构建后发布出去的 `dist/` 里的文件，也就是运行时真正加载的代码 |
 | **importmap** | 页面上的一张表：包名 → 文件地址。浏览器里的包名 import 靠它找到文件。见[页面上的包名](/docs/seams/shared) |
-| **共享声明** | 包清单里的 `gwb.shared` 字段：「把我的这几个文件放进页面的 importmap」。见[页面上的包名](/docs/seams/shared) |
+| **`gwb.shared`** | 包清单里的一个字段：「把我的这几个文件放进页面的 importmap」。内核包用它声明 react 的四个包名，块笔记的库 `@godcreator/block-note` 用它声明自己的包名。见[页面上的包名](/docs/seams/shared) |
 | **外壳（shell）** | 调用了 `setShell` 的那个插件，页面的 `#root` 交给它的默认导出来渲染。见[外壳接管](/docs/seams/shell) |
-| **只读状态页** | 没有外壳、或外壳启动失败时页面显示的内容：各条目的加载状态和最近的错误日志，没有按钮。见[只读状态页的数据](/docs/desktop/status-page)、[外壳接管](/docs/seams/shell) |
-| **命令总线** | `gwbCommands` 服务，由基础插件仓的命令插件 `@godcreator/gwb-commands` 提供，类型也由它导出；页面、MCP 入口和其他插件都经它按名字调用命令。内核只把页面发来的命令转交给它，见 [IPC 通道](/docs/seams/ipc) |
-| **服务** | 插件通过 cordis 提供、别的插件在 `inject` 里写上名字再从 `ctx` 上读的对象。提供有两种写法：继承 cordis 的 `Service` 类，或 `ctx.provide`（只表示存在、不需要认出调用方时） |
-| **扩展点** | 让别的插件往里注册东西的服务方法，比如注册命令、注册窗格、注册工具条按钮；提供扩展点的服务一律继承 `Service`，注册随调用方卸载自动撤销 |
-| **存在标记服务** | 只用来表示「某个插件已经加载」的服务，可以带一个契约版本号；依赖它的插件会随它一起重新加载。插件管理 `@godcreator/gwb-plugin-manager` 的 `gwbPluginManager` 就是一个 |
-| **接口定义包** | 提供方单独发布的一个库：只有类型、常量和纯函数，没有状态；调用方把它打包进自己的构建产物 |
+| **只读状态页** | 没有外壳、或外壳启动失败时页面显示的内容：各条目的加载状态和最近的错误日志，纯文本、没有按钮。见[内核应用](/docs/desktop)、[外壳接管](/docs/seams/shell) |
+| **命令插件（命令总线）** | 基础插件仓的 `@godcreator/gwb-commands`，提供 `gwbCommands` 服务，类型也由它导出；页面、MCP 入口和其他插件都经它按名字调用命令。内核只把页面发来的命令转交给它，见[命令转交](/docs/seams/commands) |
+| **服务** | 插件通过 cordis 提供、别的插件在 `inject` 里写上名字再从 `ctx` 上读的对象。提供有两种写法：继承 cordis 的 `Service` 类，或 `ctx.provide` |
 | **词汇表包** | `@godcreator/gwb-plugin-api`：内核给插件和页面提供的全部接口的类型，纯类型、没有运行时代码。见[词汇表包](/docs/vocab) |
 | **准入判据** | 往内核里加东西要满足的条件：第一个插件运行之前必须完成，并且此刻确实需要。见[关键设计](/docs/design#准入判据) |
-| **基础插件仓** | `gwb-base-plugins`：命令插件、数据、设置、说明书、日志、MCP 入口等基础插件的源码仓，不在内核仓里；这些插件和别的插件一样装在 home 里。插件管理不在这里，在 devkit 仓 `gwb-devkit`，和 devkit 一起开发 |
-| **内核范围** | 插件 `package.json` 的 `peerDependencies` 里内核包的 `^` 范围：插件兼容哪些内核。插件管理的 `plugin-manager.list` 拿它和运行中的内核版本比，不包含就标出来。见[关键设计](/docs/design#插件在-peer-里写兼容哪个内核) |
-| **三路日志** | 插件、内核、页面 console 三个来源的日志，汇成同一条 cordis 日志流。见[日志](/docs/seams/log) |
+| **基础插件仓** | `gwb-base-plugins`：命令插件、数据、设置、说明书、日志、MCP 入口等基础插件的源码仓，不在内核仓里；这些插件和别的插件一样装在 home 里。插件管理不在这里，在 devkit 仓 `gwb-devkit` |
