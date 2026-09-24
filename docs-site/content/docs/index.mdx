@@ -50,7 +50,7 @@ god 工作台的内核：一个 Electron 应用，只做**第一个插件运行�
 | --- | --- | --- | --- |
 | `@godcreator/gwb-kernel-desktop` | `apps/desktop` | 内核应用：选定 home、日志、单实例锁、创建 cordis 实例、加载 `cordis.yml`、窗口与 IPC、只读状态页、退出清理 | [内核应用](/docs/desktop) |
 | `@godcreator/gwb-plugin-api` | `packages/gwb-plugin-api` | 词汇表包：内核给插件与页面的全部接口类型，只增不减 | [词汇表包](/docs/vocab) |
-| `gwb-kernel-launcher` 与 `gwb-installer` | `apps/launcher`、`installer/` | 安装包：启动器怎么从 home 加载内核、产出什么、装好之后是什么样 | [安装包](/docs/installer) |
+| `gwb-kernel-launcher` 与 `gwb-installer` | `apps/launcher`、`installer/` | 安装包与启动器：第一次安装到另开一个 home 的过程（动画）、启动器每次启动做什么、产出什么 | [安装包与启动器](/docs/installer) |
 
 cordis、`cordis.yml` 里的插件和声明 `gwb.shared` 的库都不在本仓：cordis 是外部依赖；命令插件在基础插件仓 `gwb-base-plugins`，插件管理在 devkit 仓 `gwb-devkit`，其余插件和库各在自己的仓里。内核包与词汇表包发到团队包源；启动器只随安装包发布。
 
@@ -70,5 +70,6 @@ cordis、`cordis.yml` 里的插件和声明 `gwb.shared` 的库都不在本仓�
 - **换命令插件**：[命令转交](/docs/seams/commands)
 - **改内核应用**：[内核应用](/docs/desktop)看它有哪些功能、提供哪些接口
 - **改了内核之后**：改了接缝上已有的东西就升 x；插件在 peer 里写内核包的版本范围，插件管理会报出范围不包含新内核的插件（见[关键设计](/docs/design#插件在-peer-里写兼容哪个内核)）
-- **改安装包或启动器**：[安装包](/docs/installer)、[启动器加载内核](/docs/seams/launcher)
+- **第一次安装、另开一个 home**：[安装包与启动器](/docs/installer)开头的动画；给 agent 照着装的完整步骤在仓根 `INSTALL.md`
+- **改安装包或启动器**：[安装包与启动器](/docs/installer)、[启动器加载内核](/docs/seams/launcher)
 - **排查故障**：日志在 home 里的 `gwb.log`（[日志](/docs/seams/log)）；外壳没有加载出来时页面显示只读状态页（[外壳接管](/docs/seams/shell)）；找进程看 home 里的 `runtime.json`（[runtime.json](/docs/seams/runtime)）

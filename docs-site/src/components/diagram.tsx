@@ -8,6 +8,7 @@
  */
 import type { ReactNode } from 'react'
 import { CommandRelay } from './diagrams/command-relay'
+import { FirstInstall } from './diagrams/first-install'
 import { KernelBoot } from './diagrams/kernel-boot'
 import { PluginSeam } from './diagrams/plugin-seam'
 import { SeamMap } from './diagrams/seam-map'
@@ -21,6 +22,7 @@ const drawings: Record<string, () => ReactNode> = {
   'shell-handover': () => <ShellHandover />,
   'shared-names': () => <SharedNames />,
   'command-relay': () => <CommandRelay />,
+  'first-install': () => <FirstInstall />,
 }
 
 export function Diagram({ name, title, children }: { name: string; title?: string; children?: ReactNode }) {
