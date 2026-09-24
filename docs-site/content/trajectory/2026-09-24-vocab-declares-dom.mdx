@@ -1,0 +1,27 @@
+---
+title: 词汇表包在类型声明里写明自己要 DOM 类型
+born-at: 2026-09-24T11:15
+type: choice
+parent: [2026-09-07-vocab-package-standalone]
+label: 词汇表包声明 DOM
+domain: 这条线
+---
+
+## 背景
+
+devkit 的 `devkit.release` 在发版前关掉 `skipLibCheck` 跑一次类型检查，用来查出产物引用的类型链断在哪。
+用建仓模板新生成的插件过不了这项检查：插件 node 一侧的 tsconfig 只带 `ES2023` 库，词汇表包 0.2.7 的
+`dist/index.d.ts` 里 `ShellBoot` 的参数是 `HTMLElement`，报「Cannot find name 'HTMLElement'」。
+
+## 考虑过的做法
+
+- **每个插件的 tsconfig 都加 `DOM` 库**：要改模板和所有现有插件；node 一侧的代码本来就不该用 DOM，这么改是给词汇表包的缺口打补丁
+- **把 `ShellBoot` 的参数改成不依赖 DOM 的结构类型**：改了导出类型的形状，要升 x，所有插件跟着改 peer 范围，代价远大于收益
+- **词汇表包在声明文件里写 `/// <reference lib="dom" preserve="true" />`**：只加一行，形状不变；`preserve="true"` 让 tsc 把这行留在 `dist/index.d.ts` 里
+
+## 结论与边界
+
+选第三种，升 y。实测：不带 DOM 库、关掉 `skipLibCheck` 的最小工程 import 本包，加这一行之前报 `HTMLElement` 找不到，加之后通过。
+
+代价：import 了本包的主进程代码在类型上也看得到 `window`、`document` 这些全局名，写错了类型检查拦不住，运行时才报错。
+插件主进程一侧本来就只从本包 `import type`，接受这个代价。

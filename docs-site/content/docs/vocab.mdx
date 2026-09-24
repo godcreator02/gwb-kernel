@@ -70,7 +70,7 @@ description: "@godcreator/gwb-plugin-api 是内核对插件和页面的全部契
 | 依赖 | 用来做什么 | 缺了会怎样 |
 | --- | --- | --- |
 | cordis 的 `Context` 类型（peer，范围 `^4.0.0-rc.9`） | `GwbContext` 在它上面加 `gwbKernel` | 只在使用方编译时用：使用方没装 cordis，`GwbContext` 里 cordis 那部分就拿不到类型 |
-| TypeScript 的 DOM 类型（`HTMLElement`、`Window`） | `ShellBoot` 的参数、`window.gwb` 的全局声明 | 使用方 tsconfig 的 `lib` 不带 `DOM` 时，这两处拿不到类型 |
+| TypeScript 的 DOM 类型（`HTMLElement`、`Window`） | `ShellBoot` 的参数、`window.gwb` 的全局声明 | 不会缺：`src/index.ts` 第一行 `/// <reference lib="dom" preserve="true" />` 会保留到 `dist/index.d.ts`，使用方 tsconfig 的 `lib` 不带 `DOM`、又关掉 `skipLibCheck` 时也能通过类型检查。代价是 import 了本包的主进程代码也看得到 DOM 的全局类型（[词汇表包自己声明要 DOM 类型](/trajectory/2026-09-24-vocab-declares-dom)） |
 | TypeScript 编译器（开发依赖） | `build` 从 `src/index.ts` 生成 `dist/index.d.ts` 与空的 `dist/index.js` | 构建不出来，就发不了包 |
 
 `cordis` 写在 peer 里，因为 `Context` 出现在导出的类型里，使用方必须解析得到它（[cordis 写在 peer 里](/trajectory/2026-09-07-wall-cordis-peer)）。

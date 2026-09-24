@@ -1,3 +1,5 @@
+/// <reference lib="dom" preserve="true" />
+// `ShellBoot` 与 `Window` 用到 DOM 类型；写在声明里，插件的 tsconfig 不带 DOM 库、且关掉 skipLibCheck 时也能通过类型检查
 import type { Context } from 'cordis'
 
 /**
