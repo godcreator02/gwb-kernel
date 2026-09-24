@@ -17,36 +17,42 @@ description: 内核一次启动按什么顺序做事、哪几处顺序不能换�
 
 ## 两段：模块求值时与 ready 之后
 
-`main.ts` 的工作分两段。**模块求值时**就做完的是不需要窗口的部分：选定 home、设置 userData、补齐最小形态（[home 的准备与单实例锁](/docs/desktop/home)），打开日志文件（[日志文件](/docs/desktop/log-file)），单实例锁，写 `runtime.json`（[runtime.json](/docs/seams/runtime)），创建 cordis 实例、接上日志、提供 `gwbKernel`、注册 IPC 通道。**Electron ready 之后**才运行 `main()`：去掉默认菜单、创建窗口并加载页面、注册 loader、加载全部条目。
+`main.ts` 的工作分两段。**模块求值时**就做完的是不需要窗口的部分：选定 home、设置 userData、补齐最小形态（[home 的准备与单实例锁](/docs/desktop/home)），打开日志文件（[日志文件](/docs/desktop/log-file)），单实例锁，写 `runtime.json`（[runtime.json](/docs/seams/runtime)），创建 cordis 实例、接上日志、提供 `gwbKernel`、注册 IPC 通道。**Electron ready 之后**才运行 `startAfterAppReady()`：去掉默认菜单、创建窗口并加载页面、注册 loader、加载全部条目。
 
-入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等待会互相等待、静默卡死。所以 ready 之后的部分交给 `whenReady().then(main)` 执行，启动失败也在这条链上处理：
+入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等待会互相等待、静默卡死。所以 ready 之后的部分交给 `whenReady().then(startAfterAppReady)` 执行，启动失败也在这条链上处理：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="287-296" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="286-294" */}
 
 启动失败时先写一行日志，再弹错误框（Electron 保证 ready 之前也能弹出，窗口可能还没有），框里带着 `gwb.log` 的路径，退出码 1。
 
 ## 顺序是约束
 
-`main()` 这一段的顺序本身就是约束：
+`startAfterAppReady()` 这一段（加载插件的部分在 `loadPluginsFromHome()` 里）的顺序本身就是约束：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="249-285" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="276-284" */}
+
+{/* ref file="../apps/desktop/src/main.ts" lines="267-274" */}
 
 - **`gwbKernel` 在注册 loader 之前提供**：它在模块求值时就已提供，任何插件加载时都已经在了（[`gwbKernel` 要在注册 loader 之前提供](/trajectory/2026-09-07-wall-gwbkernel-provide-early)）
 - **窗口先于 loader**：页面在插件加载的过程中就显示只读状态页，页面的 console 也从一开始就进日志
 - **`loader.internal` 在加载条目之前设好**：不设的话 loader 按自己的位置解析包名，插件静默加载失败。内核给它的 import 按 home 里的真实路径解析包名（[插件加载](/docs/seams/loading)）
 - **`ctx.loader.await()` 之后**才写「up」那行日志并推送一次页面状态：那时各条目都已走到各自的终态
 
+窗口创建时不显示，第一帧画好（`ready-to-show`）才显示；窗口底色是设计令牌暗色主题的背景色 `#151518`，与页面入口 `index.html` 的 html 背景、安装包图标的底色是同一个值。窗口创建到第一帧之间、最小化后还原、整页重新加载的第一帧，露出来的都是这个颜色，不闪白；默认主题换了底色时三处一起改。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="248-257" */}
+
 ## 插件出错不带走内核
 
 插件和内核在同一个进程里，插件的错误就是这个进程的错误。内核对未捕获的异常和没人处理的 rejection 只写一行 error 日志、不退出——一个坏插件不该让整个工作台退出。插件自己的失败由 cordis 记在它的条目上，只读状态页上看得到。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="164-171" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="147-149" */}
 
 ## 退出
 
 所有窗口关闭就退出。退出前内核卸载 loader 的 fiber，整棵插件树的清理逐层执行；插件启动的长期子进程靠这一步结束，否则主进程一退它们就成了孤儿进程。谁创建了 cordis 实例，谁负责卸载它。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="299-326" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="297-319" */}
 
 - 第一次进入 `will-quit` 时阻止退出，开始清理；清理完再调 `app.quit()`，第二次进入时直接放行。loader 还没加载（刚启动就退出）时没有可卸载的，同样放行
 - **等清理结束要内核和插件都做到**：内核 `dispose()` 之后还要 `await()` 才等得到嵌套的异步清理；插件要把清理的 promise 从 effect 的清理函数里**返回**出来。少做一方，退出时就等不到插件的清理（[退出收尾：内核等、插件返回](/trajectory/2026-09-12-quit-dispose-two-halves)）

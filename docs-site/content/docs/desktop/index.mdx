@@ -32,7 +32,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 {/* has file="../apps/desktop/src/main.ts" text="ctx.provide('gwbKernel', kernel)" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="factory.exporter(exporter)" */}
+{/* has file="../apps/desktop/src/main.ts" text="cordisLoggerService.exporter(gwbLogExporter)" */}
 
 ### 加载插件
 
@@ -62,11 +62,11 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 {/* has file="../apps/desktop/src/main.ts" text="ipcMain.handle('gwb:command'" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="emit: (payload) => win?.webContents.send('gwb:event', payload)" */}
+{/* has file="../apps/desktop/src/main.ts" text="emit: (payload) => mainWindow?.webContents.send('gwb:event', payload)" */}
 
 {/* has file="../apps/desktop/src/main.ts" text="ipcMain.on('gwb:hello'" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="const shellMessage = ()" */}
+{/* has file="../apps/desktop/src/main.ts" text="function currentShellMessage(): ShellMessage" */}
 
 {/* has file="../apps/desktop/src/index.html" text="mod.default(root)" */}
 
@@ -116,7 +116,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 - **不写 home 的包与条目**：只在缺文件时补 `package.json` 与 `cordis.yml` 的最小形态；装卸包、增删条目只由插件管理 `@godcreator/gwb-plugin-manager` 做
 - **不带插件**：命令插件、插件管理和别的插件一样写在 `cordis.yml` 里、装在 home 里；新 home 的插件由创建它的一方装（[关键设计](/docs/design)）
 - **不认识 `cordis.yml` 里的插件**：加载哪些插件由 `cordis.yml` 决定；内核认识的服务名只有自己提供的 `gwbKernel` 和转交命令时要找的 `gwbCommands`
-- **不渲染界面**：只读状态页之外，页面显示什么全由外壳插件 `gwb-shell` 决定；内核不认识窗格，不替插件做菜单，需要菜单的插件自己设置
+- **不渲染界面**：只读状态页之外，页面显示什么全由外壳插件 `gwb-shell` 决定；内核不认识窗格，不替插件做菜单（只在启动时去掉 Electron 默认的那套），需要菜单的插件在 Electron ready 之后自己调 `Menu.setApplicationMenu`
 - **不经手插件之间的交互**：服务、命令、契约版本都在插件之间，由 cordis 与命令总线连接
 - **不显示、不查询日志**：内核只把日志写到 stderr 与 `gwb.log`；在界面上看日志归日志插件 `gwb-logger`，它注册自己的 exporter
 - **不提供设置、数据、说明书、MCP 入口**：这些都是 `cordis.yml` 里的插件

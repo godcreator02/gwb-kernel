@@ -42,15 +42,15 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 
 内核应用的主进程把 `gwb:command` 原样交给 `ctx.gwbCommands.run`，收到 `gwb:hello` 就回当前的外壳状态：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="239-247" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="231-238" */}
 
 `gwb:event` 由 `gwbKernel.emit` 直接发出（见[内核服务](/docs/seams/kernel)）：
 
-{/* has file="../apps/desktop/src/main.ts" text="emit: (payload) => win?.webContents.send('gwb:event', payload)" */}
+{/* has file="../apps/desktop/src/main.ts" text="emit: (payload) => mainWindow?.webContents.send('gwb:event', payload)" */}
 
 `gwb:shell` 在三种时候发：页面发来 `gwb:hello`、插件调用 `setShell` 或撤销、条目状态变化或有新的错误与警告日志。最后一种去抖成 200 毫秒内一次：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="212-221" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="201-213" */}
 
 `GwbWindowApi` 里 `onShell` 的参数只写了 `url` 与 `imports`：`report` 只给内核自己的页面入口画只读状态页用，不在契约里（数据从哪来见[只读状态页的数据](/docs/desktop/status-page)）。`url` 与 `imports` 怎么用见[外壳接管](/docs/seams/shell)与[页面上的包名](/docs/seams/shared)。
 

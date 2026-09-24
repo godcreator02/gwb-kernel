@@ -16,15 +16,17 @@ description: 连接内核应用与所有插件：插件、内核、页面 consol
 
 **写**：插件用 cordis 的 `ctx.logger(名字)` 拿到一个 logger，调它的 `info` / `warn` / `error` / `debug`。内核自己用名字 `kernel`，页面上的 console 输出由内核转成名字 `renderer` 的日志：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="265-269" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="240-246" */}
 
-**汇成一条流**：内核给 cordis 的 logger 注册一个 exporter，所有来源的日志都经它交给 `say`，格式化用 cordis 自己的 `Logger.format`：
+{/* ref file="../apps/desktop/src/main.ts" lines="258-260" */}
 
-{/* ref file="../apps/desktop/src/main.ts" lines="130-162" */}
+**汇成一条流**：内核给 cordis 的 logger 注册一个 exporter，所有来源的日志都经它交给 `writeLogLine`，格式化用 cordis 自己的 `Logger.format`：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="115-145" */}
 
 **一行的格式**是 `<ISO 时间> <级别> <名字> <正文>`，同时写 stderr 与 `<home>/gwb.log`：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="78-85" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="68-76" */}
 
 内核的 exporter 把级别门槛设成 3，`debug` 行也写进去。
 
@@ -32,7 +34,7 @@ description: 连接内核应用与所有插件：插件、内核、页面 consol
 
 内核自己的日志也走 `ctx.logger`，不直接写文件；插件里没被处理的异常记成 `kernel` 的 error：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="164-171" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="147-149" */}
 
 ## 约定
 
