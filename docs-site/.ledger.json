@@ -271,36 +271,6 @@
     }
   },
   "content/docs/desktop/log-file.mdx": {
-    "../apps/desktop/src/log-file.ts:29-36": {
-      "kind": "git",
-      "blob": "eb4f9a3dd6e8b5e6e398d38d6e4d2994a4e34e67",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
-      "lines": [
-        29,
-        36
-      ],
-      "hash": "dfe7a0185ba61dc32e4a1fdb3f8d5e1556b9d2bb57478c9e710d1d7cd49475b3"
-    },
-    "../apps/desktop/src/log-file.ts:121-147": {
-      "kind": "git",
-      "blob": "eb4f9a3dd6e8b5e6e398d38d6e4d2994a4e34e67",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
-      "lines": [
-        121,
-        147
-      ],
-      "hash": "e652f4718047432dfda4be3eb0e8b6dd11d54995679b8042e948e11657b05838"
-    },
-    "../apps/desktop/src/log-file.ts:149-164": {
-      "kind": "git",
-      "blob": "eb4f9a3dd6e8b5e6e398d38d6e4d2994a4e34e67",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
-      "lines": [
-        149,
-        164
-      ],
-      "hash": "02e880d71df0d86a28036c0e956bfa90fc4aba34834aeaaefc738a9aee1e518c"
-    },
     "has ../apps/desktop/tests/log-file.test.ts \"没到上限不轮转\"": {
       "kind": "has"
     },
@@ -325,12 +295,42 @@
     "../apps/desktop/src/main.ts:59-85": {
       "kind": "git",
       "blob": "6d82fe75a5d7868164c5f2c3f2a629a58b756cc0",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "7d0cea7442dc807812c7359f955e1a3b04a93eac",
       "lines": [
         59,
         85
       ],
       "hash": "bb5ee5d4e929833f5af266d2811742c8f17dca76ba85fce1f71c2be5cc417a6a"
+    },
+    "../apps/desktop/src/log-file.ts:11-19": {
+      "kind": "git",
+      "blob": "4cd590e2ba68c255a3782c9506bb0d5a4a2c36e1",
+      "commit": "7d0cea7442dc807812c7359f955e1a3b04a93eac",
+      "lines": [
+        11,
+        19
+      ],
+      "hash": "4a63ba806d676a63738843d31b4f2e8ed8365fcad583bbc94eddeea17e0c3971"
+    },
+    "../apps/desktop/src/log-file.ts:93-117": {
+      "kind": "git",
+      "blob": "4cd590e2ba68c255a3782c9506bb0d5a4a2c36e1",
+      "commit": "7d0cea7442dc807812c7359f955e1a3b04a93eac",
+      "lines": [
+        93,
+        117
+      ],
+      "hash": "336b8bb00b7d4fd7d4a8cf4e95eeda93e2c849a637d011e41dbc59e61f39be7f"
+    },
+    "../apps/desktop/src/log-file.ts:119-144": {
+      "kind": "git",
+      "blob": "4cd590e2ba68c255a3782c9506bb0d5a4a2c36e1",
+      "commit": "7d0cea7442dc807812c7359f955e1a3b04a93eac",
+      "lines": [
+        119,
+        144
+      ],
+      "hash": "024eb63dc0433424f19c9e7d7d63c9892ee251db5516e1c359616891febbc16f"
     }
   },
   "content/docs/desktop/status-page.mdx": {
