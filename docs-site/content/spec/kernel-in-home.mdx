@@ -7,7 +7,7 @@ description: 验收标准：插件的 cordis 与内核用的是 home 里同一�
 
 **本页回答**：把内核从 `app.asar` 挪进每个 home 的 `node_modules` 要改什么、换来什么、要推翻哪些已有决定、分几步做、做到哪儿了。
 
-**状态：人已决定做（2026-09-24），五条待决定按推荐定下；第一步（内核仓）已完成，第二步（devkit 仓）没开始。**
+**状态：人已决定做（2026-09-24），五条待决定按推荐定下；第一步（内核仓）已完成；第二步（devkit 仓）代码与文档已完成，待发版。**
 
 ## 由来
 
@@ -62,9 +62,12 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 
 **第二步：devkit 仓（与全生态机制定案第四期一起）**
 
-- [ ] `devkit.home.new` 把内核包与 `cordis` 装进新 home；`devkit.dev` 能把内核的开发版装进隔离 home
-- [ ] 插件管理：`list` 用插件 peer 里内核包的范围比；`update-all` 跳过内核包；新增升内核的命令，同时把 home 根上的 `cordis` 对齐到内核要的版本
-- [ ] `devkit.release`：查插件 peer 内核包写 `^`，删掉 `gwb.testedKernel` 的检查；模板改写法；说明书 gwb-release、gwb-devkit 跟着改
+- [x] `devkit.home.new` 把内核包与 `cordis` 装进新 home（精确版本号，装完核对）
+- [ ] `devkit.dev` 能把内核的开发版装进隔离 home
+- [x] 插件管理：`list` 用插件 peer 里内核包的范围比；`update-all` 跳过内核包与 `cordis`；新增 `plugin-manager.update-kernel`，同时把 home 根上的 `cordis` 对齐到内核要的版本
+- [x] `devkit.release`：查插件 peer 内核包写 `^`、包含运行中的内核，删掉 `gwb.testedKernel` 的检查；模板改写法；说明书 gwb-release、gwb-devkit 跟着改
+- [x] 界面插件仓的插件管理窗格跟着回执字段 `kernelRange` 改
+- [ ] devkit 与插件管理发版（插件管理回执改名是破坏性变更，版本号发之前问人），装进 default
 
 **第三步：各插件（随定案第三期）**：`gwb.testedKernel` 换成 peer 内核包
 
@@ -76,6 +79,13 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 
 新的在上。
 
+- 2026-09-24｜第二步代码与文档（devkit 仓 `16577df`，界面插件仓 `afd470c`）：两份比对规则 `kernel-compat.ts` 加对照测试；插件管理 `list` 回执
+  `testedKernel` 改名 `kernelRange`，`update-all` 跳过内核包与 `cordis`，新命令 `plugin-manager.update-kernel`；`devkit.release` 查 peer 内核包；
+  模板写 peer 内核包；`home.new` 依次装内核包、`cordis`、基础插件。实测到 pnpm 12 在清单里原来写 `^` 时，`add` 点名精确版本并带 `--save-exact`
+  照样装上更新的预发布版（devkit 仓 `probes/2609241510_pnpm-add-exact-prefix`），所以 `update-kernel` 与 `home.new` 装完都读回核对版本。
+  devkit 仓 `pnpm check` 全绿（devkit 346、插件管理 250、repo-kit 20），界面插件仓 502。**过渡期注意**：新版 `home.new` 装的是运行中的内核版本，
+  default 现在还是旧安装包里的内核 0.2.7，源上没有 0.2.x 的内核包，在第四步装上新安装包、default 跑内核 0.3.0 之前，从 default 调新版 `home.new`
+  会装不上内核；新版 devkit 还没发，眼下碰不到｜总控台会话
 - 2026-09-24｜第四步的「发内核包」提前做（第二步的 `home.new`、插件写 peer 内核包、升内核命令都要源上先有它）：人决定内核与词汇表包都升 0.3.0。
   发之前往依赖词汇表包的 13 个仓的 `inbox.mdx` 投了「要追 0.3.0」（dev 抬到 `^0.3.0`、peer 删掉词汇表包、预告改用 peer 写内核包），没有收件页的
   gwb-agent-hooks-skills 放进总控台中转站；devkit 与界面插件两个仓在第二步里一起改。`devkit.release` 发出 `@godcreator/gwb-plugin-api@0.3.0`、
