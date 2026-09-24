@@ -21,7 +21,7 @@ description: 没有外壳或外壳启动失败时页面显示的只读状态页�
 
 数据由 `main.ts` 的 `statusPageReport()` 在每次推送时重新计算：条目取自 loader 的条目树，错误行从 cordis logger 自带的环形缓冲里筛出 error 与 warn 级别的最后 20 条。loader 还没加载时条目表是空的。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="151-174" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="147-170" */}
 
 它随每一条 `gwb:shell` 一起推给页面（推送的整份形状见 [IPC 通道](/docs/seams/ipc)）；页面上有外壳时不看它。
 
@@ -41,9 +41,9 @@ cordis 的 fiber 状态是 `const enum`，在本仓的编译设置下引用不�
 
 条目状态变化（cordis 的 `internal/status` 事件）、每来一行 error 或 warn 日志，都会触发重新推送，200 毫秒内的多次合并成一次；每次推送的都是整份当前状态。页面订阅时还会主动请求一次当前值（`gwb:hello`），所以页面比插件晚加载完也不会错过。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="201-213" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="197-209" */}
 
-{/* ref file="../apps/desktop/src/main.ts" lines="123-135" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="119-131" */}
 
 ## 为什么只做到这一步
 

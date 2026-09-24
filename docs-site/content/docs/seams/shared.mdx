@@ -43,7 +43,7 @@ description: 连接内核应用与在包清单里声明 gwb.shared 的包；接�
 
 `gwb.shared` 是内核应用读包清单时唯一认识的字段。声明写在包清单里，不由提供方在运行时调用接口登记：共享出去的模块只在页面上运行，在主进程里没有代码可以去登记，包清单是它唯一能声明的地方。子路径按包的 `exports` 解析，用的是和加载插件同一个函数 `resolveFromHome`（见[插件加载](/docs/seams/loading)）。这张表每次推送 `gwb:shell` 时重新计算，作为 `imports` 字段推给页面（通道见 [IPC 通道](/docs/seams/ipc)）：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="193-199" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="189-195" */}
 
 页面入口收到后注入成一个 `<script type="importmap">`，只注入一次：
 
