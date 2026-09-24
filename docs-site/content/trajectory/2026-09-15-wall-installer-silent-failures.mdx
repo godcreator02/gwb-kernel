@@ -1,0 +1,22 @@
+---
+born-at: 2026-09-24T15:45
+parent: [2026-09-07-gwb-kernel]
+label: 打包静默出错
+domain: 发版
+---
+
+## 背景
+
+打包脚本 `installer/scripts/build.ps1` 在 2026-09-15 迁进本仓（`0910eb8`）之前的试做阶段撞过两次「出错了却照样打出安装包」。当时这两件事写在 `build.ps1` 的注释和 `installer/SPEC.md` 的「几堵墙」里；`SPEC.md` 后来只剩一行指向文档站，`build.ps1` 的注释在 2026-09-24 精简时只留了现状那一句，经过收在这张卡里。
+
+## 结论与边界
+
+第一处：pwsh 遇到原生命令的非零退出码默认不停。那次 npm 报 `EUNSUPPORTEDPROTOCOL` 失败，脚本没停，组装目录是空的，electron-builder 照样打出了安装包。这个错的来源按「几堵墙」第 3 条推断：当时内核的 tarball 用 `npm pack` 打，清单里的 `workspace:*` 没有被替换成版本号，安装时 npm 不认这个协议。修法是每条 npm / pnpm 之后调用 `Assert-LastExit` 检查退出码；tarball 一律用 `pnpm pack` 打。
+
+第二处：electron-builder 按组装目录清单里的 `dependencies` 收集 `node_modules`，用 `npm install --no-save` 装进去的包不在清单里，它不收，打出来的 `app.asar` 里没有内核。修法是把依赖写进清单再 `npm install`。
+
+边界：两处都是当时记下的结论，没有留原始日志。2026-09-24 起安装包不再带内核，只带启动器，第二处现在管的是启动器的依赖（`semver`）；第一处与打什么无关，照旧成立。
+
+## 依据
+
+无物证：本卡内容转述自 `0910eb8` 里 `installer/SPEC.md`「几堵墙」第 3、4 条与 `build.ps1` 当时的注释，打包日志没有保留。

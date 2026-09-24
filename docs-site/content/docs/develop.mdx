@@ -81,29 +81,29 @@ pwsh installer\scripts\build.ps1
 
 **1. 检查工作区**：已跟踪的文件有未提交的改动就停下——打包用的是仓里的代码，有改动时打出来的 exe 说不清装了什么。未跟踪的新文件不算。
 
-{/* ref file="../installer/scripts/build.ps1" lines="21-23" */}
+{/* ref file="../installer/scripts/build.ps1" lines="18-19" */}
 
 **2. 构建启动器**：`apps/launcher` 里 `pnpm build`。
 
-{/* ref file="../installer/scripts/build.ps1" lines="25-29" */}
+{/* ref file="../installer/scripts/build.ps1" lines="21-25" */}
 
 **3. 读版本号**：启动器版本与 electron 版本都从 `apps/launcher/package.json` 读；安装包的版本号就是启动器的版本号。electron 的版本只写在它的 `devDependencies.electron` 这一处，经命令行传给 electron-builder——electron-builder 只在项目根找 electron 版本、不看 `directories.app`，所以 `electron-builder.yml` 里不写。内核要的 Electron 范围写在内核包的 `engines.electron`，启动器的测试检查两边对得上。
 
-{/* ref file="../installer/scripts/build.ps1" lines="31-33" */}
+{/* ref file="../installer/scripts/build.ps1" lines="27-29" */}
 
 **4. 组装应用目录**：把启动器的构建产物复制到 `build\app`，按启动器的清单写一份只留运行字段的 `package.json`（入口 `main.js`、依赖照抄），再 `npm install`。依赖必须写进清单：electron-builder 按清单收集 `node_modules`，`--no-save` 装的包它不收。
 
-{/* ref file="../installer/scripts/build.ps1" lines="35-56" */}
+{/* ref file="../installer/scripts/build.ps1" lines="31-51" */}
 
 **5. electron-builder**：`installer/node_modules` 里没有 electron-builder 就先 `npm install`，再按下面的配置打出 `gwb-setup-<版>.exe` 与 `gwb-portable-<版>.zip`，最后列出产物和大小。
 
-{/* ref file="../installer/scripts/build.ps1" lines="58-66" */}
+{/* ref file="../installer/scripts/build.ps1" lines="53-61" */}
 
 {/* ref file="../installer/electron-builder.yml" */}
 
 ### 不能删的检查
 
-- **每条 npm / pnpm 之后检查退出码**：pwsh 对原生命令的非零退出码默认不停，不检查的话前一步失败（比如组装目录是空的）也会一路打出安装包
+- **每条 npm / pnpm 之后检查退出码**：pwsh 对原生命令的非零退出码默认不停，不检查的话前一步失败（比如组装目录是空的）也会照样打出安装包（[打包脚本静默出错的两处](/trajectory/2026-09-15-wall-installer-silent-failures)）
 
 ### 验证
 
@@ -114,7 +114,7 @@ pwsh installer\scripts\build.ps1
 打包脚本自己在每一步检查退出码和产物，打完之后这样验证：
 
 - **打包形态能启动**：准备一个临时 home（`GWB_HOME` 给路径），`package.json` 里列内核包（本仓 `apps/desktop` 用 `pnpm pack` 打出的 tarball，以 `file:` 写进去）与内核要的 `cordis`，`pnpm install`；运行 `installer\build\dist\win-unpacked\` 里的 exe，启动器从 home import 内核，`gwb.log` 里有「up」那一行、没有 error。不设 `GWB_HOME` 运行它会打开真正的 default home
-- **启动器拒绝得了**：把那个 home 里的内核包删掉再启动，弹框说明缺内核包、退出码 1
+- **缺内核包时启动器拒绝启动**：把那个 home 里的内核包删掉再启动，弹框说明缺内核包、退出码 1
 - **单实例锁**：同一个 home 再启动一次，退出码 1、`runtime.json` 不变
 - **安装说明**：派一个没有上下文的子代理，只给它 `INSTALL.md`，让它往一个临时 home（`GWB_HOME` 给路径）里照做一遍、启动 `win-unpacked` 的内核，MCP 入口能调通、条目全部 ACTIVE 才算通过；它不得不问的每个问题都是说明的漏洞
 

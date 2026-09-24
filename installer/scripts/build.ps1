@@ -1,24 +1,20 @@
-# 生成安装包的全流程：检查工作区没有未提交的改动 → 构建启动器 → 组装应用目录 → electron-builder 生成
-# NSIS 安装包与便携 zip。产物在 build\dist\。安装包只带启动器与 Electron：内核和插件都装在 home 里，
-# 由创建 home 的一方照仓根 INSTALL.md 装（打包步骤与验证见文档站的「开发」页）
+# 打安装包。每一步做什么、哪几道检查不能删、打完怎么验证，见文档站
 param([string]$KernelDir = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent))
 
 $ErrorActionPreference = 'Stop'
 $installer = Split-Path $PSScriptRoot -Parent
 $launcherDir = "$KernelDir\apps\launcher"
 
-# 国内网络用的备用镜像；环境里已设置的优先
+# 国内网络下载 electron-builder 的二进制要走镜像
 if (-not $env:ELECTRON_BUILDER_BINARIES_MIRROR) {
   $env:ELECTRON_BUILDER_BINARIES_MIRROR = 'https://npmmirror.com/mirrors/electron-builder-binaries/'
 }
 
-# 原生命令失败就立即停止——出过一次组装目录是空的却继续打包的事故（npm EUNSUPPORTEDPROTOCOL
-# 没有让脚本停下），不能再有
+# pwsh 遇到原生命令的非零退出码默认不停，每条 npm / pnpm 之后都要调用它
 function Assert-LastExit([string]$what, [int]$ok = 0) {
   if ($LASTEXITCODE -ne $ok) { throw "$what 失败（退出码 $LASTEXITCODE）" }
 }
 
-# 打包用的是仓里的代码，有未提交改动时打出来的 exe 说不清装了什么（未跟踪的新文件不拦）
 $dirty = git -C $KernelDir status --porcelain | Where-Object { $_ -notmatch '^\?\?' }
 if ($dirty) { throw "内核仓有已跟踪文件的未提交改动，先提交或暂存：`n$($dirty -join "`n")" }
 
@@ -37,8 +33,7 @@ $appdir = "$installer\build\app"
 Remove-Item -Recurse -Force $appdir -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $appdir | Out-Null
 Copy-Item "$launcherDir\dist\*.js" $appdir
-# 清单只留运行要的字段；依赖必须写进清单——electron-builder 按清单收集 node_modules，
-# --no-save 装的包它不收（出过打出来的 asar 里缺包的问题）
+# 依赖必须写进清单：electron-builder 按清单收集 node_modules，--no-save 装的包它不收
 [ordered]@{
   name         = 'gwb-kernel'
   productName  = $launcher.productName
