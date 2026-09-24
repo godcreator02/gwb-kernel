@@ -91,6 +91,9 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 
 新的在上。
 
+- 2026-09-24｜人要求用 cordis 4.0.0-rc.10：它与 loader 1.0.0-rc.7、include 1.1.0 是一组，一起升，内核与词汇表包升到 0.4.0（轨迹卡「cordis rc.10 一组」）；
+  0.3.0 留在源上没人用。之前在隔离 home `default-clone-2609241603` 用新启动器跑内核 0.3.0 加 default 的整套插件：除故意停用的 windows-backup、cgm-alert
+  与 default 里本来就起不来的 gitea、mineru、docfirst-workflow，其余条目全部 ACTIVE，与 default 的基线一致｜总控台会话
 - 2026-09-24｜第二步代码与文档（devkit 仓 `16577df`，界面插件仓 `afd470c`）：两份比对规则 `kernel-compat.ts` 加对照测试；插件管理 `list` 回执
   `testedKernel` 改名 `kernelRange`，`update-all` 跳过内核包与 `cordis`，新命令 `plugin-manager.update-kernel`；`devkit.release` 查 peer 内核包；
   模板写 peer 内核包；`home.new` 依次装内核包、`cordis`、基础插件。实测到 pnpm 12 在清单里原来写 `^` 时，`add` 点名精确版本并带 `--save-exact`

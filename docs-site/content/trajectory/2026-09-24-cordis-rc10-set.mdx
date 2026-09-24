@@ -1,0 +1,33 @@
+---
+title: 内核换到 cordis 4.0.0-rc.10 一组：loader 1.0.0-rc.7、include 1.1.0 跟着升，内核与词汇表包升到 0.4.0
+born-at: 2026-09-24T16:20
+type: choice
+parent: [2026-09-24-kernel-in-home]
+label: cordis rc.10 一组
+domain: 这条线
+---
+
+## 背景
+
+内核装进 home 之后，home 根上只有一份 `cordis`，版本由内核包的 peer 决定。内核 0.3.0 写的是 4.0.0-rc.9；home 里插件原来用的是 pnpm 按 peer
+补装的 rc.10。人要求用 rc.10。
+
+把内核包的 `cordis` 改成 rc.10 之后，`pnpm peers check` 报 rc.10 要求 `@cordisjs/plugin-loader ^1.0.0-rc.7` 与 `@cordisjs/plugin-include ^1.1.0`：
+这三个包是 2026-09-08 一起发的一组，彼此的 peer 都指向对方的新版，只换 cordis 不行。
+
+## 结论与边界
+
+- 内核包：`cordis` 4.0.0-rc.10（peer 与 dev）、loader 1.0.0-rc.7、include 1.1.0；词汇表包 dev 的 `cordis` 跟着换，它的 peer `^4.0.0-rc.9` 不变
+- **内核与词汇表包升到 0.4.0**：本仓规矩是升级 loader、include 的版本就升 x（插件管理直接用 loader 的条目树，拿不准会不会弄坏一律按会弄坏算）。
+  0.3.0 发出一个多小时、还没有插件用上，现在升代价最小；先考虑过只换 cordis、按补丁发 0.3.1，查到 peer 要求之后放弃
+- devkit 仓的插件管理与 devkit 在 peer 里写 `^0.4.0`，dev 的 loader、include、cordis 换成同一组，插件管理的条目树测试用这组真实版本跑
+
+## 代价与遗留
+
+- 团队源上留着一个没人用的 0.3.0（cordis rc.9 那组）
+- 之前投给下游 13 个仓的「要追 0.3.0」通知改成 0.4.0
+
+## 依据
+
+- 内核仓换这组之后 `pnpm peers check` 回 No peer dependency issues found，`pnpm check` 9 个测试文件 82 个用例全绿（`apps/desktop/tests/main.test.ts` 用真实的 cordis、loader、include）
+- `pnpm view` 查到 loader 1.0.0-rc.7 的 peer 是 `cordis ^4.0.0-rc.10`，include 1.1.0 的 peer 是 `@cordisjs/plugin-loader ^1.0.0-rc.7` 与 `cordis ^4.0.0-rc.10`

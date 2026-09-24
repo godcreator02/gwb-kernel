@@ -1,7 +1,7 @@
 {
   "name": "@godcreator/gwb-kernel-desktop",
   "productName": "gwb-kernel",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": {"name": "godcreator"},
   "type": "module",
   "main": "dist/main.js",
@@ -22,16 +22,16 @@
   },
   "//peerDependencies": "cordis 由 home 根上的那一份满足，内核与插件解析到同一份；判据见文档站",
   "peerDependencies": {
-    "cordis": "4.0.0-rc.9"
+    "cordis": "4.0.0-rc.10"
   },
   "dependencies": {
-    "@cordisjs/plugin-loader": "1.0.0-rc.6",
-    "@cordisjs/plugin-include": "1.0.5"
+    "@cordisjs/plugin-loader": "1.0.0-rc.7",
+    "@cordisjs/plugin-include": "1.1.0"
   },
   "devDependencies": {
     "@godcreator/gwb-plugin-api": "workspace:*",
     "@types/node": "^24.0.0",
-    "cordis": "4.0.0-rc.9",
+    "cordis": "4.0.0-rc.10",
     "electron": "44.1.1",
     "typescript": "^7.0.2"
   }
