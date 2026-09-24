@@ -620,16 +620,6 @@
     }
   },
   "content/docs/seams/loading.mdx": {
-    "../apps/desktop/src/bare-import.ts:17-29": {
-      "kind": "git",
-      "blob": "a478b159ac3080690e9f566b9194042a2df0330a",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
-      "lines": [
-        17,
-        29
-      ],
-      "hash": "beb56acd04f52c580a099652dbd5a022f9f473e88f8f2d83bc0a1aecb4ca10f2"
-    },
     "has ../apps/desktop/tests/bare-import.test.ts \"裸名解析并 import 成功\"": {
       "kind": "has"
     },
@@ -648,7 +638,7 @@
     "../apps/desktop/src/main.ts:275-282": {
       "kind": "git",
       "blob": "6d82fe75a5d7868164c5f2c3f2a629a58b756cc0",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "586976bfbe5a189d067fafba58a9fa24648e905d",
       "lines": [
         275,
         282
@@ -658,7 +648,7 @@
     "../apps/desktop/src/main.ts:168-171": {
       "kind": "git",
       "blob": "6d82fe75a5d7868164c5f2c3f2a629a58b756cc0",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "586976bfbe5a189d067fafba58a9fa24648e905d",
       "lines": [
         168,
         171
@@ -668,12 +658,22 @@
     "../apps/desktop/src/main.ts:304-326": {
       "kind": "git",
       "blob": "6d82fe75a5d7868164c5f2c3f2a629a58b756cc0",
-      "commit": "770fbd5be351df2b70b02fa76ccbcc3a9cf63a56",
+      "commit": "586976bfbe5a189d067fafba58a9fa24648e905d",
       "lines": [
         304,
         326
       ],
       "hash": "450a65f1cadb3968ec53370ff461baf3d6e8e004929380305253fff670db2a11"
+    },
+    "../apps/desktop/src/bare-import.ts:12-24": {
+      "kind": "git",
+      "blob": "f304d4b95cf3b73de23f9f9b129fa0d0e77b8c76",
+      "commit": "586976bfbe5a189d067fafba58a9fa24648e905d",
+      "lines": [
+        12,
+        24
+      ],
+      "hash": "7f07da4b2449d68dc6c28532d5dfc4936e1a319dfa5aa6d65a1b19185878f8c1"
     }
   },
   "content/docs/seams/log.mdx": {
