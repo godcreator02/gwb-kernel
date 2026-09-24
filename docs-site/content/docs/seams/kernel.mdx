@@ -16,11 +16,11 @@ description: 连接内核应用与任何插件；接口是内核应用在 cordis
 
 `gwbKernel` 的四样：
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="18-31" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="12-25" */}
 
 插件的 `apply` 拿到的上下文类型 `GwbContext` 上只有 `gwbKernel` 这一个服务：
 
-{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="33-36" */}
+{/* ref file="../packages/gwb-plugin-api/src/index.ts" lines="27-30" */}
 
 内核应用的实现就是一个对象，在根上下文上提供：
 
