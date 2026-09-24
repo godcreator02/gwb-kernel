@@ -182,6 +182,7 @@ function listenersAddedSince(before: Map<string, Set<unknown>>): [string, (...ar
 interface BootOptions extends Omit<FakeElectronOptions, 'appData'> {
   gwbHome: string
   appData?: string
+  launcherVersion?: string
   resolveReady?: boolean
 }
 
@@ -196,6 +197,8 @@ async function importMain(options: BootOptions): Promise<BootedKernel> {
   const electron = makeFakeElectron({ ...options, appData })
   harness.electron = electron.module
   process.env.GWB_HOME = options.gwbHome
+  if (options.launcherVersion === undefined) delete process.env.GWB_LAUNCHER_VERSION
+  else process.env.GWB_LAUNCHER_VERSION = options.launcherVersion
   const before = listenerSnapshot()
   vi.resetModules()
   await import('../src/main')
@@ -285,6 +288,7 @@ afterEach(() => {
   stderrWrite?.mockRestore()
   stderrWrite = undefined
   delete process.env.GWB_HOME
+  delete process.env.GWB_LAUNCHER_VERSION
   delete probeGlobal.__gwbMainTestProbe
   // main.ts 退出时不关日志文件，这里替它关，临时目录才删得掉
   for (const descriptor of openedDescriptors.splice(0)) fs.closeSync(descriptor)
@@ -459,6 +463,23 @@ describe('main.ts：插件看到的内核', () => {
     expect(probe.kernel?.version).toBe(kernelPackageVersion)
     const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
     expect(await relayCommand({}, 'demo.echo', { a: 1 })).toEqual({ ok: true, data: { command: 'demo.echo', args: { a: 1 }, context: { via: 'ui' } } })
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('启动器在 GWB_LAUNCHER_VERSION 里交来安装包版本：插件拿到 launcherVersion，这个环境变量读完就删', async () => {
+    silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins(), launcherVersion: '0.3.1' })
+    expect(probeGlobal.__gwbMainTestProbe.kernel?.launcherVersion).toBe('0.3.1')
+    expect(process.env.GWB_LAUNCHER_VERSION).toBeUndefined()
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('没有 GWB_LAUNCHER_VERSION（从源码直接启动内核）：插件拿到的 launcherVersion 是 undefined', async () => {
+    silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
+    expect(probeGlobal.__gwbMainTestProbe.kernel?.launcherVersion).toBeUndefined()
     await quitAndWaitForCleanup(booted)
   })
 

@@ -16,6 +16,8 @@ export interface GwbKernelApi {
   dataDir: string
   /** 内核自己的版本号（内核包清单里那个） */
   version: string
+  /** 安装包（启动器）的版本号；从源码直接启动内核、或由 0.3.1 之前的安装包加载时没有 */
+  launcherVersion?: string
   /** 往页面推一条事件；页面经 `window.gwb.on` 收 */
   emit(payload: unknown): void
   /**

@@ -19,6 +19,9 @@ const kernelPackageDir = path.join(moduleDir, '..')
 const kernelManifest = JSON.parse(fs.readFileSync(path.join(kernelPackageDir, 'package.json'), 'utf8')) as { version: string }
 const kernelVersion = kernelManifest.version
 const kernelImports = kernelSharedImports(kernelPackageDir)
+/** 启动器写进环境变量的安装包版本；读完就删，插件启动的子进程（比如从源码启动的另一个内核）不继承它 */
+const launcherVersion = process.env.GWB_LAUNCHER_VERSION
+delete process.env.GWB_LAUNCHER_VERSION
 
 declare module 'cordis' {
   interface Context {
@@ -214,6 +217,7 @@ ctx.on('internal/status', () => scheduleShellPush())
 const kernel: GwbKernelApi = {
   dataDir,
   version: kernelVersion,
+  launcherVersion,
   emit: (payload) => mainWindow?.webContents.send('gwb:event', payload),
   setShell: (url) => {
     currentShellUrl = url

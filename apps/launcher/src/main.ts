@@ -17,6 +17,8 @@ if (electronVersion === undefined) throw new Error('启动器只能在 Electron 
 const homeDir = homePathFor(process.env.GWB_HOME ?? 'default', app.getPath('appData'))
 // 内核启动时按同一条规则再选一次 home；给它绝对路径，两边一定是同一个目录
 process.env.GWB_HOME = homeDir
+// 内核读它报安装包的版本：打包时应用清单的 version 照抄启动器的，从源码运行时读的就是启动器的清单
+process.env.GWB_LAUNCHER_VERSION = app.getVersion()
 
 const kernel = kernelEntryFor(homeDir, electronVersion)
 if (kernel.ok) {

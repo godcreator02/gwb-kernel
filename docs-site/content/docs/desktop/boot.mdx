@@ -17,7 +17,7 @@ description: 内核一次启动按什么顺序做事、哪几处顺序不能换�
 
 ## 在这之前：启动器找到内核
 
-从安装包启动时，Electron 先运行的是启动器：启动器选定 home、把绝对路径写回 `GWB_HOME`，读 home 里内核包清单的 `engines.electron` 与 `main`，当前 Electron 在范围里才 import 内核入口；home 里没有内核包、版本不满足时，弹框说明原因、退出码 1，内核一行都不运行（[启动器加载内核](/docs/seams/launcher)）。从仓里 `pnpm start` 时没有这一步，Electron 直接运行内核。下面从内核入口模块开始求值算起。
+从安装包启动时，Electron 先运行的是启动器：启动器选定 home、把绝对路径写回 `GWB_HOME`，把安装包的版本号写进 `GWB_LAUNCHER_VERSION`，读 home 里内核包清单的 `engines.electron` 与 `main`，当前 Electron 在范围里才 import 内核入口；home 里没有内核包、版本不满足时，弹框说明原因、退出码 1，内核一行都不运行（[启动器加载内核](/docs/seams/launcher)）。从仓里 `pnpm start` 时没有这一步，Electron 直接运行内核。下面从内核入口模块开始求值算起。
 
 ## 两段：模块求值时与 ready 之后
 
@@ -33,7 +33,7 @@ description: 内核一次启动按什么顺序做事、哪几处顺序不能换�
 
 ready 之后这一段的顺序本身就是约束：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="275-292" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="279-296" */}
 
 - **`gwbKernel` 在注册 loader 之前提供**：它在模块求值时就已提供，任何插件加载时都已经在了（[`gwbKernel` 要在注册 loader 之前提供](/trajectory/2026-09-07-wall-gwbkernel-provide-early)）
 - **窗口先于 loader**：页面在插件加载的过程中就显示只读状态页，页面的 console 也从一开始就进日志

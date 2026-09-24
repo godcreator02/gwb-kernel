@@ -1,6 +1,6 @@
 ---
 title: 9 启动器加载内核 engines.electron · main
-description: 连接安装包里的启动器与装在 home 里的内核包：启动器按和内核同一条规则选定 home、把绝对路径写回 GWB_HOME，读 home 里内核包清单的 engines.electron 与 main，Electron 版本在范围内才 import 内核入口；启动器与内核包之间没有代码接口，只靠这两个清单字段与一个环境变量
+description: 连接安装包里的启动器与装在 home 里的内核包：启动器按和内核同一条规则选定 home、把绝对路径写回 GWB_HOME，读 home 里内核包清单的 engines.electron 与 main，Electron 版本在范围内才 import 内核入口；再把安装包的版本号写进 GWB_LAUNCHER_VERSION；启动器与内核包之间没有代码接口，只靠这两个清单字段与两个环境变量
 ---
 
 **本页回答**：安装包里只有启动器，内核装在 home 里，启动器凭什么找到内核、判断能不能启动；启动器和内核包各保证什么；由什么测试保护。
@@ -18,6 +18,14 @@ description: 连接安装包里的启动器与装在 home 里的内核包：启�
 
 {/* ref file="../apps/launcher/src/main.ts" lines="17-19" */}
 
+**环境变量 `GWB_LAUNCHER_VERSION`**：启动器把安装包的版本号写进去。打包时安装包里应用清单的 `version` 照抄启动器的，从源码运行启动器时读的就是启动器自己的清单，所以 `app.getVersion()` 两种情况下都是启动器的版本：
+
+{/* ref file="../apps/launcher/src/main.ts" lines="20-21" */}
+
+内核在模块求值时读出它、随即从环境里删掉，放进 `gwbKernel.launcherVersion` 交给插件（[内核服务](/docs/seams/kernel)）；插件启动的子进程因此不会继承到这个版本号，比如从源码另启动一个内核时，它不会误报自己来自安装包：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="22-24" */}
+
 **内核包清单里的两个字段**：`engines.electron` 写内核要的 Electron 版本范围，`main` 写入口文件：
 
 {/* ref file="../apps/desktop/package.json" lines="9-9" */}
@@ -30,6 +38,7 @@ description: 连接安装包里的启动器与装在 home 里的内核包：启�
 
 启动器保证：
 - 交给内核的 `GWB_HOME` 是它选定的那个绝对路径
+- 交给内核的 `GWB_LAUNCHER_VERSION` 是安装包的版本号，import 内核入口之前就已写好
 - 只读 home 里内核包的清单，不写 home，不替人安装内核包或别的包
 - 拒绝时说清是哪个 home、缺了什么、该怎么补
 
@@ -45,7 +54,7 @@ description: 连接安装包里的启动器与装在 home 里的内核包：启�
 
 - 启动器不检查插件和内核兼不兼容：那是插件 peer 里的内核包范围，由插件管理报告（见 [home 布局与条目树](/docs/seams/home)）
 - 启动器不检查 home 里有没有 `cordis` 与插件：缺了 `cordis`，import 内核入口时就失败，启动器弹框退出；缺插件时内核照常启动，在只读状态页上看得到
-- 内核不知道自己是被启动器加载的，还是从仓里 `pnpm start` 直接运行的
+- 内核只凭 `GWB_LAUNCHER_VERSION` 有没有来报安装包的版本，不因为是不是经启动器加载而换别的做法：从仓里 `pnpm start` 直接运行、或由 0.3.1 之前的启动器加载时没有这个变量，`launcherVersion` 就没有，其余照常
 
 ## 测试
 
@@ -53,4 +62,6 @@ description: 连接安装包里的启动器与装在 home 里的内核包：启�
 
 {/* has file="../apps/launcher/tests/launch-plan.test.ts" text="启动器带的 Electron 满足内核包声明的 engines.electron" */}
 
-从 home 真的加载起内核、拒绝时弹框，只能实机验证，步骤见[开发](/docs/develop)。
+内核读出 `GWB_LAUNCHER_VERSION` 并删掉它，由 `apps/desktop/tests/main.test.ts` 证明；启动器写入它、从 home 真的加载起内核、拒绝时弹框，只能实机验证，步骤见[开发](/docs/develop)。
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="启动器在 GWB_LAUNCHER_VERSION 里交来安装包版本" */}

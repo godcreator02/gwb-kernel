@@ -33,7 +33,7 @@ react 的四个文件由内核包构建时生成，怎么生成见[开发](/docs
 
 这张表作为 `gwb:shell` 消息的 `imports` 字段推给页面；页面入口经 `window.gwb.onShell` 收到后注入成 `<script type="importmap">`（通道见 [IPC 通道](/docs/seams/ipc)）：
 
-{/* ref file="../apps/desktop/src/api.ts" lines="39-44" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="41-46" */}
 
 名单写在内核包清单里、不写死在内核代码里：页面代码的构建脚本和 devkit 的发版检查都要知道这份名单，它们读的是装着的内核包清单。
 

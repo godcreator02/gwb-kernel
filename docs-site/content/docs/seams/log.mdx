@@ -16,7 +16,7 @@ description: 连接内核应用与所有插件：插件、内核、页面 consol
 
 **一行的格式**是 `<ISO 时间> <级别> <名字> <正文>`，同时写 stderr 与 `<home>/gwb.log`；正文由 cordis 自己的 `Logger.format` 格式化，所有级别都写，包括 `debug`：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="67-72" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="70-75" */}
 
 **收**：插件调用 `ctx.logger.exporter({ export(message) { … } })` 注册一个 exporter，就能收到内核、插件、页面三个来源的全部日志。注册是 cordis 的一个 effect，插件卸载时自动注销。注册之前的日志在 cordis 自带的缓冲 `ctx.logger.buffer` 里（最近 1000 条，不含 `debug`）；日志插件就是先读缓冲补上历史、再注册 exporter。cordis 在写日志的那次调用里依次同步调用每个 exporter 的 `export`。
 
