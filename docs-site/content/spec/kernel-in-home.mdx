@@ -93,6 +93,12 @@ peer 必须同时写上内核包——外壳 0.13.7 起不再声明 react，devk
 
 新的在上。
 
+- 2026-09-24｜第四步：`INSTALL.md` 与 README 已按新做法改写（装启动器 → 往 home 里装内核包与 `cordis` → 装插件；旧安装包装的 home 先补内核包再换安装包；
+  升内核用 `plugin-manager.update-kernel` 加重启），等新安装包上了发布页再提交——在那之前「下载最新的安装包」拿到的还是 v0.2.6。人定启动器升 0.3.0，
+  让新安装包排在 v0.2.6 之后；`build.ps1` 打出 `gwb-setup-0.3.0.exe`，`win-unpacked` 的 exe 在没有内核包的 home 上弹框、关掉后退出码 1、home 里不写文件
+  （验收第三条，安装版 0.1.0 同样验过；弹框窗口的标题栏是 Electron 给的「Error」）。发布页要经 gwb-gitea 插件，它在 default 里起不来、另一个会话正在迁，
+  等它好了再发（先存草稿、人确认后公开）。另外：devkit 0.18.12（模板从内核包读外置名单）、外观 theme 0.3.8（peer 内核包 `^0.4.1`）、
+  插件管理 0.8.2（`list` 只给插件标内核兼容）已发并装进 default｜总控台会话
 - 2026-09-24｜第五步完成。人定内核与词汇表包 0.4.1、外壳升 y（0.13.6 被另一个会话占用，发的是 0.13.7）。内核包构建时用 esbuild 把 react 打进
   `dist/react/`，在自己清单的 `gwb.shared` 里声明四个包名，启动时解析、importmap 里内核优先，插件的同名声明忽略并记一条 warn（同一句只记一次）；
   根目录 `pnpm check` 改成先构建内核包（轨迹卡「react 收进内核」）。外壳 0.13.7 撤掉 react 与 `gwb.shared`，peer 写内核包 `^0.4.1`。实测：
@@ -153,5 +159,5 @@ peer 必须同时写上内核包——外壳 0.13.7 起不再声明 react，devk
 
 - [x] 隔离 home 里，内核与每个写 peer `cordis` 的插件解析到的 cordis 是同一个真实路径，home 的 `node_modules/.pnpm` 里只有一份 cordis
 - [x] 内核的开发版经 `devkit.dev` 装进隔离 home，重启后 `gwbKernel.version` 是新版，没有重新安装 exe
-- [ ] home 里没有内核包时，启动器弹框说明并以退出码 1 退出
+- [x] home 里没有内核包时，启动器弹框说明并以退出码 1 退出
 - [ ] 照新的 `INSTALL.md` 由不带上下文的子代理往临时 home 装一遍，MCP 入口连得上、条目全部 ACTIVE
