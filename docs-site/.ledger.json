@@ -372,6 +372,12 @@
     },
     "has ../apps/desktop/src/index.html \"shellModule.default(root)\"": {
       "kind": "has"
+    },
+    "has ../apps/desktop/package.json \"^44.1.1\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/package.json \"dist/main.js\"": {
+      "kind": "has"
     }
   },
   "content/docs/desktop/log-file.mdx": {
@@ -962,6 +968,57 @@
         56
       ],
       "hash": "e17dfbc0e2725e9f9854fdd0ca6ec0ecaf41296bb1dea0641a1339870f83e395"
+    }
+  },
+  "content/docs/seams/launcher.mdx": {
+    "../apps/launcher/src/main.ts:17-19": {
+      "kind": "git",
+      "blob": "f6547781d717176fa42bd978be16a85a31a7c5af",
+      "commit": "7f7e2e33de133cb3d3bed88528c0a8fac48308aa",
+      "lines": [
+        17,
+        19
+      ],
+      "hash": "475fe289ea9861bf8f64b0ea05b65256592dda597bce4e20c354ed8ce92755d3"
+    },
+    "../apps/launcher/src/launch-plan.ts:28-53": {
+      "kind": "git",
+      "blob": "7dff040f70bdaa876e353c4f05b40bf9fbdd052e",
+      "commit": "7f7e2e33de133cb3d3bed88528c0a8fac48308aa",
+      "lines": [
+        28,
+        53
+      ],
+      "hash": "29a02d7fa8f117282a3b11431b91cb224ea217b099d21e87b224e8384b2bd05c"
+    },
+    "../apps/desktop/package.json:20-22": {
+      "kind": "git",
+      "blob": "896e2394761cd5bf41250f83437fa1ad9ebda5d3",
+      "commit": "7f7e2e33de133cb3d3bed88528c0a8fac48308aa",
+      "lines": [
+        20,
+        22
+      ],
+      "hash": "d14faf1367c1399c93d85b7b7f599918e30151b9968d25654695137325010f8a"
+    },
+    "../apps/launcher/src/main.ts:21-29": {
+      "kind": "git",
+      "blob": "f6547781d717176fa42bd978be16a85a31a7c5af",
+      "commit": "7f7e2e33de133cb3d3bed88528c0a8fac48308aa",
+      "lines": [
+        21,
+        29
+      ],
+      "hash": "597eb062da8bfaf40deb67c580d0a8c4e0339778989ff48c9278c779f7b8ccee"
+    },
+    "has ../apps/launcher/tests/launch-plan.test.ts \"和内核选 home 的规则逐个输入结果相同\"": {
+      "kind": "has"
+    },
+    "has ../apps/launcher/tests/launch-plan.test.ts \"当前 Electron 不在内核要求的范围里：拒绝，说出要求的范围与当前版本\"": {
+      "kind": "has"
+    },
+    "has ../apps/launcher/tests/launch-plan.test.ts \"启动器带的 Electron 满足内核包声明的 engines.electron\"": {
+      "kind": "has"
     }
   }
 }
