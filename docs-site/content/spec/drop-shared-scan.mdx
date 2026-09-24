@@ -7,7 +7,7 @@ description: 内核不再扫描 home 里各包的 gwb.shared，importmap 只剩�
 
 **本页回答**：「任何包都能在清单里写 `gwb.shared`、内核扫描 home 拼进 importmap」这套机制为什么还在、删掉它要改哪几个仓、按什么顺序、哪几件事要人先定。
 
-**状态：人定（2026-09-24）不等块笔记、内核直接删扫描，内核升 0.5.0（升 x）。块笔记 `main` 已在 9e0b674 撤掉界面包的 `gwb.shared`；内核仓第四步的代码与现状页已改完、待提交与发版；devkit（第五步）由另一个会话做，界面插件仓（第六步）未动。**
+**状态：人定（2026-09-24）不等块笔记、内核直接删扫描，内核升 0.5.0（升 x）。块笔记 `main` 已在 9e0b674 撤掉界面包的 `gwb.shared`；内核 0.5.0 已发（内核仓 b17001f），default 还没升；devkit（第五步）已做完并发版（devkit 0.18.14、插件管理 0.8.4）；界面插件仓（第六步）未动，已往它的收件页投了通知。**
 
 ## 验收
 
@@ -15,7 +15,7 @@ description: 内核不再扫描 home 里各包的 gwb.shared，importmap 只剩�
 - [x] 内核仓里扫描 home、同名冲突处理、「同一句警告只记一次」的代码与测试删掉；「页面上的包名」接缝页、接缝图、关键设计、内核应用页、术语表、开发页改成只讲内核给的包名
 - [x] 块笔记 v2 的界面包 `@godcreator/block-notebook-ui` 不再声明 `gwb.shared`；v2 各插件浏览器端产物把方言打包进去，外置名单只剩内核包声明的四个名字
 - [ ] 论文插件（`gwb-paper-fetch` 仓）浏览器端外置名单只剩内核包声明的四个名字
-- [ ] devkit 发版检查：浏览器端产物能 import 的名字只取内核包的 `gwb.shared`；非内核包写了 `gwb.shared` 就拒；`devkit.capabilities` 只对内核包报 importmap 外置名
+- [x] devkit 发版检查：浏览器端产物能 import 的名字只取内核包的 `gwb.shared`；非内核包写了 `gwb.shared` 就拒；`devkit.capabilities` 只对内核包报 importmap 外置名
 - [ ] default home 里除了内核包，没有任何已装的包在清单里写 `gwb.shared`，块笔记窗格照常显示
 
 ## 由来
@@ -47,7 +47,7 @@ devkit 仓全生态精简计划第五期原定「react 改由内核提供，删�
 1. ~~**块笔记 v2 走哪边**~~（已定：块笔记 `main` 在 9e0b674 按推荐做了，界面包撤掉声明、各插件自己打包方言）：推荐**界面包撤掉声明、各插件自己打包方言**。理由见上面「为什么删」；代价是每个带界面的块笔记插件多带一份 mdast / micromark，v2 线要写一张新轨迹卡推翻「拆掉旧 lib」里的这一条，计划页里「核心插件的 `./shared` 入口进 importmap」一并删掉。反过来保留机制的话，就要把 devkit 第三期那条改掉，接缝页把「库也能声明」写成长期约定
 2. ~~**内核删扫描代码什么时候发**~~（人定 2026-09-24：不等块笔记换线，内核直接删）：推荐**等 default 换成 v2 之后**（v2 计划页 W6）。default 现在跑的是块笔记 `main` 线，它的库还靠这套机制；`main` 线只修关键 bug，不为这件事改它。另一种做法是内核先发、default 暂时不升内核，但只要有人在 default 上运行 `plugin-manager.update-kernel`，块笔记窗格就起不来
 3. ~~**内核版本号升哪一位**~~（人定 2026-09-24：升 x，0.5.0；同一版还删掉了词汇表包，接口类型改由内核包的包根导出）：推荐**升 y**，但发之前按 gwb-release 再问一次人。按契约清单，「别的包的 `gwb.shared` 不再收录」属于调用方依赖着的语义变了，字面上该升 x；可发版时已经没有任何装着的包还依赖它（这正是第 2 条要等的前提），升 x 只会让全部插件 peer 里的 `^0.4.x` 出范围、逐个重发
-4. **devkit 拦不拦非内核包写 `gwb.shared`**：推荐**拦**。内核不再警告，这是唯一能让写错的人当场知道的地方。这条检查要等块笔记 `main` 线不再发版之后才能上（它的库还声明着，会被拦住）
+4. ~~**devkit 拦不拦非内核包写 `gwb.shared`**~~（人定 2026-09-24：拦，devkit 0.18.14 起）：推荐**拦**。内核不再警告，这是唯一能让写错的人当场知道的地方。这条检查要等块笔记 `main` 线不再发版之后才能上（它的库还声明着，会被拦住）
 
 ## 实施步骤
 
@@ -74,10 +74,10 @@ devkit 仓全生态精简计划第五期原定「react 改由内核提供，删�
 
 **第五步：devkit 仓**（动手前读 `gwb-devkit` 仓的 AGENTS）
 
-- [ ] `artifact-check.ts`：浏览器端产物能 import 的名字只取内核包清单的 `gwb.shared`；非内核包写了 `gwb.shared` 就拒（待决定第 4 条）
-- [ ] `capabilities.ts` 与 `devkit.capabilities` 的说明：importmap 外置名只对内核包报
-- [ ] 说明书 gwb-release、gwb-devkit 的正本与附件 `references/rules.md`、模板、「页面代码与 importmap」规矩页改写后重新生成；全生态精简计划第三期、第五期里对应的几项勾掉或改写
-- [ ] 核对 `plugin-manager.shared` 命令：计划页写着要删，源码里已经搜不到，确认后把计划页那一项勾掉
+- [x] `artifact-check.ts`：浏览器端产物能 import 的名字只取内核包清单的 `gwb.shared`；非内核包写了 `gwb.shared` 就拒（待决定第 4 条）
+- [x] `capabilities.ts` 与 `devkit.capabilities` 的说明：importmap 外置名只对内核包报
+- [x] 说明书 gwb-release、gwb-devkit 的正本与附件 `references/rules.md`、模板、「页面代码与 importmap」规矩页改写后重新生成；全生态精简计划第三期、第五期里对应的几项勾掉或改写
+- [x] 核对 `plugin-manager.shared` 命令：计划页写着要删，源码里已经搜不到，确认后把计划页那一项勾掉
 
 **第六步：界面插件仓**（动手前读 `gwb-ui-plugins` 仓的 AGENTS）
 
@@ -93,5 +93,6 @@ devkit 仓全生态精简计划第五期原定「react 改由内核提供，删�
 
 新的在上。
 
+- 2026-09-24｜发版：内核 0.5.0（内核仓 b17001f）；devkit 0.18.14、插件管理 0.8.4（devkit 仓 128c7f6，在跑内核 0.5.0 的隔离 home 里调 `devkit.release` 发的——default 还是 0.4.1，不在它们新的 peer 范围里）。隔离 home `kernel05-2609242251`：`plugin-manager.update-kernel {"version":"0.5.0"}` 后重启，页面 importmap 只有 react 四个名字，外壳正常挂上，日志没有 error；基础插件（peer 还写 `^0.4.x`）照常 active、标 `kernelUntested`，devkit 与插件管理新版 active、范围包含 0.5.0。default 没升。发之前往 15 个下游仓的收件页投了「要适配内核 0.5」（其中 4 个仓的收件页原本就有别人未提交的改动，写了没提交）｜总控台会话
 - 2026-09-24｜人定不等块笔记、内核直接删扫描、内核升 0.5.0。块笔记 `main` 已在 9e0b674 撤掉界面包的 `gwb.shared`、各插件把方言打包进去、浏览器端外置名单改从内核包清单读。内核仓：`imports.ts` 只留 `kernelSharedImports`，`main.ts` 启动时算一次、推送时直接用，扫描、同名冲突与警告去重连同测试删掉；同一版把词汇表包并进内核包（接口类型从内核包的包根导出）。现状页（页面上的包名、接缝图、`shared-names` 图、关键设计、开发、内核应用、术语表、入口页、新页「包根导出的接口类型」）与 AGENTS / README / INSTALL 已改，写了轨迹卡「删掉 gwb.shared 扫描」「词汇表包并进内核包」；待提交、发版、default 升级。代价：default 里的块笔记旧版 0.5.3 还靠扫描把自己的包名放进 importmap，default 升到内核 0.5.0 之前要先把块笔记升到不再声明的版本｜内核仓会话
 - 2026-09-24｜写方案：查到还在声明的只有内核包、块笔记 `main` 线的库、v2 线的界面包三处；v2 线的「拆掉旧 lib」与 devkit 第三期方向相反，列为待决定第 1 条｜总控台会话
