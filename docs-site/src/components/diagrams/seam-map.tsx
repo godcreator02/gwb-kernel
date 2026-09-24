@@ -101,7 +101,7 @@ export function SeamMap() {
       <Note x={32} y={542} size={10.5} mono>
         packages/gwb-plugin-api
       </Note>
-      <Box x={32} y={550} w={146} h={46} lines={['只有类型', 'GwbKernelApi · GwbContext …']} tone="a" />
+      <Box x={32} y={550} w={146} h={46} lines={['只有类型', 'GwbKernelApi 等']} tone="a" />
 
       <GroupLabel x={222} y={526} name="安装包" where="apps/launcher · installer/" />
       <Box x={222} y={532} w={288} h={40} lines={['启动器', '安装包里只有它与 Electron']} tone="a" />
