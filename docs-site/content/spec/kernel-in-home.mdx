@@ -93,6 +93,7 @@ peer 必须同时写上内核包——外壳 0.13.7 起不再声明 react，devk
 
 新的在上。
 
+- 2026-09-24｜`gwb-plugin-sources` 已经退役（命令并回插件管理，devkit 仓 d7a098a；源码在基础插件仓 915e8d6 删掉），不是没迁：`INSTALL.md` 的基础插件清单去掉它，剩 11 个，找插件、配第三方源改用 `plugin-manager.search` 与 `plugin-manager.source.add`；旧 home 里装着的写明用 `plugin-manager.uninstall` 卸掉。default 里的那份已由另一个会话经人同意卸掉｜总控台会话
 - 2026-09-24｜第四步完成。人同意后把内核仓 `main` 推到 gitea、打 `v0.3.0` 标签，发布页 v0.3.0 带 `gwb-setup-0.3.0.exe` 公开，是「最新」；`INSTALL.md` 与 README 随之提交。
   验收第四条：不带上下文的子代理只照 `INSTALL.md` 往临时 home 装（跳过装安装包、不改用户级配置）：内核 0.4.1 与 cordis 4.0.0-rc.10 按精确版本号装上，
   12 个插件全部 ACTIVE，日志没有 error，MCP 入口用 `runtime.json` 的地址与那个 home 的 token 连通。它找出的缺口已补进 `INSTALL.md`：日志里 MCP 入口那行的写法
