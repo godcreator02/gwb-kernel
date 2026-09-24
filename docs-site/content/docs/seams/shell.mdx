@@ -46,11 +46,13 @@ type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 页面入口 `index.html` 收到 `gwb:shell` 后：
 
 1. 注入 importmap——只注入一次、而且必须在第一句包名 import 之前，注入之后已经解析过的名字无法再改（importmap 从哪来见[页面上的包名](/docs/seams/shared)）
-2. 地址和当前外壳相同、或同一个地址正在加载，就什么都不做
+2. 地址和当前外壳相同、或同一个地址正在加载，就什么都不做：订阅时请求的一条与去抖推送的一条可能都在 import 完成之前到达，只比当前外壳的话外壳会挂载两遍
 3. 调用旧外壳的 `dispose`（出错只打印），清空 `#root`
 4. 地址是 `null`，显示只读状态页；否则 import 这个地址，把 `#root` 交给默认导出
 
-{/* ref file="../apps/desktop/src/index.html" lines="68-98" */}
+{/* ref file="../apps/desktop/src/index.html" lines="89-105" */}
+
+{/* ref file="../apps/desktop/src/index.html" lines="68-87" */}
 
 ### 没有外壳时
 
@@ -90,4 +92,4 @@ type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 
 {/* has file="../apps/desktop/tests/index-html.test.ts" text="现状（bug）：外壳在用时推来 url: null 也被忽略" */}
 
-真实窗口里的显示在隔离 home 里实机验证（见[开发](/docs/develop)）：没有外壳插件时看到只读状态页，装上外壳后页面被接管，停用外壳后回到只读状态页，再启用又被接管。
+真实窗口里的显示在隔离 home 里实机验证（见[开发](/docs/develop)）：装上外壳后页面被接管，外壳启动失败时看到只读状态页；没有外壳插件时看到只读状态页、停用外壳后回到只读状态页，要等上面的已知问题修好才成立。
