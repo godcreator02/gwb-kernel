@@ -1,13 +1,13 @@
 ---
 title: 内核装进 home：内核作为 npm 包装进每个 home，exe 只负责启动 Electron
-description: 待人决定做不做。做的话验收标准是：插件的 cordis 与内核用的是 home 里同一份；内核新版能装进隔离 home 验证，不重打安装包
+description: 验收标准：插件的 cordis 与内核用的是 home 里同一份；内核新版能装进隔离 home 验证，不重打安装包；插件用 peer 写内核包的版本范围，gwb.testedKernel 删掉
 ---
 
 # 内核装进 home
 
-**本页回答**：把内核从 `app.asar` 挪进每个 home 的 `node_modules` 要改什么、换来什么、要推翻哪些已有决定，还有哪些问题要人先定。
+**本页回答**：把内核从 `app.asar` 挪进每个 home 的 `node_modules` 要改什么、换来什么、要推翻哪些已有决定、分几步做、做到哪儿了。
 
-**状态：待人决定做不做。** 这一页只是方案，还没有任何代码改动。
+**状态：人已决定做（2026-09-24），五条待决定按推荐定下，第一步在做。**
 
 ## 由来
 
@@ -33,16 +33,49 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 - **内核发版**：内核包重新发到团队源；安装包只在 Electron 版本或启动脚本变了时重打
 - **开发内核**：内核的开发版和插件一样用 `devkit.dev` 装进隔离 home 验证，不用重新安装 exe，也不碰 default
 
-## 待决定
+## 已决定（2026-09-24）
 
-- [ ] **做不做**：人读完本页后决定
-- [ ] **Electron 版本怎么对上**：Electron 在启动器里，内核包在 home 里，内核升级可能要求新版 Electron。内核包在清单里声明它要的
-  Electron 版本范围，启动脚本 import 之前比对、不满足就弹框拒绝启动？还是另有做法
-- [ ] **兼容性声明换不换**：内核进了 home，插件可以用 peer 写内核包的版本范围，由 pnpm 安装时检查，`gwb.testedKernel`
-  与插件管理、`devkit.release` 里两份比对规则可以删掉。换，还是继续用 `testedKernel`
-- [ ] **内核怎么升级**：`plugin-manager.update-all` 升到内核包时，主进程里的内核换不掉，要重启应用。插件管理怎么提示、
-  要不要把内核排除出一键更新、只允许单独升级
-- [ ] **各个 home 的内核版本各自独立**：每个 home 可以装不同版本的内核。这是想要的，还是要求机器上所有 home 用同一版
+- **做**，和 devkit 仓全生态机制定案的第四期一起做：两边都要改 `devkit.home.new` 与 `INSTALL.md` 的首次安装插件集
+- **Electron 版本**：内核包在 `package.json` 的 `engines.electron` 写它要的 Electron 版本范围（`engines` 是标准字段，键可以自定，
+  VS Code 扩展的 `engines.vscode` 是同样的用法）。启动器 import 内核之前拿它和 `process.versions.electron` 比，不满足就弹框、退出码 1。
+  只有 Electron 换主版本时才重打启动器
+- **兼容性声明换成 peer**：插件写 `peerDependencies: { "@godcreator/gwb-kernel-desktop": "^<版本>" }`；插件管理的 `list` 拿这个范围和
+  home 里装的内核比，照样按包报没测过的；`devkit.release` 改查这个 peer 的写法。`gwb.testedKernel` 与两份比对规则删掉。0.x 下的 `^`
+  就是现在的「版本线」比对规则
+- **内核单独升级**：`plugin-manager.update-all` 保持热升级、不重启，跳过内核包；另加一条升内核的命令，回执带「要重启」与哪些插件的
+  peer 范围不含新内核。重启由人决定，插件管理不自动重启应用
+- **各个 home 的内核版本各自独立**：新内核先装进隔离 home 验证，default 验完再升
+
+## 实施步骤
+
+**第一步：内核仓**
+
+- [ ] 启动器独立成不发布的 `apps/launcher`：按和内核同一条规则选定 home，把绝对路径写进 `GWB_HOME`；home 里没有内核包、或
+  `engines.electron` 不含当前 Electron 就弹框、退出码 1；否则 import 内核。选 home 与比对版本是纯函数，有单元测试；
+  「同一条规则」由测试拿内核那份逐个输入比对
+- [ ] 内核包：`cordis` 改成 peer（开发时另写 dev）、词汇表包改成 dev（内核只 `import type`）、加 `engines.electron`
+- [ ] 安装包只带启动器：`build.ps1` 不再打内核 tarball
+- [ ] `INSTALL.md`：home 的 `package.json` 列内核包与 `cordis`
+- [ ] 现状页（安装包、home 与插件管理、开发、关键设计）改成新做法；写轨迹卡「内核装进 home」，`supersedes::` 指向撤 npm 管道那张
+- [ ] 隔离 home 里验证：内核 tarball 与 `cordis` 装进一个新 home，用新启动器启动；内核与写 peer `cordis` 的插件解析到同一个真实路径，
+  `.pnpm` 里只有一份 cordis；home 里删掉内核包再启动，弹框、退出码 1
+
+**第二步：devkit 仓（与全生态机制定案第四期一起）**
+
+- [ ] `devkit.home.new` 把内核包与 `cordis` 装进新 home；`devkit.dev` 能把内核的开发版装进隔离 home
+- [ ] 插件管理：`list` 用插件 peer 里内核包的范围比；`update-all` 跳过内核包；新增升内核的命令，同时把 home 根上的 `cordis` 对齐到内核要的版本
+- [ ] `devkit.release`：查插件 peer 内核包写 `^`，删掉 `gwb.testedKernel` 的检查；模板改写法；说明书 gwb-release、gwb-devkit 跟着改
+
+**第三步：各插件（随定案第三期）**：`gwb.testedKernel` 换成 peer 内核包
+
+**第四步：发布（每一项动手前问人）**：内核包与词汇表包发到团队源 → default home 的 `package.json` 加内核包与 `cordis`
+（旧安装包仍从 `app.asar` 加载内核，不读 home 里这份，先加没有影响）→ 装新安装包 → 插件逐个按第三步重发
+
+## 进度
+
+新的在上。
+
+- 2026-09-24｜人决定做，五条待决定按推荐定下，排出四步实施步骤｜总控台会话
 
 ## 要推翻或改写的已有决定
 
@@ -60,7 +93,7 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 - 装机步骤多一步（往 home 里装内核包），`INSTALL.md`、`devkit.home.new` 都要改
 - 内核升级从「重新安装 exe」变成「装进 home 后重启」，插件管理要处理这种只能重启才生效的升级
 
-## 做的话怎么验收
+## 验收
 
 - [ ] 隔离 home 里，内核与每个写 peer `cordis` 的插件解析到的 cordis 是同一个真实路径，home 的 `node_modules/.pnpm` 里只有一份 cordis
 - [ ] 内核的开发版经 `devkit.dev` 装进隔离 home，重启后 `gwbKernel.version` 是新版，没有重新安装 exe
