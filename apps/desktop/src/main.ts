@@ -24,8 +24,8 @@ declare module 'cordis' {
   interface Context {
     /** 内核的服务，在根上下文上提供、永不撤销 */
     gwbKernel: GwbKernelApi
-    /** 命令总线，由命令插件提供；home 里没有命令插件时是 undefined */
-    gwbCommands?: { run(command: string, args?: unknown): Promise<unknown> }
+    /** 命令总线，由命令插件提供；home 里没有命令插件时是 undefined。页面发来的命令带 `{ via: 'ui' }`，处理函数据此认出来自界面 */
+    gwbCommands?: { run(command: string, args?: unknown, context?: { via: 'ui' }): Promise<unknown> }
   }
 }
 
@@ -240,7 +240,7 @@ function relayPageCommand(command: unknown, args: unknown): unknown {
   if (typeof command !== 'string') return { ok: false, error: '命令名要是字符串' }
   const commandBus = ctx.gwbCommands
   if (commandBus === undefined) return { ok: false, error: `没有命令服务（ctx.gwbCommands），无法执行 ${command}` }
-  return commandBus.run(command, args)
+  return commandBus.run(command, args, { via: 'ui' })
 }
 ipcMain.handle('gwb:command', (_event, command: unknown, args: unknown) => relayPageCommand(command, args))
 ipcMain.on('gwb:hello', (event) => event.sender.send('gwb:shell', currentShellMessage()))

@@ -239,7 +239,7 @@ function fakeHomeWithPlugins(): string {
     'node_modules/gwb-test-commands/index.mjs': [
       "export const name = 'gwb-test-commands'",
       'export function apply(ctx) {',
-      "  ctx.provide('gwbCommands', { run: async (command, args) => ({ ok: true, data: { command, args } }) })",
+      "  ctx.provide('gwbCommands', { run: async (command, args, context) => ({ ok: true, data: { command, args, context } }) })",
       '}',
       '',
     ].join('\n'),
@@ -451,7 +451,7 @@ describe('main.ts：IPC 通道', () => {
 })
 
 describe('main.ts：插件看到的内核', () => {
-  it('插件拿到 gwbKernel：dataDir 是 home 的真实路径、version 是内核包的版本；命令交给插件提供的 gwbCommands', async () => {
+  it('插件拿到 gwbKernel：dataDir 是 home 的真实路径、version 是内核包的版本；页面的命令交给插件提供的 gwbCommands，带上 via: ui', async () => {
     silenceStderr()
     probeGlobal.__gwbMainTestProbe = { events: [] }
     const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
@@ -459,7 +459,7 @@ describe('main.ts：插件看到的内核', () => {
     expect(probe.kernel?.dataDir).toBe(booted.dataDir)
     expect(probe.kernel?.version).toBe(kernelPackageVersion)
     const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
-    expect(await relayCommand({}, 'demo.echo', { a: 1 })).toEqual({ ok: true, data: { command: 'demo.echo', args: { a: 1 } } })
+    expect(await relayCommand({}, 'demo.echo', { a: 1 })).toEqual({ ok: true, data: { command: 'demo.echo', args: { a: 1 }, context: { via: 'ui' } } })
     await quitAndWaitForCleanup(booted)
   })
 
