@@ -33,7 +33,7 @@ cd apps\desktop; pnpm start
 
 内核不带插件，全新的 home 里 `cordis.yml` 是空表：启动后页面只显示[只读状态页](/docs/desktop/status-page)，页面发来的命令都回「没有命令服务」。要验证命令、外壳、插件管理这些，先往这个 home 里装上命令插件等插件，两种做法：
 
-- **用 devkit**：`devkit.home.new {"short":"<这次验什么>"}` 新建一个隔离 home，装好命令插件、外壳、数据、设置、说明书、插件管理、基础窗格这一套基础插件，并用安装版内核打开它。关掉那个窗口，再把 `GWB_HOME` 设成它返回的 home 名，从源码启动
+- **用 devkit**：`devkit.home.new {"short":"<这次验什么>"}` 新建一个隔离 home，装好内核包（运行这条命令的内核那个版本）、内核要的 `cordis`，以及命令插件、外壳、数据、设置、说明书、插件管理、基础窗格这一套基础插件，并用安装版的启动器打开它。关掉那个窗口，再把 `GWB_HOME` 设成它返回的 home 名，从源码启动
 - **照 `INSTALL.md` 手动装**：在 home 目录里写 `cordis.yml` 的条目、用机器上的 pnpm `pnpm add` 对应的包，步骤与仓根 `INSTALL.md` 第 3 步相同，只把 home 目录换成这个隔离 home
 
 ### 构建做了什么
@@ -53,7 +53,17 @@ cd apps\desktop; pnpm start
 
 ## 在隔离 home 里验证
 
-`devkit.dev` 是往 home 里装插件包，验证不了内核本身；`devkit.home.new` 打开的是安装版、不构建本仓。改了内核要从源码启动：
+两条路，都不碰 `default`。
+
+**发内核开发版进隔离 home**：验证的是安装版的样子——启动器从 home 里加载内核包。先用 `devkit.home.new` 开一个隔离 home，再从另一个 home 调：
+
+```
+devkit.dev {"home":"<隔离 home 名>","dir":"<本仓根>","packages":["apps/desktop"]}
+```
+
+它在本仓根构建，把内核包发成开发版（`<patch+1>-dev.<时间戳>`，tag 是 `dev`，不动 `latest`），连同内核包 peer 里写的 `cordis` 写进那个 home 的清单装上并核对，然后停掉那个 home 再启动，直到页面上 `shell.env` 报出的内核版本就是这次发的号；回执的 `kernel.version` 就是它。不用重打安装包。内核包只在开发时依赖词汇表包（只 `import type`），所以只发 `apps/desktop` 就够了。
+
+**从源码启动**：改一次就想看一次、不想每次发开发版时用。
 
 1. 照上面「隔离 home 里的插件从哪来」准备好 home，构建后带调试端口启动，端口别和其他会话重复：
 

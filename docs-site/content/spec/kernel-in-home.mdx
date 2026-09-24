@@ -7,7 +7,7 @@ description: 验收标准：插件的 cordis 与内核用的是 home 里同一�
 
 **本页回答**：把内核从 `app.asar` 挪进每个 home 的 `node_modules` 要改什么、换来什么、要推翻哪些已有决定、分几步做、做到哪儿了。
 
-**状态：人已决定做（2026-09-24），五条待决定按推荐定下；第一步（内核仓）已完成；第二步（devkit 仓）代码与文档已完成，待发版。**
+**状态：人已决定做（2026-09-24），五条待决定按推荐定下；第一步（内核仓）、第二步（devkit 仓）已完成；第四步做完了前三项；第五步（react 收进内核）待做。**
 
 ## 由来
 
@@ -63,22 +63,21 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 **第二步：devkit 仓（与全生态机制定案第四期一起）**
 
 - [x] `devkit.home.new` 把内核包与 `cordis` 装进新 home（精确版本号，装完核对）
-- [ ] `devkit.dev` 能把内核的开发版装进隔离 home
+- [x] `devkit.dev` 能把内核的开发版装进隔离 home
 - [x] 插件管理：`list` 用插件 peer 里内核包的范围比；`update-all` 跳过内核包与 `cordis`；新增 `plugin-manager.update-kernel`，同时把 home 根上的 `cordis` 对齐到内核要的版本
 - [x] `devkit.release`：查插件 peer 内核包写 `^`、包含运行中的内核，删掉 `gwb.testedKernel` 的检查；模板改写法；说明书 gwb-release、gwb-devkit 跟着改
 - [x] 界面插件仓的插件管理窗格跟着回执字段 `kernelRange` 改
-- [ ] devkit 与插件管理发版（插件管理回执改名是破坏性变更，版本号发之前问人），装进 default
+- [x] devkit 与插件管理发版（插件管理回执改名是破坏性变更，版本号发之前问人），装进 default
 
-**第二步收尾依赖第四步的前两项**（人同意提前做，2026-09-24）：default 里的旧 devkit 按旧规则拒发新版的两个插件，新 devkit 要求运行中的是内核 0.3.x；
+**第二步的发版提前做了第四步的前两项**（人同意，2026-09-24）：default 里的旧 devkit 按旧规则拒发新版的两个插件，新 devkit 要求运行中的内核在 peer 范围里；
 所以先在隔离 home 用新启动器跑一份与 default 相同的插件集验证，再给 default 装内核包与 `cordis`、装新安装包；然后用旧 devkit 的 `devkit.dev`
-把新 devkit 的开发版装进一个跑内核 0.3.0 的隔离 home，经 CDP 在那里调新 devkit 的 `devkit.release` 发正式版。版本号：插件管理 0.8.0（回执字段改名，
-`contract` 加一）、devkit 0.18.9（命令名与参数不变，检查规则变）、界面插件 baseui 升 y
+把新 devkit 的开发版装进一个跑内核 0.4.0 的隔离 home，经 CDP 在那里调新 devkit 的 `devkit.release` 发正式版。版本号：插件管理 0.8.0（回执字段改名，
+`contract` 加一）、devkit 0.18.9（命令名与参数不变，检查规则变）、界面插件 baseui 0.1.11
 
 **第三步：各插件（随定案第三期）**：`gwb.testedKernel` 换成 peer 内核包
 
 **第四步：发布（每一项动手前问人）**：~~内核的版本号升哪一位先问人~~（人定：两个都升 0.3.0）→ ~~内核包与词汇表包发到团队源~~（已发）→ `INSTALL.md` 与 README 改成往 home 里装内核包与 `cordis`（在这之前它们描述的是已发布的旧安装包，
-团队源上没有内核包，提前改了照着装会 404）→ default home 的 `package.json` 加内核包与 `cordis`
-（旧安装包仍从 `app.asar` 加载内核，不读 home 里这份，先加没有影响）→ 装新安装包 → 插件逐个按第三步重发
+团队源上没有内核包，提前改了照着装会 404）→ ~~default home 的 `package.json` 加内核包与 `cordis`~~（已做）→ ~~装新安装包~~（已装）→ 插件逐个按第三步重发
 
 **第五步：react 收进内核**（人决定现在做，2026-09-24；原是 devkit 定案第五期、排在它第三期之后）
 
@@ -91,6 +90,12 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 
 新的在上。
 
+- 2026-09-24｜第二步完成。`devkit.release` 发出插件管理 0.8.0、devkit 0.18.9；界面插件 baseui 0.1.11（peer 写内核包 `^0.4.0`、删掉 `gwb.testedKernel`；
+  同仓的外壳与外观只把 dev 的词汇表包与 cordis 跟到同一组，不然同一个工作区里两份 cordis 的类型增强对不上）；default 用 `plugin-manager.update-all`
+  升上这三个，`list` 里三个包都读出 `kernelRange: ^0.4.0`。`devkit.dev` 能发内核包（devkit 0.18.10，已装进 default）：内核包连同它 peer 里的 `cordis`
+  写进目标 home 清单装上核对，停掉目标 home 再启动，轮询 `shell.env` 直到报出的内核版本是这次的号（devkit 仓轨迹卡「dev 发内核包」）。实测：
+  `kernel-dev-2609241631` 装上 `0.4.1-dev.202609241632`，重启后页面报的就是它，7 条条目全部 active，日志新增部分没有 error。验收第三条「弹框后退出码 1」
+  还没测（第一步那次进程是强制结束的）｜总控台会话
 - 2026-09-24｜人要求用 cordis 4.0.0-rc.10：它与 loader 1.0.0-rc.7、include 1.1.0 是一组，一起升，内核与词汇表包升到 0.4.0（轨迹卡「cordis rc.10 一组」）；
   0.3.0 留在源上没人用。之前在隔离 home `default-clone-2609241603` 用新启动器跑内核 0.3.0 加 default 的整套插件：除故意停用的 windows-backup、cgm-alert
   与 default 里本来就起不来的 gitea、mineru、docfirst-workflow，其余条目全部 ACTIVE，与 default 的基线一致｜总控台会话
@@ -136,7 +141,7 @@ pnpm 把插件的 peer 解析到应用装的那一份，安装时顺带检查版
 
 ## 验收
 
-- [ ] 隔离 home 里，内核与每个写 peer `cordis` 的插件解析到的 cordis 是同一个真实路径，home 的 `node_modules/.pnpm` 里只有一份 cordis
-- [ ] 内核的开发版经 `devkit.dev` 装进隔离 home，重启后 `gwbKernel.version` 是新版，没有重新安装 exe
+- [x] 隔离 home 里，内核与每个写 peer `cordis` 的插件解析到的 cordis 是同一个真实路径，home 的 `node_modules/.pnpm` 里只有一份 cordis
+- [x] 内核的开发版经 `devkit.dev` 装进隔离 home，重启后 `gwbKernel.version` 是新版，没有重新安装 exe
 - [ ] home 里没有内核包时，启动器弹框说明并以退出码 1 退出
 - [ ] 照新的 `INSTALL.md` 由不带上下文的子代理往临时 home 装一遍，MCP 入口连得上、条目全部 ACTIVE
