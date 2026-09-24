@@ -9,7 +9,7 @@ description: gwb-kernel 是什么；内核仓拆成哪几个包、运行时各�
 
 god 工作台的内核：一个 Electron 应用，只做**第一个插件运行之前必须完成的事**。命令总线、插件管理、界面、数据、设置、给 agent 用的 MCP 入口，全部是 `cordis.yml` 里的插件，各在自己的仓里。
 
-**运行时各装在哪**：安装包只带启动器与 Electron。内核应用是 npm 包 `@godcreator/gwb-kernel-desktop`，和 `cordis`、各插件一起装在每个 home 的 `node_modules` 里；home 根上只有一份 `cordis`，内核与插件用的是同一份。启动器选定 home，从那里加载内核（接缝 9）。这样各个 home 可以装不同版本的内核，新内核先装进隔离 home 验证（[内核装进 home](/trajectory/2026-09-24-kernel-in-home)）。内核为什么切成这样、刻意不做哪些事，见[关键设计](/docs/design)；一次启动依次发生什么，见[启动与退出](/docs/desktop/boot)。
+**运行时各装在哪**：安装包只带启动器与 Electron。内核应用是 npm 包 `@godcreator/gwb-kernel-desktop`，和 `cordis`、各插件一起装在每个 home 的 `node_modules` 里；home 根上只有一份 `cordis`，内核与插件用的是同一份。启动器选定 home，从那里加载内核（接缝 9）。页面用的 react 跟着外壳插件 `gwb-shell` 装在 home 里：shell 在清单的 `gwb.shared` 里声明 react 的四个包名，内核把它们拼进页面的 importmap，整个页面只有一份 react（接缝 5）。这样各个 home 可以装不同版本的内核，新内核先装进隔离 home 验证（[内核装进 home](/trajectory/2026-09-24-kernel-in-home)）。内核为什么切成这样、刻意不做哪些事，见[关键设计](/docs/design)；一次启动依次发生什么，见[启动与退出](/docs/desktop/boot)。
 
 ## 接缝图
 
@@ -18,7 +18,7 @@ god 工作台的内核：一个 Electron 应用，只做**第一个插件运行�
 <Diagram name="seam-map" title="虚线框是包，连线是接缝，编号对应下面的表">
 - 页面（渲染进程）：页面入口 `index.html` 与 `#root`、`window.gwb`（由 `preload.cjs` 注入）
 - 内核应用（`apps/desktop`，装进 home）：包名解析、组装（`main.ts`）、页面上的包名、日志、只读状态页的数据
-- cordis.yml 里的插件（各自的仓，装进 home）：外壳、MCP 入口、命令插件 `gwb-commands`（基础插件仓）、插件管理 `gwb-plugin-manager`（devkit 仓），以及数据、设置、说明书插件等任何插件
+- cordis.yml 里的插件（各自的仓，装进 home）：外壳（带着页面用的 react，经接缝 5 进 importmap）、MCP 入口、命令插件 `gwb-commands`（基础插件仓）、插件管理 `gwb-plugin-manager`（devkit 仓），以及数据、设置、说明书插件等任何插件
 - 词汇表包（`packages/gwb-plugin-api`）：只有类型，接缝 2、3、4 连接的模块都用它的类型；它自己不算一条接缝
 - 安装包（`apps/launcher` 与 `installer/`）：安装包里只有启动器与 Electron；启动器经接缝 9 从 home 里加载内核包
 - cordis（外部依赖，装进 home，根上只有一份）：cordis 实例、loader、include
