@@ -5,7 +5,7 @@ description: 仓根 INSTALL.md 由这一页生成——写给替用户安装 gwb
 
 # 安装 gwb（写给 agent）
 
-你是替用户在一台 Windows 机器上安装 gwb 的 agent。**安装包只带内核，不带任何插件，也不带 pnpm——插件由你用机器上的 pnpm 安装。**
+你是替用户在一台 Windows 机器上安装 gwb 的 agent。**安装包只带启动器与 Electron，不带内核、不带插件，也不带 pnpm——内核包、`cordis` 与插件都由你用机器上的 pnpm 装进 home。** 启动器启动时从 home 里加载内核，home 里没有内核包就弹框说明、不启动。
 照下面做完，用户得到一个装好 12 个基础插件（包括命令插件、插件管理、MCP 入口）、MCP 入口开在 `http://127.0.0.1:2870/mcp` 的工作台，
 之后你（或别的 agent）通过这个 MCP 入口干活。命令一律在 PowerShell 里运行。
 
@@ -14,8 +14,12 @@ description: 仓根 INSTALL.md 由这一页生成——写给替用户安装 gwb
 `%APPDATA%\gwb-kernel\homes\default\cordis.yml` 已经存在、里面至少有一行 `- id:`——**已经装过，只升级，
 别做第 3 步**（它会覆盖用户的 home）。`homes\` 下的其他目录是别的 home（测试用的），跟这个判断无关：
 
-- 升级内核：关掉工作台窗口 → 安装新版安装器（见第 2 步）→ 重新启动
-- 升级插件：连上 MCP 入口之后 `run plugin-manager.update-all`，或让用户在「插件管理」窗格点「全部更新」
+- **home 的 `package.json` 里没有 `@godcreator/gwb-kernel-desktop`**：这个 home 是旧安装包（内核打在安装包里）装的。关掉工作台窗口，
+  在这个 home 里照第 3 步装上内核包与 `cordis`（只做「装内核包与 cordis」那两条，`cordis.yml` 与插件不动），再装新版安装包（第 2 步），然后启动。
+  顺序不能反：新安装包只带启动器，先装它、home 里还没有内核包，启动时就弹框
+- 升级内核：连上 MCP 入口之后 `run plugin-manager.update-kernel`（装新的内核包、把 home 根上的 `cordis` 对齐到内核要的版本），
+  然后重启工作台（关掉窗口、从开始菜单重新打开）才生效。安装包只带启动器，只有出了新版安装包才需要重装
+- 升级插件：连上 MCP 入口之后 `run plugin-manager.update-all`，或让用户在「插件管理」窗格点「全部更新」。内核包与 `cordis` 不归它升
 
 ## 1. 机器上的前置条件（改的是用户级配置——动手前告诉用户要改什么）
 
@@ -46,7 +50,7 @@ description: 仓根 INSTALL.md 由这一页生成——写给替用户安装 gwb
 4. **可选**：连 npmjs 慢的话，第三方包改走镜像：`pnpm config set registry https://registry.npmmirror.com`
    （`@godcreator` 仍按第 2 条走自己的源）。这也是用户级配置，先问用户。
 
-## 2. 安装内核
+## 2. 安装启动器
 
 从 `https://git.tianshen02.online:28377/godcreator/gwb-kernel/releases` 下载最新的
 `gwb-setup-<版>.exe`（下载之前告诉用户文件名与大小），静默安装：
@@ -66,6 +70,13 @@ Start-Process .\gwb-setup-<版>.exe -ArgumentList '/S' -Wait
 $gwbHome = "$env:APPDATA\gwb-kernel\homes\default"
 New-Item -ItemType Directory -Force $gwbHome | Out-Null
 [IO.File]::WriteAllText("$gwbHome\package.json", '{ "name": "gwb-home", "private": true }')
+Set-Location $gwbHome
+
+# 装内核包与 cordis：两个都写精确版本号，cordis 的版本就是内核包 peer 里写的那个
+$kernel = pnpm view @godcreator/gwb-kernel-desktop dist-tags.latest
+pnpm add --save-exact "@godcreator/gwb-kernel-desktop@$kernel"
+$cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json -Raw | ConvertFrom-Json).peerDependencies.cordis
+pnpm add --save-exact "cordis@$cordis"
 [IO.File]::WriteAllText("$gwbHome\cordis.yml", @'
 - id: commands
   name: '@godcreator/gwb-commands'
@@ -92,15 +103,16 @@ New-Item -ItemType Directory -Force $gwbHome | Out-Null
 - id: mcp
   name: '@godcreator/gwb-mcp'
 '@)
-Set-Location $gwbHome
 pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-logger @godcreator/gwb-plugin-manager @godcreator/gwb-plugin-sources @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp
 ```
 
-- `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次启动都会换一个随机字符串）
+- 内核包与 `cordis` 装完读回核对：`node_modules\@godcreator\gwb-kernel-desktop\package.json` 的 `version` 等于 `$kernel`，
+  `node_modules\cordis\package.json` 的 `version` 等于 `$cordis`。对不上就把 home 的 `package.json` 里那一项改成精确版本号再运行一次
+  （清单里原来写着 `^` 范围时，pnpm 会沿用范围、装上别的版本）。内核与所有插件用的是 home 根上这一份 `cordis`
+- `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次启动都会换一个随机字符串）；内核包与 `cordis` 不是插件，不写进去
 - 命令插件（`gwb-commands`，页面和 MCP 入口的命令都经它执行）与插件管理（`gwb-plugin-manager`，之后装卸、升级插件都经它）是普通插件，和别的插件一样写进 `cordis.yml`、装进 home
-- 只装插件，不装库：词汇表包 `gwb-plugin-api` 只有类型，运行时用不到；react 相关的包与设计令牌表随 `gwb-shell` 包一起装上。
-  **别再安装 `gwb-shared-react` / `gwb-tokens`**：这两个包已合并进 shell、停止发布；前者和 shell 在共享声明里声明了同一组
-  react 包名，两者同时是 home 的直接依赖时，内核会把这组包名全部排除出 importmap，外壳启动不了
+- 除了内核包与 `cordis`，只装插件、不装库：词汇表包 `gwb-plugin-api` 只有类型，运行时用不到；页面用的 react 随内核包装上，
+  设计令牌表随 `gwb-shell` 装上。**别再安装 `gwb-shared-react` / `gwb-tokens`**：这两个包已停止发布
 - 退出码为 0 就成功。输出里如果有一行 `Issues with peer dependencies found`：说明有插件还没适配它上游的新版本，
   包照样装上了，但那个插件可能启动不了——在 home 里运行 `pnpm peers check` 拿到明细，原样告诉用户
 
@@ -157,7 +169,7 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 
 连上后**先调 `index`**：它返回的 instructions 讲清楚之后怎么干活。再核对：
 
-- `run plugin-manager.list` 返回第 3 步装的 12 个包，各带一个条目、`active: true`
+- `run plugin-manager.list` 返回第 3 步装的 12 个插件，各带一个条目、`active: true`；另有内核包与 `cordis` 两行，没有条目
 - `run skill.list` 能列出说明书，至少有 `mcp`、`gwb-commands`、`gwb-plugin-manager`、`gwb-plugin-sources`、`gwb-devkit`
 - `run plugin-sources.search` 能列出源上可装的插件——「插件管理」窗格的「可装」栏用的就是它
 
@@ -168,6 +180,8 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 | 现象 | 多半是 | 怎么办 |
 | --- | --- | --- |
 | `pnpm add` 报 404，找不到 `@godcreator/…` | 第 1 步第 2 条那行没配 | 补上再装 |
+| 启动时弹框说 home 里没有内核包 | 第 3 步的内核包没装，或装在了别的 home | 照第 3 步在这个 home 里装内核包与 `cordis` 再启动 |
+| 启动时弹框说 Electron 版本不满足内核包要求 | 安装包太旧，内核包要的 Electron 更新 | 装最新的安装包 |
 | 装完提示 `Issues with peer dependencies found` | 有插件没适配上游的新版本 | `pnpm peers check` 看明细告诉用户 |
 | 报版本太新、minimum release age | 第 1 步第 3 条没配 | 补上再装 |
 | pnpm 运行不了或低于 12 | 第 1 步第 1 条 | 安装新版 pnpm |
@@ -183,5 +197,6 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 - 安装新插件：`run plugin-manager.install {"pkg":"@godcreator/gwb-<名>"}`——返回内容里带新条目的 `entryId`；
   `run plugin-manager.list` 里它是 `active: true` 就成功了，下一次调 `index` 就能看到它的命令
 - 插件有新版本：`run plugin-manager.update-all`（升级到 `gwb-mcp` 自己时连接会断一次，重连即可）
-- 内核有新版本：关掉窗口（用命令行关就对 `runtime.json` 里那个 pid 调 `(Get-Process -Id <pid>).CloseMainWindow()`）
-  → 安装新版安装器 → 重新启动。之后 `run plugin-manager.list` 会标出没在这个内核版本上测过的插件，告诉用户
+- 内核有新版本：`run plugin-manager.update-kernel`，回执里 `pluginsOutsideRange` 是 peer 范围不包含新内核的插件，告诉用户；
+  然后关掉窗口（用命令行关就对 `runtime.json` 里那个 pid 调 `(Get-Process -Id <pid>).CloseMainWindow()`）→ 从开始菜单重新打开。
+  重启之后 `run plugin-manager.list` 里 `kernelUntested` 为 true 的插件就是这些
