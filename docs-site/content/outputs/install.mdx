@@ -83,8 +83,11 @@ Start-Process .\gwb-setup-<版>.exe -ArgumentList '/S' -Wait
 ## 3. 初始化 default home
 
 注意 PowerShell 里 `$home` 是保留变量，别拿它当变量名。`$pnpm` 是第 1 步第 1 条找到的那个 pnpm，这里再取一次。
+先设 `pnpm_config_auto_install_peers=false`：插件的 peer 里写着它用到的别的插件，pnpm 默认会把 home 里没装的 peer 自动装进来，
+成了没有条目、插件管理也不认的包；插件管理与 devkit 运行 pnpm 时也都带着这个设置。
 
 ```powershell
+$env:pnpm_config_auto_install_peers = 'false'
 $pnpm = @("$env:LOCALAPPDATA\pnpm\bin\pnpm.exe", "$env:APPDATA\npm\node_modules\pnpm\pnpm.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 $gwbHome = "$env:APPDATA\gwb-kernel\homes\default"
 New-Item -ItemType Directory -Force $gwbHome | Out-Null
@@ -130,8 +133,9 @@ $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json 
 - 命令插件（`gwb-commands`，页面和 MCP 入口的命令都经它执行）与插件管理（`gwb-plugin-manager`，之后装卸、升级插件都经它）是普通插件，和别的插件一样写进 `cordis.yml`、装进 home
 - 除了内核包与 `cordis`，只装插件、不装库：页面用的 react 随内核包装上，
   设计令牌表随 `gwb-shell` 装上。**别再安装 `gwb-shared-react` / `gwb-tokens`**：这两个包已停止发布
-- 退出码为 0 就成功。输出里如果有一行 `Issues with peer dependencies found`：说明有插件还没适配它上游的新版本，
-  包照样装上了，但那个插件可能启动不了——在 home 里运行 `& $pnpm peers check` 拿到明细，原样告诉用户
+- 退出码为 0 就成功。输出里如果有一行 `Issues with peer dependencies found`：说明有插件的 peer 没满足——它用到的某个插件没装，
+  或装的版本不在它写的范围里（还没适配上游的新版本）。包照样装上了，但那个插件可能启动不了——在 home 里运行 `& $pnpm peers check`
+  拿到明细，原样告诉用户；连上 MCP 入口之后 `plugin-manager.list` 的 `unmetPeers` 也逐包列出
 
 ## 4. 启动、核对
 
