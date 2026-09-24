@@ -95,7 +95,7 @@
     "../apps/desktop/src/index.html:26-34": {
       "kind": "git",
       "blob": "77f8be8b410c89432ed98357af977480bd5111c6",
-      "commit": "9331ca7695492ac619705bdcca3d6cd603d784fe",
+      "commit": "504b88cc73abc482789dbdb8486fd15facc88602",
       "lines": [
         26,
         34
@@ -105,7 +105,7 @@
     "../apps/desktop/package.json:10-31": {
       "kind": "git",
       "blob": "6e5f9cf950bd690e2b1350ffd8bbdf6c9ace6bd7",
-      "commit": "9331ca7695492ac619705bdcca3d6cd603d784fe",
+      "commit": "504b88cc73abc482789dbdb8486fd15facc88602",
       "lines": [
         10,
         31
@@ -115,7 +115,7 @@
     "../apps/desktop/src/imports.ts:54-62": {
       "kind": "git",
       "blob": "722c89456b6a0125989480d8d56de0c684de84bc",
-      "commit": "9331ca7695492ac619705bdcca3d6cd603d784fe",
+      "commit": "504b88cc73abc482789dbdb8486fd15facc88602",
       "lines": [
         54,
         62
@@ -125,7 +125,7 @@
     "../apps/desktop/src/imports.ts:64-92": {
       "kind": "git",
       "blob": "722c89456b6a0125989480d8d56de0c684de84bc",
-      "commit": "9331ca7695492ac619705bdcca3d6cd603d784fe",
+      "commit": "504b88cc73abc482789dbdb8486fd15facc88602",
       "lines": [
         64,
         92
@@ -135,7 +135,7 @@
     "../apps/desktop/src/imports.ts:32-52": {
       "kind": "git",
       "blob": "722c89456b6a0125989480d8d56de0c684de84bc",
-      "commit": "9331ca7695492ac619705bdcca3d6cd603d784fe",
+      "commit": "504b88cc73abc482789dbdb8486fd15facc88602",
       "lines": [
         32,
         52
@@ -145,7 +145,7 @@
     "../apps/desktop/src/main.ts:192-207": {
       "kind": "git",
       "blob": "d36394ca90ce5d8632a5f1b8c07b41f20cdbd03b",
-      "commit": "9331ca7695492ac619705bdcca3d6cd603d784fe",
+      "commit": "504b88cc73abc482789dbdb8486fd15facc88602",
       "lines": [
         192,
         207
@@ -159,6 +159,19 @@
       "kind": "has"
     },
     "has ../apps/desktop/tests/main.test.ts \"importmap：react 用内核的那份\"": {
+      "kind": "has"
+    },
+    "../apps/desktop/scripts/build-react.ts:22-44": {
+      "kind": "git",
+      "blob": "0128be0bd3d1797e9960a4321665323f014b559d",
+      "commit": "504b88cc73abc482789dbdb8486fd15facc88602",
+      "lines": [
+        22,
+        44
+      ],
+      "hash": "5f734d72844eeeec9ad25a349f98846d82d45ad6195e5ec74e6384cc83660d6b"
+    },
+    "has ../apps/desktop/tests/react-bundles.test.ts \"四个文件都在，里面没有 require 探针\"": {
       "kind": "has"
     }
   },
