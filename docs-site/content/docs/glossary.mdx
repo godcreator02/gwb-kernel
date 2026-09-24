@@ -10,9 +10,11 @@ description: 这个仓里有特定含义的词，每个一句定义并指到详�
 | 词 | 是什么 |
 | --- | --- |
 | **内核** | 这个仓的 Electron 应用本体：只做第一个插件运行之前必须完成的事，其余功能全部由 `cordis.yml` 里的插件实现，命令总线与插件管理也是。见[关键设计](/docs/design) |
+| **内核包** | 内核应用发布成的 npm 包 `@godcreator/gwb-kernel-desktop`，和插件一样装在每个 home 的 `node_modules` 里。见[关键设计](/docs/design#内核和插件一样装在-home-里) |
+| **启动器** | 安装包里唯一的代码 `apps/launcher`：选定 home，确认 home 里的内核包能在这个 Electron 上运行，再加载它。见[启动器加载内核](/docs/seams/launcher) |
 | **插件** | 一个普通的 npm 包，安装在 home 里，由 cordis 加载，运行在 Electron 主进程里。见[插件加载](/docs/seams/loading) |
-| **接缝** | 两个模块之间的连接处：只要接口不变，换掉其中一个模块，另一个不用改。一条接缝写清四件事：连接哪两个模块、接口是什么、双方各保证什么、在哪里替换。内核仓有八条，每条一页。见[接缝图](/docs#接缝图) |
-| **home** | 插件安装和存放数据的目录，一个普通的 npm 项目根；每个 home 有自己的插件、端口和数据，互不影响。见[关键设计](/docs/design#每个-home-相互独立) |
+| **接缝** | 两个模块之间的连接处：只要接口不变，换掉其中一个模块，另一个不用改。一条接缝写清四件事：连接哪两个模块、接口是什么、双方各保证什么、在哪里替换。内核仓有九条，每条一页。见[接缝图](/docs#接缝图) |
+| **home** | 内核包与插件安装、存放数据的目录，一个普通的 npm 项目根；每个 home 有自己的内核、插件、端口和数据，互不影响。见[关键设计](/docs/design#每个-home-相互独立) |
 | **隔离 home** | 为了开发或验证单独创建的 home，和日常使用的 `default` 分开 |
 | **条目** | `cordis.yml` 里的一条配置（loader 里叫 entry）：`id` 是它的身份，手写；`name` 是要加载的包名。见[插件加载](/docs/seams/loading) |
 | **加载成功** | 条目对应的 fiber 进入 `ACTIVE` 状态；有 fiber 不等于加载成功。见[插件加载](/docs/seams/loading) |
@@ -31,5 +33,5 @@ description: 这个仓里有特定含义的词，每个一句定义并指到详�
 | **词汇表包** | `@godcreator/gwb-plugin-api`：内核给插件和页面提供的全部接口的类型，纯类型、没有运行时代码。见[词汇表包](/docs/vocab) |
 | **准入判据** | 往内核里加东西要满足的条件：第一个插件运行之前必须完成，并且此刻确实需要。见[关键设计](/docs/design#准入判据) |
 | **基础插件仓** | `gwb-base-plugins`：命令插件、数据、设置、说明书、日志、MCP 入口等基础插件的源码仓，不在内核仓里；这些插件和别的插件一样装在 home 里。插件管理不在这里，在 devkit 仓 `gwb-devkit`，和 devkit 一起开发 |
-| **测过的内核版本** | 插件 `package.json` 里的 `gwb.testedKernel`：插件在哪个内核版本上测过。插件管理的 `plugin-manager.list` 拿它和运行中的内核版本比，不在同一条版本线上就标出来。见[关键设计](/docs/design#插件写明在哪个内核版本上测过) |
+| **内核范围** | 插件 `package.json` 的 `peerDependencies` 里内核包的 `^` 范围：插件兼容哪些内核。插件管理的 `plugin-manager.list` 拿它和运行中的内核版本比，不包含就标出来。见[关键设计](/docs/design#插件在-peer-里写兼容哪个内核) |
 | **三路日志** | 插件、内核、页面 console 三个来源的日志，汇成同一条 cordis 日志流。见[日志](/docs/seams/log) |

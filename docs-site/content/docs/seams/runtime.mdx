@@ -23,7 +23,7 @@ description: 连接内核应用与工作台进程之外的读者（devkit、照 
 | `pid` | 内核主进程的进程号 |
 | `startedAt` | 启动时刻，毫秒时间戳 |
 | `version` | 内核的版本号，与 `gwbKernel.version` 相同 |
-| `appDir` | 应用目录，即 Electron 的 `app.getAppPath()`（从仓里运行是 `apps/desktop`） |
+| `appDir` | 应用目录，即 Electron 的 `app.getAppPath()`：从安装包启动是启动器所在的 `resources\app.asar`，从仓里 `pnpm start` 运行是 `apps/desktop` |
 | `cdp` | Chromium 调试端口；启动时没给 `--remote-debugging-port` 就没有这个字段 |
 
 {/* ref file="../apps/desktop/src/main.ts" lines="83-102" */}

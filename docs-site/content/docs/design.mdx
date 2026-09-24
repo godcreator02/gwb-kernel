@@ -1,9 +1,9 @@
 ---
 title: 关键设计
-description: 决定内核长什么样的七条设计——各自是什么、推出了什么、放弃了什么；内核仓里放什么、插件怎么标明兼容哪个内核；内核刻意不做的事
+description: 决定内核长什么样的九条设计——各自是什么、推出了什么、放弃了什么；内核为什么装在 home 里、内核仓里放什么、插件怎么标明兼容哪个内核；内核刻意不做的事
 ---
 
-**本页回答**：内核为什么这么小、为什么是现在这个形状；往内核里加东西要满足什么；它刻意不做哪些事；内核仓里放什么，插件怎么标明自己兼容哪个内核、内核的版本号什么时候升 x。
+**本页回答**：内核为什么这么小、为什么是现在这个形状；往内核里加东西要满足什么；它刻意不做哪些事；内核为什么和插件一样装在 home 里；内核仓里放什么，插件怎么标明自己兼容哪个内核、内核的版本号什么时候升 x。
 
 ## 内核只做第一个插件运行之前必须做的事
 
@@ -27,7 +27,7 @@ description: 决定内核长什么样的七条设计——各自是什么、推�
 **刻意不做**（要做得先推翻上面的条件）：
 
 - 给插件提供「安装」接口——装插件只经插件管理 `@godcreator/gwb-plugin-manager` 的 `plugin-manager.*` 命令（[移除内核的安装接口](/trajectory/2026-09-08-no-install-port)）；插件之间的依赖齐不齐也不核对
-- 往新 home 里装插件——由创建这个 home 的一方装，见下面「内核仓只放内核，插件自己写明测过哪个内核」
+- 往新 home 里装内核包与插件——由创建这个 home 的一方装，见下面「内核仓只放内核」
 - `cordis.yml` 的模板与自动修复——文件缺了只补一个空表（[全新 home 没有 `cordis.yml` 时启动失败](/trajectory/2026-09-07-wall-fresh-home-no-yml)）
 - 界面上的失败处理——除了只读状态页，不分析原因、不重试，也没有按钮（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）
 - 写数据——内核只提供 `dataDir`，写数据由数据插件负责（[数据写盘做成插件](/trajectory/2026-09-07-gwb-data-plugin)）
@@ -46,9 +46,24 @@ description: 决定内核长什么样的七条设计——各自是什么、推�
 home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核包自己、装了哪些插件、加载哪些条目、各插件的数据、日志、本次运行的记录，全在里面。`GWB_HOME` 选定用哪个 home，不设时是 `default`。
 
 - 不同的 home 可以同时运行，插件、端口、数据互不影响；开发和验证用单独创建的隔离 home，不碰日常用的 `default`
-- 内核装在 home 里，和插件在同一个 `node_modules`：插件写 peer 的 `cordis` 与内核用的是同一份；各个 home 的内核版本可以不同，新内核先装进隔离 home 验证（[内核装进 home](/trajectory/2026-09-24-kernel-in-home)）
+- 各个 home 的内核版本也可以不同，见下一节
 - 同一个 home 只能运行一个实例：第二次启动拿不到锁就退出（[同一 home 只允许一个实例](/trajectory/2026-09-12-one-home-one-instance)）
 - 插件要 home 路径只从 `ctx.gwbKernel.dataDir` 取
+
+## 内核和插件一样装在 home 里
+
+内核应用是 npm 包 `@godcreator/gwb-kernel-desktop`，和 `cordis`、各插件一起装在每个 home 的 `node_modules` 里；安装包只带启动器与 Electron。启动器选定 home，读 home 里内核包清单的 `engines.electron` 与 `main`，Electron 版本在范围内才 import 内核（[启动器加载内核](/docs/seams/launcher)）。
+
+理由：宿主和插件装在同一个 `node_modules` 里，Node 生态的标准做法就都成立。内核放在安装包里时，pnpm 看不见它：插件写的 peer `cordis` 被另装一份，内核与插件运行在两份版本不同的 cordis 上；兼容哪个内核也只能另造字段声明（[内核装进 home](/trajectory/2026-09-24-kernel-in-home)）。
+
+推出了：
+
+- **cordis 只有一份**：内核包把 `cordis` 写成 peer，home 根上列一份，内核、loader、include 与插件都解析到它（[home 布局与条目树](/docs/seams/home)）
+- **插件用 peer 声明兼容哪个内核**，见下面「插件在 peer 里写兼容哪个内核」
+- **新内核先在隔离 home 里验证**：装进那个 home 就行，不用重打安装包，也不碰 `default`
+- **升级内核是装进 home 再重启**：主进程里的内核热替换不了，插件管理的一键热升级不动内核包与 `cordis`，由它单独的升内核命令装，重启由人决定
+
+代价：发版物是内核包与安装包两样；启动器与内核之间多一条 Electron 版本兼容，靠 `engines.electron` 对上；home 里没装内核包就起不来，建 home 时要把内核包与 `cordis` 一起装上。
 
 ## 包名一律按 home 解析
 
@@ -69,7 +84,7 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核�
 
 内核认识的服务名只有两个：自己提供的 `gwbKernel`，和转交页面命令时要找的 `gwbCommands`。`gwbCommands` 由 `cordis.yml` 里的命令插件提供，home 里没有它时，页面发来的每条命令都回失败回执。换掉 `cordis.yml` 里的任何一个插件（包括外壳、命令插件）都不用改内核。
 
-## 内核仓只放内核，插件自己写明测过哪个内核
+## 内核仓只放内核
 
 内核仓只放三样：内核应用 `apps/desktop`（[内核应用](/docs/desktop)）、词汇表包 `packages/gwb-plugin-api`（[词汇表包](/docs/vocab)）、安装包——启动器 `apps/launcher` 与打包脚本 `installer/`（[安装包](/docs/installer)）。准入判据只有一句：**只有第一个插件运行之前必须完成的事才进内核。**
 
@@ -77,14 +92,14 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核�
 
 新 home 里的内核包与插件由创建这个 home 的一方安装：日常用的 `default` 由装机的 agent 照仓根 `INSTALL.md` 用 pnpm 安装；测试用的隔离 home 由 devkit 的 `devkit.home.new` 安装。安装包只带启动器与 Electron，不带内核、插件，也不带 pnpm。
 
-### 插件写明在哪个内核版本上测过
+## 插件在 peer 里写兼容哪个内核
 
-内核和插件各自发版，一个插件在哪个内核上测过，由插件自己写在 `package.json` 的 `gwb.testedKernel` 里：
+内核和插件各自发版。插件兼容哪些内核，写在自己 `package.json` 的 `peerDependencies` 里，范围的下限是验证时那个内核的版本号：
 
 ```json
-{ "gwb": { "testedKernel": "0.2.7" } }
+{ "peerDependencies": { "@godcreator/gwb-kernel-desktop": "^0.3.0" } }
 ```
 
-插件管理的 `plugin-manager.list` 拿它和运行中内核的 `gwbKernel.version` 比：在同一条版本线上就算测过——主版本号是 0 时前两位相同（`0.2.1` 与 `0.2.7`），主版本号不是 0 时主版本号相同；不在同一条版本线上、没写、写的不是合法版本号，回执里这个包就标出来。只标出来，不拦加载：内核不读这个字段。devkit 的 `devkit.release` 发插件之前检查这个字段。
+内核装在 home 里，这就是 Node 生态里插件声明宿主版本的标准写法：pnpm 装插件时拿它和 home 里的内核包比，不满足只警告、照装。插件管理的 `plugin-manager.list` 拿它和运行中内核的 `gwbKernel.version` 比，范围不包含（或没写、写的不是 `^x.y.z`）的包在回执里标出来；只标出来，不拦加载，内核不读这个字段。devkit 的 `devkit.release` 发插件之前检查它。比对规则与这两处的做法在 devkit 仓文档站的「兼容哪个内核」。
 
-这个比较要靠得住，内核的版本号就得反映已有的插件会不会被弄坏：**改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）——改名或删除、改形状或含义，以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` 的版本、改 home 布局（插件按内核的 loader 加载，插件管理按 loader 的条目树和 home 布局改条目、装包，这两样拿不准会不会弄坏，一律按会弄坏算）。只给接缝加东西（加类型、加可选字段）、只改内核内部或修 bug，升 y，测过的插件仍算测过。这和 devkit 的说明书 `gwb-release` 的规矩一致。八条接缝见[接缝图](/docs#接缝图)，发版步骤见[开发](/docs/develop#发版)。
+这个比较要靠得住，内核的版本号就得反映已有的插件会不会被弄坏：**改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）——改名或删除、改形状或含义，以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` 的版本、改 home 布局（插件按内核的 loader 加载，插件管理按 loader 的条目树和 home 布局改条目、装包，这两样拿不准会不会弄坏，一律按会弄坏算）。只给接缝加东西（加类型、加可选字段）、只改内核内部或修 bug，升 y，`^` 范围仍然包含新内核。这和 devkit 的说明书 `gwb-release` 的规矩一致。九条接缝见[接缝图](/docs#接缝图)，发版步骤见[开发](/docs/develop#发版)。

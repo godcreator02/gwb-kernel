@@ -124,11 +124,11 @@ pwsh installer\scripts\build.ps1
 
 1. **隔离 home 里验证通过**，`pnpm check`、`pnpm doc` 都通过
 2. **升版本号并提交**：`apps/desktop/package.json` 与 `packages/gwb-plugin-api/package.json` 写同一个号（[词汇表包](/docs/vocab#版本号与发版)）。git 工作区要干净。升哪一位按改没改接缝判断：
-   - **改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）：八条接缝上已有的任何一样被改名、删除、改了形状或含义——词汇表包里的类型、IPC 通道、`gwb.shared` 的读法、home 布局、`runtime.json` 的字段、日志行格式——以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` 的版本（拿不准会不会弄坏插件管理，一律按会弄坏算）。插件在 `package.json` 的 `gwb.testedKernel` 里写它测过的内核版本，插件管理按「同一条版本线」比对（[插件写明在哪个内核版本上测过](/docs/design#插件写明在哪个内核版本上测过)）；升了 x，所有插件都会被标成没在这个内核上测过，要先照 `gwb-release` 通知下游
-   - **只给接缝加东西（加类型、加可选字段）、只改内核内部或修 bug，升 y**：测过的插件仍算测过
+   - **改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）：九条接缝上已有的任何一样被改名、删除、改了形状或含义——词汇表包里的类型、IPC 通道、`gwb.shared` 的读法、home 布局、`runtime.json` 的字段、日志行格式、内核包清单的 `engines.electron`——以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include`、`cordis` 的版本（拿不准会不会弄坏插件管理，一律按会弄坏算）。插件在 peer 里写内核包的 `^` 范围，插件管理拿它和运行中的内核比（[插件在 peer 里写兼容哪个内核](/docs/design#插件在-peer-里写兼容哪个内核)）；升了 x，所有插件的范围都不再包含新内核，要先照 `gwb-release` 通知下游
+   - **只给接缝加东西（加类型、加可选字段）、只改内核内部或修 bug，升 y**：插件的 `^` 范围仍然包含新内核
 3. **发词汇表包与内核包到团队包源**：`devkit.release {"dir":"<本仓>","packages":["packages/gwb-plugin-api","apps/desktop"]}`（按依赖序），别在包目录手动 `pnpm publish`
 4. **启动器或 Electron 变了才打安装包、发布到 gitea releases**：打包见上面[打安装包](#打安装包)。发布仓 `godcreator/gwb-kernel` 公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包；push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
    - **release 只上传 `gwb-setup-<版>.exe`**：便携 zip 只在本地构建、不上传
    - tag 跟安装包（启动器）的版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
    - **推送 tag 会让同名的草稿 release 自动公开**：要先存草稿、人工确认后再公开，就最后推 tag
-5. **本机升级**：先在隔离 home 里装新内核包验证，再升 default home 里的内核包并重启工作台；启动器变了才重新运行新版安装包。升了 x 时，再在新内核上测插件、改它们的 `gwb.testedKernel` 并发版——插件发版时 `devkit.release` 会检查这个字段
+5. **本机升级**：先在隔离 home 里装新内核包验证，再升 default home 里的内核包并重启工作台；启动器变了才重新运行新版安装包。升了 x 时，再在新内核上测插件、把它们 peer 里内核包的范围改到新内核并发版——插件发版时 `devkit.release` 会检查这个范围

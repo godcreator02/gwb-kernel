@@ -10,7 +10,7 @@ description: 仓根 README.md 由这一页生成——改这里，运行 docfirs
 god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里，只做第一个插件运行之前必须完成的事——初始化 home、创建 cordis 实例并加载插件、
 主进程与页面的包名 import（bare specifier，直接写包名、不带相对路径的 import）解析、创建窗口与 IPC 通道、自身出错时让人看得见——其余功能全部由插件实现。
 
-本仓只放内核应用 `apps/desktop`、词汇表包 `packages/gwb-plugin-api` 和安装包 `installer/`。插件的源码在各自的仓里：命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，
+本仓只放内核应用 `apps/desktop`、词汇表包 `packages/gwb-plugin-api` 和安装包（启动器 `apps/launcher` 与打包脚本 `installer/`）。内核应用发布成 npm 包，和插件一样装在每个 home 里，由启动器加载。插件的源码在各自的仓里：命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，
 插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`；它们和别的插件一样写在 home 的 `cordis.yml` 里。
 
 ## 开发
@@ -26,8 +26,8 @@ $env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 构建并在隔离 home
 
 ## 文档
 
-文档站在 `docs-site/`，从「从这里开始」读起：内核是什么、接缝图（内核仓的包、它们之间的八条接缝）、按你的目的该读哪些页。站上还有关键设计（只做什么、刻意不做什么、插件怎么写明测过哪个内核）、
-八条接缝各一页、开发（怎么跑、怎么测、怎么发版）、三个包各一页（内核应用、词汇表包、安装包）、轨迹（怎么走到今天）与路线。
+文档站在 `docs-site/`，从「从这里开始」读起：内核是什么、运行时各装在哪、接缝图（内核仓的包、它们之间的九条接缝）、按你的目的该读哪些页。站上还有关键设计（只做什么、刻意不做什么、内核为什么装在 home 里、插件怎么声明兼容哪个内核）、
+九条接缝各一页、开发（怎么跑、怎么测、怎么发版）、三个包各一页（内核应用、词汇表包、安装包）、轨迹（怎么走到今天）与路线。
 
 ```powershell
 cd docs-site; pnpm build; pnpm start      # http://localhost:4314

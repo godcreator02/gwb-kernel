@@ -3,7 +3,7 @@ title: 启动与退出
 description: 内核一次启动按什么顺序做事、哪几处顺序不能换；启动失败时怎么办；退出时怎么卸载整棵插件树、最多等多久
 ---
 
-**本页回答**：内核从进程启动到外壳显示出来依次做了什么，哪几处顺序是约束、为什么；启动失败和插件出错时内核怎么办；退出时怎么清理。
+**本页回答**：内核是怎么被启动器加载起来的；内核从入口模块求值到外壳显示出来依次做了什么，哪几处顺序是约束、为什么；启动失败和插件出错时内核怎么办；退出时怎么清理。
 
 <Diagram name="kernel-boot" title="一次启动：内核准备好 home 和 cordis，插件从 cordis.yml 进来，页面最后交给外壳">
 - 整个应用只有两个进程：主进程里是内核和 cordis 实例，所有插件都运行在 cordis 里；渲染进程是唯一的窗口。home 是磁盘上的一个目录
@@ -14,6 +14,10 @@ description: 内核一次启动按什么顺序做事、哪几处顺序不能换�
 - 第 5 步：注册 loader，设好按 home 解析包名的 import，根层只放一条 include 条目 `home`，它读 `cordis.yml`；loader 按条目从 home 的 `node_modules` 找到插件包并加载
 - 第 6 步：外壳插件调用 `setShell`，页面注入 importmap、把 `#root` 交给外壳
 </Diagram>
+
+## 在这之前：启动器找到内核
+
+从安装包启动时，Electron 先运行的是启动器，不是内核：启动器选定 home、把绝对路径写回 `GWB_HOME`，读 home 里内核包清单的 `engines.electron` 与 `main`，当前 Electron 在范围里才 import 内核入口；home 里没有内核包、版本不满足，弹框说明原因、退出码 1，内核一行都不运行（[启动器加载内核](/docs/seams/launcher)）。从仓里 `pnpm start` 时没有这一步，Electron 直接运行内核。下面的第 1 步从内核入口模块开始求值算起。
 
 ## 两段：模块求值时与 ready 之后
 

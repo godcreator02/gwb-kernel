@@ -1,6 +1,6 @@
 ---
 title: 6 home 布局与条目树 loader
-description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gwb-plugin-manager）；接口是 home 的文件布局、内核定下的 loader 与 include 版本、按真实路径解析包名三样；内核应用保证这三样不变、变了就升内核版本号的 x，插件管理保证只经条目树改 cordis.yml、只有它写 home；插件在 gwb.testedKernel 里写测过的内核版本，由插件管理比对
+description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gwb-plugin-manager）；接口是 home 的文件布局、内核定下的 loader 与 include 版本、按真实路径解析包名三样；内核应用保证这三样不变、变了就升内核版本号的 x，插件管理保证只经条目树改 cordis.yml、只有它写 home；home 的 package.json 列内核包与唯一一份 cordis，插件在 peer 里写内核包的版本范围，由插件管理比对
 ---
 
 **本页回答**：内核应用对写 home 的插件管理承诺了哪几样；home 里每个文件归谁写；这几样变了，插件管理和其他插件怎么发现；由哪些测试保护。插件管理自己怎么装包、怎么改条目，见 devkit 仓的文档站。
@@ -57,13 +57,15 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 
 ### 兼容性怎么发现
 
-每个插件在自己 `package.json` 的 `gwb.testedKernel` 里写它在哪个内核版本上测过。插件管理的 `plugin-manager.list` 把它和运行中的内核版本（`gwbKernel.version`）比对：同一条版本线（主版本号为 0 时前两位相同）算测过，否则标出来。内核升级之后看这张表，就知道哪些插件要复查。
+每个插件在自己 `package.json` 的 `peerDependencies` 里写内核包 `@godcreator/gwb-kernel-desktop` 的 `^` 范围。插件管理的 `plugin-manager.list` 把它和运行中的内核版本（`gwbKernel.version`）比对，范围不包含的标出来（[插件在 peer 里写兼容哪个内核](/docs/design#插件在-peer-里写兼容哪个内核)）。内核升级之后看这张表，就知道哪些插件要复查。
+
+内核包与 `cordis` 的版本由内核决定：插件管理的一键热升级不动它们，由它单独的升内核命令一起装，装完要重启才生效。
 
 ## 不负责的事
 
 - 内核应用不知道插件管理的存在：loader 与 include 照常读写 `cordis.yml`、加载条目，不为插件管理留任何接口；home 里没有插件管理时，运行中就没人能装包、改条目
 - 内核应用不带 pnpm，不装包、不升级包
-- 内核应用不读 `gwb.testedKernel`：版本对不上的插件照常加载，比对只在插件管理里做
+- 内核应用不读插件 peer 里的内核包范围：范围不包含当前内核的插件照常加载，比对只在插件管理里做
 - 插件管理不决定 home 的布局、条目树的结构、包名怎么解析
 
 ## 测试

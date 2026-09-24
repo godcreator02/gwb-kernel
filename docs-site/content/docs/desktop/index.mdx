@@ -1,11 +1,11 @@
 ---
 title: gwb-kernel-desktop · 内核应用
-description: 内核应用 apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口；它有哪些功能，插件、页面与外部工具经哪些接口用它（gwbKernel、window.gwb 与 IPC 通道、runtime.json、gwb.log），它依赖什么，哪些事不归它做
+description: 内核应用 apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口，发布成 npm 包装在每个 home 里、由启动器加载；它有哪些功能，插件、页面、启动器与外部工具经哪些接口用它（gwbKernel、window.gwb 与 IPC 通道、清单里的 engines.electron 与 main、runtime.json、gwb.log），它依赖什么，哪些事不归它做
 ---
 
 **本页回答**：内核应用有哪些功能；插件、页面和外部工具经哪些接口用它，各属于哪条接缝；它依赖什么、缺了会怎样；哪些事常被以为归它、其实归别的模块。包名 `@godcreator/gwb-kernel-desktop`，源码目录 `apps/desktop/src`，入口文件 `main.ts`。
 
-内核应用是内核本身：Electron 主进程里的一个 cordis 实例加一个窗口。页面入口是同目录的 `index.html`，页面上的 `window.gwb` 由同目录的 `preload.cjs` 注入。内核应用在[接缝图](/docs#接缝图)上是「内核应用」那个框，框边上的编号连线是它参与的接缝；`preload.cjs` 与 `index.html` 画在左边「页面」框里。
+内核应用是内核本身：Electron 主进程里的一个 cordis 实例加一个窗口。它发布成 npm 包，和插件一样装在每个 home 的 `node_modules` 里，由安装包里的启动器加载（[启动器加载内核](/docs/seams/launcher)）；从仓里 `pnpm start` 时由 Electron 直接运行。页面入口是同目录的 `index.html`，页面上的 `window.gwb` 由同目录的 `preload.cjs` 注入。内核应用在[接缝图](/docs#接缝图)上是「内核应用」那个框，框边上的编号连线是它参与的接缝；`preload.cjs` 与 `index.html` 画在左边「页面」框里。
 
 ## 功能
 
@@ -83,9 +83,20 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 {/* has file="../apps/desktop/src/main.ts" text="file: path.join(dataDir, 'gwb.log')" */}
 
+### 给启动器的清单字段
+
+| 字段 | 做什么 | 接缝 |
+| --- | --- | --- |
+| `engines.electron` | 内核要的 Electron 版本范围；启动器拿当前 Electron 比对，不在范围里就不加载 | [9 启动器加载内核](/docs/seams/launcher) |
+| `main` | 入口文件 `dist/main.js`；启动器 import 它 | [9 启动器加载内核](/docs/seams/launcher) |
+
+{/* has file="../apps/desktop/package.json" text="^44.1.1" */}
+
+{/* has file="../apps/desktop/package.json" text="dist/main.js" */}
+
 ### 启动参数
 
-启动内核的人或程序经这三项控制它，不属于哪条接缝：
+启动内核的人或程序经这三项控制它，不属于哪条接缝（从安装包启动时，启动器已经把 `GWB_HOME` 换成了绝对路径）：
 
 | 参数 | 做什么 | 细节在 |
 | --- | --- | --- |
@@ -103,8 +114,8 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 | 依赖 | 用来做什么 | 缺了会怎样 |
 | --- | --- | --- |
-| electron 的 `app`、`BrowserWindow`、`ipcMain`、`dialog`、`Menu` | 单实例锁、每个 home 一份的 userData、窗口、IPC、启动失败时的错误框 | 内核就是这个 Electron 应用，没有它无法启动 |
-| cordis 的 `Context` 与 logger | cordis 实例、提供 `gwbKernel`、日志流、只读状态页的错误行 | 无法启动 |
+| electron 的 `app`、`BrowserWindow`、`ipcMain`、`dialog`、`Menu` | 单实例锁、每个 home 一份的 userData、窗口、IPC、启动失败时的错误框 | 内核就是这个 Electron 应用，没有它无法启动；Electron 由安装包提供，版本要在 `engines.electron` 的范围里，启动器才加载内核 |
+| cordis 的 `Context` 与 logger | cordis 实例、提供 `gwbKernel`、日志流、只读状态页的错误行 | 无法启动；`cordis` 写在 peer 里，由 home 根上唯一的那一份满足，插件用的也是它（[home 布局与条目树](/docs/seams/home)） |
 | `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` | 按条目加载插件、读 `cordis.yml` | 无法启动；版本写在 `apps/desktop/package.json`，升级它们是改接缝，内核升 x（见[开发](/docs/develop#发版)） |
 | 服务 `ctx.gwbCommands`，由 `cordis.yml` 里的命令插件 `@godcreator/gwb-commands` 提供 | 页面发来的命令一律交给它 | 内核照常运行；页面发来的每条命令都回失败回执「没有命令服务」 |
 | home 目录与文件系统 | 读包清单、解析包名、写 `gwb.log` 与 `runtime.json` | 目录建不出来时进程直接退出；`runtime.json` 写不进只记一行警告；`gwb.log` 打不开时日志只写 stderr |
@@ -121,4 +132,5 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 - **不显示、不查询日志**：内核只把日志写到 stderr 与 `gwb.log`；在界面上看日志归日志插件 `gwb-logger`，它注册自己的 exporter
 - **不提供设置、数据、说明书、MCP 入口**：这些都是 `cordis.yml` 里的插件
 - **不确认 `runtime.json` 里的进程还活着**：退出时不删这份文件，读它的 devkit 与装机的 agent 自己确认 pid 还在
-- **不比对插件测过的内核版本**：插件 `package.json` 里的 `gwb.testedKernel` 内核不读，由插件管理比对
+- **不比对插件兼容哪个内核**：插件 peer 里内核包的范围内核不读，由插件管理比对
+- **不装自己**：内核包由创建 home 的一方装进 home，升级由插件管理的升内核命令装、重启后生效
