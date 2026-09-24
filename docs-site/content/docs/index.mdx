@@ -32,7 +32,7 @@ god 工作台的内核：一个 Electron 应用，只做**第一个插件运行�
 | # | 接缝 | 连接的模块 | 接口 | 细节在 |
 | --- | --- | --- | --- | --- |
 | 1 | 插件加载 | 内核应用 ↔ `cordis.yml` 里的插件 | `cordis.yml` 的条目；按 home 把包名解析成真实路径再 import；插件的 `apply` 或 `Service` 类 | [插件加载](/docs/seams/loading) |
-| 2 | 内核服务 | 内核应用 ↔ 任何插件 | `ctx.gwbKernel` 的 `dataDir`、`version`、`emit`、`setShell` | [内核服务](/docs/seams/kernel) |
+| 2 | 内核服务 | 内核应用 ↔ 任何插件 | `ctx.gwbKernel` 的 `dataDir`、`version`、`launcherVersion`、`emit`、`setShell` | [内核服务](/docs/seams/kernel) |
 | 3 | IPC 通道 | 页面 ↔ 内核应用 | `window.gwb` 的三个函数；`gwb:command`、`gwb:event`、`gwb:shell`、`gwb:hello` 四个通道 | [IPC 通道](/docs/seams/ipc) |
 | 4 | 外壳接管 | 页面入口 ↔ 调用 `setShell` 的插件 | 外壳模块的默认导出 `ShellBoot`、`#root`、`dispose`；没有外壳时显示只读状态页 | [外壳接管](/docs/seams/shell) |
 | 5 | 页面上的 react | 内核应用 ↔ 页面上运行的代码（外壳、插件的窗格） | 页面入口 `index.html` 里写死的 importmap：react 的四个包名 → 内核包 `dist/react/` 里的文件；页面代码构建时外置这四个名字 | [页面上的 react](/docs/seams/page-react) |
