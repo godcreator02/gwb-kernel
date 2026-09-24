@@ -87,7 +87,7 @@ peer 必须同时写上内核包——外壳 0.13.7 起不再声明 react，devk
   新内核配旧 shell 也不冲突
 - [x] shell 撤掉 react 与它的 `gwb.shared`；`gwb.shared` 机制留给 block-note，等它按定案第三期撤掉声明后再删
 - [x] 现状页（页面上的包名、关键设计、接缝图）与 devkit 定案第五期改写；写轨迹卡
-- [ ] default 升级：先 `plugin-manager.update-kernel {"version":"0.4.1"}` 并重启，再升外壳到 0.13.7。顺序反了页面上没有 react，外壳起不来
+- [x] default 升级：先 `plugin-manager.update-kernel {"version":"0.4.1"}` 并重启，再升外壳到 0.13.7。顺序反了页面上没有 react，外壳起不来
 
 ## 进度
 
@@ -98,7 +98,8 @@ peer 必须同时写上内核包——外壳 0.13.7 起不再声明 react，devk
   根目录 `pnpm check` 改成先构建内核包（轨迹卡「react 收进内核」）。外壳 0.13.7 撤掉 react 与 `gwb.shared`，peer 写内核包 `^0.4.1`。实测：
   隔离 home `kernel-dev-2609241631` 先用内核开发版配旧外壳 0.13.5，再换正式版内核 0.4.1 配外壳开发版，两次 importmap 的 react 都指向内核包
   `dist/react/`，插件管理窗格正常显示，日志没有 error。devkit 的发版检查与 `devkit.capabilities` 本来就读依赖（含 peer）的 `gwb.shared`，不用改。
-  default 还没升：内核要重启才生效，由人决定｜总控台会话
+  人同意后当场升 default：`update-kernel` 装上 0.4.1、停掉并重新启动 default、`update-all {"only":["@godcreator/gwb-shell"]}` 升到 0.13.7；
+  页面重新加载后外壳正常启动，除了本来就起不来的 gitea、mineru、docfirst-workflow，条目全部 ACTIVE｜总控台会话
 - 2026-09-24｜第二步完成。`devkit.release` 发出插件管理 0.8.0、devkit 0.18.9；界面插件 baseui 0.1.11（peer 写内核包 `^0.4.0`、删掉 `gwb.testedKernel`；
   同仓的外壳与外观只把 dev 的词汇表包与 cordis 跟到同一组，不然同一个工作区里两份 cordis 的类型增强对不上）；default 用 `plugin-manager.update-all`
   升上这三个，`list` 里三个包都读出 `kernelRange: ^0.4.0`。`devkit.dev` 能发内核包（devkit 0.18.10，已装进 default）：内核包连同它 peer 里的 `cordis`
