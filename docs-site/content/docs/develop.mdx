@@ -40,11 +40,11 @@ cd apps\desktop; pnpm start
 
 `pnpm start` 先构建再启动 electron。构建依次是：内核 `tsc`；再用 `tsconfig.api.json` 只为 `src/api.ts` 生成包根导出的类型声明 `dist/api.d.ts`（[包根导出的接口类型](/docs/desktop/api)）；把页面的两个文件 `index.html`、`preload.cjs` 从 `src/` 复制进 `dist/`，最后运行 `scripts/build-react.ts`，用 esbuild 把 react 的四个包名打进 `dist/react/`，页面的 importmap 用的就是它们（见下面[内核包怎么打包 react](#内核包怎么打包-react)）：
 
-{/* ref file="../apps/desktop/package.json" lines="33-37" */}
+{/* ref file="../apps/desktop/package.json" lines="38-42" */}
 
 ## 提交前的检查
 
-{/* ref file="../package.json" lines="6-14" */}
+{/* ref file="../package.json" lines="6-13" */}
 
 - **`pnpm check`**（仓根）：先构建内核包（连同 react 的打包产物与包根的类型声明：`main.test.ts` 用真实的打包产物启动内核），再对全仓做类型检查、lint 和测试。测试是 `apps`、`installer` 下各 `tests/` 目录里的测试（`installer` 那一个要调用本机的 pwsh 7）；`src/api.ts` 里的类型写坏了，内核的类型检查跟着失败
 - **`pnpm doc`**（仓根）：文档站的检查，不在 `pnpm check` 里：文档页引用的代码改了、生成物和正本不一致，都会报出来。引用的代码改了、页上的说法仍成立时，先提交代码，再只点名自己改过的页确认：`pnpm doc:confirm <页的路径…>`（路径相对 `docs-site/`）。不带路径会把别人还没复核的页一起确认掉

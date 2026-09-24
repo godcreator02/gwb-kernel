@@ -37,7 +37,7 @@ description: 连接内核应用与命令插件；接口是服务 ctx.gwbCommands
 - 命令名不是字符串时回 `{ ok: false, error: '命令名要是字符串' }`；`ctx.gwbCommands` 不存在时回 `{ ok: false, error: '没有命令服务（ctx.gwbCommands），无法执行 <命令名>' }`
 - 只找 `gwbCommands` 这一个服务名，不认识任何命令名，自己不登记命令
 
-{/* ref file="../apps/desktop/src/main.ts" lines="239-244" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="230-235" */}
 
 **命令插件**保证：
 
