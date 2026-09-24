@@ -78,4 +78,16 @@ type ShellBoot = (root: HTMLElement) => { dispose?(): void } | undefined | void
 
 ## 测试
 
-页面接管的逻辑写在 `index.html` 里、依赖窗口，没有单元测试；外壳模块的形状由类型检查保护（外壳从词汇表包取 `ShellBoot`）。其余在隔离 home 里实机验证（见[开发](/docs/develop)）：没有外壳插件时看到只读状态页，装上外壳后页面被接管，停用外壳后回到只读状态页，再启用又被接管。
+页面接管的逻辑写在 `index.html` 里，由 `apps/desktop/tests/index-html.test.ts` 保护：把页面脚本放进一个极简的假 DOM 求值，外壳模块从测试里的模块表取，证明外壳挂载、同一地址不重复挂载（在途时也一样）、换外壳先 `dispose` 旧的、`dispose` 抛错与 import 失败的处理。外壳模块的形状由类型检查保护（外壳从词汇表包取 `ShellBoot`）。
+
+{/* has file="../apps/desktop/tests/index-html.test.ts" text="同一个地址在 import 完成前连推两次，只挂载一次" */}
+
+{/* has file="../apps/desktop/tests/index-html.test.ts" text="换外壳：先 dispose 旧的、清空 #root，再挂新的" */}
+
+<Callout title="已知问题">
+页面脚本记录「正在加载的地址」的变量初值是 `null`，推来 `url: null` 时与它相等，被当成「同一个地址正在加载」直接忽略：空 home 里只读状态页画不出来，外壳撤销后旧外壳也不 `dispose`，与上面「约定」里写的不符。测试里名字带「现状（bug）」的两条用例锁着这个现状，修好时一起改。
+</Callout>
+
+{/* has file="../apps/desktop/tests/index-html.test.ts" text="现状（bug）：外壳在用时推来 url: null 也被忽略" */}
+
+真实窗口里的显示在隔离 home 里实机验证（见[开发](/docs/develop)）：没有外壳插件时看到只读状态页，装上外壳后页面被接管，停用外壳后回到只读状态页，再启用又被接管。

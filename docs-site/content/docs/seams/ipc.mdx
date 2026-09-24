@@ -83,4 +83,10 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="gwb:hello：向发来的页面回一条整份外壳状态" */}
 
-形状由类型检查保护（外壳与插件的页面代码从词汇表包取 `GwbWindowApi`、`GwbResult`；内核的页面入口 `index.html` 是不经类型检查的纯脚本），命令服务自己的行为由命令插件在基础插件仓里的测试保护。页面这一侧（`preload.cjs` 与页面入口）只能在隔离 home 里实机验证（见[开发](/docs/develop)；查看页面用 devkit 的 `devkit.cdp`）：页面能调到插件注册的命令，调不存在的命令收到 `ok: false`，插件 `emit` 的事件页面收得到，页面整页重新加载后立刻收到当前外壳状态。
+页面这一侧的 `preload.cjs` 由 `apps/desktop/tests/preload.test.ts` 保护：给它一个假的 `require('electron')` 求值，证明页面上只有 `window.gwb` 的三个函数、`command` 走 `gwb:command`、`on` 与 `onShell` 的订阅能取消、`onShell` 订阅后马上发 `gwb:hello`。
+
+{/* has file="../apps/desktop/tests/preload.test.ts" text="只在页面上放一个 window.gwb，上面正好三个函数" */}
+
+{/* has file="../apps/desktop/tests/preload.test.ts" text="onShell 订阅 gwb:shell 之后马上发一次 gwb:hello" */}
+
+形状由类型检查保护（外壳与插件的页面代码从词汇表包取 `GwbWindowApi`、`GwbResult`；内核的页面入口 `index.html` 是不经类型检查的纯脚本），命令服务自己的行为由命令插件在基础插件仓里的测试保护。两侧连起来只能在隔离 home 里实机验证（见[开发](/docs/develop)；查看页面用 devkit 的 `devkit.cdp`）：页面能调到插件注册的命令，调不存在的命令收到 `ok: false`，插件 `emit` 的事件页面收得到，页面整页重新加载后立刻收到当前外壳状态。
