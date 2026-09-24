@@ -7,6 +7,7 @@ import Loader, { type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from '@godcreator/gwb-plugin-api'
 import { collectImports } from './imports.js'
+import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
 import { limitFromEnv, openLogFile } from './log-file.js'
@@ -36,11 +37,6 @@ const MINIMAL_HOME_FILES = [
 
 const stackOf = (e: unknown): string => (e instanceof Error ? (e.stack ?? e.message) : String(e))
 
-/** `GWB_HOME` 是名字就放在 appData/gwb-kernel/homes/<名字>，带路径分隔符就是目录本身 */
-function homePathFor(gwbHomeSetting: string): string {
-  return /[\\/]/.test(gwbHomeSetting) ? path.resolve(gwbHomeSetting) : path.join(app.getPath('appData'), 'gwb-kernel', 'homes', gwbHomeSetting)
-}
-
 function addMissingMinimalHomeFiles(homeDir: string): void {
   for (const [file, content] of MINIMAL_HOME_FILES) {
     const target = path.join(homeDir, file)
@@ -48,7 +44,7 @@ function addMissingMinimalHomeFiles(homeDir: string): void {
   }
 }
 
-const homePath = homePathFor(process.env.GWB_HOME ?? 'default')
+const homePath = homePathFor(process.env.GWB_HOME ?? 'default', app.getPath('appData'))
 fs.mkdirSync(homePath, { recursive: true })
 // 单实例锁按 userData 区分：同一个 home 的不同写法（大小写、junction、斜杠）必须 realpath 成同一个字符串
 const dataDir = fs.realpathSync.native(homePath)
