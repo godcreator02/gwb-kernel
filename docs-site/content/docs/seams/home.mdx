@@ -8,7 +8,7 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 ## 连接的模块
 
 - [内核应用](/docs/desktop)（`apps/desktop`）：决定 home 的文件布局；带着 loader 与 include（`@cordisjs/plugin-loader`、`@cordisjs/plugin-include`），条目树的形状、`cordis.yml` 怎么读写都由这两个包决定；按真实路径解析包名
-- 插件管理（`@godcreator/gwb-plugin-manager`，在 devkit 仓，和 devkit 一起开发）：`cordis.yml` 里的普通插件，也是唯一写 home 的插件——用 loader 的条目树改 `cordis.yml`，用它自己带的 pnpm 改 `package.json` 与 `node_modules/`
+- 插件管理（`@godcreator/gwb-plugin-manager`，在 devkit 仓，和 devkit 一起开发）：`cordis.yml` 里的普通插件，也是唯一写 home 的插件——用 loader 的条目树改 `cordis.yml`，用机器上装好的 pnpm 12（两个固定位置之一，见 devkit 仓文档站「插件管理的 pnpm」）改 `package.json` 与 `node_modules/`
 
 ## 接口
 
@@ -16,7 +16,7 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 
 | 文件 | 谁写 |
 | --- | --- |
-| `package.json` | 列出装了哪些包：内核包 `@godcreator/gwb-kernel-desktop`、内核包 peer 要的那个版本的 `cordis`、各个插件与库。缺了内核补一份最小清单（从仓里启动一个新 home 时会缺）；之后归插件管理（经它带的 pnpm） |
+| `package.json` | 列出装了哪些包：内核包 `@godcreator/gwb-kernel-desktop`、内核包 peer 要的那个版本的 `cordis`、各个插件与库。缺了内核补一份最小清单（从仓里启动一个新 home 时会缺）；之后归插件管理（经它运行的 pnpm） |
 | `cordis.yml` | 列出条目。缺了内核补一个空表，之后归 include 和插件管理 |
 | `node_modules/` | pnpm，由插件管理调用 |
 | `gwb.log`、`gwb.log.1` | 内核（见[日志](/docs/seams/log)） |
@@ -44,7 +44,7 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 
 插件管理保证：
 - **改 `cordis.yml` 只走条目树**：条目树把写回文件和当场加载、卸载一起做；绕过它直接写文件，内存里的条目不知道，下一次写回会把磁盘上的改动覆盖掉
-- **只有它写 home**：`package.json` 与 `node_modules/` 只经它自己带的 pnpm 改；别的插件不写这两样，也不写 `cordis.yml`，只写自己的数据目录
+- **只有它写 home**：`package.json` 与 `node_modules/` 只经它运行的 pnpm 改；别的插件不写这两样，也不写 `cordis.yml`，只写自己的数据目录
 - **内核包与 `cordis` 按精确版本装**：home 根上的 `cordis` 等于内核包 peer 里写的那个版本；一键热升级不动这两个包，由单独的升内核命令一起装，装完重启才生效
 
 ### 兼容性怎么发现

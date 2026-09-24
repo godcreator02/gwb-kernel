@@ -1,6 +1,6 @@
 # 安装 gwb（写给 agent）
 
-你是替用户在一台 Windows 机器上安装 gwb 的 agent。**安装包只带启动器与 Electron，不带内核、不带插件，也不带 pnpm——内核包、`cordis` 与插件都由你用机器上的 pnpm 装进 home。** 启动器启动时从 home 里加载内核，home 里没有内核包就弹框说明、不启动。
+你是替用户在一台 Windows 机器上安装 gwb 的 agent。**安装包只带启动器与 Electron，不带内核、不带插件，也不带 pnpm——内核包、`cordis` 与插件都由你用机器上装好的 pnpm 12（第 1 步）装进 home。** 启动器启动时从 home 里加载内核，home 里没有内核包就弹框说明、不启动。
 照下面做完，用户得到一个装好 11 个基础插件（包括命令插件、插件管理、MCP 入口）、MCP 入口开在 `http://127.0.0.1:2870/mcp` 的工作台，
 之后你（或别的 agent）通过这个 MCP 入口干活。命令一律在 PowerShell 里运行。
 
@@ -20,11 +20,21 @@
 
 ## 1. 机器上的前置条件（改的是用户级配置——动手前告诉用户要改什么）
 
-1. **pnpm 12 及以上**：`pnpm --version` 看版本，`(Get-Command pnpm).Source` 看用的是哪一个——插件管理
-   以后安装插件也用 PATH 上的那一个。没有或低于 12：`npm i -g pnpm@latest`；机器上连 node 都没有，就用 pnpm
-   官方的独立安装脚本（`https://get.pnpm.io/install.ps1`，先征得用户同意）。用 corepack、volta 之类装的
-   pnpm 也能用来安装，但装完要在工作台的设置里把 `pnpm-path` 填成那个 pnpm 的路径，插件管理才找得到它。
-2. **`@godcreator` 的包从哪里下载**：`pnpm config get @godcreator:registry` 输出下面这个地址就是配好了。
+1. **pnpm 12（不低于 12.4.2），装在两个固定位置之一**：插件管理与 devkit 只按顺序检查这两个位置、第一个存在的作数，
+   不找 PATH、不读设置：`%LOCALAPPDATA%\pnpm\bin\pnpm.exe`（pnpm 官方安装脚本的默认位置）、
+   `%APPDATA%\npm\node_modules\pnpm\pnpm.exe`（`npm i -g pnpm` 装的 pnpm 包里的原生可执行文件）。这一步、第 3 步和之后
+   插件管理用的都是同一个。先看有没有：
+
+   ```powershell
+   $pnpm = @("$env:LOCALAPPDATA\pnpm\bin\pnpm.exe", "$env:APPDATA\npm\node_modules\pnpm\pnpm.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+   if ($pnpm) { "$pnpm $(& $pnpm --version)" } else { '两个位置都没有 pnpm' }
+   ```
+
+   输出的版本是 12.x 并且不低于 12.4.2 就是配好了。两个位置都没有、或版本不对：先征得用户同意，再用 pnpm 官方安装脚本装
+   `$env:PNPM_VERSION='12.4.2'; iwr https://get.pnpm.io/install.ps1 -useb | iex`（它会改用户级环境变量：写入 `PNPM_HOME`、
+   把 `%LOCALAPPDATA%\pnpm\bin` 加进 PATH），机器上有 node 的话也可以 `npm i -g pnpm@12.4.2`。装完重新运行上面两行确认。
+   用 corepack、volta 装的，或设过 `PNPM_HOME`、改过 npm 全局目录的 pnpm，不在这两个位置，插件管理找不到
+2. **`@godcreator` 的包从哪里下载**：`& $pnpm config get @godcreator:registry` 输出下面这个地址就是配好了。
    没有就往用户级 `%USERPROFILE%\.npmrc` 追加这一行（其他行一律不动，已有的 token 行保留）：
 
    ```
@@ -34,8 +44,8 @@
    只读安装不需要 token。少了这一行，pnpm 会去 npmjs 找这些包，报 404。**别把 `.npmrc` 全文打印出来**
    ——里面可能有用户的发布 token。
 3. **放行刚发布的包**：pnpm 11 起，发布不满一天的包默认不允许安装，而 gwb 的插件常常当天发布。
-   `pnpm config get minimumReleaseAgeExclude` 的输出里有 `@godcreator/*` 就是配好了。没有：
-   `pnpm config get globalconfig` 会输出一个 yaml 文件的路径（通常是 `%LOCALAPPDATA%\pnpm\config\config.yaml`），
+   `& $pnpm config get minimumReleaseAgeExclude` 的输出里有 `@godcreator/*` 就是配好了。没有：
+   `& $pnpm config get globalconfig` 会输出一个 yaml 文件的路径（通常是 `%LOCALAPPDATA%\pnpm\config\config.yaml`），
    在里面加上（已有这个键就把这一项合并进列表）：
 
    ```yaml
@@ -44,7 +54,7 @@
    ```
 
    只放行这一个 scope，其他包仍受这条规则保护。
-4. **可选**：连 npmjs 慢的话，第三方包改走镜像：`pnpm config set registry https://registry.npmmirror.com`
+4. **可选**：连 npmjs 慢的话，第三方包改走镜像：`& $pnpm config set registry https://registry.npmmirror.com`
    （`@godcreator` 仍按第 2 条走自己的源）。这也是用户级配置，先问用户。
 
 ## 2. 安装启动器
@@ -67,19 +77,20 @@ Start-Process .\gwb-setup-<版>.exe -ArgumentList '/S' -Wait
 
 ## 3. 初始化 default home
 
-注意 PowerShell 里 `$home` 是保留变量，别拿它当变量名。
+注意 PowerShell 里 `$home` 是保留变量，别拿它当变量名。`$pnpm` 是第 1 步第 1 条找到的那个 pnpm，这里再取一次。
 
 ```powershell
+$pnpm = @("$env:LOCALAPPDATA\pnpm\bin\pnpm.exe", "$env:APPDATA\npm\node_modules\pnpm\pnpm.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 $gwbHome = "$env:APPDATA\gwb-kernel\homes\default"
 New-Item -ItemType Directory -Force $gwbHome | Out-Null
 [IO.File]::WriteAllText("$gwbHome\package.json", '{ "name": "gwb-home", "private": true }')
 Set-Location $gwbHome
 
 # 装内核包与 cordis：两个都写精确版本号，cordis 的版本就是内核包 peer 里写的那个
-$kernel = pnpm view @godcreator/gwb-kernel-desktop dist-tags.latest
-pnpm add --save-exact "@godcreator/gwb-kernel-desktop@$kernel"
+$kernel = & $pnpm view @godcreator/gwb-kernel-desktop dist-tags.latest
+& $pnpm add --save-exact "@godcreator/gwb-kernel-desktop@$kernel"
 $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json -Raw | ConvertFrom-Json).peerDependencies.cordis
-pnpm add --save-exact "cordis@$cordis"   # pnpm 装内核包时多半已按 peer 装好 cordis，会说 Already up to date；这一条是把它按精确版本号写进清单
+& $pnpm add --save-exact "cordis@$cordis"   # pnpm 装内核包时多半已按 peer 装好 cordis，会说 Already up to date；这一条是把它按精确版本号写进清单
 [IO.File]::WriteAllText("$gwbHome\cordis.yml", @'
 - id: commands
   name: '@godcreator/gwb-commands'
@@ -104,7 +115,7 @@ pnpm add --save-exact "cordis@$cordis"   # pnpm 装内核包时多半已按 peer
 - id: mcp
   name: '@godcreator/gwb-mcp'
 '@)
-pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-logger @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp
+& $pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-logger @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp
 ```
 
 * 内核包与 `cordis` 装完读回核对：`node_modules\@godcreator\gwb-kernel-desktop\package.json` 的 `version` 等于 `$kernel`，
@@ -115,7 +126,7 @@ pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings 
 * 除了内核包与 `cordis`，只装插件、不装库：词汇表包 `gwb-plugin-api` 只有类型，运行时用不到；页面用的 react 随内核包装上，
   设计令牌表随 `gwb-shell` 装上。**别再安装 `gwb-shared-react` / `gwb-tokens`**：这两个包已停止发布
 * 退出码为 0 就成功。输出里如果有一行 `Issues with peer dependencies found`：说明有插件还没适配它上游的新版本，
-  包照样装上了，但那个插件可能启动不了——在 home 里运行 `pnpm peers check` 拿到明细，原样告诉用户
+  包照样装上了，但那个插件可能启动不了——在 home 里运行 `& $pnpm peers check` 拿到明细，原样告诉用户
 
 ## 4. 启动、核对
 
@@ -191,19 +202,19 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 
 ## 常见问题
 
-| 现象                                         | 多半是                                       | 怎么办                                                                    |
-| ------------------------------------------ | ----------------------------------------- | ---------------------------------------------------------------------- |
-| `pnpm add` 报 404，找不到 `@godcreator/…`       | 第 1 步第 2 条那行没配                            | 补上再装                                                                   |
-| 启动时弹框说 home 里没有内核包                         | 第 3 步的内核包没装，或装在了别的 home                   | 照第 3 步在这个 home 里装内核包与 `cordis` 再启动                                     |
-| 启动时弹框说 Electron 版本不满足内核包要求                 | 安装包太旧，内核包要的 Electron 更新                   | 装最新的安装包                                                                |
-| 装完提示 `Issues with peer dependencies found` | 有插件没适配上游的新版本                              | `pnpm peers check` 看明细告诉用户                                             |
-| 报版本太新、minimum release age                  | 第 1 步第 3 条没配                              | 补上再装                                                                   |
-| pnpm 运行不了或低于 12                            | 第 1 步第 1 条                                | 安装新版 pnpm                                                              |
-| 连 npmjs 超时                                 | 网络                                        | 按第 1 步第 4 条换镜像                                                         |
-| 窗口里只有只读状态页、没有状态栏                           | 外壳没加载成功                                   | 看 `gwb.log` 里的 `error` 行，多半是第 3 步没装成功                                  |
-| 页面上的命令都回「没有命令服务」                           | 命令插件没加载成功                                 | 看 `cordis.yml` 里有没有 `commands` 那条、home 里装没装 `@godcreator/gwb-commands` |
-| MCP 入口连不上                                  | 工作台没启动，或 2870 端口被占用（default 的 MCP 入口不换端口） | 看 `runtime.json` 有没有 `mcp`；在 `gwb.log` 里找 `gwb-mcp` 那行；腾出 2870 端口再启动   |
-| 「插件管理」里安装插件失败，回执说找不到 pnpm                  | 插件管理在 PATH 上找不到 pnpm 12 及以上               | 让 pnpm 进 PATH，或在设置里填 `pnpm-path`                                       |
+| 现象                                         | 多半是                                                        | 怎么办                                                                    |
+| ------------------------------------------ | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm add` 报 404，找不到 `@godcreator/…`       | 第 1 步第 2 条那行没配                                             | 补上再装                                                                   |
+| 启动时弹框说 home 里没有内核包                         | 第 3 步的内核包没装，或装在了别的 home                                    | 照第 3 步在这个 home 里装内核包与 `cordis` 再启动                                     |
+| 启动时弹框说 Electron 版本不满足内核包要求                 | 安装包太旧，内核包要的 Electron 更新                                    | 装最新的安装包                                                                |
+| 装完提示 `Issues with peer dependencies found` | 有插件没适配上游的新版本                                               | `& $pnpm peers check` 看明细告诉用户                                          |
+| 报版本太新、minimum release age                  | 第 1 步第 3 条没配                                               | 补上再装                                                                   |
+| 第 1 步找不到 pnpm，或版本不是 12.x、低于 12.4.2         | pnpm 没装、装在别处，或版本不对                                         | 照第 1 步第 1 条装到两个固定位置之一                                                  |
+| 连 npmjs 超时                                 | 网络                                                         | 按第 1 步第 4 条换镜像                                                         |
+| 窗口里只有只读状态页、没有状态栏                           | 外壳没加载成功                                                    | 看 `gwb.log` 里的 `error` 行，多半是第 3 步没装成功                                  |
+| 页面上的命令都回「没有命令服务」                           | 命令插件没加载成功                                                  | 看 `cordis.yml` 里有没有 `commands` 那条、home 里装没装 `@godcreator/gwb-commands` |
+| MCP 入口连不上                                  | 工作台没启动，或 2870 端口被占用（default 的 MCP 入口不换端口）                  | 看 `runtime.json` 有没有 `mcp`；在 `gwb.log` 里找 `gwb-mcp` 那行；腾出 2870 端口再启动   |
+| 「插件管理」里安装插件失败，回执说找不到 pnpm 或版本不对            | 两个固定位置都没有 pnpm，或找到的不是 12.x、低于 12.4.2；插件管理 0.8.3 起不再自带 pnpm | 照第 1 步第 1 条装好，回执里写着检查了哪两个位置                                            |
 
 ## 之后
 
