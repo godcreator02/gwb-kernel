@@ -53,13 +53,19 @@ description: 仓根 INSTALL.md 由这一页生成——写给替用户安装 gwb
 ## 2. 安装启动器
 
 从 `https://git.tianshen02.online:28377/godcreator/gwb-kernel/releases` 下载最新的
-`gwb-setup-<版>.exe`（下载之前告诉用户文件名与大小），静默安装：
+`gwb-setup-<版>.exe`（下载之前告诉用户文件名与大小），静默安装。文件名、大小与下载地址不开浏览器也拿得到：
+
+```powershell
+(Invoke-RestMethod https://git.tianshen02.online:28377/api/v1/repos/godcreator/gwb-kernel/releases/latest).assets |
+  Select-Object name, size, browser_download_url
+```
 
 ```powershell
 Start-Process .\gwb-setup-<版>.exe -ArgumentList '/S' -Wait
 ```
 
 安装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，按当前用户安装、不需要管理员权限，开始菜单会出现「gwb-kernel」。
+装的是哪一版启动器：`(Get-Item "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe").VersionInfo.ProductVersion`，和发布页的版本号比。
 **先别启动**——第 3 步要在它启动之前把 home 初始化好；已经启动了就先关掉窗口。
 
 ## 3. 初始化 default home
@@ -76,7 +82,7 @@ Set-Location $gwbHome
 $kernel = pnpm view @godcreator/gwb-kernel-desktop dist-tags.latest
 pnpm add --save-exact "@godcreator/gwb-kernel-desktop@$kernel"
 $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json -Raw | ConvertFrom-Json).peerDependencies.cordis
-pnpm add --save-exact "cordis@$cordis"
+pnpm add --save-exact "cordis@$cordis"   # pnpm 装内核包时多半已按 peer 装好 cordis，会说 Already up to date；这一条是把它按精确版本号写进清单
 [IO.File]::WriteAllText("$gwbHome\cordis.yml", @'
 - id: commands
   name: '@godcreator/gwb-commands'
@@ -135,7 +141,7 @@ Get-Content $rt
 
 - `runtime.json` 里有 `version`（内核版本）与 `"mcp": { "url": "http://127.0.0.1:2870/mcp" }`——MCP 入口的地址
   **以这个字段为准**
-- 同目录的 `gwb.log` 一行一条，格式是 `<时间> <级别> <来源> <内容>`。应该有 `kernel up` 与 `MCP 门就绪` 两行；
+- 同目录的 `gwb.log` 一行一条，格式是 `<时间> <级别> <来源> <内容>`。应该有 `info kernel up` 与 `info gwb-mcp MCP 入口已就绪` 两行（旧版 gwb-mcp 写的是「MCP 门就绪」）；
   `Select-String "$env:APPDATA\gwb-kernel\homes\default\gwb.log" -Pattern '^\S+ error '` 应当没有任何输出
   （`warn` 行读一读，不算失败）
 - 能看到窗口的话：底部状态栏右边写着 `gwb <版>`，这个版本号就是 `runtime.json` 里的 `version`
@@ -146,20 +152,22 @@ Get-Content $rt
 ## 5. 连接 MCP 入口
 
 MCP 入口的地址在 `runtime.json` 的 `mcp.url`（default 就是 `http://127.0.0.1:2870/mcp`），只绑定本机，**要求
-`Authorization: Bearer <token>`**：token 每个 home 一份，存在 MCP 入口插件（gwb-mcp）的数据目录里（`mcp/secret.json`），重启不变；
+`Authorization: Bearer <token>`**：token 每个 home 一份，存在 `<home>\mcp\secret.json`（字段 `token`），重启不变；
 没带或对不上一律返回 401。
 
-先不改任何客户端配置，用 MCP 入口自带的命令行客户端验证一遍（零依赖；它自己读 default home 的凭据文件，不用提供 token）。
-它要 node 18 起才能运行：机器上没有 node 的话跳过这一段，直接在客户端里配置、调 `index` 验证：
+先不改任何客户端配置，用 MCP 入口自带的命令行客户端验证一遍（零依赖；不给 token 时它读 default home 的凭据文件）。
+它要 node 18 起才能运行，而且装在第 3 步的 home 里——第 3 步没装成就没有它。机器上没有 node 的话跳过这一段，直接在客户端里配置、调 `index` 验证：
 
 ```powershell
-$client = "$env:APPDATA\gwb-kernel\homes\default\node_modules\@godcreator\gwb-mcp\bin\client.mjs"
-node $client --url http://127.0.0.1:2870/mcp index
-node $client --url http://127.0.0.1:2870/mcp run plugin-manager.list
-node $client --url http://127.0.0.1:2870/mcp run skill.list
+$gwbHome = "$env:APPDATA\gwb-kernel\homes\default"
+$client = "$gwbHome\node_modules\@godcreator\gwb-mcp\bin\client.mjs"
+$url = (Get-Content "$gwbHome\runtime.json" -Raw | ConvertFrom-Json).mcp.url
+node $client --url $url index
+node $client --url $url run plugin-manager.list
+node $client --url $url run skill.list
 ```
 
-MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带请求头的配置片段：`node $client --url http://127.0.0.1:2870/mcp run mcp.token`
+MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带请求头的配置片段：`node $client --url $url run mcp.token`
 返回 `{ token, file, mcpServers }`，`mcpServers` 里已带 `headers`，原样复制就能连上（**返回内容含明文凭据**，别贴到
 公开的地方）：
 
@@ -169,11 +177,22 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 
 连上后**先调 `index`**：它返回的 instructions 讲清楚之后怎么干活。再核对：
 
-- `run plugin-manager.list` 返回第 3 步装的 12 个插件，各带一个条目、`active: true`；另有内核包与 `cordis` 两行，没有条目
+- `run plugin-manager.list` 返回第 3 步装的 12 个插件，各带一个条目、`active: true`；另有内核包与 `cordis` 两行，没有条目。
+  插件的 `kernelUntested` 为 `true` 只是报告：它还没在清单里声明兼容哪个内核，照常加载，不算失败
 - `run skill.list` 能列出说明书，至少有 `mcp`、`gwb-commands`、`gwb-plugin-manager`、`gwb-plugin-sources`、`gwb-devkit`
 - `run plugin-sources.search` 能列出源上可装的插件——「插件管理」窗格的「可装」栏用的就是它
 
 做完，把第 1 步改过的配置告诉用户。
+
+## 装一个别的 home（测试用）
+
+同一台机器上可以有多个 home，各自一个目录、各自一套插件，可以同时运行（同一个 home 只能运行一个实例）。照上面装别的 home 时：
+
+- 把第 3 步起的 `$gwbHome` 换成那个目录；启动前设 `GWB_HOME`：写名字就是 `%APPDATA%\gwb-kernel\homes\<名字>`，写带路径分隔符的就是那个目录本身。
+  例：`$env:GWB_HOME = $gwbHome; Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe"`
+- MCP 入口的端口不是 2870，一律从那个 home 的 `runtime.json` 的 `mcp.url` 取
+- 命令行客户端要显式给那个 home 的 token：`node $client --url $url --token (Get-Content "$gwbHome\mcp\secret.json" -Raw | ConvertFrom-Json).token index`
+  （也可以设环境变量 `GWB_MCP_TOKEN`）。不给的话它用 default home 的 token，会 401
 
 ## 常见问题
 

@@ -7,7 +7,7 @@ description: 验收标准：插件的 cordis 与内核用的是 home 里同一�
 
 **本页回答**：把内核从 `app.asar` 挪进每个 home 的 `node_modules` 要改什么、换来什么、要推翻哪些已有决定、分几步做、做到哪儿了。
 
-**状态：人已决定做（2026-09-24），五条待决定按推荐定下；第一步（内核仓）、第二步（devkit 仓）、第五步（react 收进内核）已完成；第四步做完了前三项；第三步（各插件迁移）待发通知。**
+**状态：人已决定做（2026-09-24），五条待决定按推荐定下；第一步、第二步、第四步、第五步已完成，验收四条全部通过；第三步（各插件迁移）进行中，由另一个会话迁基础插件与块笔记等八个仓。**
 
 ## 由来
 
@@ -93,6 +93,11 @@ peer 必须同时写上内核包——外壳 0.13.7 起不再声明 react，devk
 
 新的在上。
 
+- 2026-09-24｜第四步完成。人同意后把内核仓 `main` 推到 gitea、打 `v0.3.0` 标签，发布页 v0.3.0 带 `gwb-setup-0.3.0.exe` 公开，是「最新」；`INSTALL.md` 与 README 随之提交。
+  验收第四条：不带上下文的子代理只照 `INSTALL.md` 往临时 home 装（跳过装安装包、不改用户级配置）：内核 0.4.1 与 cordis 4.0.0-rc.10 按精确版本号装上，
+  12 个插件全部 ACTIVE，日志没有 error，MCP 入口用 `runtime.json` 的地址与那个 home 的 token 连通。它找出的缺口已补进 `INSTALL.md`：日志里 MCP 入口那行的写法
+  变了（gwb-mcp 0.10.5 起是「MCP 入口已就绪」）、第 5 步写死了 2870 端口与 default 的 token、token 文件的位置、不开浏览器拿安装包文件名与大小、
+  查启动器版本、`kernelUntested` 为 true 是什么意思、装 cordis 那条会说 Already up to date、怎么装别的 home。另见：`gwb-plugin-sources` 0.1.0 还没在 peer 里写内核包｜总控台会话
 - 2026-09-24｜第四步：`INSTALL.md` 与 README 已按新做法改写（装启动器 → 往 home 里装内核包与 `cordis` → 装插件；旧安装包装的 home 先补内核包再换安装包；
   升内核用 `plugin-manager.update-kernel` 加重启），等新安装包上了发布页再提交——在那之前「下载最新的安装包」拿到的还是 v0.2.6。人定启动器升 0.3.0，
   让新安装包排在 v0.2.6 之后；`build.ps1` 打出 `gwb-setup-0.3.0.exe`，`win-unpacked` 的 exe 在没有内核包的 home 上弹框、关掉后退出码 1、home 里不写文件
@@ -160,4 +165,4 @@ peer 必须同时写上内核包——外壳 0.13.7 起不再声明 react，devk
 - [x] 隔离 home 里，内核与每个写 peer `cordis` 的插件解析到的 cordis 是同一个真实路径，home 的 `node_modules/.pnpm` 里只有一份 cordis
 - [x] 内核的开发版经 `devkit.dev` 装进隔离 home，重启后 `gwbKernel.version` 是新版，没有重新安装 exe
 - [x] home 里没有内核包时，启动器弹框说明并以退出码 1 退出
-- [ ] 照新的 `INSTALL.md` 由不带上下文的子代理往临时 home 装一遍，MCP 入口连得上、条目全部 ACTIVE
+- [x] 照新的 `INSTALL.md` 由不带上下文的子代理往临时 home 装一遍，MCP 入口连得上、条目全部 ACTIVE
