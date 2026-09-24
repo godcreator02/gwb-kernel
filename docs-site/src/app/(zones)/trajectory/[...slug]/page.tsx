@@ -2,6 +2,7 @@ import { sourceTrajectory } from '@/lib/source'
 import { DocsBody, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page'
 import { getMDXComponents } from '@/components/mdx'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 
 // 卡页：标题下一行元信息（born-at、type、domain、parent 链到父卡页），再一行「回到盘」。
 // slug 必选——/trajectory 那个根是星轨盘的整页路由（另一组），轨迹区没有导读页。
@@ -44,6 +45,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string[
       </DocsBody>
     </DocsPage>
   )
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
+  const { slug } = await params
+  const page = sourceTrajectory.getPage(slug)
+  if (!page) notFound()
+  return { title: page.data.title, description: page.data.description }
 }
 
 // 只出卡，不出空 slug——/trajectory 那个根归星轨盘那条路由

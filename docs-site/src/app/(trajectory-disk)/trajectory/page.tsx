@@ -1,9 +1,12 @@
 import { resolve } from 'node:path'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { ThemeSwitch } from 'fumadocs-ui/layouts/shared/slots/theme-switch'
 import { buildTrajectory } from '@godcreator/docfirst-trajectory'
 import { StarDisk } from '@godcreator/docfirst-trajectory/react'
 import { launcherThumbs } from '@godcreator/docfirst-trajectory/server'
+
+export const metadata: Metadata = { title: '轨迹' }
 
 // 星轨整页：读站里的卡目录建模，渲一条顶栏加一张吃满剩余高度的盘或启动器卡阵。
 // `?disk=` 缺失渲启动器（每张盘一张服务端渲好的静态定妆照），有则渲那张盘；组件切盘 / 回
