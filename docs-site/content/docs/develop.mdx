@@ -40,7 +40,7 @@ cd apps\desktop; pnpm start
 
 `pnpm start` 先构建再启动 electron。构建依次是：先整个删掉 `dist/`——清单的 `files` 只列 `dist`，旧版本留下的目录不删就会被一起发出去；内核 `tsc`；再用 `tsconfig.api.json` 只为 `src/api.ts` 生成包根导出的类型声明 `dist/api.d.ts`（[包根导出的接口类型](/docs/desktop/api)）；把页面的两个文件 `index.html`、`preload.cjs` 从 `src/` 复制进 `dist/`，最后运行 `scripts/build-react.ts`，用 esbuild 把 react 的四个包名打进 `dist/react/`，页面的 importmap 用的就是它们（见下面[内核包怎么打包 react](#内核包怎么打包-react)）：
 
-{/* ref file="../apps/desktop/package.json" lines="25-29" */}
+{/* ref file="../apps/desktop/package.json" lines="23-27" */}
 
 ## 提交前的检查
 
@@ -131,23 +131,23 @@ pwsh installer\scripts\build.ps1
 
 **1. 检查工作区**：已跟踪的文件有未提交的改动就停下——打包用的是仓里的代码，有改动时打出来的 exe 说不清装了什么。未跟踪的新文件不算。
 
-{/* ref file="../installer/scripts/build.ps1" lines="18-19" */}
+{/* ref file="../installer/scripts/build.ps1" lines="15-16" */}
 
 **2. 构建启动器**：`apps/launcher` 里 `pnpm build`。
 
-{/* ref file="../installer/scripts/build.ps1" lines="21-25" */}
+{/* ref file="../installer/scripts/build.ps1" lines="18-22" */}
 
 **3. 读版本号**：启动器版本与 electron 版本都从 `apps/launcher/package.json` 读；安装包的版本号就是启动器的版本号。electron 的版本只写在它的 `devDependencies.electron` 这一处，经命令行传给 electron-builder——electron-builder 只在项目根找 electron 版本、不看 `directories.app`，所以 `electron-builder.yml` 里不写。内核要的 Electron 范围写在内核包的 `engines.electron`，启动器的测试检查两边对得上。
 
-{/* ref file="../installer/scripts/build.ps1" lines="27-29" */}
+{/* ref file="../installer/scripts/build.ps1" lines="24-26" */}
 
 **4. 组装应用目录**：把启动器的构建产物复制到 `build\app`，按启动器的清单写一份只留运行字段的 `package.json`（入口 `main.js`、依赖照抄），再 `npm install`。依赖必须写进清单：electron-builder 按清单收集 `node_modules`，`--no-save` 装的包它不收。
 
-{/* ref file="../installer/scripts/build.ps1" lines="31-51" */}
+{/* ref file="../installer/scripts/build.ps1" lines="28-48" */}
 
 **5. electron-builder**：`installer/node_modules` 里没有 electron-builder 就先 `npm install`，再按下面的配置打出 `gwb-setup-<版>.exe`，最后列出产物和大小。
 
-{/* ref file="../installer/scripts/build.ps1" lines="53-61" */}
+{/* ref file="../installer/scripts/build.ps1" lines="50-58" */}
 
 {/* ref file="../installer/electron-builder.yml" */}
 
