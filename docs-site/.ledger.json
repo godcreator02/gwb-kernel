@@ -102,7 +102,7 @@
     "../installer/electron-builder.yml:all": {
       "kind": "git",
       "blob": "f2c1ac8ae6c93478826241e336563ff05a69d897",
-      "commit": "f9e39a205c9c99dec46393875d0d5ef7623e2044",
+      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
       "lines": [
         1,
         23
@@ -121,7 +121,7 @@
     "../apps/desktop/scripts/build-react.ts:22-43": {
       "kind": "git",
       "blob": "45cd0d2915a17ee111baa2c207a7730a0b1613d2",
-      "commit": "f9e39a205c9c99dec46393875d0d5ef7623e2044",
+      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
       "lines": [
         22,
         43
@@ -134,27 +134,17 @@
     "../package.json:6-13": {
       "kind": "git",
       "blob": "d702649f0e7f2216aac3e114557edcff374bfb9c",
-      "commit": "f9e39a205c9c99dec46393875d0d5ef7623e2044",
+      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
       "lines": [
         6,
         13
       ],
       "hash": "9a25b100b4bb46e391240fdeea40bf6c2dfb0f694c87ad737453fb62fb211d36"
     },
-    "../apps/desktop/package.json:23-27": {
-      "kind": "git",
-      "blob": "87b698b8aa3094ab9f1967a50b95eb2f1b36553a",
-      "commit": "f9e39a205c9c99dec46393875d0d5ef7623e2044",
-      "lines": [
-        23,
-        27
-      ],
-      "hash": "4f5800f64af2f4e82e81bc88b519ff2cd2dee95c81f196519486b6036bc05641"
-    },
     "../installer/scripts/build.ps1:15-16": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "f9e39a205c9c99dec46393875d0d5ef7623e2044",
+      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
       "lines": [
         15,
         16
@@ -164,7 +154,7 @@
     "../installer/scripts/build.ps1:18-22": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "f9e39a205c9c99dec46393875d0d5ef7623e2044",
+      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
       "lines": [
         18,
         22
@@ -174,7 +164,7 @@
     "../installer/scripts/build.ps1:24-26": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "f9e39a205c9c99dec46393875d0d5ef7623e2044",
+      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
       "lines": [
         24,
         26
@@ -184,7 +174,7 @@
     "../installer/scripts/build.ps1:28-48": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "f9e39a205c9c99dec46393875d0d5ef7623e2044",
+      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
       "lines": [
         28,
         48
@@ -194,12 +184,22 @@
     "../installer/scripts/build.ps1:50-58": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "f9e39a205c9c99dec46393875d0d5ef7623e2044",
+      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
       "lines": [
         50,
         58
       ],
       "hash": "509d2766e4e77b7bf0de27614dbc979c9ab40a6189c997df52b11af1c3877221"
+    },
+    "../apps/desktop/package.json:22-26": {
+      "kind": "git",
+      "blob": "4698e825c31a8aa93cf2edd125c828311d4d08e1",
+      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
+      "lines": [
+        22,
+        26
+      ],
+      "hash": "4f5800f64af2f4e82e81bc88b519ff2cd2dee95c81f196519486b6036bc05641"
     }
   },
   "content/docs/installer.mdx": {
@@ -482,8 +482,8 @@
   "content/docs/seams/page-react.mdx": {
     "../apps/desktop/src/index.html:14-24": {
       "kind": "git",
-      "blob": "1f17d062f94ea9bce68e9034219e0d32d88b28c2",
-      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
+      "blob": "2022a595c9092b823c6e778628b2a9c90502fb62",
+      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
       "lines": [
         14,
         24
@@ -493,7 +493,7 @@
     "has ../apps/desktop/tests/importmap.test.ts \"index.html 里只有 react 的四个包名，写在页面脚本之前\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/tests/importmap.test.ts \"每个地址都是相对 index.html 的 ./react/<文件>，文件由 scripts/build-react.ts 产出\"": {
+    "has ../apps/desktop/tests/importmap.test.ts \"每个地址都是相对 index.html 的 ./react/<文件>，构建后 dist/ 里有这个文件\"": {
       "kind": "has"
     }
   }

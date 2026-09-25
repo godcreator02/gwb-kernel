@@ -40,7 +40,7 @@ cd apps\desktop; pnpm start
 
 `pnpm start` 先构建再启动 electron。构建依次是：先整个删掉 `dist/`——清单的 `files` 只列 `dist`，旧版本留下的目录不删就会被一起发出去；内核 `tsc`；再用 `tsconfig.api.json` 只为 `src/api.ts` 生成包根导出的类型声明 `dist/api.d.ts`（[包根导出的接口类型](/docs/desktop/api)）；把页面的两个文件 `index.html`、`preload.cjs` 从 `src/` 复制进 `dist/`，最后运行 `scripts/build-react.ts`，用 esbuild 把 react 的四个包名打进 `dist/react/`，页面的 importmap 用的就是它们（见下面[内核包怎么打包 react](#内核包怎么打包-react)）：
 
-{/* ref file="../apps/desktop/package.json" lines="23-27" */}
+{/* ref file="../apps/desktop/package.json" lines="22-26" */}
 
 ## 提交前的检查
 
