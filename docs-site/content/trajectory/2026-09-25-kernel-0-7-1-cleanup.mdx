@@ -19,6 +19,13 @@ domain: 这条线
 - `log-file.ts` 只有 `main.ts` 一个使用者：保留份数固定为一份旧的（`gwb.log.1`），删掉保留 0 到 n 份的通用逻辑、「上限 0 表示不轮转」，以及只有测试在用的 `close()` 与 `file`
 - 保留三处：写入失败只告警一次；轮转失败继续写原文件、再写满一个上限后重试；启动时文件打不开时只写 stderr、每 60 秒重试一次。第三处没改成直接抛出，因为日志接缝页写明「写日志出任何问题都只报一句，不会让内核崩溃」，改成抛出就是改接缝上已有的约定，记进路线页「下次升 x 时一起做」
 
+**安装包**
+
+- 删掉便携 zip：release 从来只上传 `gwb-setup-<版>.exe`，zip 只在本地打出来、没有人用。`electron-builder.yml` 只剩 `nsis` 一个目标
+- 删掉占位图标生成脚本 `make-icon.ps1` 与它的测试：`icons/icon.ico` 早已进 git，打包只用这个文件；测试删掉后 `installer/` 下没有测试了，vitest 与根 `tsconfig.json` 都不再包含它
+- `build.ps1` 不再接受 `-KernelDir` 参数，内核仓固定是脚本所在的仓；镜像地址 `ELECTRON_BUILDER_BINARIES_MIRROR` 直接赋值，不再看环境里有没有设。两处都只有一种用法
+- 删掉 `installer/package.json` 的 `scripts.build`（打包一律直接运行 `build.ps1`）与只剩一行指路的 `installer/SPEC.md`
+
 **推迟到下次升 x**
 
 这一轮找出来、但要改接缝上已有东西的八项，逐条写在路线页「下次升 x 时一起做」：启动时补 home 的两个文件、`gwb:command` 的顶层框架判断与主框架重定向拒绝、`runtime.json` 写不进只 warn、`cdp` 先校验端口再写、`GWB_HOME` 不设就用 `default`、只读状态页「一条条目都没有」与 loader 加载之前回空报告、包根导出的 `ShellBoot` / `GwbWindowApi.onShell` / `exports["."].default`、日志文件启动时打不开每 60 秒重试。任何一项单独做都要升 x、让所有插件的 peer 出范围，代价远大于收益；等内核本来就要升 x 时一起做，下游只需适配一次。

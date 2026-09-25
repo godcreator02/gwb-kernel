@@ -13,10 +13,8 @@ files:
   - node_modules/**
 win:
   icon: icons/icon.ico
-  artifactName: gwb-portable-${version}.${ext}
   target:
     - nsis
-    - zip
 nsis:
   oneClick: true
   perMachine: false

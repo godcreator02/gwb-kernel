@@ -1,6 +1,6 @@
 ---
 title: gwb-installer · 安装包与启动器
-description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 安装包与便携 zip，内核和插件都不带——它们装在 home 里；启动器选定 home、确认内核包在且 Electron 版本对得上，再从 home 加载内核。本页讲第一次安装到另开一个 home 的全过程、启动器每次启动做什么、安装包产出的东西谁在用，它依赖什么，哪些事不归它做
+description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 安装包，内核和插件都不带——它们装在 home 里；启动器选定 home、确认内核包在且 Electron 版本对得上，再从 home 加载内核。本页讲第一次安装到另开一个 home 的全过程、启动器每次启动做什么、安装包产出的东西谁在用，它依赖什么，哪些事不归它做
 ---
 
 **本页回答**：第一次安装是什么过程、装好之后是什么样；启动器每次启动做什么、怎么从 home 里找到内核、怎么另开一个 home；安装包产出的东西谁在用；它依赖什么、缺了会怎样；哪些事不归它做。两部分：启动器 `gwb-kernel-launcher`（源码目录 `apps/launcher/src`，入口文件 `main.ts`，不发布），打包脚本 `installer/`（不在 pnpm 工作区里，入口文件 `installer/scripts/build.ps1`）。
@@ -19,10 +19,10 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
 
 ## 功能
 
-- **产出两种安装包**：在 `installer\build\dist\` 下生成 NSIS 安装包 `gwb-setup-<版>.exe`（一键安装、按当前用户安装、不需要管理员权限）和便携 zip `gwb-portable-<版>.zip`，`<版>` 是启动器的版本号。同目录的 `win-unpacked\` 是两种产物共用的未打包目录，只用来验证；每次打包整个重新生成，别日常直接运行它
+- **产出安装包**：在 `installer\build\dist\` 下生成 NSIS 安装包 `gwb-setup-<版>.exe`（一键安装、按当前用户安装、不需要管理员权限），`<版>` 是启动器的版本号。同目录的 `win-unpacked\` 是打包前的未打包目录，只用来验证；每次打包整个重新生成，别日常直接运行它
 - **只带启动器**：内核、插件、pnpm 都不带。内核与插件由创建 home 的一方装进 home，经插件管理升级；安装包只在 Electron 版本或启动器本身变了时重新打包
 - **装好之后**：安装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，开始菜单出现「gwb-kernel」。启动器（清单、两个脚本、`semver`）在 `resources\app.asar` 里。home 在 `%APPDATA%\gwb-kernel\homes\` 下，和安装目录分开
-- **发布**：release 只上传 `gwb-setup-<版>.exe` 到 gitea 发布仓 `godcreator/gwb-kernel`，便携 zip 只在本地构建；顺序与注意事项见[开发](/docs/develop#发版)。怎么运行打包脚本、它一步步做什么、打完怎么验证，见[开发](/docs/develop#打安装包)
+- **发布**：release 上传 `gwb-setup-<版>.exe` 到 gitea 发布仓 `godcreator/gwb-kernel`；顺序与注意事项见[开发](/docs/develop#发版)。怎么运行打包脚本、它一步步做什么、打完怎么验证，见[开发](/docs/develop#打安装包)
 
 ## 启动器
 
@@ -43,7 +43,7 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
 
 | 接口 | 谁在用、做什么 |
 | --- | --- |
-| 安装程序 `gwb-setup-<版>.exe` 与便携 zip | 人和安装工作台的 agent 用它安装启动器；按当前用户安装，产品名 `gwb-kernel` 决定安装目录与开始菜单项 |
+| 安装程序 `gwb-setup-<版>.exe` | 人和安装工作台的 agent 用它安装启动器；按当前用户安装，产品名 `gwb-kernel` 决定安装目录与开始菜单项 |
 | home 里的内核包 `@godcreator/gwb-kernel-desktop` | 启动器从 `<home>/node_modules/@godcreator/gwb-kernel-desktop` 读清单、import `main` 指向的入口 |
 | 内核包清单的 `engines.electron` | 内核声明它要的 Electron 版本范围；启动器拿当前 Electron 比对 |
 | 环境变量 `GWB_HOME` | 启动器读它选定 home，再写回绝对路径交给内核 |
@@ -65,7 +65,7 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
 | --- | --- | --- |
 | 启动器 `apps/launcher` | 打进安装包的全部代码：`pnpm build` 的产物与它的运行时依赖 `semver` | 构建失败时脚本停下；内核仓有已跟踪文件的未提交改动时脚本在第一步就停下 |
 | electron | 安装包里的运行时：版本只写在 `apps/launcher` 的 `devDependencies.electron`，二进制从 `electron-builder.yml` 的 `electronDownload` 镜像下载 | 下载不下来时 electron-builder 失败，脚本停下 |
-| electron-builder | 打出 NSIS 安装包与便携 zip：`installer/package.json` 的开发依赖，工具二进制从 `ELECTRON_BUILDER_BINARIES_MIRROR` 下载，环境里没设就用脚本里的国内镜像 | `installer/node_modules` 里没有时脚本先 `npm install`；装不上或打包失败时脚本停下 |
+| electron-builder | 打出 NSIS 安装包：`installer/package.json` 的开发依赖，工具二进制经脚本设的环境变量 `ELECTRON_BUILDER_BINARIES_MIRROR` 从国内镜像下载 | `installer/node_modules` 里没有时脚本先 `npm install`；装不上或打包失败时脚本停下 |
 | git | `git status --porcelain` 检查内核仓没有未提交的改动 | 找不到 git 时脚本在第一步就报错停下 |
 | gitea | 发布 release：git 凭据管理器里的凭据、gwb-gitea 插件的 `gitea.http` | 发布不了；安装包照样能在本地打出来 |
 

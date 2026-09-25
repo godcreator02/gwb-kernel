@@ -1,14 +1,11 @@
 # 打安装包。每一步做什么、哪几道检查不能删、打完怎么验证，见文档站
-param([string]$KernelDir = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent))
-
 $ErrorActionPreference = 'Stop'
 $installer = Split-Path $PSScriptRoot -Parent
+$KernelDir = Split-Path $installer -Parent
 $launcherDir = "$KernelDir\apps\launcher"
 
 # 国内网络下载 electron-builder 的二进制要走镜像
-if (-not $env:ELECTRON_BUILDER_BINARIES_MIRROR) {
-  $env:ELECTRON_BUILDER_BINARIES_MIRROR = 'https://npmmirror.com/mirrors/electron-builder-binaries/'
-}
+$env:ELECTRON_BUILDER_BINARIES_MIRROR = 'https://npmmirror.com/mirrors/electron-builder-binaries/'
 
 # pwsh 遇到原生命令的非零退出码默认不停，每条 npm / pnpm 之后都要调用它
 function Assert-LastExit([string]$what, [int]$ok = 0) {
@@ -62,5 +59,5 @@ Pop-Location
 
 Write-Host '产物：'
 Get-ChildItem "$installer\build\dist" -File |
-  Where-Object { $_.Name -match '\.(exe|zip)$' } |
+  Where-Object { $_.Name -match '\.exe$' } |
   ForEach-Object { Write-Host ("  {0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB)) }

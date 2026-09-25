@@ -46,7 +46,7 @@ cd apps\desktop; pnpm start
 
 {/* ref file="../package.json" lines="6-13" */}
 
-- **`pnpm check`**（仓根）：先构建内核包（连同 react 的打包产物与包根的类型声明：`main.test.ts` 用真实的打包产物启动内核），再对全仓做类型检查、lint 和测试。测试是 `apps`、`installer` 下各 `tests/` 目录里的测试（`installer` 那一个要调用本机的 pwsh 7）；`src/api.ts` 里的类型写坏了，内核的类型检查跟着失败
+- **`pnpm check`**（仓根）：先构建内核包（连同 react 的打包产物与包根的类型声明：`main.test.ts` 用真实的打包产物启动内核），再对全仓做类型检查、lint 和测试。测试是 `apps` 下各包 `tests/` 目录里的测试；`src/api.ts` 里的类型写坏了，内核的类型检查跟着失败
 - **`pnpm doc`**（仓根）：文档站的检查，不在 `pnpm check` 里；确认用仓根的 `pnpm doc:confirm <页的路径…>`，路径相对 `docs-site/`
 
 ## 测试
@@ -65,7 +65,6 @@ cd apps\desktop; pnpm start
 | `apps/desktop/tests/importmap.test.ts` | 页面入口里写死的 importmap 只有 react 的四个包名、写在页面脚本之前、指到打包脚本产出的文件（见[页面上的 react](/docs/seams/page-react)）；本仓内核包清单：包根的 `types` 指向 `dist/api.d.ts` |
 | `apps/desktop/tests/react-bundles.test.ts` | react 的打包产物，见下面[内核包怎么打包 react](#内核包怎么打包-react) |
 | `apps/launcher/tests/launch-plan.test.ts` | 在临时目录上证明：启动器选 home 的规则和内核的逐个输入结果相同；home 里没有内核包、清单不是合法 JSON、没声明 `engines.electron`、Electron 版本不满足、没有 `main` 时各自拒绝并说明原因；版本满足时给出内核包的入口文件；启动器带的 Electron 满足内核包声明的范围 |
-| `installer/tests/make-icon.test.ts` | 见下面「打安装包」里的[验证](#验证) |
 
 {/* has file="../apps/launcher/tests/launch-plan.test.ts" text="和内核选 home 的规则逐个输入结果相同" */}
 
@@ -146,7 +145,7 @@ pwsh installer\scripts\build.ps1
 
 {/* ref file="../installer/scripts/build.ps1" lines="31-51" */}
 
-**5. electron-builder**：`installer/node_modules` 里没有 electron-builder 就先 `npm install`，再按下面的配置打出 `gwb-setup-<版>.exe` 与 `gwb-portable-<版>.zip`，最后列出产物和大小。
+**5. electron-builder**：`installer/node_modules` 里没有 electron-builder 就先 `npm install`，再按下面的配置打出 `gwb-setup-<版>.exe`，最后列出产物和大小。
 
 {/* ref file="../installer/scripts/build.ps1" lines="53-61" */}
 
@@ -158,11 +157,7 @@ pwsh installer\scripts\build.ps1
 
 ### 验证
 
-打包脚本 `build.ps1` 没有单元测试；占位图标脚本 `make-icon.ps1` 由 `installer/tests/make-icon.test.ts` 保护，证明它生成的图标与仓里的 `icons/icon.ico` 逐字节相同。
-
-{/* has file="../installer/tests/make-icon.test.ts" text="make-icon.ps1 生成的图标与仓里的 icons/icon.ico 逐字节相同" */}
-
-打包脚本自己在每一步检查退出码和产物，打完之后这样验证：
+打包脚本 `build.ps1` 没有单元测试，它自己在每一步检查退出码和产物，打完之后这样验证：
 
 - **打包形态能启动**：准备一个临时 home（`GWB_HOME` 给路径），`package.json` 里列内核包（本仓 `apps/desktop` 用 `pnpm pack` 打出的 tarball，以 `file:` 写进去）与内核要的 `cordis`，`pnpm install`；运行 `installer\build\dist\win-unpacked\` 里的 exe，启动器从 home import 内核，`gwb.log` 里有「up」那一行、没有 error。不设 `GWB_HOME` 运行它会打开真正的 default home
 - **缺内核包时启动器拒绝启动**：把那个 home 里的内核包删掉再启动，弹框说明缺内核包、退出码 1
@@ -179,7 +174,6 @@ pwsh installer\scripts\build.ps1
    - **包根导出的接口类型对插件只增不减**：能加一个可选字段、一个类型解决的，不删名字、不改形状（参数、返回值、回执字段的类型或含义）、不改调用方依赖的语义；非改不可时，照 `gwb-release` 的「发破坏性版本多做的两步」先通知下游。契约之外的东西（日志行的格式、命令插件与插件管理的类型）不放进 `src/api.ts`。内核的 `main.ts` 自己用这些类型，本仓 `pnpm check` 当场发现内核这一侧形状不对；仓外的插件与页面代码要等新内核包发到团队包源、装上之后，才在各自仓的类型检查里发现（[包根导出的接口类型](/docs/desktop/api)）
 2. **发内核包到团队包源**：`devkit.release` 的 `packages` 只写 `["apps/desktop"]`
 3. **启动器或 Electron 变了才打安装包、发布到 gitea releases**：打包见上面[打安装包](#打安装包)。发布仓 `godcreator/gwb-kernel` 公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包；push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
-   - **release 只上传 `gwb-setup-<版>.exe`**：便携 zip 只在本地构建、不上传
    - tag 跟安装包（启动器）的版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
    - **推送 tag 会让同名的草稿 release 自动公开**：要先存草稿、人工确认后再公开，就最后推 tag
 4. **本机升级**：先在隔离 home 里装新内核包验证，再升 default home 里的内核包并重启工作台；启动器变了才重新运行新版安装包。改了契约时先装新内核，再发用到新契约的插件：插件先到、内核还是旧的，插件拿到的 `gwbKernel` 就缺它要的东西。升了 x 时，再在新内核上测插件、把它们 peer 里内核包的范围改到新内核并发版
