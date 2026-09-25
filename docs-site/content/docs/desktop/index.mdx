@@ -133,4 +133,4 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 - **不提供设置、数据、说明书、MCP 入口**：这些都是 `cordis.yml` 里的插件
 - **不确认 `runtime.json` 里的进程还活着**：退出时不删这份文件，读它的 devkit 与安装工作台的 agent 自己确认 pid 还在
 - **不比对插件兼容哪个内核**：插件 peer 里内核包的范围内核不读，由插件管理比对
-- **不装自己**：内核包由创建 home 的一方装进 home，升级由插件管理的升内核命令装、重启后生效
+- **不装自己**：内核包由创建 home 的一方装进 home，升级由插件管理的 `plugin-manager.update {"specs":{"@godcreator/gwb-kernel-desktop":"<版本>"}}` 装、重启后生效

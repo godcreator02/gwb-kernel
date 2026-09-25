@@ -61,7 +61,7 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核�
 - **cordis 只有一份**：内核包把 `cordis` 写成 peer，home 根上列一份，内核、loader、include 与插件都解析到它（[home 布局与条目树](/docs/seams/home)）
 - **插件用 peer 声明兼容哪个内核**，见下面「插件在 peer 里写兼容哪个内核」
 - **新内核先在隔离 home 里验证**：装进那个 home 就行，不用重打安装包，也不碰 `default`
-- **升级内核是装进 home 再重启**：主进程里的内核热替换不了，插件管理的一键热升级不动内核包与 `cordis`，由它单独的升内核命令装，重启由人决定
+- **升级内核是装进 home 再重启**：主进程里的内核热替换不了，插件管理的一键热升级不动内核包与 `cordis`；点名内核包的 `plugin-manager.update {"specs":{"@godcreator/gwb-kernel-desktop":"<版本>"}}` 装内核包并把 `cordis` 对齐到它要的版本，重启由人决定
 
 代价：发版物是内核包与安装包两样；启动器与内核之间多一条 Electron 版本兼容，靠 `engines.electron` 对上；home 里没装内核包就起不来，建 home 时要把内核包与 `cordis` 一起装上。
 

@@ -45,7 +45,7 @@ description: 连接内核应用与插件管理（devkit 仓里的 @godcreator/gw
 插件管理保证：
 - **改 `cordis.yml` 只走条目树**：条目树把写回文件和当场加载、卸载一起做；绕过它直接写文件，内存里的条目不知道，下一次写回会把磁盘上的改动覆盖掉
 - **只有它写 home**：`package.json` 与 `node_modules/` 只经它运行的 pnpm 改；别的插件不写这两样，也不写 `cordis.yml`，只写自己的数据目录
-- **内核包与 `cordis` 按精确版本装**：home 根上的 `cordis` 等于内核包 peer 里写的那个版本；一键热升级不动这两个包，由单独的升内核命令一起装，装完重启才生效
+- **内核包与 `cordis` 按精确版本装**：home 根上的 `cordis` 等于内核包 peer 里写的那个版本；一键热升级不动这两个包；`plugin-manager.update` 的 `specs` 点名内核包时插件管理把两个一起装（`cordis` 跟着内核包 peer 里的版本走，不写进 `specs`），装完重启才生效
 
 ### 兼容性怎么发现
 

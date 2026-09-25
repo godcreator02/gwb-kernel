@@ -48,6 +48,10 @@ domain: 这条线
 
 - `importmap.test.ts` 不再在构建脚本源码里找 `out: '<文件名>'` 这样的字符串（脚本换一种写法，文件照样产出，测试却会失败），改成断言 importmap 的每个地址在构建后的 `dist/` 里真有对应的文件。没有并进 `react-bundles.test.ts`：那边从自己写死的四个文件名出发、检查产物的内容，这边从 `index.html` 的 importmap 出发、检查地址指得到文件，两者起点不同，importmap 与打包脚本的产出对不上时只有这边发现
 
+**跟上插件管理 0.13 的命令**
+
+- 插件管理 0.13 删掉了 `plugin-manager.update-kernel`，升内核改成 `plugin-manager.update {"specs":{"@godcreator/gwb-kernel-desktop":"<版本>"}}`（插件管理自己把 `cordis` 对齐到内核包 peer 里的版本，`specs` 里写 `cordis` 直接报错）；`update {"all":true}` 不再整页重新加载，调用方升完自己调 `shell.reload`。`INSTALL.md` 的正本、开发页「发版」的本机升级、关键设计页、home 布局页、内核应用页里讲升内核的地方跟着改
+
 **推迟到下次升 x**
 
 这一轮找出来、但要改接缝上已有东西的八项，逐条写在路线页「下次升 x 时一起做」：启动时补 home 的两个文件、`gwb:command` 的顶层框架判断与主框架重定向拒绝、`runtime.json` 写不进只 warn、`cdp` 先校验端口再写、`GWB_HOME` 不设就用 `default`、只读状态页「一条条目都没有」与 loader 加载之前回空报告、包根导出的 `ShellBoot` / `GwbWindowApi.onShell` / `exports["."].default`、日志文件启动时打不开每 60 秒重试。任何一项单独做都要升 x、让所有插件的 peer 出范围，代价远大于收益；等内核本来就要升 x 时一起做，下游只需适配一次。
