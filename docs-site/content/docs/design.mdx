@@ -100,6 +100,6 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核�
 { "peerDependencies": { "@godcreator/gwb-kernel-desktop": "^<验证时那个内核的版本号>" } }
 ```
 
-内核装在 home 里，这就是 Node 生态里插件声明宿主版本的标准写法：pnpm 装插件时拿它和 home 里的内核包比，不满足只警告、照装。插件管理拿它和运行中内核的 `gwbKernel.version` 比，范围不包含（或没写、写的不是 `^x.y.z`）的插件在回执里标出来，只标不拦；devkit 的 `devkit.release` 发插件之前检查它。内核不读这个字段。比对规则在 devkit 仓的文档站。
+内核装在 home 里，这就是 Node 生态里插件声明宿主版本的标准写法：pnpm 装插件时拿它和 home 里的内核包比，不满足只警告、照装。插件管理拿它和运行中内核的 `gwbKernel.version` 比，范围不包含（或没写、写的不是 `^x.y.z`）的插件在回执里标出来，只标不拦；devkit 的 `devkit.release` 发插件之前检查它。内核不读这个字段。比对规则在 `gwb-lifecycle-plugins` 仓的文档站。
 
 这个比较要靠得住，内核的版本号就得反映已有的插件会不会被弄坏。插件按内核的 loader 加载，插件管理按 loader 的条目树和 home 布局改条目、装包，所以升级 loader、include、`cordis` 的版本或改 home 布局也算改了接缝。哪些改动升 x、哪些升 y，见[开发](/docs/develop#发版)；十条接缝见[接缝图](/docs#接缝图)。

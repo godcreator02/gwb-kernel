@@ -37,7 +37,7 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 <Diagram name="seam-map" title="虚线框按模块所在的位置分组，连线是接缝，编号对应下面的表">
 - 页面（渲染进程）：页面入口 `index.html` 与 `#root`、`window.gwb`（`preload.cjs` 注入），这两个文件随内核包发布；还有外壳与插件在页面上运行的代码（窗格等）
 - 内核应用（`apps/desktop`，装进 home）：包名解析、loader 与 include（内核包自己的依赖，版本写死）、组装（`main.ts`：`gwbKernel`、IPC、窗口、`runtime.json`）、日志、只读状态页的数据、页面上的 react、包根导出的接口类型（`api.ts`，只有类型，接缝 2、3、4 用这些类型）
-- `cordis.yml` 里的插件（各自的仓，装进 home）：外壳、MCP 入口、插件管理 `gwb-plugin-manager`（devkit 仓）、命令插件 `gwb-commands`（基础插件仓），以及数据、设置、说明书、日志插件等任何插件
+- `cordis.yml` 里的插件（各自的仓，装进 home）：外壳、MCP 入口、插件管理 `gwb-plugin-manager`（生命周期插件仓 `gwb-lifecycle-plugins`）、命令插件 `gwb-commands`（基础插件仓），以及数据、设置、说明书、日志插件等任何插件
 - 安装包（`apps/launcher` 与 `installer/`）：只有启动器与 Electron；启动器经接缝 9 从 home 加载内核包
 - cordis（外部依赖，home 根上只有一份）：内核、loader、include 与插件共用
 - home（磁盘上的目录）：`package.json`、`cordis.yml`、`node_modules/`（内核包、cordis、插件）、`gwb.log`、`runtime.json`

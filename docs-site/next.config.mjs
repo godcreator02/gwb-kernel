@@ -11,7 +11,7 @@ const config = {
   // Cannot read properties of null
   serverExternalPackages: [],
   redirects: async () => [
-    // 站的入口是现状区的入口页；未来区只剩路线一页
+    // 文档站的入口是现状区的入口页；未来区只剩路线一页
     { source: '/', destination: '/docs', permanent: false },
     { source: '/future', destination: '/future/roadmap', permanent: false },
     // 未来区的总览与刻意不做并进现状区（2026-09-23），旧网址都保留（/docs/system-map 见下方 rewrites）
@@ -45,8 +45,8 @@ const config = {
     { source: '/docs/kernel/bridge', destination: '/docs/seams/shell', permanent: true },
     { source: '/docs/kernel/logs', destination: '/docs/seams/log', permanent: true },
     // 以下都用临时跳转：永久跳转会被浏览器缓存，以后这些网址再用上就打不开。
-    // 准入判据在关键设计；写插件的规矩、插件管理、命令插件的页在各自的仓（devkit 仓、基础插件仓）的文档站，
-    // 本站入口页列出它们在哪
+    // 准入判据在关键设计；写插件的规矩、插件管理、命令插件的页在各自的仓（生命周期插件仓 gwb-lifecycle-plugins、
+    // 基础插件仓）的文档站，本文档站的入口页列出它们在哪
     { source: '/docs/criteria/k1', destination: '/docs/design', permanent: false },
     { source: '/docs/criteria', destination: '/docs', permanent: false },
     { source: '/docs/criteria/:path*', destination: '/docs', permanent: false },
