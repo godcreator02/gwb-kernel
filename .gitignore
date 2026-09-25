@@ -3,14 +3,9 @@ out/
 dist/
 *.log
 
-# hook 解释器（uv 建，重建跑 .claude/hooks/bootstrap.ps1）与本机私有的 settings
-.claude/hooks/.venv/
-.claude/hooks/__pycache__/
-.claude/settings.local.json
-
-# 项目级 settings：里面四条 hook 命令写死本机 .venv 的绝对路径（换机器、改仓名都会失效），
-# 入库对谁都没用。hook 脚本本身入库，settings 照 bootstrap.ps1 的说明本机重写一份
+# Claude Code 的本机设置：干活纪律的 hook 由 gwb-agent-hooks-skills 仓经用户级配置提供，仓里不放
 .claude/settings.json
+.claude/settings.local.json
 
 # ZCode 与 .claude/skills 共享用的 junction（本机重建：cmd /c mklink /J .agents\skills <仓根>\.claude\skills）
 .agents/
