@@ -88,7 +88,7 @@ cd apps\desktop; pnpm start
 devkit.dev {"home":"<隔离 home 名>","dir":"<本仓根>","packages":["apps/desktop"]}
 ```
 
-它在本仓根构建，把内核包发成开发版（`<patch+1>-dev.<时间戳>`，tag 是 `dev`，不动 `latest`），连同内核包 peer 里写的 `cordis` 写进那个 home 的清单装上并核对，然后停掉那个 home 再启动，直到页面上 `shell.env` 报出的内核版本就是这次发的号；回执的 `kernel.version` 就是它。不用重打安装包。本仓要发的 npm 包只有内核包，所以 `packages` 只写 `apps/desktop`。
+它在本仓根构建，用 `pnpm pack` 把内核包打成包文件放进那个 home 的 `dev-packs\` 目录，经那个 home 的插件管理装上（`plugin-manager.update {"specs":{…}}`，连同内核包 peer 里写的 `cordis` 精确版本一起装；目标 home 的插件管理要 0.12.0 起），然后停掉那个 home 再启动，直到页面上 `shell.env` 报出的内核版本就是这次打包的版本号；回执的 `kernel.version` 就是它。开发版不发到团队源，也不用重打安装包。本仓要发的 npm 包只有内核包，所以 `packages` 只写 `apps/desktop`。
 
 **从源码启动**：改一次就想看一次、不想每次发开发版时用。
 

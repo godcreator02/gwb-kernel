@@ -16,7 +16,7 @@
   然后重启工作台（关掉窗口、从开始菜单重新打开）才生效。安装包只带启动器，只有出了新版安装包才需要重装
 * home 里还装着 `@godcreator/gwb-plugin-sources`：它已经退役，四条命令并回了插件管理（`plugin-manager.search`、`plugin-manager.source.add` / `list` / `remove`，
   参数与回执不变）。连上 MCP 入口之后 `run plugin-manager.uninstall {"pkg":"@godcreator/gwb-plugin-sources"}` 卸掉它
-* 升级插件：连上 MCP 入口之后 `run plugin-manager.update-all`，或让用户在「插件管理」窗格点「全部更新」。内核包与 `cordis` 不归它升
+* 升级插件：连上 MCP 入口之后 `run plugin-manager.update {"all":true}`（只升几个给 `{"only":["<包名>"]}`），或让用户在「插件管理」窗格点「全部更新」。内核包与 `cordis` 不归它升
 
 ## 1. 机器上的前置条件（改的是用户级配置——动手前告诉用户要改什么）
 
@@ -259,7 +259,7 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 * 找可装的插件：`run plugin-manager.search`；装第三方源（比如 `@j`）上的插件，先 `run plugin-manager.source.add {"scope":"@j","owner":"J"}`
 * 安装新插件：`run plugin-manager.install {"pkg":"@godcreator/gwb-<名>"}`——返回内容里带新条目的 `entryId`；
   `run plugin-manager.list` 里它是 `active: true` 就成功了，下一次调 `index` 就能看到它的命令
-* 插件有新版本：`run plugin-manager.update-all`（升级到 `gwb-mcp` 自己时连接会断一次，重连即可）
+* 插件有新版本：`run plugin-manager.update {"all":true}`（升级到 `gwb-mcp` 自己时连接会断一次，重连即可）
 * 内核有新版本：`run plugin-manager.update-kernel`，回执里 `pluginsOutsideRange` 是 peer 范围不包含新内核的插件，告诉用户；
   然后关掉窗口（用命令行关就对 `runtime.json` 里那个 pid 调 `(Get-Process -Id <pid>).CloseMainWindow()`）→ 从开始菜单重新打开。
   重启之后 `run plugin-manager.list` 里 `kernelUntested` 为 true 的插件就是这些
