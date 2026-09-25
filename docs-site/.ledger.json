@@ -232,7 +232,7 @@
     "../apps/desktop/src/preload.cjs:all": {
       "kind": "git",
       "blob": "2d5226970031e639456de3d32f9bb03fdc1d3cf2",
-      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
+      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
       "lines": [
         1,
         19
@@ -251,7 +251,7 @@
     "../apps/desktop/src/api.ts:6-11": {
       "kind": "git",
       "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
-      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
+      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
       "lines": [
         6,
         11
@@ -261,12 +261,28 @@
     "../apps/desktop/src/api.ts:35-46": {
       "kind": "git",
       "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
-      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
+      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
       "lines": [
         35,
         46
       ],
       "hash": "904ad0d121e8f68238016773b3974b0d1931cf0fdde6d72fbb3583ffa1250361"
+    },
+    "../apps/desktop/src/page-boundary.ts:all": {
+      "kind": "git",
+      "blob": "b5d4f4cce63730b2bd1596fa573a03f74aca8488",
+      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
+      "lines": [
+        1,
+        14
+      ],
+      "hash": "0cb6ea25c9ebc10102881eb9debb3c5aa1dc68758585d60abeeb233194b9404e"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"gwb:command 只接收顶层框架\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"页面边界：主框架跳到别处、主框架的重定向、window.open 一律拒绝\"": {
+      "kind": "has"
     }
   },
   "content/docs/seams/kernel.mdx": {
@@ -324,15 +340,18 @@
     "has ../apps/desktop/tests/main.test.ts \"页面 console 进 cordis 日志，名字是 renderer\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/main.ts:70-75": {
+    "../apps/desktop/src/main.ts:69-74": {
       "kind": "git",
-      "blob": "e59d0e3d30fc3016a023e9c242a09950fa67e433",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "a1d983f9ab802521551a0e56ee46f9a6abe677c0",
+      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
       "lines": [
-        70,
-        75
+        69,
+        74
       ],
       "hash": "b7aeb2aaba2d2cdf45452c609d445ad66b98990ae47b42e4df7a1bad9c56b745"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"插件或页面写 warn：只进日志，不推 gwb:shell\"": {
+      "kind": "has"
     }
   },
   "content/docs/seams/runtime.mdx": {
@@ -421,25 +440,25 @@
     "has ../apps/desktop/tests/main.test.ts \"命令交给插件提供的 gwbCommands\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/main.ts:26-33": {
+    "../apps/desktop/src/main.ts:25-32": {
       "kind": "git",
-      "blob": "e59d0e3d30fc3016a023e9c242a09950fa67e433",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "a1d983f9ab802521551a0e56ee46f9a6abe677c0",
+      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
       "lines": [
-        26,
-        33
+        25,
+        32
       ],
       "hash": "9f708770648e91748683da9fb83b24b0574e7275041c6279afae0c618c12a21c"
     },
-    "../apps/desktop/src/main.ts:234-239": {
+    "../apps/desktop/src/main.ts:231-237": {
       "kind": "git",
-      "blob": "e59d0e3d30fc3016a023e9c242a09950fa67e433",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "a1d983f9ab802521551a0e56ee46f9a6abe677c0",
+      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
       "lines": [
-        234,
-        239
+        231,
+        237
       ],
-      "hash": "20e5cc5ed959a9591c67cf1ebe5a5d208d6c889d6ef5d7484291ecc46d96ce72"
+      "hash": "3b9850d0b70648c40af5e1b0ef7454b66bf3b778444920a890b99853022c686b"
     }
   },
   "content/docs/desktop/api.mdx": {
