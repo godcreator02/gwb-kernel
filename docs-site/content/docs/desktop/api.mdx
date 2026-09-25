@@ -1,32 +1,19 @@
 ---
 title: 包根导出的接口类型
-description: 内核包 @godcreator/gwb-kernel-desktop 的包根给插件与页面代码导出内核的全部接口类型（GwbResult、GwbKernelApi、GwbContext、GwbWindowApi 与 window.gwb 的全局声明、ShellBoot），正本 apps/desktop/src/api.ts，只有类型、没有运行时代码；本页讲它们各属于哪条接缝、包根怎么导出、依赖什么、改它们时版本号怎么升、哪些事不归它们管
+description: 内核包 @godcreator/gwb-kernel-desktop 的包根给插件与页面代码导出内核的全部接口类型（GwbResult、GwbKernelApi、GwbContext、GwbWindowApi 与 window.gwb 的全局声明、ShellBoot），正本 apps/desktop/src/api.ts，只有类型、没有运行时代码；本页讲有哪些类型、各属于哪条接缝、包根怎么导出、依赖什么、改它们时版本号怎么升、哪些不归它们管
 ---
 
-**本页回答**：插件和页面代码从哪里 `import type` 内核的接口；有哪些类型、各属于哪条接缝；包根为什么只导出类型、怎么构建出来；它们依赖什么、缺了会怎样；改这些类型时内核版本号怎么升；哪些事不归它们管。正本是 `apps/desktop/src/api.ts`，一个文件。
+**本页回答**：插件和页面代码从哪里 `import type` 内核的接口；有哪些类型、各属于哪条接缝；包根为什么只导出类型、怎么构建出来；它们依赖什么；改这些类型时内核版本号怎么升；哪些类型不在这里。
 
-这些类型随内核包发布，版本号就是内核包的版本号。在[接缝图](/docs#接缝图)上它们是「内核应用」框里的「接口类型」：接缝 2、3、4 用到的类型都在这里，它们自己不算一条接缝。为什么放在内核包里、而不是单独一个包，见轨迹卡[词汇表包并进内核包](/trajectory/2026-09-24-vocab-into-kernel-package)。
-
-## 功能
-
-- **给插件上下文里的内核服务定类型**：`GwbContext` 在 cordis 的 `Context` 上加 `gwbKernel`，插件的 `apply(ctx: GwbContext)` 直接取这个服务就有类型
-- **给命令的回执定形状**：`GwbResult`。命令插件的服务 `gwbCommands` 的类型不在这里，由命令插件 `@godcreator/gwb-commands` 自己导出
-- **让页面代码认得 `window.gwb`**：import 内核包的类型（哪怕只是 `import type {}`），TypeScript 就认得 `window.gwb` 的三个函数
-- **给外壳模块的默认导出定形状**：`ShellBoot`
-- **形状改坏时让类型检查失败**：内核自己的 `main.ts` 从同一个文件取 `GwbKernelApi`，把内核服务对象标成这个类型，形状对不上时本仓 `pnpm check` 失败；插件和页面代码从内核包 `import type`，装上新内核包后在各自仓的类型检查里发现
-- **不带运行时代码**：`src/api.ts` 里只有类型；插件只写 `import type`，编译后不留 import，运行时不会加载内核入口
-
-插件和页面代码这样写：
+这些类型随内核包发布，版本号就是内核包的版本号。它们自己不算一条接缝：接缝 2、3、4 交换的东西的形状写在这里（[词汇表包并进内核包](/trajectory/2026-09-24-vocab-into-kernel-package)）。插件和页面代码这样写：
 
 ```ts
 import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 ```
 
-插件的 peer 里本来就写着内核包（[插件在 peer 里写兼容哪个内核](/docs/design#插件在-peer-里写兼容哪个内核)），pnpm 把它装进插件仓的 `node_modules`，不用另加依赖。
+插件的 peer 里本来就写着内核包（[插件在 peer 里写兼容哪个内核](/docs/design#插件在-peer-里写兼容哪个内核)），pnpm 把它装进插件仓的 `node_modules`，不用另加依赖。只写 `import type`，编译后不留 import，运行时不会加载内核入口。
 
-## 接口
-
-全部导出都是类型。每个类型属于哪条接缝写在下表，接缝上各模块保证什么写在接缝页：
+## 有哪些类型
 
 | 类型 | 是什么 | 接缝 |
 | --- | --- | --- |
@@ -40,44 +27,38 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 
 {/* ref file="../apps/desktop/src/api.ts" */}
 
+代码里只要 import 了内核包的类型（哪怕只是 `import type {}`），TypeScript 就认得 `window.gwb`。内核自己的 `main.ts` 从同一个文件取 `GwbKernelApi`、把内核服务对象标成这个类型，形状对不上时本仓 `pnpm check` 当场失败；仓外的插件与页面代码要等新内核包发到团队包源、装上之后，才在各自仓的类型检查里发现。
+
 ## 包根怎么导出
 
-内核包的包根有两个条件：`types` 指向 `dist/api.d.ts`，给 TypeScript 用；`default` 指向 `dist/main.js`，是内核入口，由启动器 import（[启动器加载内核](/docs/seams/launcher)）。包根的运行时入口一加载就启动 Electron 应用，所以包根对外只给类型：
+内核包的包根有两个条件：`types` 指向 `dist/api.d.ts`，给 TypeScript 用；`default` 指向 `dist/main.js`，是内核入口。包根的运行时入口一加载就启动 Electron 应用，所以包根对外只给类型：
 
 {/* ref file="../apps/desktop/package.json" lines="8-16" */}
 
-`dist/api.d.ts` 由单独一份 tsc 配置 `tsconfig.api.json` 生成：只编译 `src/api.ts`、只出声明文件，内核内部实现的类型不跟着发出去。`pnpm build` 在编译内核之后运行它：
+清单顶层不写 `types`，类型只经 `exports` 给出：插件的 TypeScript 要用认 `exports` 的模块解析方式（`bundler`，或 `node16` 起）。这几条由 `apps/desktop/tests/importmap.test.ts` 核对：
+
+{/* has file="../apps/desktop/tests/importmap.test.ts" text="包根的 types 指向接口类型那份 d.ts，default 是内核入口；清单顶层不写 types" */}
+
+`dist/api.d.ts` 由单独一份 tsc 配置生成：只编译 `src/api.ts`、只出声明文件，内核内部实现的类型不跟着发出去。构建时在编译内核之后运行它（构建步骤见[开发](/docs/develop#从源码启动)）：
 
 {/* ref file="../apps/desktop/tsconfig.api.json" */}
-
-{/* has file="../apps/desktop/package.json" text="tsc -p tsconfig.api.json" */}
-
-`apps/desktop/tests/importmap.test.ts` 核对本仓内核包清单：包根的 `types` 指向 `dist/api.d.ts`、`default` 是 `dist/main.js`，清单顶层不写 `types`——类型只经 `exports` 给出，插件的 TypeScript 要用认 `exports` 的模块解析方式（`bundler` 或 `node16` 起）。
-
-{/* has file="../apps/desktop/tests/importmap.test.ts" text="包根的 types 指向接口类型那份 d.ts，default 是内核入口" */}
 
 ## 依赖
 
 | 依赖 | 用来做什么 | 缺了会怎样 |
 | --- | --- | --- |
-| cordis 的 `Context` 类型（内核包的 peer） | `GwbContext` 在它上面加 `gwbKernel` | 只在使用方编译时用：使用方没装 cordis，`GwbContext` 里 cordis 那部分就拿不到类型。插件自己也写 peer `cordis`，插件仓与 home 里都有 |
-| TypeScript 的 DOM 类型（`HTMLElement`、`Window`） | `ShellBoot` 的参数、`window.gwb` 的全局声明 | 不会缺：`src/api.ts` 第一行 `/// <reference lib="dom" preserve="true" />` 会保留到 `dist/api.d.ts`，使用方 tsconfig 的 `lib` 不带 `DOM`、又关掉 `skipLibCheck` 时也能通过类型检查。代价是 import 了这些类型的主进程代码也看得到 DOM 的全局类型（[类型声明里写明要 DOM 类型](/trajectory/2026-09-24-vocab-declares-dom)） |
-| TypeScript 编译器（开发依赖） | `tsc -p tsconfig.api.json` 从 `src/api.ts` 生成 `dist/api.d.ts` | 构建不出来，就发不了内核包 |
-
-{/* has file="../apps/desktop/package.json" text="4.0.0-rc.10" */}
-
-`cordis` 写在内核包的 peer 里：内核与插件要解析到 home 根上同一份，`Context` 也出现在导出的类型里，使用方必须解析得到它（[cordis 写在 peer 里](/trajectory/2026-09-07-wall-cordis-peer)）。
+| cordis 的 `Context` 类型（内核包的 peer） | `GwbContext` 在它上面加 `gwbKernel` | 使用方没装 cordis，`GwbContext` 里 cordis 那部分就拿不到类型；插件自己也在 peer 里写 `cordis`，插件仓与 home 里都有（[cordis 写在 peer 里](/trajectory/2026-09-07-wall-cordis-peer)） |
+| TypeScript 的 DOM 类型（`HTMLElement`、`Window`） | `ShellBoot` 的参数、`window.gwb` 的全局声明 | 不会缺：`src/api.ts` 第一行的 `/// <reference lib="dom" preserve="true" />` 保留到 `dist/api.d.ts`，使用方 tsconfig 的 `lib` 不带 `DOM`、又关掉 `skipLibCheck` 时也能通过类型检查。代价是 import 了这些类型的主进程代码也看得到 DOM 的全局类型（[类型声明里写明要 DOM 类型](/trajectory/2026-09-24-vocab-declares-dom)） |
 
 ## 改这些类型的规则
 
-这些类型是插件与内核之间的约定，**对插件只增不减**；改它们时内核版本号升哪一位、非改不可时先做什么，见[开发](/docs/develop#发版)。
+这些类型是插件与内核之间的约定，**对插件只增不减**：加一个类型、给已有类型加可选字段升 y；删名字、改形状（参数、返回值、回执字段的类型或含义）、改调用方依赖的语义升 x，并先照说明书 `gwb-release` 的「发破坏性版本多做的两步」通知下游。完整规则见[开发](/docs/develop#发版)。
 
-## 不做的事
+## 不在这里的
 
-- **不实现这些类型**：`gwbKernel` 由内核应用的 `main.ts` 提供，`window.gwb` 由内核应用的 `preload.cjs` 注入到页面上；`src/api.ts` 只写形状
-- **不定命令插件的类型**：`gwbCommands` 服务、命令的登记形状由命令插件 `@godcreator/gwb-commands`（基础插件仓 `gwb-base-plugins`）自己导出，调用方从它那里 `import type`
-- **不给运行时的值**：`dataDir` 这类值是内核那一次运行算出来的，插件只能从 `ctx.gwbKernel` 取
-- **不定日志行的格式**：归[日志](/docs/seams/log)接缝，由内核应用写
-- **不放插件管理的回执类型**：这类类型由插件管理 `@godcreator/gwb-plugin-manager`（devkit 仓 `gwb-devkit`）自己导出
-- **不定 IPC 通道名**：`gwb:command` 这类通道名在内核应用里，页面代码只经 `window.gwb` 调用，见 [IPC 通道](/docs/seams/ipc)
-- **不写只读状态页的数据形状**：内核推给页面的 `gwb:shell` 里还有一个 `report` 字段，只给内核自己的页面入口画只读状态页用，`GwbWindowApi` 里 `onShell` 的参数只写了 `url`
+- **实现**：`gwbKernel` 由内核应用的 `main.ts` 提供，`window.gwb` 由 `preload.cjs` 注入；`src/api.ts` 只写形状
+- **命令插件的类型**：`gwbCommands` 服务、命令的登记形状由命令插件 `@godcreator/gwb-commands` 自己导出，调用方从它那里 `import type`
+- **插件管理的回执类型**：由插件管理 `@godcreator/gwb-plugin-manager` 自己导出
+- **运行时的值**：`dataDir` 这类值是那一次运行算出来的，插件只能从 `ctx.gwbKernel` 取
+- **日志行的格式与 IPC 通道名**：日志行格式归[日志](/docs/seams/log)接缝；`gwb:command` 这类通道名在内核应用里，页面代码只经 `window.gwb` 调用
+- **只读状态页的数据形状**：`gwb:shell` 里还有一个 `report` 字段，只给内核自己的页面入口用，`onShell` 的参数只写了 `url`

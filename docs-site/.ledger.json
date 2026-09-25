@@ -62,56 +62,153 @@
     "has ../apps/desktop/tests/main.test.ts \"will-quit：先拦下退出，卸载整棵插件树\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/src/main.ts \"void app.whenReady().then(startAfterAppReady).catch(reportBootFailureAndExit)\"": {
-      "kind": "has"
-    },
     "../apps/desktop/src/main.ts:289-306": {
       "kind": "git",
-      "blob": "861d96320af4d5838e52b2e55ae32e544588d516",
-      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
       "lines": [
         289,
         306
       ],
       "hash": "8704a3d356e6e858c6f1eacc715b03b222a3aa13bf65f5f175608d37a87d72a8"
+    },
+    "../apps/desktop/src/main.ts:308-317": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "lines": [
+        308,
+        317
+      ],
+      "hash": "e1c2bdee58940e2331dfef9226e5e039782921d9790a4284ee229a3f5b99781e"
+    },
+    "../apps/desktop/src/main.ts:144-146": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "lines": [
+        144,
+        146
+      ],
+      "hash": "01aedbee110d7168aa483f14ac7cb6c0d76219ce8f5e9be3c3e477a506471098"
+    },
+    "../apps/desktop/src/main.ts:319-341": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "lines": [
+        319,
+        341
+      ],
+      "hash": "9b0817e7d8cec96848ce63c68eddd72066404240fb71acb93693a87c5ba90251"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"ready 之后：去掉默认菜单、开一个暗底不闪白的窗口、加载 index.html，加载完写 up 一行\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"启动失败：写一行 error、弹错误框（带 gwb.log 路径）、退出码 1\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"loader 还没加载就退出：直接放行，不拦\"": {
+      "kind": "has"
     }
   },
   "content/docs/desktop/index.mdx": {
-    "has ../apps/desktop/src/main.ts \"ctx.provide('gwbKernel', kernel)\"": {
-      "kind": "has"
-    },
-    "has ../apps/desktop/src/preload.cjs \"contextBridge.exposeInMainWorld('gwb', {\"": {
-      "kind": "has"
-    },
-    "has ../apps/desktop/src/main.ts \"path.join(dataDir, 'runtime.json')\"": {
-      "kind": "has"
-    },
-    "has ../apps/desktop/src/main.ts \"file: path.join(dataDir, 'gwb.log')\"": {
-      "kind": "has"
-    },
-    "has ../apps/desktop/src/main.ts \"process.env.GWB_HOME\"": {
-      "kind": "has"
-    },
     "has ../apps/desktop/src/main.ts \"getSwitchValue('remote-debugging-port')\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/src/index.html \"shellModule.default(root)\"": {
+    "../apps/desktop/src/main.ts:22-29": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "lines": [
+        22,
+        29
+      ],
+      "hash": "9f708770648e91748683da9fb83b24b0574e7275041c6279afae0c618c12a21c"
+    },
+    "../apps/desktop/src/main.ts:49-54": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "lines": [
+        49,
+        54
+      ],
+      "hash": "b619918227c64cc6e40ddddfe6b363d137b6e1e836bbab33d6dc58dc8066bdca"
+    },
+    "../apps/desktop/src/main.ts:148-152": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "lines": [
+        148,
+        152
+      ],
+      "hash": "84db13824b0548407ea734ef5ea40bff378e7f49ef4ffef51d96870dd279bea1"
+    },
+    "../apps/desktop/src/main.ts:184-187": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "lines": [
+        184,
+        187
+      ],
+      "hash": "a776a7eacb8e1a6084b92da783324f85d7658c0c9bb7ce0fd51182c588fc37ea"
+    },
+    "../apps/desktop/src/entry-state.ts:3-19": {
+      "kind": "git",
+      "blob": "73646fbaa26a1c496c0c001980e10fbb0b226f4e",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "lines": [
+        3,
+        19
+      ],
+      "hash": "054c1c7422eb367809d020f1d876c59f6b50b37cb5c6e9dad73d55293d915026"
+    },
+    "../apps/desktop/src/main.ts:154-171": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "lines": [
+        154,
+        171
+      ],
+      "hash": "c41022168618c598d91f8e296e25d02391d281849d705a4e3727817a2ec64de1"
+    },
+    "../apps/desktop/scripts/build-react.ts:14-43": {
+      "kind": "git",
+      "blob": "45cd0d2915a17ee111baa2c207a7730a0b1613d2",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "lines": [
+        14,
+        43
+      ],
+      "hash": "b7076b47522a503968b15d0212e3d5f8a092f29b3a8a1800147634e1113e3402"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"main.ts 的行为锁：electron 换成假的，cordis、loader、include 用真的，home 是临时目录\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/package.json \"^44.1.1\"": {
+    "has ../apps/desktop/tests/log-file.test.ts \"路径被目录占着\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/package.json \"dist/main.js\"": {
+    "has ../apps/desktop/tests/react-bundles.test.ts \"react.js 带具名导出\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/src/main.ts \"{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }\"": {
-      "kind": "has"
-    },
-    "has ../apps/desktop/src/main.ts \"gwbCommands?: {\"": {
-      "kind": "has"
-    },
-    "has ../apps/desktop/src/index.html \"./react/react-dom-client.js\"": {
-      "kind": "has"
+    "tree ../apps/desktop/src depth=1": {
+      "kind": "tree",
+      "names": [
+        "api.ts",
+        "bare-import.ts",
+        "entry-state.ts",
+        "home-path.ts",
+        "index.html",
+        "log-file.ts",
+        "main.ts",
+        "page-boundary.ts",
+        "preload.cjs",
+        "react/"
+      ]
     }
   },
   "content/docs/develop.mdx": {
@@ -521,7 +618,7 @@
     "../apps/desktop/src/api.ts:all": {
       "kind": "git",
       "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
       "lines": [
         1,
         56
@@ -531,31 +628,25 @@
     "../apps/desktop/tsconfig.api.json:all": {
       "kind": "git",
       "blob": "2e25391fcdf34b7c1fccf4be998991210e2ed46e",
-      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
       "lines": [
         1,
         11
       ],
       "hash": "d3be48890832898200942b1e7da228d351ddc03049014c81aecc0c979459ca80"
     },
-    "has ../apps/desktop/package.json \"tsc -p tsconfig.api.json\"": {
-      "kind": "has"
-    },
-    "has ../apps/desktop/package.json \"4.0.0-rc.10\"": {
-      "kind": "has"
-    },
-    "has ../apps/desktop/tests/importmap.test.ts \"包根的 types 指向接口类型那份 d.ts，default 是内核入口\"": {
-      "kind": "has"
-    },
     "../apps/desktop/package.json:8-16": {
       "kind": "git",
-      "blob": "a85846f3fc04b4fc65db009bacb1e31fbbc7846d",
-      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
+      "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
+      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
       "lines": [
         8,
         16
       ],
       "hash": "39a25bf9c5442d5a1068e2930c0ec31bd60f177934fc7cc54d788617371df1dd"
+    },
+    "has ../apps/desktop/tests/importmap.test.ts \"包根的 types 指向接口类型那份 d.ts，default 是内核入口；清单顶层不写 types\"": {
+      "kind": "has"
     }
   },
   "content/docs/seams/page-react.mdx": {

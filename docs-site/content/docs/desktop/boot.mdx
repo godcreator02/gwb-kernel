@@ -1,9 +1,9 @@
 ---
 title: 启动与退出
-description: 内核一次启动按什么顺序做事、哪几处顺序不能换、为什么；启动失败和插件出错时内核怎么办；退出时怎么卸载整棵插件树、最多等多久；由哪些测试保护
+description: 内核一次启动按什么顺序做事、分成模块求值时与 ready 之后两段、哪几处顺序不能换以及为什么；启动失败和插件出错时内核怎么办；退出时怎样卸载整棵插件树、最多等多久；由哪些测试保护
 ---
 
-**本页回答**：内核是怎么被启动器加载起来的；内核从入口模块求值到外壳显示出来依次做了什么，哪几处顺序是约束、为什么；启动失败和插件出错时内核怎么办；退出时怎么清理。
+**本页回答**：内核从被加载到外壳显示出来依次做了什么，哪几处顺序是约束、为什么；启动失败和插件出错时内核怎么办；退出时怎样清理。
 
 <Diagram name="kernel-boot" title="一次启动：内核准备好 home 和 cordis，插件从 cordis.yml 进来，页面最后交给外壳">
 - 整个应用只有两个进程：主进程里是内核和 cordis 实例，所有插件都运行在 cordis 里；渲染进程是唯一的窗口。home 是磁盘上的一个目录
@@ -17,45 +17,55 @@ description: 内核一次启动按什么顺序做事、哪几处顺序不能换�
 
 ## 在这之前：启动器找到内核
 
-从安装包启动时，Electron 先运行的是启动器：启动器选定 home、把绝对路径写回 `GWB_HOME`，读 home 里内核包清单的 `engines.electron` 与 `main`，当前 Electron 在范围里才 import 内核入口；home 里没有内核包、版本不满足时，弹框说明原因、退出码 1，内核一行都不运行（[启动器加载内核](/docs/seams/launcher)）。从仓里 `pnpm start` 时没有这一步，Electron 直接运行内核。下面从内核入口模块开始求值算起。
+从安装版启动时，Electron 先运行的是启动器：它选定 home、把绝对路径写回 `GWB_HOME`，确认 home 里内核包的 `engines.electron` 包含当前 Electron、有 `main`，才 import 内核入口；不满足就弹框、退出码 1，内核一行都不运行（[启动器加载内核](/docs/seams/launcher)）。在本仓 `pnpm start` 时没有这一步，Electron 直接运行内核。下面从内核入口模块开始求值算起。
 
 ## 两段：模块求值时与 ready 之后
 
-**模块求值时**做完不需要窗口的部分：选定 home、设置 userData、补齐最小形态，打开日志文件，检查单实例锁，写 `runtime.json`，创建 cordis 实例、接上日志、提供 `gwbKernel`、注册 IPC 通道（home、单实例锁与日志文件的规则见[内核应用](/docs/desktop)）。**Electron ready 之后**才去掉默认菜单、创建窗口并加载页面、注册 loader、加载全部条目。
+**模块求值时**做完不需要窗口的部分：选定 home、设置 userData、补齐最小文件，打开日志文件，检查单实例锁，写 `runtime.json`，创建 cordis 实例、把根上下文的 `baseUrl` 设到 home、接上日志、提供 `gwbKernel`、注册 IPC 通道。**Electron ready 之后**才去掉默认菜单、创建窗口并加载页面、注册 loader、加载全部条目。
 
-入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等待会互相等待、静默卡死。ready 之后的部分放在 `whenReady()` 返回的 promise 的 `then` 里执行，启动失败也在这条链上处理：
+入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等它会互相等待、静默卡死（[ESM 主进程顶层等 ready 会卡死](/trajectory/2026-09-09-wall-esm-await-whenready)）。ready 之后的部分挂在 `whenReady()` 返回的 promise 上，启动失败也在这条链上处理：
 
-{/* has file="../apps/desktop/src/main.ts" text="void app.whenReady().then(startAfterAppReady).catch(reportBootFailureAndExit)" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="308-317" */}
 
 启动失败时先写一行日志，再弹错误框（Electron 保证 ready 之前也能弹出，窗口可能还没有），框里带着 `gwb.log` 的路径，退出码 1。
 
 ## 顺序是约束
 
-ready 之后这一段的顺序本身就是约束：
+ready 之后这一段：
 
 {/* ref file="../apps/desktop/src/main.ts" lines="289-306" */}
 
 - **`gwbKernel` 在注册 loader 之前提供**：它在模块求值时就已提供，任何插件加载时都已经在了（[`gwbKernel` 要在注册 loader 之前提供](/trajectory/2026-09-07-wall-gwbkernel-provide-early)）
-- **窗口先于 loader**：页面在插件加载的过程中就显示只读状态页，页面的 console 也从一开始就进日志
-- **`loader.internal` 在加载条目之前设好**：不设的话 loader 按自己的位置解析包名，插件静默加载失败。内核给它的 import 按 home 里的真实路径解析包名（[插件加载](/docs/seams/loading)）
+- **窗口先于 loader**：插件加载的过程中页面就显示只读状态页，页面的 console 也从一开始就进日志
+- **`loader.internal` 在加载条目之前设好**：主进程没有 `--expose-internals`，不设的话 loader 按自己所在的位置解析包名，插件静默加载失败（[插件加载](/docs/seams/loading)）
 - **等 loader 加载完**才写「up」那行日志并推送一次页面状态：那时各条目都已走到各自的终态
 
-窗口创建时不显示，第一帧画好才显示；窗口底色 `#151518` 与页面入口 `index.html` 的 html 背景、安装包图标的底色是同一个值，窗口创建到第一帧之间、最小化后还原、整页重新加载的第一帧露出来的都是这个颜色，不闪白。改底色时三处一起改。
+窗口创建时不显示，`ready-to-show` 之后才显示，窗口底色与页面背景是同一个颜色，所以不闪白（[内核应用](/docs/desktop#只读状态页)）。
 
 ## 插件出错不带走内核
 
-插件和内核在同一个进程里，插件的错误就是这个进程的错误。内核对未捕获的异常和没人处理的 rejection 只写一行 error 日志、不退出——一个坏插件不该让整个工作台退出。插件自己的失败由 cordis 记在它的条目上，只读状态页上看得到。
+插件和内核在同一个进程里，插件的错误就是这个进程的错误。内核对未捕获的异常和没人处理的 rejection 只写一行 `kernel` 的 error、不退出——一个坏插件不该让整个工作台退出（[两个进程合并为一个](/trajectory/2026-09-09-single-process)）。插件自己加载失败由 cordis 记在它的条目上，只读状态页上看得到。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="144-146" */}
 
 ## 退出
 
 所有窗口关闭就退出。退出前内核卸载 loader，整棵插件树的清理逐层执行；插件启动的长期子进程靠这一步结束，否则主进程一退它们就成了孤儿进程。谁创建了 cordis 实例，谁负责卸载它。
 
-- 第一次进入 `will-quit` 时阻止退出，开始清理；清理完再退出，第二次进入时直接放行。loader 还没加载（刚启动就退出）时没有可卸载的，同样放行
-- **等清理结束要内核和插件都做到**：内核 `dispose()` 之后还要 `await()` 才等得到嵌套的异步清理；插件要把清理的 promise 从 effect 的清理函数里**返回**出来。少做一方，退出时就等不到插件的清理（[退出收尾：内核等、插件返回](/trajectory/2026-09-12-quit-dispose-two-halves)）
-- **最多等 5 秒**：某个插件的清理卡住时，到 5 秒就不再等它、照常退出，工作台不能一直不退；清理中抛出的错误只写一行 warn
+{/* ref file="../apps/desktop/src/main.ts" lines="319-341" */}
 
-## 测试
+- 第一次进入 `will-quit` 时拦下退出、开始清理；清理完调用的 `app.quit()` 会再次进入，那一次放行。loader 还没加载（刚启动就退出）时没有可卸载的，同样放行
+- **等清理结束要内核和插件都做到**：内核 `dispose()` 之后还要 `await()` 才等得到嵌套的异步清理；插件要把清理的 promise 从 effect 的清理函数里返回出来。少做一方，退出时就等不到插件的清理（[退出收尾：内核等、插件返回](/trajectory/2026-09-12-quit-dispose-two-halves)）
+- **最多等 5 秒**：某个插件的清理卡住时，到 5 秒就不再等它、照常退出；清理中抛出的错误只写一行 warn
 
-`apps/desktop/tests/main.test.ts` 把 electron 换成假的、cordis 与 loader 用真的，覆盖上面的启动顺序、启动失败、未捕获异常不退出、退出时先卸载插件树再放行。真实窗口的显示、插件清理超过 5 秒时照常退出、插件的子进程是否都已结束，只能在隔离 home 里实机验证（见[开发](/docs/develop)）。
+## 由什么测试保护
+
+`apps/desktop/tests/main.test.ts` 把 electron 换成假的、cordis 与 loader 用真的，覆盖 ready 之后的顺序与「up」那一行、启动失败、未捕获异常不退出、退出时先卸载插件树再放行、loader 还没加载时直接放行、所有窗口关闭就退出。真实窗口的显示、插件清理超过 5 秒时照常退出、插件的子进程是否都已结束，只能在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="ready 之后：去掉默认菜单、开一个暗底不闪白的窗口、加载 index.html，加载完写 up 一行" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="启动失败：写一行 error、弹错误框（带 gwb.log 路径）、退出码 1" */}
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="will-quit：先拦下退出，卸载整棵插件树" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="loader 还没加载就退出：直接放行，不拦" */}

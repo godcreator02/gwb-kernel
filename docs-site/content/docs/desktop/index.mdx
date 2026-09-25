@@ -1,136 +1,147 @@
 ---
 title: gwb-kernel-desktop · 内核应用
-description: 内核应用 apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口，发布成 npm 包装在每个 home 里、由启动器加载；它有哪些功能（选定 home 与单实例锁、加载插件、窗口与只读状态页、页面边界、日志文件与轮转、runtime.json、退出清理），包根导出给插件与页面的接口类型，插件、页面、启动器与外部工具经哪些接口用它，它依赖什么，哪些事不归它做
+description: 内核应用 apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口，发布成 npm 包装在每个 home 里、由启动器加载。本页是它的模块页：管什么、不知道什么、数据结构、提供的接口（含页面上的 react 怎么打包）、依赖的接口、怎么单独测、代码地图
 ---
 
-**本页回答**：内核应用有哪些功能；插件、页面和外部工具经哪些接口用它，各属于哪条接缝；它依赖什么、缺了会怎样；哪些事常被以为归它、其实归别的模块。包名 `@godcreator/gwb-kernel-desktop`，源码目录 `apps/desktop/src`，入口文件 `main.ts`。
+**本页回答**：内核应用管哪几件事、刻意不知道什么；它在内存里、页面上、home 里各有什么数据；它对插件、页面、启动器、外部工具提供哪些接口（各属于哪条接缝）；它依赖什么、测试时换成什么；每个测试文件证明什么；源码从哪读起。包名 `@godcreator/gwb-kernel-desktop`，源码在 `apps/desktop/src`。
 
-内核应用是内核本身：Electron 主进程里的一个 cordis 实例加一个窗口。它发布成 npm 包，和插件一样装在每个 home 的 `node_modules` 里，由安装包里的启动器加载（[启动器加载内核](/docs/seams/launcher)）；从仓里 `pnpm start` 时由 Electron 直接运行。页面入口 `index.html` 与注入 `window.gwb` 的 `preload.cjs` 也在这个包里，在页面里运行，接缝图上画在「页面」框里。
+内核应用是内核本身：Electron 主进程里的一个 cordis 实例加一个窗口。它发布成 npm 包，和插件一样装在每个 home 的 `node_modules` 里，由安装包里的启动器加载（[启动器加载内核](/docs/seams/launcher)）；在本仓 `pnpm start` 时由 Electron 直接运行。页面入口 `index.html` 与注入 `window.gwb` 的 `preload.cjs` 也在这个包里，在页面里运行。一次启动依次做什么、哪几处顺序不能换，见[启动与退出](/docs/desktop/boot)；包根导出的接口类型见[包根导出的接口类型](/docs/desktop/api)。
 
-## 功能
+## 管什么
 
-- **选定 home**：环境变量 `GWB_HOME` 只写名字时，home 是 `%APPDATA%\gwb-kernel\homes\<名字>`；带路径分隔符时就是那个目录；不设时是 `default`。目录不存在就创建，路径统一成磁盘上的真实路径（大小写、junction、斜杠写法不同的同一个目录得到同一个字符串）。缺 `package.json` 或 `cordis.yml` 时补上能启动的最小形态（一份包清单、一个空的条目表），已有的不覆盖
-- **同一个 home 只运行一个实例**：Chromium 的 userData 放在 `<home>/electron`，Electron 的单实例锁按它区分。同一个 home 再启动一次，新实例写一行 error、退出码 1，`runtime.json` 不动，已在运行的实例把窗口调到前面；不同的 home 可以同时运行。锁由操作系统在进程结束时释放，崩溃不会留下过期的锁（[同一 home 只允许一个实例](/trajectory/2026-09-12-one-home-one-instance)）
-- **加载插件**：创建 cordis 实例，按 `cordis.yml` 加载插件；插件按包名 import 时，按 home 里的真实路径找到文件，换了版本的包重新加载时拿到新版本（[插件加载](/docs/seams/loading)）。一次启动依次做什么、哪几处顺序不能换，见[启动与退出](/docs/desktop/boot)
-- **窗口与外壳**：打开唯一的窗口，把页面交给调用 `setShell` 的外壳插件（[外壳接管](/docs/seams/shell)）
-- **只读状态页**：没有插件调用 `setShell`，或外壳启动失败（import 失败、默认导出不是函数）时，页面显示纯文本、没有按钮的只读状态页：页首一句说明是哪种情况，然后是 home 的路径、每个条目一行（id、包名、加载到哪一步：等待中的写还缺哪个服务，失败的写错误的第一行）、最近 20 行 error 与 warn 日志。条目状态变化、每来一行 error，内核都重新推送整份状态，200 毫秒内的多次合并成一次（warn 不触发推送）；页面订阅时也会请求一次当前值，比插件晚加载完也不会错过
-- **页面边界**：主框架只可能是内核包里的 `index.html`——主框架跳到别的地址、主框架上的重定向一律拒绝并写一行 warn，只放行整页重新加载；`window.open` 与 `target="_blank"` 从不打开新窗口，`http:`、`https:` 地址交给系统默认浏览器打开并写一行 info，别的协议拒绝并写一行 warn；`gwb:command` 只接收顶层框架的调用。页面能调用整条命令总线，这是内核保证的唯一边界（[IPC 通道](/docs/seams/ipc)）
-- **页面上的 react**：构建时把 react 打进 `dist/react/`，页面入口 `index.html` 里写死的 importmap 把 react 的四个包名指向这几个文件，外壳与插件在页面上写 `import 'react'` 就能找到内核包里的文件（[页面上的 react](/docs/seams/page-react)）
-- **转交命令、推送事件**：页面发来的命令交给命令插件提供的 `ctx.gwbCommands`（[命令转交](/docs/seams/commands)），插件发出的事件推给页面（[IPC 通道](/docs/seams/ipc)）
-- **日志**：插件、内核、页面 console 的日志汇成一条 cordis 日志流，每一行同时写 stderr 和 home 里的 `gwb.log`（[日志](/docs/seams/log)）。`gwb.log` 上限 128 MB，写到上限就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多 256 MB）再开一份新的。文件打不开、写不进、轮转失败都只往 stderr 告警一句，内核照常运行
-- **记下这次运行**：每次启动把 pid、启动时刻、版本、调试端口写进 home 里的 `runtime.json`（[runtime.json](/docs/seams/runtime)）
-- **出错与退出**：启动失败时弹错误框、退出码 1；插件抛出的未捕获异常只记进日志，工作台不退出；所有窗口关闭时卸载整棵插件树，最多等 5 秒（[启动与退出](/docs/desktop/boot)）
+- **选定 home**：按 `GWB_HOME` 算出 home 目录（规则见[启动器加载内核](/docs/seams/launcher)），不存在就创建，路径统一成磁盘上的真实路径；缺 `package.json` 或 `cordis.yml` 时补一份最小的（[home 布局与条目树](/docs/seams/home)）
+- **同一个 home 只运行一个实例**：Chromium 的 userData 放在 `<home>/electron`，Electron 的单实例锁按它区分。同一个 home 再启动一次，新实例写一行 error、退出码 1，已在运行的实例把窗口调到前面；锁由操作系统在进程结束时释放，崩溃不留下过期的锁（[同一 home 只允许一个实例](/trajectory/2026-09-12-one-home-one-instance)）
+- **加载插件**：创建 cordis 实例，提供 `gwbKernel`，用 loader 与 include 按 `cordis.yml` 加载插件，包名按 home 解析（[插件加载](/docs/seams/loading)、[内核服务](/docs/seams/kernel)）
+- **窗口与页面**：打开唯一的窗口，加载页面入口；把页面交给调用 `setShell` 的外壳，没有外壳时显示只读状态页（[外壳接管](/docs/seams/shell)）；守住页面边界，页面发来的命令转交给命令插件，插件发出的事件推给页面（[IPC 通道](/docs/seams/ipc)、[命令转交](/docs/seams/commands)）
+- **页面上的 react**：构建时把 react 打进 `dist/react/`，页面入口里写死的 importmap 指向它们（[页面上的 react](/docs/seams/page-react)）
+- **日志**：插件、内核、页面 console 的日志汇成一条 cordis 日志流，写 stderr 与 `gwb.log`，到上限轮转（[日志](/docs/seams/log)）
+- **记下这次运行**：每次启动把 pid、启动时刻、版本、调试端口写进 `runtime.json`（[runtime.json](/docs/seams/runtime)）
+- **出错与退出**：启动失败弹错误框、退出码 1；插件的未捕获异常只记日志；所有窗口关闭时卸载整棵插件树，最多等 5 秒（[启动与退出](/docs/desktop/boot)）
 
-## 接口
+## 不知道什么
 
-每条接缝交换什么、各模块保证什么，写在接缝页；本节只列内核应用提供了哪些接口、定义在哪里。包根只导出类型、不给插件任何运行时的值：它实现的接口的类型都在 `src/api.ts`，插件与页面代码从包根 `import type`（[包根导出的接口类型](/docs/desktop/api)）。
+- **不认识 `cordis.yml` 里的插件与命令**：认识的服务名只有自己提供的 `gwbKernel` 和转交命令时要找的 `gwbCommands`；命令名原样转交，一条命令都不登记。换掉任何一个插件（包括外壳、命令插件）都不用改内核，只要新插件提供同名的服务、接口不变
+- **不读插件包清单里的任何字段**：插件 peer 里的内核包范围由插件管理比对，页面的 importmap 写死在页面入口里
+- **不知道插件管理存在**：不装包、不带 pnpm，除了缺文件时补最小的 `package.json` 与 `cordis.yml`，不写 home 的包与条目
+- **不认识窗格、不渲染界面**：只读状态页之外，页面显示什么全由外壳决定；只在启动时去掉 Electron 默认的菜单，需要菜单的插件在 ready 之后自己调 `Menu.setApplicationMenu`
+- **不诊断插件故障**：只读状态页只列内核已有的数据，不分析原因、不重试、没有按钮（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）
+- **不显示、不查询日志**：在界面上看日志归日志插件，它注册自己的 exporter
+- **不知道自己是怎么被启动的**：经启动器加载和在本仓 `pnpm start` 做法相同，安装包的版本号拿不到
+- **不知道谁读 `runtime.json`**，也不确认那里记的进程还活着
+- **不提供设置、数据、说明书、MCP 入口**：这些都是 `cordis.yml` 里的插件
 
-### 给插件的服务与日志
+内核在 cordis 上下文上声明的服务只有这两项：
 
-| 接口 | 做什么 | 接缝 |
+{/* ref file="../apps/desktop/src/main.ts" lines="22-29" */}
+
+## 数据结构
+
+**home 路径**：`GWB_HOME` 算出的目录经 `realpathSync.native` 统一成一个字符串，作为 `dataDir` 交给插件，也作为单实例锁的依据：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="49-54" */}
+
+**外壳状态**：内核每次经 `gwb:shell` 推给页面的整份状态，`report` 是只读状态页的数据：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="148-152" */}
+
+{/* ref file="../apps/desktop/src/main.ts" lines="184-187" */}
+
+每个条目一行，`state` 是说成一句话的加载状态：
+
+{/* ref file="../apps/desktop/src/entry-state.ts" lines="3-19" */}
+
+cordis 的 fiber 状态是 `const enum`，在本仓的 `isolatedModules` 设置下引用不到，所以状态名按它的数字顺序抄了一份，没有测试核对；升级 cordis 时对照它的 `FiberState` 声明看一遍。`_error`、`_store` 是 cordis 标了 private 的字段，同样随 cordis 版本走。
+
+**`runtime.json` 与日志行**的形状各是一条接缝，见 [runtime.json](/docs/seams/runtime) 与[日志](/docs/seams/log)。
+
+## 提供的接口
+
+包根只导出类型、不给插件任何运行时的值：内核实现的接口的类型都在 `src/api.ts`，插件与页面代码从包根 `import type`（[包根导出的接口类型](/docs/desktop/api)）。每条接缝交换什么、各方保证什么写在接缝页，这里只列内核应用这一侧提供了什么：
+
+| 接口 | 给谁 | 接缝 |
 | --- | --- | --- |
-| 服务 `ctx.gwbKernel` | 根上下文上的 `dataDir`、`version`、`emit`、`setShell`，早于任何插件提供、永不撤销；类型 `GwbKernelApi` | [2 内核服务](/docs/seams/kernel) |
-| cordis 日志流 | 插件用 `ctx.logger` 写日志；注册一个 exporter 就能收到插件、内核、页面 console 三个来源的全部日志 | [8 日志](/docs/seams/log) |
+| `cordis.yml` 的条目与按 home 解析包名 | 插件 | [1 插件加载](/docs/seams/loading) |
+| 服务 `ctx.gwbKernel`（`dataDir`、`version`、`emit`、`setShell`） | 插件 | [2 内核服务](/docs/seams/kernel) |
+| `window.gwb` 与 `gwb:command`、`gwb:event`、`gwb:shell`、`gwb:hello` 四个通道；页面边界 | 页面 | [3 IPC 通道](/docs/seams/ipc) |
+| 页面入口把 `#root` 交给外壳模块的默认导出；只读状态页 | 外壳插件 | [4 外壳接管](/docs/seams/shell) |
+| 页面入口里的 importmap 与 `dist/react/` 的四个文件 | 页面上的代码 | [5 页面上的 react](/docs/seams/page-react) |
+| home 的文件布局、loader 与 include 的条目树 | 插件管理 | [6 home 布局与条目树](/docs/seams/home) |
+| `runtime.json` | devkit、安装工作台的 agent | [7 runtime.json](/docs/seams/runtime) |
+| cordis 日志流与 `gwb.log` | 插件、读日志的人 | [8 日志](/docs/seams/log) |
+| 内核包清单的 `engines.electron` 与 `main` | 启动器 | [9 启动器加载内核](/docs/seams/launcher) |
+| 对 `ctx.gwbCommands.run` 的调用 | 命令插件 | [10 命令转交](/docs/seams/commands) |
 
-{/* has file="../apps/desktop/src/main.ts" text="ctx.provide('gwbKernel', kernel)" */}
-
-### 加载插件
-
-| 接口 | 做什么 | 接缝 |
-| --- | --- | --- |
-| `cordis.yml` 的条目与包名解析 | 条目点名的包按 home 里的真实路径 import，插件导出 `apply` 或 `Service` 类 | [1 插件加载](/docs/seams/loading) |
-| home 的文件布局与条目树 | 启动时保证 home 里有 `package.json` 与 `cordis.yml`；loader 根层只有一条承载 `cordis.yml` 的 include 条目 `home`，插件管理从 loader 取出它下面的条目树来增删条目 | [6 home 布局与条目树](/docs/seams/home) |
-
-{/* has file="../apps/desktop/src/main.ts" text="{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }" */}
-
-### 页面
-
-| 接口 | 做什么 | 接缝 |
-| --- | --- | --- |
-| `window.gwb` | 页面上的三个函数：`command` 调命令、`on` 收事件、`onShell` 知道外壳是谁；类型 `GwbWindowApi` | [3 IPC 通道](/docs/seams/ipc) |
-| IPC 通道 `gwb:command` | 页面调命令，只接收顶层框架的调用；内核把它交给命令转交，回执原样返回 | [3 IPC 通道](/docs/seams/ipc) |
-| IPC 通道 `gwb:event` | `gwbKernel.emit` 推给页面的事件 | [3 IPC 通道](/docs/seams/ipc) |
-| IPC 通道 `gwb:shell` 与 `gwb:hello` | 内核推给页面的整份外壳状态：外壳地址、只读状态页的数据；页面订阅时发 `gwb:hello` 请求一次当前值 | [3 IPC 通道](/docs/seams/ipc) |
-| 外壳模块的默认导出 | 页面入口 import 外壳的地址，拿页面的 `#root` 调用它的默认导出；类型 `ShellBoot` | [4 外壳接管](/docs/seams/shell) |
-| 页面入口里的 importmap | react 的四个包名 → 内核包 `dist/react/` 里的文件；页面代码构建时外置这四个名字 | [5 页面上的 react](/docs/seams/page-react) |
-
-{/* has file="../apps/desktop/src/preload.cjs" text="contextBridge.exposeInMainWorld('gwb', {" */}
-
-{/* has file="../apps/desktop/src/index.html" text="shellModule.default(root)" */}
-
-{/* has file="../apps/desktop/src/index.html" text="./react/react-dom-client.js" */}
-
-### 转交命令
-
-| 接口 | 做什么 | 接缝 |
-| --- | --- | --- |
-| 服务 `ctx.gwbCommands` 的 `run(命令名, 参数, { via: 'ui' })` | 内核声明这个可选服务的形状、自己不提供，由命令插件提供；页面经 `gwb:command` 发来的命令原样交给它，标明来自界面。命令名不是字符串、没有这个服务时，内核自己回失败回执 | [10 命令转交](/docs/seams/commands) |
-
-{/* has file="../apps/desktop/src/main.ts" text="gwbCommands?: {" */}
-
-### 写进 home 给别的程序读的文件
-
-| 文件 | 做什么 | 接缝 |
-| --- | --- | --- |
-| `runtime.json` | 每次启动整份重写：pid、启动时刻、版本，开了调试端口时还有端口；devkit 和安装工作台的 agent 靠它找到运行中的工作台 | [7 runtime.json](/docs/seams/runtime) |
-| `gwb.log` | 日志流写成的文件，一行是「时间 级别 名字 正文」；排查故障时人和 agent 读它 | [8 日志](/docs/seams/log) |
-
-{/* has file="../apps/desktop/src/main.ts" text="path.join(dataDir, 'runtime.json')" */}
-
-{/* has file="../apps/desktop/src/main.ts" text="file: path.join(dataDir, 'gwb.log')" */}
-
-### 给启动器的清单字段
-
-| 字段 | 做什么 | 接缝 |
-| --- | --- | --- |
-| `engines.electron` | 内核要的 Electron 版本范围；启动器拿当前 Electron 比对，不在范围里就不加载 | [9 启动器加载内核](/docs/seams/launcher) |
-| `main` | 入口文件 `dist/main.js`；启动器 import 它 | [9 启动器加载内核](/docs/seams/launcher) |
-
-{/* has file="../apps/desktop/package.json" text="^44.1.1" */}
-
-{/* has file="../apps/desktop/package.json" text="dist/main.js" */}
-
-### 包根导出的类型
-
-| 接口 | 做什么 | 接缝 |
-| --- | --- | --- |
-| `import type { … } from '@godcreator/gwb-kernel-desktop'` | 包根的 `types` 条件指向 `dist/api.d.ts`：`GwbResult`、`GwbKernelApi`、`GwbContext`、`GwbWindowApi` 与 `window.gwb` 的全局声明、`ShellBoot`；只有类型，详见[包根导出的接口类型](/docs/desktop/api) | [2 内核服务](/docs/seams/kernel)、[3 IPC 通道](/docs/seams/ipc)、[4 外壳接管](/docs/seams/shell) |
-
-### 启动参数
-
-启动内核的人或程序经这两项控制它，不属于哪条接缝（从安装包启动时，启动器已经把 `GWB_HOME` 换成了绝对路径）：
-
-| 参数 | 做什么 |
-| --- | --- |
-| 环境变量 `GWB_HOME` | 用哪个 home，规则见上面「功能」的第一条 |
-| 命令行开关 `--remote-debugging-port` | Chromium 调试端口；开了就记进 `runtime.json` |
-
-{/* has file="../apps/desktop/src/main.ts" text="process.env.GWB_HOME" */}
+**启动参数**不属于哪条接缝，启动内核的人或程序经这两项控制它：环境变量 `GWB_HOME`（用哪个 home；经启动器启动时已换成绝对路径），命令行开关 `--remote-debugging-port`（Chromium 调试端口，开了就记进 `runtime.json`）。
 
 {/* has file="../apps/desktop/src/main.ts" text="getSwitchValue('remote-debugging-port')" */}
 
-## 依赖
+### 只读状态页
 
-| 依赖 | 用来做什么 | 缺了会怎样 |
+没有插件调用 `setShell`，或外壳启动失败（import 失败、默认导出不是函数）时，页面入口画一页纯文本、没有按钮的只读状态页：第一行说明是哪种情况，然后是 home 的路径、每个条目一行（id、包名、加载到哪一步：等待中的写还缺哪个服务，失败的写错误的第一行）、最近 20 行 error 与 warn 日志。条目状态变化、每来一行 error、loader 加载完，内核都重新推送整份状态，200 毫秒内的多次合并成一次；页面订阅时也请求一次当前值，比插件晚加载完也不会错过。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="154-171" */}
+
+窗口底色 `#151518` 与页面入口 `index.html` 的 html 背景、安装包图标的底色是同一个值，窗口创建到第一帧、整页重新加载的第一帧露出来的都是这个颜色；改底色时三处一起改。
+
+### 页面上的 react 怎么打包
+
+构建的最后一步 `scripts/build-react.ts` 用 esbuild 把 react 与 react-dom 打成浏览器能直接 import 的 ESM，写进 `dist/react/` 的四个文件，页面入口里写死的 importmap 指向它们。react 与 react-dom 是内核包的开发依赖，升级 react 就是发一版内核。
+
+{/* ref file="../apps/desktop/scripts/build-react.ts" lines="14-43" */}
+
+- **为什么要打包**：react 19 的清单 `exports` 只有 `react-server` 与 `default` 两个条件，`default` 指向 CJS 的 `index.js`，浏览器不能直接 import
+- **为什么用 esbuild**：rolldown 在 browser 平台对「CJS 里 require 一个外置的包」保留 `require`，浏览器里没有 `require`，产物一加载就报错；esbuild 会把它提升成顶层 `import`
+- **react-dom 的两个文件把 `react` 外置**：四个包名共用同一个 react 实例
+- **替换 `__require` 探针**：react-dom 在工厂函数内部调 `require('react')`，esbuild 提不到顶层，产物里留一个 `__require` 探针，在浏览器里一运行就报错。构建脚本在这两个文件头加一句 `import * as __gwb_react from "react"`，再把探针换成只认 `react` 的同步解析器，返回 CJS 的 `module.exports` 原对象（react-dom 要用 React 的内部成员）；产物里有 `__require` 却认不出它的形状时构建失败
+- **入口文件逐个列出具名导出**：`src/react/` 下四个入口各自 import 对应的包，再一个一个 `export const`，因为 esbuild 从 react 的 CJS 转发链上推不出具名成员，直接打只有一个 `default`。名单对齐 `@types/react` 19 的稳定 API，react 加了新 API 就补一行；少一个的话，用到它的窗格加载时报「does not provide an export named …」、整个窗格空白，构建与类型检查都发现不了
+
+## 依赖的接口
+
+| 接口 | 用来做什么 | 生产实现 | 测试实现 |
+| --- | --- | --- | --- |
+| electron 的 `app`、`BrowserWindow`、`ipcMain`、`dialog`、`Menu`、`shell` | 单实例锁与 userData、窗口、IPC、启动失败的错误框、把网页地址交给系统浏览器 | 安装包带的 Electron，版本要在 `engines.electron` 的范围里 | `main.test.ts` 里的假 electron |
+| cordis 的 `Context` 与 logger | cordis 实例、提供 `gwbKernel`、日志流、只读状态页的错误行 | home 根上唯一的那份 `cordis`（内核包 peer 里写死的版本） | 真的 cordis（本仓开发依赖，同一个版本） |
+| `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` | 按条目加载插件、读写 `cordis.yml` | 内核包自己的依赖，版本写死 | 真的 loader 与 include |
+| 服务 `ctx.gwbCommands` | 转交页面发来的命令 | 命令插件 `@godcreator/gwb-commands` | `main.test.ts` 里从 `cordis.yml` 加载的测试插件；不装时测「没有命令服务」 |
+| 文件系统与 home 目录 | 补最小文件、解析包名、写 `gwb.log` 与 `runtime.json` | 真的文件系统 | 临时目录 |
+| react、react-dom（只在构建时） | 打进 `dist/react/` 给页面用 | 开发依赖里写死的版本 | `react-bundles.test.ts` 读真实产物 |
+
+缺了会怎样：electron、cordis、loader、include 任何一个缺了都起不来；`ctx.gwbCommands` 缺了内核照常运行，页面发来的每条命令都回「没有命令服务」；`dist/react/` 里缺文件时外壳挂不上，页面显示只读状态页；home 目录建不出来时启动失败，`runtime.json` 写不进只记一行 warn，`gwb.log` 打不开时日志只写 stderr、一分钟后再试。
+
+## 怎么单独测
+
+全部测试在 `apps/desktop/tests/`，由仓根 `pnpm test`（`pnpm check` 的最后一步）运行；`pnpm check` 先构建内核包，`main.test.ts` 与 react 的两份测试读的是真实的构建产物。
+
+| 测试文件 | 喂什么 | 证明什么 |
 | --- | --- | --- |
-| electron 的 `app`、`BrowserWindow`、`ipcMain`、`dialog`、`Menu`、`shell` | 单实例锁、每个 home 一份的 userData、窗口、IPC、启动失败时的错误框、把页面 `window.open` 的网页地址交给系统默认浏览器 | 内核就是这个 Electron 应用，没有它无法启动；Electron 由安装包提供，版本要在 `engines.electron` 的范围里，启动器才加载内核 |
-| cordis 的 `Context` 与 logger | cordis 实例、提供 `gwbKernel`、日志流、只读状态页的错误行 | 无法启动；`cordis` 写在 peer 里，由 home 根上唯一的那一份满足，插件用的也是它（[home 布局与条目树](/docs/seams/home)） |
-| `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` | 按条目加载插件、读 `cordis.yml` | 无法启动；它们是内核包自己的依赖，版本写死在 `apps/desktop/package.json` 的 `dependencies` 里，升级它们是改接缝，内核升 x（见[开发](/docs/develop#发版)） |
-| 服务 `ctx.gwbCommands`，由 `cordis.yml` 里的命令插件 `@godcreator/gwb-commands` 提供 | 页面发来的命令一律交给它 | 内核照常运行；页面发来的每条命令都回失败回执「没有命令服务」 |
-| react 与 react-dom（开发依赖） | 构建时打进 `dist/react/`，给页面用（见[开发](/docs/develop#内核包怎么打包-react)） | 内核包里缺这几个文件时，页面上的 react 加载失败，外壳无法挂载，页面显示只读状态页 |
-| home 目录与文件系统 | 读包清单、解析包名、写 `gwb.log` 与 `runtime.json` | 目录建不出来时启动失败；`runtime.json` 写不进只记一行警告；`gwb.log` 打不开时日志只写 stderr，一分钟后再试 |
+| `main.test.ts` | 假 electron、真的 cordis / loader / include、临时 home；每个用例重新求值一次 `main.ts` | 选 home 的两种写法、补最小文件且不覆盖已有的、userData 在 `<home>/electron`；拿不到单实例锁时写 error、退出码 1，第二个实例启动时把窗口调到前面；`runtime.json` 的字段；启动顺序与启动失败；页面 console 进日志；页面边界；IPC 通道与命令转交；`gwbKernel` 的四个成员；error 去抖后推只读状态页、格式化不了的参数不抛、warn 不推；退出时卸载插件树 |
+| `page-boundary.test.ts` | 字符串与假的框架对象 | 页面边界的三条判定 |
+| `log-file.test.ts` | 临时目录里真的文件系统，不打桩 | 到上限轮转、只留一份旧的；启动时已超上限第一行就轮转；轮转失败、打不开、写不进都不抛，写不进只告警一次。轮转失败用「目标位置被一个目录占着」制造，这是 Windows 上真会遇到的形态 |
+| `entry-state.test.ts` | 手工构造的条目 | 每种条目状态在只读状态页上说成什么 |
+| `index-html.test.ts` | 极简的假 DOM，把页面脚本放进去求值 | 只读状态页画什么；外壳挂载、替换、撤销、启动失败 |
+| `preload.test.ts` | 假的 `electron` 模块 | 页面上只有一个 `window.gwb`、正好三个函数，各走哪个通道 |
+| `bare-import.test.ts` | 临时目录里手写的 `node_modules` 布局 | 按 home 解析包名，链接换指向后拿到新版本 |
+| `importmap.test.ts` | `index.html` 源文件、构建后的 `dist/`、内核包清单 | importmap 只有 react 的四个包名、写在页面脚本之前、每个地址都有文件；包根的 `types` 指向 `dist/api.d.ts`、`default` 是内核入口 |
+| `react-bundles.test.ts` | 构建后的 `dist/react/` | 四个文件里没有 `typeof require` 探针；react-dom 两个文件以那句 import 开头、带修补后的 `__require`；`react.js` 有 `default`、`useState`、`useEffect`、`createElement`、`useEffectEvent` 等具名导出 |
 
-## 不做的事
+{/* has file="../apps/desktop/tests/main.test.ts" text="main.ts 的行为锁：electron 换成假的，cordis、loader、include 用真的，home 是临时目录" */}
 
-- **不认识任何命令**：页面发来的命令原样交给命令插件 `@godcreator/gwb-commands`，命令由登记它的插件实现
-- **不写 home 的包与条目**：只在缺文件时补 `package.json` 与 `cordis.yml` 的最小形态，不做 `cordis.yml` 的模板与自动修复；装卸包、增删条目只由插件管理 `@godcreator/gwb-plugin-manager` 做
-- **不带插件**：命令插件、插件管理和别的插件一样写在 `cordis.yml` 里、装在 home 里；新 home 的插件由创建它的一方装（[关键设计](/docs/design)）
-- **不认识 `cordis.yml` 里的插件**：加载哪些插件由 `cordis.yml` 决定；内核认识的服务名只有自己提供的 `gwbKernel` 和转交命令时要找的 `gwbCommands`
-- **不渲染界面**：只读状态页之外，页面显示什么全由外壳插件（目前是界面插件仓的 `@godcreator/gwb-shell`）决定；内核不认识窗格，不替插件做菜单（只在启动时去掉 Electron 默认的那套），需要菜单的插件在 Electron ready 之后自己调 `Menu.setApplicationMenu`
-- **不诊断插件故障**：只读状态页只列内核已有的数据，不分析失败原因、不重试、不放按钮；这些要认识具体的插件，归外壳和插件管理的窗格（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）
-- **不经手插件之间的交互**：服务、命令、契约版本都在插件之间，由 cordis 与命令插件连接
-- **不显示、不查询日志**：内核只把日志写到 stderr 与 `gwb.log`；在界面上看日志归日志插件 `gwb-logger`，它注册自己的 exporter
-- **不提供设置、数据、说明书、MCP 入口**：这些都是 `cordis.yml` 里的插件
-- **不确认 `runtime.json` 里的进程还活着**：退出时不删这份文件，读它的 devkit 与安装工作台的 agent 自己确认 pid 还在
-- **不比对插件兼容哪个内核**：插件 peer 里内核包的范围内核不读，由插件管理比对
-- **不装自己**：内核包由创建 home 的一方装进 home，升级由插件管理的 `plugin-manager.update {"specs":{"@godcreator/gwb-kernel-desktop":"<版本>"}}` 装、重启后生效
+{/* has file="../apps/desktop/tests/log-file.test.ts" text="路径被目录占着" */}
+
+{/* has file="../apps/desktop/tests/react-bundles.test.ts" text="react.js 带具名导出" */}
+
+测试覆盖不到、只能在隔离 home 里实机验证的：真实窗口画出来的样子、单实例锁本身（同一个 `GWB_HOME` 启动两次，第二次退出码 1、`runtime.json` 仍是第一个实例的 pid）、插件清理超过 5 秒时照常退出、页面上真的用上内核包里的 react。做法见[开发](/docs/develop#在隔离-home-里验证)。
+
+## 代码地图
+
+**在哪**：
+
+{/* tree dir="../apps/desktop/src" depth="1" */}
+
+构建脚本在 `apps/desktop/scripts/build-react.ts`，测试在 `apps/desktop/tests/`。
+
+**先读** `main.ts`（全部组装都在这一个文件里，从上往下就是启动顺序），再读 `api.ts`（对插件与页面的全部接口类型）。
+
+**读序**：`home-path.ts`、`bare-import.ts`、`entry-state.ts`、`log-file.ts`、`page-boundary.ts` 互不依赖，各自是一个小功能；`main.ts` 用到它们全部，并从 `api.ts` 取 `GwbKernelApi`。`index.html` 与 `preload.cjs` 在页面里运行，和主进程只经 IPC 通道相连；`scripts/build-react.ts` 与 `src/react/` 只在构建时用。
+
+**可跳过**：`dist/` 是构建产物；`src/react/` 下四个文件只是具名导出的名单，react 加了新 API 时才要动。
