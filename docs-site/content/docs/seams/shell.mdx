@@ -1,9 +1,9 @@
 ---
 title: 4 外壳接管 setShell
-description: 连接页面入口与调用 setShell 的外壳插件；接口是 setShell(url)、外壳模块默认导出的 ShellBoot 和它拿到的 #root；页面入口保证同一时刻只有一个外壳、同一地址只挂载一次、外壳撤销或启动失败时回到只读状态页，外壳插件保证卸载时交还页面、dispose 清理干净
+description: 连接页面入口与调用 setShell 的外壳插件；交换的是 setShell(url)、外壳模块的默认导出 ShellBoot 与它拿到的 #root；页面入口保证同一时刻只有一个外壳、同一地址只挂载一次、外壳撤销或启动失败时回到只读状态页，外壳插件保证卸载时交还页面、dispose 清理干净
 ---
 
-**本页回答**：页面怎么交给一个插件来渲染；外壳换了、卸载了、启动失败时页面显示什么；页面入口和外壳插件各保证什么。
+**本页回答**：页面怎样交给一个插件来渲染；外壳换了、卸载了、启动失败时页面显示什么；页面入口和外壳插件各保证什么。
 
 <Diagram name="shell-handover" title="页面先问外壳是谁，外壳插件调用 setShell 后把 #root 交出去，外壳卸载后回到只读状态页">
 - 页面入口订阅 `onShell`，订阅时发一次 `gwb:hello` 问当前外壳是谁；内核每次都回一条 `gwb:shell`：外壳地址（没有时是 `null`）、只读状态页的数据
@@ -16,11 +16,11 @@ description: 连接页面入口与调用 setShell 的外壳插件；接口是 se
 ## 连接的模块
 
 - 页面入口：内核包里的 `index.html`，在页面里运行
-- 调用 `setShell` 的外壳插件：目前是 `@godcreator/gwb-shell`（界面插件仓 `gwb-ui-plugins`）
+- 调用 `setShell` 的外壳插件：日常 home 里是界面插件仓的 `@godcreator/gwb-shell`；任何插件调用 `setShell` 都算外壳
 
-两者之间经过内核应用的主进程：`setShell` 是内核服务（[内核服务](/docs/seams/kernel)），外壳状态经通道 `gwb:shell` 推给页面（[IPC 通道](/docs/seams/ipc)）。
+两者之间经过主进程：`setShell` 是内核服务的成员（[内核服务](/docs/seams/kernel)），外壳状态经通道 `gwb:shell` 推给页面（[IPC 通道](/docs/seams/ipc)）。
 
-## 接口
+## 交换什么
 
 外壳插件在主进程里调用 `setShell`，把自己在页面上运行的那个模块的地址交给内核：
 
@@ -29,40 +29,43 @@ const entry = new URL('./client.js', import.meta.url).href
 ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effect，插件卸载时交还页面
 ```
 
-{/* ref file="../apps/desktop/src/api.ts" lines="21-25" */}
-
 页面入口 import 这个地址，只认它的默认导出：拿到 `#root`，返回可选的 `dispose`。
 
 {/* ref file="../apps/desktop/src/api.ts" lines="46-47" */}
 
-页面入口里写死了 importmap，外壳模块里 react 的四个包名可以直接 import（[页面上的 react](/docs/seams/page-react)）。
+页面入口里接管的全部逻辑：
 
-## 约定
+{/* ref file="../apps/desktop/src/index.html" lines="70-106" */}
+
+这段说明：换外壳先 `dispose` 旧的、清空 `#root`；同一个地址在 import 还没完成时又推来一次，靠 `shellUrlBeingLoaded` 认出来，不挂第二遍；地址是 `null`、import 失败、默认导出不是函数，都画只读状态页，失败时第一行写明原因。页面入口里写死了 importmap，外壳模块里 react 的四个包名可以直接 import（[页面上的 react](/docs/seams/page-react)）。
+
+## 各方保证
 
 **页面入口**保证：
 
 - 订阅时先问一次当前外壳，外壳插件比页面先调用 `setShell` 也不会错过
 - 同一时刻只有一个外壳：换外壳时先调用旧外壳的 `dispose`、清空 `#root`，再挂新的；旧外壳的 `dispose` 抛错只打一行 `console.error`，照样换
 - 同一个地址连推两次，外壳只挂载一次，上一次还在 import 时也一样
-- 地址是 `null`、import 失败、默认导出不是函数时，显示只读状态页，失败时第一行写明原因；不会白屏。失败后同一个地址再推来会重新 import。只读状态页显示什么见[内核应用](/docs/desktop)
+- 不会白屏：地址是 `null`、import 失败、默认导出不是函数时显示只读状态页；失败之后同一个地址再推来会重新 import。只读状态页显示什么见[内核应用](/docs/desktop#提供的接口)
 
 **外壳插件**保证：
 
 - 把 `setShell` 返回的撤销函数交给 `ctx.effect`，插件卸载时交还页面
 - 在页面上运行的模块默认导出一个 `ShellBoot`；`dispose` 移除自己在页面上创建的一切
-- 用到 react 时，构建时不打进自己的包，留给 importmap
+- 用到 react 时构建时外置那四个包名，留给 importmap
 
-## 不负责的事
+## 谁不负责什么
 
-- 页面入口不挑外壳：主进程推来哪个地址就挂哪个；谁能调用 `setShell` 也不限制（后调用的替换先调用的，见[内核服务](/docs/seams/kernel)）
-- 页面入口除了只读状态页不渲染任何界面，不认识窗格
-- 只读状态页不分析失败原因，没有按钮
+- 页面入口不挑外壳：主进程推来哪个地址就挂哪个；谁能调用 `setShell` 也不限制
+- 页面入口除了只读状态页不渲染任何界面，不认识窗格；只读状态页不分析失败原因，没有按钮（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）
 - 外壳插件不管页面入口怎么拿到它的地址，也不直接接触 IPC 通道
 
-## 测试
+## 由什么测试保护
 
-页面入口的接管逻辑由 `apps/desktop/tests/index-html.test.ts` 保护：把页面脚本放进一个极简的假 DOM 求值，证明外壳挂载、同一地址不重复挂载（在 import 时也一样）、换外壳先 `dispose` 旧的、外壳撤销时回到只读状态页、`dispose` 抛错与 import 失败的处理。外壳模块的形状由类型检查保护（外壳从内核包 `import type` 取 `ShellBoot`）。真实窗口里的显示在隔离 home 里实机验证（[开发](/docs/develop)）。
+`apps/desktop/tests/index-html.test.ts` 把页面脚本放进一个极简的假 DOM 求值，证明：外壳挂载，同一地址不重复挂载（import 还没完成时也一样），换外壳先 `dispose` 旧的，外壳撤销时回到只读状态页，撤销后同一地址再推来重新挂载，`dispose` 抛错、import 失败、默认导出不是函数各自的处理，失败后同一地址再推来会重试。外壳模块的形状由外壳那边的类型检查保护（外壳从内核包 `import type` 取 `ShellBoot`）。真实窗口里的显示在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
 
 {/* has file="../apps/desktop/tests/index-html.test.ts" text="同一个地址在 import 完成前连推两次，只挂载一次" */}
 
 {/* has file="../apps/desktop/tests/index-html.test.ts" text="外壳在用时推来 url: null（外壳撤销）：dispose 旧外壳，回到只读状态页" */}
+
+{/* has file="../apps/desktop/tests/index-html.test.ts" text="外壳 import 失败后再推同一个地址会重试" */}

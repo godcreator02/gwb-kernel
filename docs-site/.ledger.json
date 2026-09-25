@@ -6,25 +6,28 @@
     "has ../apps/desktop/tests/index-html.test.ts \"外壳在用时推来 url: null（外壳撤销）：dispose 旧外壳，回到只读状态页\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/api.ts:21-25": {
-      "kind": "git",
-      "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
-      "lines": [
-        21,
-        25
-      ],
-      "hash": "e98393537c67ef51f7d6f14d8d3cf29ff55190fc06c4eb6d20894b21b66f9caa"
-    },
     "../apps/desktop/src/api.ts:46-47": {
       "kind": "git",
       "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
       "lines": [
         46,
         47
       ],
       "hash": "ec9ecc8997fe82dfb12a9146ee1789bd4d855067e4ca664e23217e79a192d885"
+    },
+    "../apps/desktop/src/index.html:70-106": {
+      "kind": "git",
+      "blob": "2022a595c9092b823c6e778628b2a9c90502fb62",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
+      "lines": [
+        70,
+        106
+      ],
+      "hash": "6bbb9e15d125fc2b452e147d8fa973233e274d58a94c190ca0bda5b37a605319"
+    },
+    "has ../apps/desktop/tests/index-html.test.ts \"外壳 import 失败后再推同一个地址会重试\"": {
+      "kind": "has"
     }
   },
   "content/docs/seams/home.mdx": {
@@ -223,7 +226,7 @@
     "../apps/desktop/src/preload.cjs:all": {
       "kind": "git",
       "blob": "cb7e8f1a1e2b66019b2af7897a002881f92a87b2",
-      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
       "lines": [
         1,
         19
@@ -242,7 +245,7 @@
     "../apps/desktop/src/api.ts:6-11": {
       "kind": "git",
       "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
       "lines": [
         6,
         11
@@ -252,7 +255,7 @@
     "../apps/desktop/src/page-boundary.ts:all": {
       "kind": "git",
       "blob": "c8ea974836da337814d61967c0a9066fa3c7a59e",
-      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
       "lines": [
         1,
         20
@@ -265,58 +268,75 @@
     "has ../apps/desktop/tests/main.test.ts \"页面边界：主框架跳到别处（包括 http、https）、主框架的重定向一律拒绝\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/tests/main.test.ts \"window.open：窗口一律 deny；http、https 交给系统浏览器\"": {
-      "kind": "has"
-    },
     "has ../apps/desktop/tests/page-boundary.test.ts \"window.open 的地址只有 http、https 交给系统浏览器\"": {
       "kind": "has"
     },
     "../apps/desktop/src/api.ts:33-44": {
       "kind": "git",
       "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
       "lines": [
         33,
         44
       ],
       "hash": "904ad0d121e8f68238016773b3974b0d1931cf0fdde6d72fbb3583ffa1250361"
+    },
+    "../apps/desktop/src/main.ts:226-234": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
+      "lines": [
+        226,
+        234
+      ],
+      "hash": "1c4292599e4625244e05b8b32bbf66ca0500c4e37f7b037a0106712c3fbc3c38"
+    },
+    "../apps/desktop/src/main.ts:244-267": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
+      "lines": [
+        244,
+        267
+      ],
+      "hash": "5c068fb2e9bfbe4ac24acfe5bc8c05881945af3a49545e0cf0cc843f2428d5f7"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"window.open：系统浏览器打开失败只记一行 warn\"": {
+      "kind": "has"
     }
   },
   "content/docs/seams/kernel.mdx": {
     "has ../apps/desktop/src/main.ts \"const kernel: GwbKernelApi = {\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/tests/main.test.ts \"插件拿到 gwbKernel\"": {
-      "kind": "has"
-    },
     "has ../apps/desktop/tests/main.test.ts \"emit 推 gwb:event；setShell 立刻推整份状态\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/api.ts:13-26": {
+    "../apps/desktop/src/api.ts:13-31": {
       "kind": "git",
       "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
       "lines": [
         13,
-        26
-      ],
-      "hash": "7c4189bb5f942a43b6905dc1a399bbcac194c4d25d05f3ad26c10a73e0023144"
-    },
-    "../apps/desktop/src/api.ts:28-31": {
-      "kind": "git",
-      "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
-      "lines": [
-        28,
         31
       ],
-      "hash": "b43abfb1754857a545e1d2164bb8435474b82940eac60660df1d1b207660f99c"
+      "hash": "01e660a44c7d58aa77916d70b94ac0a3df0d313ac71360f034e73052b77e2913"
+    },
+    "../apps/desktop/src/main.ts:210-224": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
+      "lines": [
+        210,
+        224
+      ],
+      "hash": "8098e6e39418cd5f9211d0a1e02240201ee64ca042448ac6bfa740b2e486a282"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"插件拿到 gwbKernel：只有 dataDir、version、emit、setShell 四个成员\"": {
+      "kind": "has"
     }
   },
   "content/docs/seams/loading.mdx": {
-    "has ../apps/desktop/tests/bare-import.test.ts \"裸名解析并 import 成功\"": {
-      "kind": "has"
-    },
     "has ../apps/desktop/tests/bare-import.test.ts \"junction 换指向后拿到新版本\"": {
       "kind": "has"
     },
@@ -328,6 +348,26 @@
     },
     "has ../apps/desktop/tests/main.test.ts \"will-quit：先拦下退出，卸载整棵插件树\"": {
       "kind": "has"
+    },
+    "../apps/desktop/src/main.ts:289-296": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
+      "lines": [
+        289,
+        296
+      ],
+      "hash": "e5fc330ba54df248849f026cb5a24553c3bb934bbb6ffac3f8df2be44e64ab75"
+    },
+    "../apps/desktop/src/bare-import.ts:6-18": {
+      "kind": "git",
+      "blob": "a03471e3e333cc5ca4ed2b9395d20c357248a4ef",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
+      "lines": [
+        6,
+        18
+      ],
+      "hash": "c30f3452be0321378ea98b9b8b0ec978e2afbe277fa03b85fc11f43d0d35eb1f"
     }
   },
   "content/docs/seams/log.mdx": {
@@ -483,7 +523,7 @@
     "../apps/desktop/src/index.html:14-24": {
       "kind": "git",
       "blob": "2022a595c9092b823c6e778628b2a9c90502fb62",
-      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
+      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
       "lines": [
         14,
         24
