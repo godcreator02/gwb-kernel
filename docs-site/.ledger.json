@@ -105,7 +105,7 @@
     "../installer/electron-builder.yml:all": {
       "kind": "git",
       "blob": "fd0527af292cce5a474795366126cf4425a8ea2b",
-      "commit": "b17001fbeba906da6f02267679a83f17b80b7e85",
+      "commit": "65faaf3b5e151e338bf18c5b3a866d2a30a0ae0f",
       "lines": [
         1,
         25
@@ -118,7 +118,7 @@
     "../installer/scripts/build.ps1:18-19": {
       "kind": "git",
       "blob": "8619c5dad65bcda754e6103d366716c25ed5dd85",
-      "commit": "b17001fbeba906da6f02267679a83f17b80b7e85",
+      "commit": "65faaf3b5e151e338bf18c5b3a866d2a30a0ae0f",
       "lines": [
         18,
         19
@@ -128,7 +128,7 @@
     "../installer/scripts/build.ps1:21-25": {
       "kind": "git",
       "blob": "8619c5dad65bcda754e6103d366716c25ed5dd85",
-      "commit": "b17001fbeba906da6f02267679a83f17b80b7e85",
+      "commit": "65faaf3b5e151e338bf18c5b3a866d2a30a0ae0f",
       "lines": [
         21,
         25
@@ -138,7 +138,7 @@
     "../installer/scripts/build.ps1:27-29": {
       "kind": "git",
       "blob": "8619c5dad65bcda754e6103d366716c25ed5dd85",
-      "commit": "b17001fbeba906da6f02267679a83f17b80b7e85",
+      "commit": "65faaf3b5e151e338bf18c5b3a866d2a30a0ae0f",
       "lines": [
         27,
         29
@@ -148,7 +148,7 @@
     "../installer/scripts/build.ps1:31-51": {
       "kind": "git",
       "blob": "8619c5dad65bcda754e6103d366716c25ed5dd85",
-      "commit": "b17001fbeba906da6f02267679a83f17b80b7e85",
+      "commit": "65faaf3b5e151e338bf18c5b3a866d2a30a0ae0f",
       "lines": [
         31,
         51
@@ -158,7 +158,7 @@
     "../installer/scripts/build.ps1:53-61": {
       "kind": "git",
       "blob": "8619c5dad65bcda754e6103d366716c25ed5dd85",
-      "commit": "b17001fbeba906da6f02267679a83f17b80b7e85",
+      "commit": "65faaf3b5e151e338bf18c5b3a866d2a30a0ae0f",
       "lines": [
         53,
         61
@@ -176,8 +176,8 @@
     },
     "../apps/desktop/scripts/build-react.ts:22-43": {
       "kind": "git",
-      "blob": "0128be0bd3d1797e9960a4321665323f014b559d",
-      "commit": "b17001fbeba906da6f02267679a83f17b80b7e85",
+      "blob": "45cd0d2915a17ee111baa2c207a7730a0b1613d2",
+      "commit": "65faaf3b5e151e338bf18c5b3a866d2a30a0ae0f",
       "lines": [
         22,
         43
@@ -187,25 +187,25 @@
     "has ../apps/desktop/tests/react-bundles.test.ts \"react.js 带具名导出\"": {
       "kind": "has"
     },
-    "../apps/desktop/package.json:38-42": {
-      "kind": "git",
-      "blob": "83b50e94178c5612b7fff21a623283bdfaeb4b2e",
-      "commit": "b17001fbeba906da6f02267679a83f17b80b7e85",
-      "lines": [
-        38,
-        42
-      ],
-      "hash": "9fd9a0205a550c3d750638e39b0ad60177136c5752ffb3f642d2a75c4943a6e6"
-    },
     "../package.json:6-13": {
       "kind": "git",
       "blob": "d702649f0e7f2216aac3e114557edcff374bfb9c",
-      "commit": "b17001fbeba906da6f02267679a83f17b80b7e85",
+      "commit": "65faaf3b5e151e338bf18c5b3a866d2a30a0ae0f",
       "lines": [
         6,
         13
       ],
       "hash": "9a25b100b4bb46e391240fdeea40bf6c2dfb0f694c87ad737453fb62fb211d36"
+    },
+    "../apps/desktop/package.json:25-29": {
+      "kind": "git",
+      "blob": "3f5737c7f66506919d65360af93c86289de16324",
+      "commit": "65faaf3b5e151e338bf18c5b3a866d2a30a0ae0f",
+      "lines": [
+        25,
+        29
+      ],
+      "hash": "4f5800f64af2f4e82e81bc88b519ff2cd2dee95c81f196519486b6036bc05641"
     }
   },
   "content/docs/installer.mdx": {
