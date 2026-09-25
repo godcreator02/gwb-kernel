@@ -7,7 +7,7 @@ description: 改内核本身时怎么用这个仓：什么时候进来、第一�
 
 ## 什么时候进这个仓
 
-**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）；新机器安装照仓根 `INSTALL.md`。**改内核本身才进这个仓**，改动只在隔离 home 里实际运行验证，不碰日常用的 `default`。写 `cordis.yml` 里的插件不在这里——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`。
+**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）；新机器安装照仓根 `INSTALL.md`。**改内核本身才进这个仓**，改动只在隔离 home 里实际运行验证，不碰日常用的 `default`。写 `cordis.yml` 里的插件不在这里——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在生命周期插件仓 `gwb-lifecycle-plugins`。
 
 ## 第一次准备
 

@@ -6,7 +6,7 @@ description: 仓根 AGENTS.md 由这一页生成——每次会话都要知道�
 # gwb-kernel
 
 god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只做第一个插件运行前必须完成的事，其余都做成插件。
-本仓只放两样：内核应用 `apps/desktop`（npm 包，包根同时导出内核给插件与页面的接口类型）、安装包（启动器 `apps/launcher` 与打包脚本 `installer/`）。内核包和插件一样装在 home 里，安装包只带启动器与 Electron。插件一个也不放——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`，都是 `cordis.yml` 里的普通插件。
+本仓只放两样：内核应用 `apps/desktop`（npm 包，包根同时导出内核给插件与页面的接口类型）、安装包（启动器 `apps/launcher` 与打包脚本 `installer/`）。内核包和插件一样装在 home 里，安装包只带启动器与 Electron。插件一个也不放——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在生命周期插件仓 `gwb-lifecycle-plugins`，都是 `cordis.yml` 里的普通插件。
 
 现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：入口页就是接缝图，也是全部包的总索引；只做什么、刻意不做什么、内核为什么装在 home 里、插件怎么声明兼容哪个内核见同目录 `design.mdx`，
 十条接缝各一页见 `seams/`，怎么跑、怎么测、怎么发版见 `develop.mdx`；每个包一页：内核应用见 `desktop/`（包根导出的接口类型见 `desktop/api.mdx`），安装包（含启动器）见 `installer.mdx`。

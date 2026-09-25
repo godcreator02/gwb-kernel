@@ -70,4 +70,4 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 
 {/* tree dir="../apps" depth="1" */}
 
-cordis 与 `cordis.yml` 里的插件都不在本仓：cordis 是外部依赖；命令插件在基础插件仓 `gwb-base-plugins`，插件管理在 devkit 仓 `gwb-devkit`，其余插件各在自己的仓里。内核包发到团队包源，插件从它的包根 `import type` 内核的接口类型；启动器只随安装包发布。
+cordis 与 `cordis.yml` 里的插件都不在本仓：cordis 是外部依赖；命令插件在基础插件仓 `gwb-base-plugins`，插件管理在生命周期插件仓 `gwb-lifecycle-plugins`，其余插件各在自己的仓里。内核包发到团队包源，插件从它的包根 `import type` 内核的接口类型；启动器只随安装包发布。

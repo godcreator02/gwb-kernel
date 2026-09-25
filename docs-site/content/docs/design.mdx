@@ -88,7 +88,7 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核�
 
 ## 内核仓只放内核
 
-内核仓只放两样：内核应用 `apps/desktop`，它的包根同时导出内核给插件与页面的接口类型；安装包——启动器 `apps/launcher` 与打包脚本 `installer/`。插件一个也不放：命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`；插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`，和 devkit 一起开发（[内核仓只放内核](/trajectory/2026-09-24-kernel-repo-only-kernel)）。两者都是 `cordis.yml` 里的普通插件，和别的插件一样装在 home 里、经插件管理升级、可以停用和卸载。
+内核仓只放两样：内核应用 `apps/desktop`，它的包根同时导出内核给插件与页面的接口类型；安装包——启动器 `apps/launcher` 与打包脚本 `installer/`。插件一个也不放：命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`；插件管理 `@godcreator/gwb-plugin-manager` 在生命周期插件仓 `gwb-lifecycle-plugins`，和 devkit 一起开发（[内核仓只放内核](/trajectory/2026-09-24-kernel-repo-only-kernel)）。两者都是 `cordis.yml` 里的普通插件，和别的插件一样装在 home 里、经插件管理升级、可以停用和卸载。
 
 新 home 里的内核包与插件由创建这个 home 的一方安装：日常用的 `default` 由装机的 agent 照仓根 `INSTALL.md` 用 pnpm 安装；测试用的隔离 home 由 devkit 的 `devkit.home.new` 安装。安装包只带启动器与 Electron，不带内核、插件，也不带 pnpm。
 

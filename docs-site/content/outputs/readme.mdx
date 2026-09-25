@@ -11,7 +11,7 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 主进程与页面的包名 import（bare specifier，直接写包名、不带相对路径的 import）解析、创建窗口与 IPC 通道、自身出错时让人看得见——其余功能全部由插件实现。
 
 本仓只放内核应用 `apps/desktop` 和安装包（启动器 `apps/launcher` 与打包脚本 `installer/`）。内核应用发布成 npm 包，和插件一样装在每个 home 里，由启动器加载；它的包根还导出内核给插件与页面的接口类型，插件从这里 `import type`。插件的源码在各自的仓里：命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，
-插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`；它们和别的插件一样写在 home 的 `cordis.yml` 里。
+插件管理 `@godcreator/gwb-plugin-manager` 在生命周期插件仓 `gwb-lifecycle-plugins`；它们和别的插件一样写在 home 的 `cordis.yml` 里。
 
 ## 开发
 

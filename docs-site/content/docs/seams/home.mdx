@@ -8,7 +8,7 @@ description: 连接内核应用与插件管理（devkit 仓的 @godcreator/gwb-p
 ## 连接的模块
 
 - [内核应用](/docs/desktop)：决定 home 的文件布局；带着 loader 与 include，条目树的形状、`cordis.yml` 怎么读写都由这两个包决定；按真实路径解析包名
-- 插件管理 `@godcreator/gwb-plugin-manager`（devkit 仓 `gwb-devkit`）：`cordis.yml` 里的普通插件，也是唯一写 home 的插件——经 loader 的条目树改 `cordis.yml`，运行机器上的 pnpm 改 `package.json` 与 `node_modules/`
+- 插件管理 `@godcreator/gwb-plugin-manager`（生命周期插件仓 `gwb-lifecycle-plugins`）：`cordis.yml` 里的普通插件，也是唯一写 home 的插件——经 loader 的条目树改 `cordis.yml`，运行机器上的 pnpm 改 `package.json` 与 `node_modules/`
 
 ## 接口
 
