@@ -62,11 +62,11 @@ cordis 与 `cordis.yml` 里的插件都不在本仓：cordis 是外部依赖；�
 
 - **想知道内核为什么长这样**：[关键设计](/docs/design)
 - **在本仓动手**（怎么跑、怎么测、怎么打安装包、怎么发版）：[开发](/docs/develop)；硬约束在仓根 AGENTS
-- **写插件**：先读[插件加载](/docs/seams/loading)、[内核服务](/docs/seams/kernel)、[日志](/docs/seams/log)；写插件的规矩与完整流程在 devkit 的说明书 `gwb-devkit`
+- **写插件**：先读[插件加载](/docs/seams/loading)、[内核服务](/docs/seams/kernel)、[日志](/docs/seams/log)
 - **做界面**：[IPC 通道](/docs/seams/ipc)、[外壳接管](/docs/seams/shell)、[页面上的 react](/docs/seams/page-react)
 - **换命令插件**：[命令转交](/docs/seams/commands)
 - **改内核应用**：[内核应用](/docs/desktop)看它有哪些功能、提供哪些接口
-- **改了内核之后**：改了接缝上已有的东西就升 x；插件在 peer 里写内核包的版本范围，插件管理会报出范围不包含新内核的插件（见[关键设计](/docs/design#插件在-peer-里写兼容哪个内核)）
+- **改了内核之后**：版本号升哪一位见[开发](/docs/develop#发版)；插件在 peer 里写内核包的版本范围，插件管理会报出范围不包含新内核的插件（见[关键设计](/docs/design#插件在-peer-里写兼容哪个内核)）
 - **第一次安装、另开一个 home**：[安装包与启动器](/docs/installer)开头的动画；给 agent 照着装的完整步骤在仓根 `INSTALL.md`
 - **改安装包或启动器**：[安装包与启动器](/docs/installer)、[启动器加载内核](/docs/seams/launcher)
 - **排查故障**：日志在 home 里的 `gwb.log`（[日志](/docs/seams/log)）；外壳没有加载出来时页面显示只读状态页（[外壳接管](/docs/seams/shell)）；找进程看 home 里的 `runtime.json`（[runtime.json](/docs/seams/runtime)）

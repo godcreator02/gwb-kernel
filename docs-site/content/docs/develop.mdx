@@ -7,7 +7,7 @@ description: 改内核本身时怎么准备、怎么从源码启动、隔离 hom
 
 ## 什么时候进这个仓
 
-**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）；新机器安装照仓根 `INSTALL.md`。**改内核本身才进这个仓**，改动只在隔离 home 里实际运行验证，不碰日常用的 `default`。写 `cordis.yml` 里的插件不在这里——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`，流程见 devkit 的说明书 `gwb-devkit`。
+**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）；新机器安装照仓根 `INSTALL.md`。**改内核本身才进这个仓**，改动只在隔离 home 里实际运行验证，不碰日常用的 `default`。写 `cordis.yml` 里的插件不在这里——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`。
 
 ## 第一次准备
 
@@ -47,7 +47,7 @@ cd apps\desktop; pnpm start
 {/* ref file="../package.json" lines="6-13" */}
 
 - **`pnpm check`**（仓根）：先构建内核包（连同 react 的打包产物与包根的类型声明：`main.test.ts` 用真实的打包产物启动内核），再对全仓做类型检查、lint 和测试。测试是 `apps`、`installer` 下各 `tests/` 目录里的测试（`installer` 那一个要调用本机的 pwsh 7）；`src/api.ts` 里的类型写坏了，内核的类型检查跟着失败
-- **`pnpm doc`**（仓根）：文档站的检查，不在 `pnpm check` 里：文档页引用的代码改了、生成物和正本不一致，都会报出来。引用的代码改了、页上的说法仍成立时，先提交代码，再只点名自己改过的页确认：`pnpm doc:confirm <页的路径…>`（路径相对 `docs-site/`）。不带路径会把别人还没复核的页一起确认掉
+- **`pnpm doc`**（仓根）：文档站的检查，不在 `pnpm check` 里；确认用仓根的 `pnpm doc:confirm <页的路径…>`，路径相对 `docs-site/`
 
 ## 测试
 
@@ -88,7 +88,7 @@ cd apps\desktop; pnpm start
 devkit.dev {"home":"<隔离 home 名>","dir":"<本仓根>","packages":["apps/desktop"]}
 ```
 
-它在本仓根构建，用 `pnpm pack` 把内核包打成包文件放进那个 home 的 `dev-packs\` 目录，经那个 home 的插件管理装上（`plugin-manager.update {"specs":{…}}`，连同内核包 peer 里写的 `cordis` 精确版本一起装；目标 home 的插件管理要 0.12.0 起），然后停掉那个 home 再启动，直到页面上 `shell.env` 报出的内核版本就是这次打包的版本号；回执的 `kernel.version` 就是它。开发版不发到团队源，也不用重打安装包。本仓要发的 npm 包只有内核包，所以 `packages` 只写 `apps/desktop`。
+本仓要发的 npm 包只有内核包，所以 `packages` 只写 `apps/desktop`。目标 home 的插件管理要 0.12.0 起。主进程里的内核换不掉，装完它会停掉那个 home 再启动，直到页面上 `shell.env` 报出的内核版本就是这次打包的版本号；回执的 `kernel.version` 就是它。不用重打安装包。
 
 **从源码启动**：改一次就想看一次、不想每次发开发版时用。
 
@@ -101,10 +101,8 @@ devkit.dev {"home":"<隔离 home 名>","dir":"<本仓根>","packages":["apps/des
    ```
 
    内核把调试端口写进 home 的 `runtime.json`（[runtime.json](/docs/seams/runtime)），`devkit.cdp` 从那里找到它；后一个开关让窗口被遮住时页面照常刷新，截图不会拿到旧画面
-2. 用 `devkit.cdp` 在这个 home 的页面上调命令、截图、读页面状态，例如 `devkit.cdp {"args":["<home 名>","cmd","plugin-manager.list"]}`
+2. 用 `devkit.cdp` 在这个 home 的页面上调命令、截图、读页面状态
 3. 看结果：home 里的 `gwb.log`；没有外壳或外壳启动失败时，页面上的[只读状态页](/docs/desktop)列出每个条目加载到哪一步
-
-实验材料放 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm workspace。
 
 ## 内核包怎么打包 react
 
@@ -173,16 +171,15 @@ pwsh installer\scripts\build.ps1
 
 ## 发版
 
-升哪一位版本号、依赖怎么写、发破坏性版本要多做什么，正本是 devkit 的说明书 `gwb-release`，**每次升版本号之前都读一遍**，这里只列本仓的要点：
+通用的发版步骤在说明书 `gwb-release`，这里只写内核包自己的：
 
-1. **隔离 home 里验证通过**，`pnpm check`、`pnpm doc` 都通过
-2. **升版本号并提交**：改 `apps/desktop/package.json` 的 `version`，包根导出的接口类型跟内核包用同一个版本号。git 工作区要干净。升哪一位按改没改接缝判断：
+1. **升版本号**：改 `apps/desktop/package.json` 的 `version`，包根导出的接口类型跟内核包用同一个版本号。升哪一位按改没改接缝判断：
    - **改了接缝上已有的东西就升 x**（`0.x.y` 里的 x）：十条接缝上已有的任何一样被改名、删除、改了形状或含义——包根导出的接口类型（`src/api.ts`）、IPC 通道、页面 importmap 里已有的包名、home 布局、`runtime.json` 的字段、日志行格式、内核包清单的 `engines.electron`——以及升级 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include`、`cordis` 的版本（拿不准会不会弄坏插件管理，一律按会弄坏算）。插件在 peer 里写内核包的 `^` 范围，插件管理拿它和运行中的内核比（[插件在 peer 里写兼容哪个内核](/docs/design#插件在-peer-里写兼容哪个内核)）；升了 x，所有插件的范围都不再包含新内核，要先照 `gwb-release` 通知下游
    - **只给接缝加东西（加类型、加可选字段）、只改内核内部或修 bug，升 y**：插件的 `^` 范围仍然包含新内核
-   - **包根导出的接口类型对插件只增不减**：能加一个可选字段、一个类型解决的，不删名字、不改形状（参数、返回值、回执字段的类型或含义）、不改调用方依赖的语义；非改不可时，照 `gwb-release` 的「发破坏版多做两步」先通知下游。契约之外的东西（日志行的格式、命令插件与插件管理的类型）不放进 `src/api.ts`。内核的 `main.ts` 自己用这些类型，本仓 `pnpm check` 当场发现内核这一侧形状不对；仓外的插件与页面代码要等新内核包发到团队包源、装上之后，才在各自仓的类型检查里发现（[包根导出的接口类型](/docs/desktop/api)）
-3. **发内核包到团队包源**：`devkit.release {"dir":"<本仓>","packages":["apps/desktop"]}`，别在包目录手动 `pnpm publish`
-4. **启动器或 Electron 变了才打安装包、发布到 gitea releases**：打包见上面[打安装包](#打安装包)。发布仓 `godcreator/gwb-kernel` 公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包；push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
+   - **包根导出的接口类型对插件只增不减**：能加一个可选字段、一个类型解决的，不删名字、不改形状（参数、返回值、回执字段的类型或含义）、不改调用方依赖的语义；非改不可时，照 `gwb-release` 的「发破坏性版本多做的两步」先通知下游。契约之外的东西（日志行的格式、命令插件与插件管理的类型）不放进 `src/api.ts`。内核的 `main.ts` 自己用这些类型，本仓 `pnpm check` 当场发现内核这一侧形状不对；仓外的插件与页面代码要等新内核包发到团队包源、装上之后，才在各自仓的类型检查里发现（[包根导出的接口类型](/docs/desktop/api)）
+2. **发内核包到团队包源**：`devkit.release` 的 `packages` 只写 `["apps/desktop"]`
+3. **启动器或 Electron 变了才打安装包、发布到 gitea releases**：打包见上面[打安装包](#打安装包)。发布仓 `godcreator/gwb-kernel` 公开，源码在同一个仓（只有 main 分支），release 附带 Windows 安装包；push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
    - **release 只上传 `gwb-setup-<版>.exe`**：便携 zip 只在本地构建、不上传
    - tag 跟安装包（启动器）的版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
    - **推送 tag 会让同名的草稿 release 自动公开**：要先存草稿、人工确认后再公开，就最后推 tag
-5. **本机升级**：先在隔离 home 里装新内核包验证，再升 default home 里的内核包并重启工作台；启动器变了才重新运行新版安装包。改了契约时先装新内核，再发用到新契约的插件：插件先到、内核还是旧的，插件拿到的 `gwbKernel` 就缺它要的东西。升了 x 时，再在新内核上测插件、把它们 peer 里内核包的范围改到新内核并发版——插件发版时 `devkit.release` 会检查这个范围
+4. **本机升级**：先在隔离 home 里装新内核包验证，再升 default home 里的内核包并重启工作台；启动器变了才重新运行新版安装包。改了契约时先装新内核，再发用到新契约的插件：插件先到、内核还是旧的，插件拿到的 `gwbKernel` 就缺它要的东西。升了 x 时，再在新内核上测插件、把它们 peer 里内核包的范围改到新内核并发版
