@@ -7,7 +7,7 @@ description: 仓根 INSTALL.md 由这一页生成——写给替用户安装 gwb
 
 你是替用户在一台 Windows 机器上安装 gwb 的 agent。**安装包只带启动器与 Electron，不带内核、不带插件，也不带 pnpm——内核包、`cordis` 与插件都由你用机器上装好的 pnpm 12（第 1 步）装进 home。** 启动器启动时从 home 里加载内核，home 里没有内核包就弹框说明、不启动。
 照下面做完，用户得到一个装好 11 个基础插件（包括命令插件、插件管理、MCP 入口）、MCP 入口开在 `http://127.0.0.1:2870/mcp` 的工作台，
-之后你（或别的 agent）通过这个 MCP 入口使用工作台。命令一律在 PowerShell 里运行。
+之后你（或别的 agent）通过这个 MCP 入口使用工作台。命令一律在 PowerShell 里运行。用户还要写自己的插件时，装完再照最后一节「开发插件」补齐开发要用的几样。
 
 ## 0. 先确认装没装过
 
@@ -258,7 +258,8 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 
 ## 之后
 
-- 找可装的插件：`run plugin-manager.search`；装第三方源（比如 `@j`）上的插件，先 `run plugin-manager.source.add {"scope":"@j","owner":"J"}`
+- 找可装的插件：`run plugin-manager.search`；装别的包名范围（比如 `@j`）的插件，先往 `~/.npmrc` 加那个范围的包源行，
+  写法见说明书 `gwb-plugin-manager` 的「配第三方包源」（`run skill.read {"name":"gwb-plugin-manager"}`）
 - 安装新插件：`run plugin-manager.install {"pkg":"@godcreator/gwb-<名>"}`——返回内容里带新条目的 `entryId`；
   `run plugin-manager.list` 里它是 `active: true` 就成功了，下一次调 `index` 就能看到它的命令
 - 插件有新版本：`run plugin-manager.update {"all":true}`，成功后 `run shell.reload` 整页重新加载（升级到 `gwb-mcp` 自己时连接会断一次，
@@ -266,3 +267,33 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 - 内核有新版本：`run plugin-manager.update {"specs":{"@godcreator/gwb-kernel-desktop":"latest"}}`，回执里 `pluginsOutsideRange` 是 peer 范围不包含新内核的插件，告诉用户；
   `restartRequired` 为 `true` 时关掉窗口（用命令行关就对 `runtime.json` 里那个 pid 调 `(Get-Process -Id <pid>).CloseMainWindow()`）→ 从开始菜单重新打开。
   重启之后 `run plugin-manager.list` 里 `kernelUntested` 为 true 的插件就是这些
+
+## 开发插件
+
+上面装好的工作台就是开发环境：建插件仓、在隔离 home 里验证、发版都是 devkit 插件的命令，做法写在说明书 `gwb-devkit`
+（`run skill.read {"name":"gwb-devkit"}`）与 `gwb-release` 里。这一节只讲开始之前机器上要多准备的几样，
+改的同样是用户级配置，动手前告诉用户。
+
+1. **Node 24 以上与 git**：插件模板的构建脚本直接用 `node` 运行 `build.ts`，模板的 `package.json` 写着 `"engines": { "node": ">=24" }`；
+   `devkit.release` 要求仓的 git 工作区干净。`node --version` 输出 24 以上、`git --version` 有输出就是装好了；
+   没有的话先征得用户同意，再 `winget install OpenJS.NodeJS.LTS` 与 `winget install Git.Git`，装完开一个新的 PowerShell 重新确认
+2. **插件发到用户自己名下**：`@godcreator` 只有维护者能发。用户向这台 gitea（`https://git.tianshen02.online:28377`）的管理员要一个账号，
+   下面把用户名写作 `<用户名>`。用户登录后在「设置 → 应用」生成一个访问令牌，权限里 package 选读写
+3. **往 `~/.npmrc` 追加这个用户的两行**（其他行一律不动，`@godcreator` 那行保留）：
+
+   ```
+   @<用户名>:registry=https://git.tianshen02.online:28377/api/packages/<用户名>/npm/
+   //git.tianshen02.online:28377/api/packages/<用户名>/npm/:_authToken=<令牌>
+   ```
+
+   第一行让安装与 `devkit.release` 找到这个包名范围的源，第二行是发布凭据。令牌向用户要，别写进回复与日志
+4. **建仓时带上包名范围与发布目标**：
+
+   ```
+   run devkit.scaffold {"name":"<短名>","dir":"<还不存在的绝对路径>","scope":"@<用户名>","registry":"https://git.tianshen02.online:28377/api/packages/<用户名>/npm/"}
+   ```
+
+   包名是 `@<用户名>/gwb-<短名>`，发布目标写进插件包的 `publishConfig.registry`。之后照 `gwb-devkit` 在隔离 home 里验证，照 `gwb-release` 发版，
+   再 `run plugin-manager.install {"pkg":"@<用户名>/gwb-<短名>"}` 装进 default
+
+别的机器要装这个插件：在那台机器的 `~/.npmrc` 加上第 3 步的第一行，再 `run plugin-manager.install`。
