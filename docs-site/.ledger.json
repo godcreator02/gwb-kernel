@@ -37,25 +37,25 @@
     "../apps/desktop/src/main.ts:35-47": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "e735f2fac140bfc7148f9ea49ff8667a086202c7",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         35,
         47
       ],
       "hash": "a26ad671b9042f1ca7153b5a39e3acb4b4f26a26802fe86b67907e41f058af54"
     },
-    "../apps/desktop/package.json:35-41": {
-      "kind": "git",
-      "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
-      "commit": "e735f2fac140bfc7148f9ea49ff8667a086202c7",
-      "lines": [
-        35,
-        41
-      ],
-      "hash": "9afff01b3cb1641af0223476b49d480a12be99fa6004205e9ee9c25b20e5d7c1"
-    },
     "has ../apps/desktop/tests/main.test.ts \"缺 package.json、cordis.yml 时补最小形态；userData 设在 <home>/electron\"": {
       "kind": "has"
+    },
+    "../apps/desktop/package.json:33-39": {
+      "kind": "git",
+      "blob": "65cc2cc011a37da066a74ec5c018612b67d6bd6a",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
+      "lines": [
+        33,
+        39
+      ],
+      "hash": "9afff01b3cb1641af0223476b49d480a12be99fa6004205e9ee9c25b20e5d7c1"
     }
   },
   "content/docs/desktop/boot.mdx": {
@@ -134,20 +134,10 @@
     }
   },
   "content/docs/develop.mdx": {
-    "../apps/desktop/package.json:24-30": {
-      "kind": "git",
-      "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
-      "lines": [
-        24,
-        30
-      ],
-      "hash": "0054b33c07bcd3f25ec4d751236453b2627e7bc425d79ac179eb2e2fdb1d0cb2"
-    },
     "../package.json:5-14": {
       "kind": "git",
       "blob": "d702649f0e7f2216aac3e114557edcff374bfb9c",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         5,
         14
@@ -172,7 +162,7 @@
     "../apps/desktop/scripts/build-react.ts:14-43": {
       "kind": "git",
       "blob": "45cd0d2915a17ee111baa2c207a7730a0b1613d2",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         14,
         43
@@ -185,7 +175,7 @@
     "../installer/scripts/build.ps1:15-16": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         15,
         16
@@ -195,7 +185,7 @@
     "../installer/scripts/build.ps1:18-22": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         18,
         22
@@ -205,7 +195,7 @@
     "../installer/scripts/build.ps1:24-26": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         24,
         26
@@ -215,7 +205,7 @@
     "../installer/scripts/build.ps1:28-48": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         28,
         48
@@ -225,7 +215,7 @@
     "../installer/scripts/build.ps1:50-58": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         50,
         58
@@ -235,7 +225,7 @@
     "../installer/electron-builder.yml:all": {
       "kind": "git",
       "blob": "f2c1ac8ae6c93478826241e336563ff05a69d897",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         1,
         23
@@ -245,12 +235,22 @@
     "../installer/scripts/build.ps1:10-13": {
       "kind": "git",
       "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         10,
         13
       ],
       "hash": "eb90509ef8733555708c819e17bdfe3dd2d497f6b5a1905fffa6f97e2fc0b5e6"
+    },
+    "../apps/desktop/package.json:23-29": {
+      "kind": "git",
+      "blob": "65cc2cc011a37da066a74ec5c018612b67d6bd6a",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
+      "lines": [
+        23,
+        29
+      ],
+      "hash": "0054b33c07bcd3f25ec4d751236453b2627e7bc425d79ac179eb2e2fdb1d0cb2"
     }
   },
   "content/docs/installer.mdx": {
@@ -487,7 +487,7 @@
     "../apps/launcher/src/main.ts:17-19": {
       "kind": "git",
       "blob": "f6547781d717176fa42bd978be16a85a31a7c5af",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         17,
         19
@@ -502,33 +502,33 @@
     },
     "../apps/desktop/package.json:8-8": {
       "kind": "git",
-      "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "blob": "65cc2cc011a37da066a74ec5c018612b67d6bd6a",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         8,
         8
       ],
       "hash": "3f8ef15817076dd75d89f3900392bea775518c8a836a76beb2ac0b9c712b7ce0"
     },
-    "../apps/desktop/package.json:31-33": {
-      "kind": "git",
-      "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
-      "lines": [
-        31,
-        33
-      ],
-      "hash": "d14faf1367c1399c93d85b7b7f599918e30151b9968d25654695137325010f8a"
-    },
     "../apps/launcher/src/launch-plan.ts:28-53": {
       "kind": "git",
       "blob": "7dff040f70bdaa876e353c4f05b40bf9fbdd052e",
-      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         28,
         53
       ],
       "hash": "29a02d7fa8f117282a3b11431b91cb224ea217b099d21e87b224e8384b2bd05c"
+    },
+    "../apps/desktop/package.json:30-32": {
+      "kind": "git",
+      "blob": "65cc2cc011a37da066a74ec5c018612b67d6bd6a",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
+      "lines": [
+        30,
+        32
+      ],
+      "hash": "d14faf1367c1399c93d85b7b7f599918e30151b9968d25654695137325010f8a"
     }
   },
   "content/docs/seams/commands.mdx": {
@@ -563,7 +563,7 @@
     "../apps/desktop/src/api.ts:all": {
       "kind": "git",
       "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         1,
         56
@@ -573,25 +573,25 @@
     "../apps/desktop/tsconfig.api.json:all": {
       "kind": "git",
       "blob": "2e25391fcdf34b7c1fccf4be998991210e2ed46e",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
       "lines": [
         1,
         11
       ],
       "hash": "d3be48890832898200942b1e7da228d351ddc03049014c81aecc0c979459ca80"
     },
-    "../apps/desktop/package.json:8-16": {
-      "kind": "git",
-      "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
-      "lines": [
-        8,
-        16
-      ],
-      "hash": "39a25bf9c5442d5a1068e2930c0ec31bd60f177934fc7cc54d788617371df1dd"
-    },
     "has ../apps/desktop/tests/importmap.test.ts \"包根的 types 指向接口类型那份 d.ts，default 是内核入口；清单顶层不写 types\"": {
       "kind": "has"
+    },
+    "../apps/desktop/package.json:8-15": {
+      "kind": "git",
+      "blob": "65cc2cc011a37da066a74ec5c018612b67d6bd6a",
+      "commit": "4e4e77cd7001795a5626c252c17c6d470a0aafea",
+      "lines": [
+        8,
+        15
+      ],
+      "hash": "4f8340723bcf9182f3837f53467d41c9399640c24912502492941abee88bd31d"
     }
   },
   "content/docs/seams/page-react.mdx": {
