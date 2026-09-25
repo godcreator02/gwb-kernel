@@ -52,6 +52,10 @@ domain: 这条线
 
 - 插件管理 0.13 删掉了 `plugin-manager.update-kernel`，升内核改成 `plugin-manager.update {"specs":{"@godcreator/gwb-kernel-desktop":"<版本>"}}`（插件管理自己把 `cordis` 对齐到内核包 peer 里的版本，`specs` 里写 `cordis` 直接报错）；`update {"all":true}` 不再整页重新加载，调用方升完自己调 `shell.reload`。`INSTALL.md` 的正本、开发页「发版」的本机升级、关键设计页、home 布局页、内核应用页里讲升内核的地方跟着改
 
+**版本号**
+
+- 内核包 0.7.0 → 0.7.1，升 y。对照 `gwb-release` 的契约清单：包根导出的接口类型、IPC 通道、importmap 的包名、home 布局、`runtime.json` 的字段、日志行格式、`engines.electron`、loader / include / `cordis` 的版本都没动；删掉的环境变量 `GWB_LOG_LIMIT_MB`、`productName`、安装包的便携 zip 与脚本都不在接缝上，其余是内部实现、测试与文档
+
 **推迟到下次升 x**
 
 这一轮找出来、但要改接缝上已有东西的八项，逐条写在路线页「下次升 x 时一起做」：启动时补 home 的两个文件、`gwb:command` 的顶层框架判断与主框架重定向拒绝、`runtime.json` 写不进只 warn、`cdp` 先校验端口再写、`GWB_HOME` 不设就用 `default`、只读状态页「一条条目都没有」与 loader 加载之前回空报告、包根导出的 `ShellBoot` / `GwbWindowApi.onShell` / `exports["."].default`、日志文件启动时打不开每 60 秒重试。任何一项单独做都要升 x、让所有插件的 peer 出范围，代价远大于收益；等内核本来就要升 x 时一起做，下游只需适配一次。
