@@ -40,6 +40,10 @@ domain: 这条线
 - `main.ts` 读 cordis 日志缓冲时去掉 `buffer?` 与 `buffer ?? []`：cordis 4.0.0-rc.10 的 `LoggerService` 把 `buffer = []` 声明成类字段，构造时 `Object.assign(self, this)` 复制到服务对象上，服务存在时缓冲一定存在
 - 格式化失败时退回 `args.join` 的 try/catch **保留**。清理检查时以为它挡的情形不存在，读 cordis 源码发现 `Logger.format` 的 `%o` 是 `JSON.stringify`：插件的日志参数里有循环引用或 BigInt 就抛。去掉它的话，抛出的异常会回到写日志的插件那次调用上；那一行已经进了 cordis 的缓冲，如果是 error 或 warn，之后每次拼只读状态页的错误行都会再抛，未捕获异常又写一行 error、再触发推送，每 200 毫秒循环一次。新加一条测试（插件写带循环引用参数的 error）固定这一点：临时去掉 try/catch 时它失败，报 `TypeError: Converting circular structure to JSON`
 
+**内核包清单**
+
+- 删掉 `apps/desktop/package.json` 的 `productName`。Electron 只从它运行的那个应用的清单读应用名：从安装版启动时那是启动器的清单（`app.asar` 里的 `package.json`，`productName` 仍是 `gwb-kernel`，安装目录与开始菜单项由安装包的 `electron-builder.yml` 决定），内核包只是被 import 的模块。只有在本仓 `pnpm start` 从源码启动时，应用名才从 `gwb-kernel` 变成包名；内核在 ready 之前就把 userData 设到 `<home>/electron`，home 位置按 `appData` 算、不看应用名，本仓也没有代码读应用名。没有实机启动核对
+
 **推迟到下次升 x**
 
 这一轮找出来、但要改接缝上已有东西的八项，逐条写在路线页「下次升 x 时一起做」：启动时补 home 的两个文件、`gwb:command` 的顶层框架判断与主框架重定向拒绝、`runtime.json` 写不进只 warn、`cdp` 先校验端口再写、`GWB_HOME` 不设就用 `default`、只读状态页「一条条目都没有」与 loader 加载之前回空报告、包根导出的 `ShellBoot` / `GwbWindowApi.onShell` / `exports["."].default`、日志文件启动时打不开每 60 秒重试。任何一项单独做都要升 x、让所有插件的 peer 出范围，代价远大于收益；等内核本来就要升 x 时一起做，下游只需适配一次。
