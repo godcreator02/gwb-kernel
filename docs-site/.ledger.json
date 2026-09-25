@@ -31,13 +31,13 @@
     "has ../apps/desktop/tests/main.test.ts \"已有的 package.json 不覆盖\"": {
       "kind": "has"
     },
-    "../apps/desktop/package.json:32-39": {
+    "../apps/desktop/package.json:31-38": {
       "kind": "git",
-      "blob": "87b698b8aa3094ab9f1967a50b95eb2f1b36553a",
-      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
+      "blob": "a85846f3fc04b4fc65db009bacb1e31fbbc7846d",
+      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
       "lines": [
-        32,
-        39
+        31,
+        38
       ],
       "hash": "5e6c0a70d786642e9b9de639caabd57adbf48a07f558481b1a38297b7e8a04c0"
     }
@@ -361,13 +361,13 @@
     "has ../apps/desktop/tests/main.test.ts \"开了合法的调试端口就写 cdp\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/main.ts:85-92": {
+    "../apps/desktop/src/main.ts:84-91": {
       "kind": "git",
-      "blob": "861d96320af4d5838e52b2e55ae32e544588d516",
-      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
       "lines": [
-        85,
-        92
+        84,
+        91
       ],
       "hash": "4cf4d485c21d2fe0fd166f7b0ad3d18214592361bebf553366b65ce745d2d7f0"
     }
@@ -376,7 +376,7 @@
     "../apps/launcher/src/main.ts:17-19": {
       "kind": "git",
       "blob": "f6547781d717176fa42bd978be16a85a31a7c5af",
-      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
+      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
       "lines": [
         17,
         19
@@ -389,23 +389,23 @@
     "has ../apps/launcher/tests/launch-plan.test.ts \"启动器带的 Electron 满足内核包声明的 engines.electron\"": {
       "kind": "has"
     },
-    "../apps/desktop/package.json:9-9": {
+    "../apps/desktop/package.json:8-8": {
       "kind": "git",
-      "blob": "3263147ed6ce14442ad24f7561d763a9071cd115",
-      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
+      "blob": "a85846f3fc04b4fc65db009bacb1e31fbbc7846d",
+      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
       "lines": [
-        9,
-        9
+        8,
+        8
       ],
       "hash": "3f8ef15817076dd75d89f3900392bea775518c8a836a76beb2ac0b9c712b7ce0"
     },
-    "../apps/desktop/package.json:31-33": {
+    "../apps/desktop/package.json:28-30": {
       "kind": "git",
-      "blob": "3263147ed6ce14442ad24f7561d763a9071cd115",
-      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
+      "blob": "a85846f3fc04b4fc65db009bacb1e31fbbc7846d",
+      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
       "lines": [
-        31,
-        33
+        28,
+        30
       ],
       "hash": "d14faf1367c1399c93d85b7b7f599918e30151b9968d25654695137325010f8a"
     }
@@ -442,7 +442,7 @@
     "../apps/desktop/src/api.ts:all": {
       "kind": "git",
       "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
+      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
       "lines": [
         1,
         56
@@ -452,7 +452,7 @@
     "../apps/desktop/tsconfig.api.json:all": {
       "kind": "git",
       "blob": "2e25391fcdf34b7c1fccf4be998991210e2ed46e",
-      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
+      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
       "lines": [
         1,
         11
@@ -468,13 +468,13 @@
     "has ../apps/desktop/tests/importmap.test.ts \"包根的 types 指向接口类型那份 d.ts，default 是内核入口\"": {
       "kind": "has"
     },
-    "../apps/desktop/package.json:9-17": {
+    "../apps/desktop/package.json:8-16": {
       "kind": "git",
-      "blob": "87b698b8aa3094ab9f1967a50b95eb2f1b36553a",
-      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
+      "blob": "a85846f3fc04b4fc65db009bacb1e31fbbc7846d",
+      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
       "lines": [
-        9,
-        17
+        8,
+        16
       ],
       "hash": "39a25bf9c5442d5a1068e2930c0ec31bd60f177934fc7cc54d788617371df1dd"
     }
