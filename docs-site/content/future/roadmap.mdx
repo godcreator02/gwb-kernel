@@ -15,3 +15,18 @@ description: 还没发生的事——各自在等什么前提条件；前提条�
 | **把安装包分发给别人** | 确实要装到别人的机器上 | pnpm 怎么放进构建产物（本机的安装包不带 pnpm，安装插件用的是机器上已有的那一份） |
 | **命令行** | 界面无法操作时，确实需要另一种操作方式 | 目前从安装版启动、把 `GWB_HOME` 与调试开关原样传给进程，这样是否仍然够用 |
 | **多个 home 的管理界面** | 确实需要同时照看几个 home | 同时运行多个 home 本身已经是安全的；缺的是在几个 home 之间切换和总览的功能——它多半不该放在内核里 |
+
+## 下次升 x 时一起做
+
+下面几项都是删掉或收紧内核已经对外承诺的行为，每一项都改了接缝上已有的东西。按 `gwb-release` 的规则，改一项内核就要升 x，所有插件 peer 里内核包的范围随之不再包含新内核、要在新内核上重新验过。单为其中一项付这个代价不值，所以都等内核因为别的原因本来就要升 x 时一起做（它们是在 [内核 0.7.1 清理](/trajectory/2026-09-25-kernel-0-7-1-cleanup) 时找出来的）。
+
+| 要做的 | 为什么值得做 | 改的是哪条接缝上的什么 |
+| --- | --- | --- |
+| **启动时不再补 home 的 `package.json` 与 `cordis.yml`**：删掉 `main.ts` 里的 `addMissingMinimalHomeFiles` | 内核包装在 home 里，启动器找到内核包的 home 一定已经有 `package.json`；`cordis.yml` 由创建 home 的一方写。补文件的场景已经不存在 | [home 布局与条目树](/docs/seams/home)：内核启动时保证 home 里有这两个文件 |
+| **删掉 `gwb:command` 的顶层框架判断**（`page-boundary.ts` 的 `isTopFrame`）**与主框架 `will-redirect` 的拒绝** | 按现在的窗口配置，iframe 里没有 `window.gwb`，主框架也跳不到别的地址，这两处判断走不到 | [IPC 通道](/docs/seams/ipc)：`gwb:command` 只接收顶层框架的调用、主框架重定向被拒绝并写 warn |
+| **`runtime.json` 写不进时启动失败**，不再只写一行 warn | devkit 和安装工作台的 agent 靠这份文件找到运行中的工作台；写不进时工作台照常启动，外部工具却找不到它 | [runtime.json](/docs/seams/runtime)：写不进只记一行警告 |
+| **`cdp` 字段原样写 `Number(开关值)`**，不先校验端口，开关给 0 时也写 | 开关值由启动内核的一方给，内核替它校验再决定写不写，属于替调用方纠正输入 | [runtime.json](/docs/seams/runtime)：开了合法的调试端口才写 `cdp` |
+| **`GWB_HOME` 必须给**，不设时直接报错，不再默认用 `default` | 不设就落到日常用的 `default`，从源码启动时忘了设会碰到日常数据 | 启动参数与[启动器加载内核](/docs/seams/launcher)：启动器与 `INSTALL.md` 都依赖「不设就是 `default`」 |
+| **只读状态页删掉「一条条目都没有」那句，loader 加载之前不回应 `gwb:hello`** | loader 加载之前页面请求当前值，内核回一份空报告，每次启动都先闪一下「`cordis.yml` 里一条条目都没有」这句误导的话（要先在实机上确认确实会闪） | [IPC 通道](/docs/seams/ipc)：页面订阅时发 `gwb:hello` 一定收到一份 `gwb:shell` |
+| **包根导出删掉 `ShellBoot` 与 `GwbWindowApi.onShell`，清单 `exports["."]` 删掉 `default`、只留 `types`** | 外壳的默认导出与 `onShell` 只在内核自己的页面入口里用；启动器按清单的 `main` 加载内核，用不到 `exports["."].default` | [包根导出的接口类型](/docs/desktop/api)：删导出的类型与字段 |
+| **`gwb.log` 启动时打不开改成启动失败**，删掉每 60 秒重新打开一次 | 打不开日志文件多半是 home 目录本身有问题，照常启动会让之后的问题都查不到日志 | [日志](/docs/seams/log)：写日志出任何问题都只报一句、不让内核崩溃 |
