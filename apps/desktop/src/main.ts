@@ -9,7 +9,7 @@ import type { GwbKernelApi } from './api.js'
 import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
-import { LOG_LIMIT_BYTES, openLogFile } from './log-file.js'
+import { LOG_LIMIT_BYTES, openLogFile, type LogFile } from './log-file.js'
 import { isReloadOfCurrentDocument, isTopFrame, opensInSystemBrowser } from './page-boundary.js'
 
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = electron
@@ -32,35 +32,42 @@ const RECENT_ERROR_LINES_SHOWN = 20
 const SHELL_PUSH_DEBOUNCE_MS = 200
 const QUIT_CLEANUP_TIMEOUT_MS = 5000
 
-const MINIMAL_HOME_FILES = [
-  ['package.json', '{\n  "name": "gwb-home",\n  "private": true\n}\n'],
-  ['cordis.yml', '[]\n'],
-] as const
+/** 由安装步骤或 devkit.home.new 写好，内核只检查、不补 */
+const HOME_FILES_REQUIRED_AT_BOOT = ['package.json', 'cordis.yml'] as const
 
 const stackOf = (e: unknown): string => (e instanceof Error ? (e.stack ?? e.message) : String(e))
-
-function addMissingMinimalHomeFiles(homeDir: string): void {
-  for (const [file, content] of MINIMAL_HOME_FILES) {
-    const target = path.join(homeDir, file)
-    if (!fs.existsSync(target)) fs.writeFileSync(target, content)
-  }
-}
 
 const homePath = homePathFor(process.env.GWB_HOME ?? 'default', app.getPath('appData'))
 fs.mkdirSync(homePath, { recursive: true })
 // 单实例锁按 userData 区分：同一个 home 的不同写法（大小写、junction、斜杠）必须 realpath 成同一个字符串
 const dataDir = fs.realpathSync.native(homePath)
 app.setPath('userData', path.join(dataDir, 'electron'))
-addMissingMinimalHomeFiles(dataDir)
 
-const logFile = openLogFile({
-  file: path.join(dataDir, 'gwb.log'),
-  limitBytes: LOG_LIMIT_BYTES,
-  // 不走 writeLogLine：它也写这个文件，出错时会再次进入自己
-  onWarn: (message) => {
-    process.stderr.write(`${new Date().toISOString()} warn kernel ${message}\n`)
-  },
-})
+// 没有终端时每写一次 stderr 都抛 EPIPE，忽略它，日志文件照常写
+process.stderr.on('error', () => {})
+
+const logFile = openLogFileOrExit(path.join(dataDir, 'gwb.log'))
+
+/** 日志文件用不了：只写 stderr 再弹框退出，不经 reportBootFailureAndExit（它要写这个文件） */
+function openLogFileOrExit(file: string): LogFile {
+  try {
+    return openLogFile({
+      file,
+      limitBytes: LOG_LIMIT_BYTES,
+      // 不走 writeLogLine：它也写这个文件，出错时会再次进入自己
+      onWarn: (message) => {
+        process.stderr.write(`${new Date().toISOString()} warn kernel ${message}\n`)
+      },
+    })
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err)
+    process.stderr.write(`${new Date().toISOString()} error kernel 启动失败：${reason}\n`)
+    dialog.showErrorBox('gwb 启动失败', reason)
+    app.exit(1)
+    // 模块求值时 app.exit 当场结束进程、走不到这一行；throw 让这条路径在类型上不返回
+    throw err
+  }
+}
 
 /** cordis 实例建好之前、以及启动失败时才直接调用；其余日志一律走 cordis logger，注册了 exporter 的插件才收得到 */
 function writeLogLine(level: string, name: string, message: string): void {
@@ -69,33 +76,49 @@ function writeLogLine(level: string, name: string, message: string): void {
   logFile.write(line)
 }
 
-// 没有终端时每写一次 stderr 都抛 EPIPE，忽略它，日志文件照常写
-process.stderr.on('error', () => {})
-
 if (!app.requestSingleInstanceLock()) {
   writeLogLine('error', 'kernel', `home ${dataDir} 已有实例在运行，本实例退出`)
   app.exit(1)
 }
 
-function isValidPort(port: number): boolean {
-  return Number.isInteger(port) && port > 0 && port < 65536
+const missingHomeFiles = HOME_FILES_REQUIRED_AT_BOOT.filter((file) => !fs.existsSync(path.join(dataDir, file)))
+if (missingHomeFiles.length > 0) {
+  reportBootFailureAndExit(
+    `home ${dataDir} 里缺 ${missingHomeFiles.join('、')}。package.json 与 cordis.yml 由安装步骤（INSTALL.md）或 devkit.home.new 准备，内核不补`,
+  )
 }
 
-function runtimeRecord(debuggingPort: number): Record<string, unknown> {
+/** 开关原值要是十进制整数且在 1–65535 之间 */
+function isPortNumber(switchValue: string): boolean {
+  if (!/^[0-9]+$/.test(switchValue)) return false
+  const port = Number(switchValue)
+  return port >= 1 && port <= 65535
+}
+
+/** 没给调试端口时不写 `cdp` */
+function runtimeRecord(debuggingPort: number | undefined): Record<string, unknown> {
   return {
     pid: process.pid,
     startedAt: Date.now(),
     version: kernelVersion,
-    ...(isValidPort(debuggingPort) ? { cdp: debuggingPort } : {}),
+    ...(debuggingPort === undefined ? {} : { cdp: debuggingPort }),
   }
 }
 
-const debuggingPort = Number(app.commandLine.getSwitchValue('remote-debugging-port'))
-try {
-  fs.writeFileSync(path.join(dataDir, 'runtime.json'), JSON.stringify(runtimeRecord(debuggingPort), null, 2) + '\n')
-} catch (err) {
-  writeLogLine('warn', 'kernel', `runtime.json 写入失败：${stackOf(err)}`)
+function writeRuntimeRecord(debuggingPort: number | undefined): void {
+  const runtimeFile = path.join(dataDir, 'runtime.json')
+  try {
+    fs.writeFileSync(runtimeFile, JSON.stringify(runtimeRecord(debuggingPort), null, 2) + '\n')
+  } catch (err) {
+    reportBootFailureAndExit(`runtime.json 写入失败（${runtimeFile}）：${stackOf(err)}`)
+  }
 }
+
+// 没给这个开关时是空串
+const debuggingPortSwitch = app.commandLine.getSwitchValue('remote-debugging-port')
+if (debuggingPortSwitch === '') writeRuntimeRecord(undefined)
+else if (isPortNumber(debuggingPortSwitch)) writeRuntimeRecord(Number(debuggingPortSwitch))
+else reportBootFailureAndExit(`--remote-debugging-port 给的是 ${JSON.stringify(debuggingPortSwitch)}，不是 1–65535 的整数`)
 
 const ctx = new Context()
 // loader 与 include 从根上下文继承这个模块解析起点
@@ -246,7 +269,7 @@ function openInSystemBrowser(url: string): void {
   shell.openExternal(url).catch((err) => kernelLog.warn(`系统浏览器没能打开 ${url}：${stackOf(err)}`))
 }
 
-/** 页面能调整条命令总线，所以主框架只能是内核的 index.html：跳走、重定向一律拒绝；开新窗口一律 deny，http、https 地址改由系统浏览器打开 */
+/** 页面能调用整条命令总线，所以主框架只能是内核的 index.html：跳走、重定向一律拒绝；开新窗口一律 deny，http、https 地址改由系统浏览器打开 */
 function lockPageToIndexHtml(webContents: electron.WebContents): void {
   const refuse = (what: string, url: string): void => kernelLog.warn(`页面只能是内核的 index.html，拒绝${what} ${url}`)
   webContents.on('will-navigate', (event) => {

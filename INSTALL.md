@@ -89,9 +89,9 @@ New-Item -ItemType Directory -Force $gwbHome | Out-Null
 [IO.File]::WriteAllText("$gwbHome\package.json", '{ "name": "gwb-home", "private": true }')
 Set-Location $gwbHome
 
-# 装内核包与 cordis：两个都写精确版本号，cordis 的版本就是内核包 peer 里写的那个
+# 装内核包与 cordis：内核包照 pnpm 默认写 ^ 范围；cordis 写精确版本号，就是内核包 peer 里写的那个
 $kernel = & $pnpm view @godcreator/gwb-kernel-desktop dist-tags.latest
-& $pnpm add --save-exact "@godcreator/gwb-kernel-desktop@$kernel"
+& $pnpm add "@godcreator/gwb-kernel-desktop@$kernel"
 $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json -Raw | ConvertFrom-Json).peerDependencies.cordis
 & $pnpm add --save-exact "cordis@$cordis"   # pnpm 装内核包时多半已按 peer 装好 cordis，会说 Already up to date；这一条是把它按精确版本号写进清单
 [IO.File]::WriteAllText("$gwbHome\cordis.yml", @'

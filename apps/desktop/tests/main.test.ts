@@ -6,8 +6,8 @@ import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { GwbKernelApi } from '../src/api.js'
 
 /**
- * main.ts 的行为锁：electron 换成假的，cordis、loader、include 用真的，home 是临时目录。
- * 每个用例重新求值一次 main.ts（vi.resetModules），模块求值时注册的进程监听在用例结束时摘掉
+ * main.ts 的行为测试：electron 换成假的，cordis、loader、include 用真的，home 是临时目录。
+ * 每个用例重新求值一次 main.ts（vi.resetModules），模块求值时注册的进程监听在用例结束时移除
  */
 
 const harness = vi.hoisted(() => ({ electron: {} as Record<string, unknown> }))
@@ -181,6 +181,13 @@ function writeFiles(root: string, files: Record<string, string>): void {
   }
 }
 
+/** 内核只检查、不补 package.json 与 cordis.yml，夹具自己先写好 */
+function homeWithRequiredFiles(): string {
+  const home = makeTemporaryDir('gwb-main-home-')
+  writeFiles(home, { 'package.json': JSON.stringify({ name: 'gwb-home', private: true }), 'cordis.yml': '[]\n' })
+  return home
+}
+
 function listenerSnapshot(): Map<string, Set<unknown>> {
   const snapshot = new Map<string, Set<unknown>>()
   snapshot.set('process:unhandledRejection', new Set(process.listeners('unhandledRejection')))
@@ -219,8 +226,11 @@ async function importMain(options: BootOptions): Promise<BootedKernel> {
   process.env.GWB_HOME = options.gwbHome
   const before = listenerSnapshot()
   vi.resetModules()
-  await import('../src/main')
-  processListenersAddedByMain = listenersAddedSince(before)
+  try {
+    await import('../src/main')
+  } finally {
+    processListenersAddedByMain = listenersAddedSince(before)
+  }
   const homePath = /[\\/]/.test(options.gwbHome) ? path.resolve(options.gwbHome) : path.join(appData, 'gwb-kernel', 'homes', options.gwbHome)
   const dataDir = fs.realpathSync.native(homePath)
   const logFile = path.join(dataDir, 'gwb.log')
@@ -279,18 +289,23 @@ async function quitAndWaitForCleanup(booted: BootedKernel): Promise<{ preventDef
 }
 
 const realOpenSync = fs.openSync.bind(fs)
+let logFileOpenFails = false
 vi.spyOn(fs, 'openSync').mockImplementation((...args: Parameters<typeof fs.openSync>) => {
+  if (logFileOpenFails && String(args[0]).endsWith('gwb.log')) throw new Error('gwb.log 打不开（测试造的）')
   const descriptor = realOpenSync(...args)
   if (String(args[0]).endsWith('gwb.log')) openedDescriptors.push(descriptor)
   return descriptor
 })
 
-let stderrWrite: { mockRestore(): void } | undefined
-function silenceStderr(): void {
-  stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+let stderrWrite: Mock | undefined
+function silenceStderr(): Mock {
+  const spy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true) as unknown as Mock
+  stderrWrite = spy
+  return spy
 }
 
 afterEach(() => {
+  logFileOpenFails = false
   for (const [key, listener] of processListenersAddedByMain) {
     const [target, event] = key.split(':') as ['process' | 'stderr', string]
     if (target === 'process') process.removeListener(event, listener)
@@ -306,39 +321,101 @@ afterEach(() => {
   for (const dir of temporaryDirs.splice(0)) fs.rmSync(dir, { recursive: true, force: true })
 })
 
+function bootFailureDialogBody(electron: FakeElectron): string {
+  expect(electron.showErrorBox).toHaveBeenCalledTimes(1)
+  const [title, body] = electron.showErrorBox.mock.calls[0] as [string, string]
+  expect(title).toBe('gwb 启动失败')
+  return body
+}
+
 describe('main.ts：home 的准备', () => {
-  it('GWB_HOME 带路径分隔符就当目录本身；缺 package.json、cordis.yml 时补最小形态；userData 设在 <home>/electron', async () => {
+  it('GWB_HOME 带路径分隔符就当目录本身；userData 设在 <home>/electron；home 里的文件原样不动', async () => {
     silenceStderr()
-    const home = path.join(makeTemporaryDir('gwb-main-root-'), 'fresh-home')
+    const home = homeWithRequiredFiles()
     const booted = await importMain({ gwbHome: home })
-    expect(fs.readFileSync(path.join(booted.dataDir, 'package.json'), 'utf8')).toBe('{\n  "name": "gwb-home",\n  "private": true\n}\n')
-    expect(fs.readFileSync(path.join(booted.dataDir, 'cordis.yml'), 'utf8')).toBe('[]\n')
+    expect(booted.dataDir).toBe(fs.realpathSync.native(home))
     expect(booted.electron.setPath).toHaveBeenCalledWith('userData', path.join(booted.dataDir, 'electron'))
+    expect(fs.readFileSync(path.join(booted.dataDir, 'package.json'), 'utf8')).toBe(JSON.stringify({ name: 'gwb-home', private: true }))
+    expect(booted.electron.exit).not.toHaveBeenCalled()
   })
 
-  it('GWB_HOME 只写名字就放在 appData/gwb-kernel/homes/<名字>；已有的 package.json 不覆盖', async () => {
+  it('GWB_HOME 只写名字就放在 appData/gwb-kernel/homes/<名字>', async () => {
     silenceStderr()
     const appData = makeTemporaryDir('gwb-main-appdata-')
     const homePath = path.join(appData, 'gwb-kernel', 'homes', 'named-home')
-    writeFiles(homePath, { 'package.json': '{"name":"mine"}' })
+    writeFiles(homePath, { 'package.json': '{"name":"mine"}', 'cordis.yml': '[]\n' })
     const booted = await importMain({ gwbHome: 'named-home', appData })
     expect(booted.dataDir).toBe(fs.realpathSync.native(homePath))
-    expect(fs.readFileSync(path.join(booted.dataDir, 'package.json'), 'utf8')).toBe('{"name":"mine"}')
-    expect(fs.readFileSync(path.join(booted.dataDir, 'cordis.yml'), 'utf8')).toBe('[]\n')
+    expect(booted.electron.exit).not.toHaveBeenCalled()
+  })
+
+  it('home 目录不存在时创建它，缺 package.json、cordis.yml 启动失败：对话框与日志写明缺哪两个、home 在哪、由谁准备，内核不补', async () => {
+    silenceStderr()
+    const home = path.join(makeTemporaryDir('gwb-main-root-'), 'fresh-home')
+    const booted = await importMain({ gwbHome: home })
+    expect(booted.electron.exit).toHaveBeenCalledWith(1)
+    const body = bootFailureDialogBody(booted.electron)
+    expect(body).toContain(`home ${booted.dataDir} 里缺 package.json、cordis.yml`)
+    expect(body).toContain('INSTALL.md')
+    expect(body).toContain('devkit.home.new')
+    expect(body).toContain(path.join(booted.dataDir, 'gwb.log'))
+    expect(booted.readLog()).toContain(`error kernel 启动失败：home ${booted.dataDir} 里缺 package.json、cordis.yml`)
+    expect(fs.existsSync(path.join(booted.dataDir, 'package.json'))).toBe(false)
+    expect(fs.existsSync(path.join(booted.dataDir, 'cordis.yml'))).toBe(false)
+  })
+
+  it('只缺 package.json 或只缺 cordis.yml：启动失败，只报缺的那一个', async () => {
+    silenceStderr()
+    const cases: { present: Record<string, string>; missing: string; notMissing: string }[] = [
+      { present: { 'cordis.yml': '[]\n' }, missing: 'package.json', notMissing: 'cordis.yml' },
+      { present: { 'package.json': '{}' }, missing: 'cordis.yml', notMissing: 'package.json' },
+    ]
+    for (const { present, missing, notMissing } of cases) {
+      const home = makeTemporaryDir('gwb-main-home-')
+      writeFiles(home, present)
+      const booted = await importMain({ gwbHome: home })
+      expect(booted.electron.exit).toHaveBeenCalledWith(1)
+      const body = bootFailureDialogBody(booted.electron)
+      expect(body).toContain(`home ${booted.dataDir} 里缺 ${missing}。`)
+      expect(body).not.toContain(`缺 ${notMissing}`)
+      expect(booted.readLog()).toContain(`error kernel 启动失败：home ${booted.dataDir} 里缺 ${missing}。`)
+      expect(fs.existsSync(path.join(booted.dataDir, missing))).toBe(false)
+    }
+  })
+})
+
+describe('main.ts：日志文件', () => {
+  it('gwb.log 打不开就启动失败：只写 stderr，对话框写明文件路径与原因，退出码 1，不再往下启动', async () => {
+    const stderrSpy = silenceStderr()
+    logFileOpenFails = true
+    const home = homeWithRequiredFiles()
+    await expect(importMain({ gwbHome: home })).rejects.toThrow('gwb.log 打不开（测试造的）')
+    // importMain 抛出时拿不到它返回的假 electron，从 harness 上取
+    const electron = harness.electron as { app: { exit: Mock }; dialog: { showErrorBox: Mock } }
+    const logFile = path.join(fs.realpathSync.native(home), 'gwb.log')
+    expect(electron.app.exit).toHaveBeenCalledWith(1)
+    expect(electron.dialog.showErrorBox).toHaveBeenCalledTimes(1)
+    const [title, body] = electron.dialog.showErrorBox.mock.calls[0] as [string, string]
+    expect(title).toBe('gwb 启动失败')
+    expect(body).toBe(`日志文件打不开（${logFile}）：gwb.log 打不开（测试造的）`)
+    const stderrText = stderrSpy.mock.calls.map((call) => String(call[0])).join('')
+    expect(stderrText).toContain(`error kernel 启动失败：日志文件打不开（${logFile}）：gwb.log 打不开（测试造的）`)
+    expect(fs.existsSync(logFile)).toBe(false)
+    expect(fs.existsSync(path.join(home, 'runtime.json'))).toBe(false)
   })
 })
 
 describe('main.ts：单实例锁与 runtime.json', () => {
   it('拿不到单实例锁：日志写明已有实例在运行，退出码 1', async () => {
     silenceStderr()
-    const booted = await importMain({ gwbHome: makeTemporaryDir('gwb-main-home-'), singleInstanceLockGranted: false })
+    const booted = await importMain({ gwbHome: homeWithRequiredFiles(), singleInstanceLockGranted: false })
     expect(booted.readLog()).toContain(`error kernel home ${booted.dataDir} 已有实例在运行，本实例退出`)
     expect(booted.electron.exit).toHaveBeenCalledWith(1)
   })
 
   it('runtime.json 每次启动整份重写：pid、启动时刻、版本；没开调试端口就没有 cdp', async () => {
     silenceStderr()
-    const home = makeTemporaryDir('gwb-main-home-')
+    const home = homeWithRequiredFiles()
     writeFiles(home, { 'runtime.json': '{"stale":true}' })
     const before = Date.now()
     const booted = await importMain({ gwbHome: home })
@@ -350,19 +427,40 @@ describe('main.ts：单实例锁与 runtime.json', () => {
     expect(fs.readFileSync(path.join(booted.dataDir, 'runtime.json'), 'utf8').endsWith('}\n')).toBe(true)
   })
 
-  it('开了合法的调试端口就写 cdp；不是 1–65535 的整数就不写', async () => {
+  it('开了合法的调试端口就写 cdp', async () => {
     silenceStderr()
-    const withPort = await importMain({ gwbHome: makeTemporaryDir('gwb-main-home-'), remoteDebuggingPort: '9222' })
+    const withPort = await importMain({ gwbHome: homeWithRequiredFiles(), remoteDebuggingPort: '9222' })
     expect(JSON.parse(fs.readFileSync(path.join(withPort.dataDir, 'runtime.json'), 'utf8'))).toMatchObject({ cdp: 9222 })
+    expect(withPort.electron.exit).not.toHaveBeenCalled()
+  })
+
+  it('调试端口给的不是 1–65535 的整数：启动失败，对话框与日志写明给的原值，不写 runtime.json', async () => {
+    silenceStderr()
     for (const badPort of ['abc', '0', '65536', '1.5']) {
-      const booted = await importMain({ gwbHome: makeTemporaryDir('gwb-main-home-'), remoteDebuggingPort: badPort })
-      expect(JSON.parse(fs.readFileSync(path.join(booted.dataDir, 'runtime.json'), 'utf8'))).not.toHaveProperty('cdp')
+      const booted = await importMain({ gwbHome: homeWithRequiredFiles(), remoteDebuggingPort: badPort })
+      expect(booted.electron.exit).toHaveBeenCalledWith(1)
+      const expectedMessage = `--remote-debugging-port 给的是 "${badPort}"，不是 1–65535 的整数`
+      expect(bootFailureDialogBody(booted.electron)).toContain(expectedMessage)
+      expect(booted.readLog()).toContain(`error kernel 启动失败：${expectedMessage}`)
+      expect(fs.existsSync(path.join(booted.dataDir, 'runtime.json'))).toBe(false)
     }
+  })
+
+  it('runtime.json 写不进：启动失败，对话框与日志写明文件路径与原因', async () => {
+    silenceStderr()
+    const home = homeWithRequiredFiles()
+    // 路径被目录占着，writeFileSync 必失败
+    fs.mkdirSync(path.join(home, 'runtime.json'))
+    const booted = await importMain({ gwbHome: home })
+    expect(booted.electron.exit).toHaveBeenCalledWith(1)
+    const runtimeFile = path.join(booted.dataDir, 'runtime.json')
+    expect(bootFailureDialogBody(booted.electron)).toContain(`runtime.json 写入失败（${runtimeFile}）：`)
+    expect(booted.readLog()).toContain(`error kernel 启动失败：runtime.json 写入失败（${runtimeFile}）：`)
   })
 
   it('第二个实例启动时把已打开的窗口调到前面；还没有窗口时什么都不做', async () => {
     silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
     const window = booted.electron.windows[0]!
     booted.electron.appEvents.emit('second-instance')
     expect(window.show).toHaveBeenCalled()
@@ -376,7 +474,7 @@ describe('main.ts：单实例锁与 runtime.json', () => {
 describe('main.ts：启动', () => {
   it('ready 之后：去掉默认菜单、开一个暗底不闪白的窗口、加载 index.html，加载完写 up 一行', async () => {
     silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
     expect(booted.electron.setApplicationMenu).toHaveBeenCalledWith(null)
     expect(booted.electron.windows).toHaveLength(1)
     const window = booted.electron.windows[0]!
@@ -391,7 +489,7 @@ describe('main.ts：启动', () => {
 
   it('启动失败：写一行 error、弹错误框（带 gwb.log 路径）、退出码 1', async () => {
     silenceStderr()
-    const booted = await importMain({ gwbHome: makeTemporaryDir('gwb-main-home-'), loadFileFails: true, resolveReady: true })
+    const booted = await importMain({ gwbHome: homeWithRequiredFiles(), loadFileFails: true, resolveReady: true })
     await vi.waitFor(() => expect(booted.electron.exit).toHaveBeenCalledWith(1), { timeout: 10_000 })
     expect(booted.readLog()).toMatch(/error kernel .*loadFile 失败（测试造的）/)
     const [title, body] = booted.electron.showErrorBox.mock.calls[0] as [string, string]
@@ -402,7 +500,7 @@ describe('main.ts：启动', () => {
 
   it('页面 console 进 cordis 日志，名字是 renderer，warning 记成 warn', async () => {
     silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
     const window = booted.electron.windows[0]!
     window.webContents.events.emit('console-message', { level: 'warning', message: '页面说了一句警告' })
     window.webContents.events.emit('console-message', { level: 'error', message: '页面说了一句错误' })
@@ -418,7 +516,7 @@ describe('main.ts：启动', () => {
 
   it('页面边界：主框架跳到别处（包括 http、https）、主框架的重定向一律拒绝并记一行 warn；整页重新加载放行', async () => {
     silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
     const webContents = booted.electron.windows[0]!.webContents
     const navigationTo = (url: string, extra: Record<string, unknown> = {}) => ({ url, preventDefault: vi.fn(), ...extra })
 
@@ -445,7 +543,7 @@ describe('main.ts：启动', () => {
 
   it('window.open：窗口一律 deny；http、https 交给系统浏览器并记一行 info，别的协议拒绝并记一行 warn', async () => {
     silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
     const webContents = booted.electron.windows[0]!.webContents
 
     expect(webContents.windowOpenHandler?.({ url: 'https://example.com/popup' })).toEqual({ action: 'deny' })
@@ -461,7 +559,7 @@ describe('main.ts：启动', () => {
 
   it('window.open：系统浏览器打开失败只记一行 warn（带地址与错误），不抛', async () => {
     silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-'), openExternalFails: true })
+    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles(), openExternalFails: true })
     const webContents = booted.electron.windows[0]!.webContents
 
     expect(webContents.windowOpenHandler?.({ url: 'https://example.com/broken' })).toEqual({ action: 'deny' })
@@ -474,7 +572,7 @@ describe('main.ts：启动', () => {
 
   it('进程里没被处理的 rejection 与异常记成 kernel 的 error，不退出', async () => {
     silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
     const onRejection = processListenersAddedByMain.find(([key]) => key === 'process:unhandledRejection')?.[1]
     const onException = processListenersAddedByMain.find(([key]) => key === 'process:uncaughtException')?.[1]
     onRejection?.(new Error('插件里没接住的 rejection'))
@@ -488,7 +586,7 @@ describe('main.ts：启动', () => {
 
   it('没有终端时写 stderr 报的错被吞掉', async () => {
     silenceStderr()
-    await importMain({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    await importMain({ gwbHome: homeWithRequiredFiles() })
     expect(processListenersAddedByMain.some(([key]) => key === 'stderr:error')).toBe(true)
   })
 })
@@ -496,7 +594,7 @@ describe('main.ts：启动', () => {
 describe('main.ts：IPC 通道', () => {
   it('gwb:command：命令名不是字符串、没有命令服务时回失败回执', async () => {
     silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
     const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
     expect(await relayCommand(topFrameEvent, 42, undefined)).toEqual({ ok: false, error: '命令名要是字符串' })
     expect(await relayCommand(topFrameEvent, 'demo.hello', undefined)).toEqual({ ok: false, error: '没有命令服务（ctx.gwbCommands），无法执行 demo.hello' })
@@ -517,7 +615,7 @@ describe('main.ts：IPC 通道', () => {
 
   it('gwb:hello：向发来的页面回一条整份外壳状态；没有外壳时 url 是 null，report 列出 home 与条目', async () => {
     silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
     const sender = { send: vi.fn() }
     booted.electron.ipcListeners.get('gwb:hello')!({ sender })
     expect(sender.send).toHaveBeenCalledTimes(1)
@@ -638,7 +736,7 @@ describe('main.ts：退出', () => {
 
   it('loader 还没加载就退出：直接放行，不拦', async () => {
     silenceStderr()
-    const booted = await importMain({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const booted = await importMain({ gwbHome: homeWithRequiredFiles() })
     const willQuitEvent = { preventDefault: vi.fn() }
     booted.electron.appEvents.emit('will-quit', willQuitEvent)
     expect(willQuitEvent.preventDefault).not.toHaveBeenCalled()
@@ -646,7 +744,7 @@ describe('main.ts：退出', () => {
 
   it('所有窗口关闭就退出应用', async () => {
     silenceStderr()
-    const booted = await importMain({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const booted = await importMain({ gwbHome: homeWithRequiredFiles() })
     booted.electron.appEvents.emit('window-all-closed')
     expect(booted.electron.quit).toHaveBeenCalled()
   })

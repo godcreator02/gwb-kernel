@@ -7,8 +7,8 @@ description: 内核一次启动按什么顺序做事、分成模块求值时与 
 
 <Diagram name="kernel-boot" title="一次启动：内核准备好 home 和 cordis，插件从 cordis.yml 进来，页面最后交给外壳">
 - 整个应用只有两个进程：主进程里是内核和 cordis 实例，所有插件都运行在 cordis 里；渲染进程是唯一的窗口。home 是磁盘上的一个目录
-- 第 1 步：按 `GWB_HOME` 选定 home，缺 `package.json` 或 `cordis.yml` 就补一份最小的，已有的不动
-- 第 2 步：打开 `gwb.log`；同一个 home 已有实例在运行就退出；把本次运行的 pid、版本写进 `runtime.json`
+- 第 1 步：按 `GWB_HOME` 选定 home，目录不存在就创建
+- 第 2 步：打开 `gwb.log`；同一个 home 已有实例在运行就退出；确认 home 里有 `package.json` 与 `cordis.yml`；把本次运行的 pid、版本写进 `runtime.json`。除了单实例锁，这几步有一步不成就启动失败
 - 第 3 步：创建 cordis 实例，根上下文指向 home，并提供 `gwbKernel`——早于任何插件
 - 第 4 步：创建窗口；这时还没有外壳，页面显示只读状态页
 - 第 5 步：注册 loader，设好按 home 解析包名的 import，根层只放一条 include 条目 `home`，它读 `cordis.yml`；loader 按条目从 home 的 `node_modules` 找到插件包并加载
@@ -21,19 +21,25 @@ description: 内核一次启动按什么顺序做事、分成模块求值时与 
 
 ## 两段：模块求值时与 ready 之后
 
-**模块求值时**做完不需要窗口的部分：选定 home、设置 userData、补齐最小文件，打开日志文件，检查单实例锁，写 `runtime.json`，创建 cordis 实例、把根上下文的 `baseUrl` 设到 home、接上日志、提供 `gwbKernel`、注册 IPC 通道。**Electron ready 之后**才去掉默认菜单、创建窗口并加载页面、注册 loader、加载全部条目。
+**模块求值时**做完不需要窗口的部分：选定 home、设置 userData，打开日志文件，检查单实例锁，确认 home 里有 `package.json` 与 `cordis.yml`，检查调试端口、写 `runtime.json`，创建 cordis 实例、把根上下文的 `baseUrl` 设到 home、接上日志、提供 `gwbKernel`、注册 IPC 通道。**Electron ready 之后**才去掉默认菜单、创建窗口并加载页面、注册 loader、加载全部条目。
 
 入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等它会互相等待、静默卡死（[ESM 主进程顶层等 ready 会卡死](/trajectory/2026-09-09-wall-esm-await-whenready)）。ready 之后的部分放在 `whenReady()` 返回的 promise 的 `then` 里执行，启动失败也在这条链上处理：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="308-317" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="331-340" */}
 
 启动失败时先写一行日志，再弹错误框（Electron 保证 ready 之前也能弹出，窗口可能还没有），框里带着 `gwb.log` 的路径，退出码 1。
+
+模块求值时的几项检查不通过也调用这个函数：home 里缺 `package.json` 或 `cordis.yml`（报错写明缺哪个、home 在哪，这两个文件由安装步骤 `INSTALL.md` 或 `devkit.home.new` 准备，内核不补）、`--remote-debugging-port` 给的不是 1–65535 的整数（报错带着给的原值）、`runtime.json` 写不进。模块求值时调用 `app.exit` 会当场结束进程，后面的代码不再执行（在本机 Electron 44 上实测过）。
+
+只有 `gwb.log` 打不开时不经过这个函数，因为它要写的正是这个文件：这时只写 stderr，错误框里写明日志文件的路径与打不开的原因，退出码 1。所以 `gwb.log` 在其余几项检查之前打开，那几项失败时的那一行才进得了日志文件。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="49-70" */}
 
 ## 顺序是约束
 
 ready 之后这一段：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="289-306" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="312-329" */}
 
 - **`gwbKernel` 在注册 loader 之前提供**：它在模块求值时就已提供，任何插件加载时都已经在了（[`gwbKernel` 要在注册 loader 之前提供](/trajectory/2026-09-07-wall-gwbkernel-provide-early)）
 - **窗口先于 loader**：插件加载的过程中页面就显示只读状态页，页面的 console 也从一开始就进日志
@@ -46,13 +52,13 @@ ready 之后这一段：
 
 插件和内核在同一个进程里，插件的错误就是这个进程的错误。内核对未捕获的异常和没人处理的 rejection 只写一行 `kernel` 的 error、不退出——一个坏插件不该让整个工作台退出（[两个进程合并为一个](/trajectory/2026-09-09-single-process)）。插件自己加载失败由 cordis 记在它的条目上，只读状态页上看得到。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="144-146" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="167-169" */}
 
 ## 退出
 
 所有窗口关闭就退出。退出前内核卸载 loader，整棵插件树的清理逐层执行；插件启动的长期子进程靠这一步结束，否则主进程一退它们就成了孤儿进程。谁创建了 cordis 实例，谁负责卸载它。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="319-341" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="342-364" */}
 
 - 第一次进入 `will-quit` 时拦下退出、开始清理；清理完调用的 `app.quit()` 会再次进入，那一次放行。loader 还没加载（刚启动就退出）时没有可卸载的，同样放行
 - **等清理结束要内核和插件都做到**：内核 `dispose()` 之后还要 `await()` 才等得到嵌套的异步清理；插件要把清理的 promise 从 effect 的清理函数里返回出来。少做一方，退出时就等不到插件的清理（[退出收尾：内核等、插件返回](/trajectory/2026-09-12-quit-dispose-two-halves)）
@@ -60,11 +66,13 @@ ready 之后这一段：
 
 ## 由什么测试保护
 
-`apps/desktop/tests/main.test.ts` 把 electron 换成假的、cordis 与 loader 用真的，覆盖 ready 之后的顺序与「up」那一行、启动失败、未捕获异常不退出、退出时先卸载插件树再放行、loader 还没加载时直接放行、所有窗口关闭就退出。真实窗口的显示、插件清理超过 5 秒时照常退出、插件的子进程是否都已结束，只能在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
+`apps/desktop/tests/main.test.ts` 把 electron 换成假的、cordis 与 loader 用真的，覆盖 ready 之后的顺序与「up」那一行、启动失败（包括模块求值时的几项：缺 `package.json` 或 `cordis.yml`、`gwb.log` 打不开、调试端口给错、`runtime.json` 写不进）、未捕获异常不退出、退出时先卸载插件树再放行、loader 还没加载时直接放行、所有窗口关闭就退出。真实窗口的显示、插件清理超过 5 秒时照常退出、插件的子进程是否都已结束，只能在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="ready 之后：去掉默认菜单、开一个暗底不闪白的窗口、加载 index.html，加载完写 up 一行" */}
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="启动失败：写一行 error、弹错误框（带 gwb.log 路径）、退出码 1" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="gwb.log 打不开就启动失败：只写 stderr，对话框写明文件路径与原因，退出码 1" */}
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="will-quit：先拦下退出，卸载整棵插件树" */}
 

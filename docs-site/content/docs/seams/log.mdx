@@ -1,6 +1,6 @@
 ---
 title: 8 日志 gwb.log
-description: 连接内核应用与所有插件；交换的是 cordis 的日志流：插件、内核、页面 console 三个来源都经 ctx.logger 汇成一条，内核把它写到 stderr 与 home 里的 gwb.log，一行是「时间 级别 名字 正文」；要收日志的插件自己注册 exporter；内核保证只有这一个输出、写日志出问题不让内核崩溃，插件保证只经 ctx.logger 写、exporter 不抛
+description: 连接内核应用与所有插件；交换的是 cordis 的日志流：插件、内核、页面 console 三个来源都经 ctx.logger 汇成一条，内核把它写到 stderr 与 home 里的 gwb.log，一行是「时间 级别 名字 正文」；要收日志的插件自己注册 exporter；内核保证只有这一个输出、gwb.log 启动时打不开就启动失败、打开之后写日志出问题不让内核崩溃，插件保证只经 ctx.logger 写、exporter 不抛
 ---
 
 **本页回答**：插件怎样写日志、写到哪里、一行长什么样；要在别处显示或查询日志的插件怎样拿到全部日志；内核应用和插件各保证什么。
@@ -16,15 +16,15 @@ description: 连接内核应用与所有插件；交换的是 cordis 的日志�
 
 **一行的格式**是 `<ISO 时间> <级别> <名字> <正文>`，同时写 stderr 与 `<home>/gwb.log`：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="65-70" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="72-77" */}
 
 正文由 cordis 自己的 `Logger.format` 格式化，所有级别都写，包括 `debug`。插件传进来的参数 cordis 格式化不了时（`%o` 用 `JSON.stringify`，遇到循环引用、BigInt 就抛），内核退回把参数逐个转成字符串拼起来，这一行照样写进去：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="123-142" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="146-165" */}
 
 **收**：插件调用 `ctx.logger.exporter({ export(message) { … } })` 注册一个 exporter，就能收到内核、插件、页面三个来源的全部日志；注册是 cordis 的一个 effect，插件卸载时自动注销。注册之前的日志在 cordis 自带的缓冲 `ctx.logger.buffer` 里（最近 1000 条，按 cordis 的默认级别，不含 `debug`），日志插件就是先读缓冲补上历史、再注册 exporter。cordis 在写日志的那次调用里依次同步调用每个 exporter 的 `export`。
 
-**上限与轮转**：`gwb.log` 写到 128 MB 就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多 256 MB），再开一份新的。128 MB 的依据是实测：平常一天约写 48 MB，某个插件出错刷屏时一小时能写约 675 MB；128 MB 平常能留住两天半的日志，刷屏时十几分钟轮转一次。读数记录在仓根 `probes/2609201430_log-cap-rotation/`。
+**上限与轮转**：`gwb.log` 写到 128 MB 就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多 256 MB），再开一份新的。128 MB 的依据是实测：平常一天约写 48 MB，某个插件出错、反复写同样的日志时一小时能写约 675 MB；128 MB 平常能留住两天半的日志，那种情况下十几分钟轮转一次。读数记录在仓根 `probes/2609201430_log-cap-rotation/`。
 
 {/* has file="../apps/desktop/src/log-file.ts" text="LOG_LIMIT_BYTES = 128 * 1024 * 1024" */}
 
@@ -33,9 +33,10 @@ description: 连接内核应用与所有插件；交换的是 cordis 的日志�
 **内核应用**保证：
 
 - 只有一个输出：stderr 加 home 里的 `gwb.log`，每一行都进这两处
-- 内核自己的日志也走 `ctx.logger`，插件收得到；只有 cordis 实例建好之前的几行与启动失败那一行直接写 stderr 与 `gwb.log`
+- 内核自己的日志也走 `ctx.logger`，插件收得到；只有 cordis 实例建好之前的几行与启动失败那一行直接写 stderr 与 `gwb.log`（`gwb.log` 打不开造成的启动失败只写 stderr）
 - 插件里没被处理的异常与 rejection 记成 `kernel` 的 error，不让内核退出
-- 写日志出任何问题都只报一句，不让内核崩溃：`gwb.log` 打不开时只写 stderr、每 60 秒重试打开一次；写不进只告警一次；轮转失败就继续写原来的文件，再写满一个上限后重试；没有终端时写 stderr 报的错被忽略，文件照写
+- `gwb.log` 启动时打不开就启动失败：只写 stderr，错误框写明文件路径与原因，退出码 1（[启动与退出](/docs/desktop/boot)）
+- 打开之后写日志出问题都只告警一句，不让内核崩溃：写不进只告警一次；轮转失败就继续写原来的文件，再写满一个上限后重试；轮转之后重新打开失败只告警一次，之后日志只写 stderr、不再重试；没有终端时写 stderr 报的错被忽略，文件照写
 - 每条 error 都触发一次 `gwb:shell` 的推送（200 毫秒内的多次合并成一次），没有外壳时最近的错误行显示在只读状态页上；warn 只进日志、不触发推送，下一次推送时随最近的错误行一起出现
 
 **插件**保证：
@@ -52,8 +53,8 @@ description: 连接内核应用与所有插件；交换的是 cordis 的日志�
 
 ## 测试
 
-- `apps/desktop/tests/main.test.ts`：用假的 electron 与真的 cordis，证明页面 console 的级别记成名字 `renderer` 的对应级别，没被处理的异常记成 `kernel` 的 error，插件写的 error 进 `gwb.log` 并在 200 毫秒后随 `gwb:shell` 推给页面，带循环引用参数的 error 写日志的一方不抛、这一行照样写进去，warn 只进 `gwb.log`、不推送
-- `apps/desktop/tests/log-file.test.ts`：在临时目录里用真的文件系统，证明到上限轮转且只留一份旧的、轮转后写的行进新文件、启动时已超上限的文件第一行就轮转、轮转失败不丢行、打不开与写不进都不抛且写不进只告警一次
+- `apps/desktop/tests/main.test.ts`：用假的 electron 与真的 cordis，证明 `gwb.log` 打不开时启动失败、只写 stderr，页面 console 的级别记成名字 `renderer` 的对应级别，没被处理的异常记成 `kernel` 的 error，插件写的 error 进 `gwb.log` 并在 200 毫秒后随 `gwb:shell` 推给页面，带循环引用参数的 error 写日志的一方不抛、这一行照样写进去，warn 只进 `gwb.log`、不推送
+- `apps/desktop/tests/log-file.test.ts`：在临时目录里用真的文件系统，证明到上限轮转且只留一份旧的、轮转后写的行进新文件、启动时已超上限的文件第一行就轮转、轮转失败不丢行、首次打不开就抛错且错误信息带路径与原因、写不进不抛且只告警一次、轮转后重新打开失败只告警一次且不再重开
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="页面 console 进 cordis 日志，名字是 renderer" */}
 
@@ -63,4 +64,8 @@ description: 连接内核应用与所有插件；交换的是 cordis 的日志�
 
 {/* has file="../apps/desktop/tests/log-file.test.ts" text="轮转没成不致命" */}
 
-{/* has file="../apps/desktop/tests/log-file.test.ts" text="文件开不出来也不致命" */}
+{/* has file="../apps/desktop/tests/log-file.test.ts" text="首次打不开就抛错：错误信息写明路径与原因" */}
+
+{/* has file="../apps/desktop/tests/log-file.test.ts" text="轮转后重新打开失败：只告警一次" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="gwb.log 打不开就启动失败" */}

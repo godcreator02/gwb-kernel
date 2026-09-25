@@ -28,14 +28,14 @@ description: 决定内核长什么样、错了难改的几条设计——往内�
 
 - 给插件提供「安装」接口：装插件只经插件管理的 `plugin-manager.*` 命令；插件之间的依赖齐不齐也不核对（[移除内核的安装接口](/trajectory/2026-09-08-no-install-port)）
 - 往新 home 里装内核包与插件：由创建这个 home 的一方装，见下面「内核仓只放内核」
-- `cordis.yml` 的模板与自动修复：文件缺了只补一个空表（[全新 home 没有 `cordis.yml` 时启动失败](/trajectory/2026-09-07-wall-fresh-home-no-yml)）
+- `cordis.yml` 的模板与自动修复：`package.json` 与 `cordis.yml` 缺了也不补，启动失败并写明缺哪个，由创建 home 的一方准备（[内核删掉四处兜底](/trajectory/2026-09-25-kernel-drop-fallbacks)）
 - 界面上的失败处理：除了只读状态页，不分析原因、不重试，也没有按钮（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）
 - 写数据：内核只提供 `dataDir`，写数据由数据插件负责（[数据写盘做成插件](/trajectory/2026-09-07-gwb-data-plugin)）
 - 打包器：内核用 `tsc` 直接输出，主进程按正常的包解析加载模块；只有页面上的 react 用 esbuild 打包（[打包器以后再选](/trajectory/2026-09-07-bundler-deferred)）
 
 还没发生、在等前提条件的事在[路线](/future/roadmap)。
 
-## 插件和内核跑在同一个进程里
+## 插件和内核运行在同一个进程里
 
 所有插件都运行在 Electron 主进程的 cordis 实例里，`import('electron')` 就能直接创建窗口、菜单、托盘、对话框和子进程，内核一概不代劳。没有宿主子进程、没有自定义资源协议，页面直接加载 `file://` 地址（[两个进程合并为一个](/trajectory/2026-09-09-single-process)）。
 
@@ -71,11 +71,11 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核�
 
 页面上的包名不走这套解析：只有 react 的四个，写死在页面入口的 importmap 里，指向内核包自己的文件（[页面上的 react](/docs/seams/page-react)）。
 
-## 页面整页交给外壳，内核只守页面边界
+## 页面整页交给外壳，内核只保证页面边界
 
 内核在页面上只提供三样东西：一个空的 `#root`、一张 importmap、一个 `window.gwb`。页面显示什么全部由外壳决定——谁调用 `setShell` 谁就是外壳，后调用的替换先调用的；没有外壳、或外壳启动失败时，页面显示只读状态页（[外壳接管](/docs/seams/shell)）。
 
-页面能调用整条命令总线，所以内核不给命令分权限，只保证页面边界：主框架只可能是内核包里的 `index.html`，跳到别的地址、重定向一律拒绝，只放行整页重新加载；`window.open` 从不打开新窗口，`http:`、`https:` 地址交给系统默认浏览器，别的协议拒绝；`gwb:command` 只接收顶层框架的调用。守住这一处比给每条命令分等级便宜得多（[页面边界](/trajectory/2026-09-25-page-navigation-lock)、[网页链接交给系统浏览器](/trajectory/2026-09-25-open-external-links)，做法见 [IPC 通道](/docs/seams/ipc#页面边界)）。
+页面能调用整条命令总线，所以内核不给命令分权限，只保证页面边界：主框架只可能是内核包里的 `index.html`，跳到别的地址、重定向一律拒绝，只放行整页重新加载；`window.open` 从不打开新窗口，`http:`、`https:` 地址交给系统默认浏览器，别的协议拒绝；`gwb:command` 只接收顶层框架的调用。只保证这一处比给每条命令分等级便宜得多（[页面边界](/trajectory/2026-09-25-page-navigation-lock)、[网页链接交给系统浏览器](/trajectory/2026-09-25-open-external-links)，做法见 [IPC 通道](/docs/seams/ipc#页面边界)）。
 
 ## 内核不认识 cordis.yml 里的插件与命令
 

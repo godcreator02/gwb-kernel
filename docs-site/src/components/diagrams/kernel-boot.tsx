@@ -2,8 +2,8 @@
 
 /**
  * 一次启动：左边是 home 里的文件，中间是主进程（内核与 cordis 实例），右边是页面。
- * 第 0 步是全貌，之后每一步把这一步碰到的东西点亮；cordis.yml 里的插件在第 5 步出现，
- * 页面的 #root 从空、只读状态页到外壳。
+ * 第 0 步是全貌，之后每一步高亮这一步用到的部分；cordis.yml 里的插件在第 5 步出现，
+ * 页面的 #root 依次是空的、只读状态页、外壳。
  */
 
 import { Arrow, Box, BORDER, MUTED, Note, StepCaption } from './parts'
@@ -13,8 +13,8 @@ type Part = 'package' | 'yml' | 'modules' | 'log' | 'runtime' | 'kernel' | 'cord
 
 const STEPS: { title: string; detail: string; lit: Part[]; root: string }[] = [
   { title: '全貌', detail: '两个进程：主进程里是内核和 cordis 实例，插件都运行在 cordis 里；页面是唯一的窗口。home 是磁盘上的一个目录。', lit: [], root: '' },
-  { title: '第 1 步：选定 home', detail: '按 GWB_HOME 选定目录；缺 package.json 或 cordis.yml 就补一份最小的，已有的不动。', lit: ['package', 'yml', 'kernel'], root: '' },
-  { title: '第 2 步：日志、单实例锁、运行记录', detail: '打开 gwb.log；同一个 home 已有实例在运行就退出；把 pid、版本写进 runtime.json。', lit: ['log', 'runtime', 'kernel'], root: '' },
+  { title: '第 1 步：选定 home', detail: '按 GWB_HOME 选定目录，目录不存在就创建。', lit: ['kernel'], root: '' },
+  { title: '第 2 步：日志、单实例锁、检查 home、运行记录', detail: '打开 gwb.log；同一个 home 已有实例在运行就退出；确认 home 里有 package.json 与 cordis.yml（内核不补）；把 pid、版本写进 runtime.json。除了单实例锁，有一步不成就启动失败。', lit: ['log', 'package', 'yml', 'runtime', 'kernel'], root: '' },
   { title: '第 3 步：创建 cordis 实例', detail: '根上下文指向 home，并提供 gwbKernel——早于任何插件。', lit: ['cordis', 'gwbKernel'], root: '' },
   { title: '第 4 步：创建窗口', detail: '页面加载入口 index.html。这时还没有外壳，页面显示只读状态页。', lit: ['page'], root: '只读状态页' },
   { title: '第 5 步：加载 cordis.yml 里的插件', detail: '注册 loader 与 include；include 读 cordis.yml，loader 按条目从 home 的 node_modules 按真实路径找到包并加载。命令插件、插件管理也是这样加载的。', lit: ['loader', 'yml', 'modules', 'plugins', 'shell'], root: '只读状态页' },

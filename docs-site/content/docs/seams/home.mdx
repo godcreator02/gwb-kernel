@@ -16,17 +16,13 @@ description: 连接内核应用与插件管理（生命周期插件仓 gwb-lifec
 
 | 文件 | 谁写 |
 | --- | --- |
-| `package.json` | 列出装了哪些包：内核包 `@godcreator/gwb-kernel-desktop`、内核包 peer 里那个版本的 `cordis`、各个插件，一律写精确版本号。缺了内核补一份最小清单；之后只由插件管理运行的 pnpm 改 |
-| `cordis.yml` | 列出条目。缺了内核补一个空表；之后由 include 写回，写回只经条目树发生 |
+| `package.json` | 列出装了哪些包：内核包 `@godcreator/gwb-kernel-desktop`、内核包 peer 里那个版本的 `cordis`、各个插件。清单照 pnpm 默认写 `^` 范围，只有 `cordis` 写精确版本号。由创建 home 的一方写好（安装步骤 `INSTALL.md` 或 `devkit.home.new`），缺了内核启动失败、不补；之后只由插件管理运行的 pnpm 改 |
+| `cordis.yml` | 列出条目。由创建 home 的一方写好，缺了内核启动失败、不补；之后由 include 写回，写回只经条目树发生 |
 | `node_modules/` | pnpm，由插件管理调用 |
 | `gwb.log`、`gwb.log.1` | 内核（[日志](/docs/seams/log)） |
 | `runtime.json` | 内核每次启动整份重写，别的插件可以补字段（[runtime.json](/docs/seams/runtime)） |
 | `electron/` | Chromium 的 userData，每个 home 一份 |
 | 其余目录 | 各插件自己的数据 |
-
-内核启动时补的两份最小文件：
-
-{/* ref file="../apps/desktop/src/main.ts" lines="35-47" */}
 
 **cordis 只有一份，loader 与 include 不在 home 根上**：内核包把 `cordis` 写在 peer 里、版本写死，由 home 清单里列的那一份满足，loader、include 与写 peer `cordis` 的插件都解析到它。loader 与 include 是内核包自己的依赖，同样写死版本、不带范围，随内核包一起装进 home：
 
@@ -40,7 +36,7 @@ description: 连接内核应用与插件管理（生命周期插件仓 gwb-lifec
 
 **内核应用**保证：
 
-- home 的文件布局如上表；`package.json` 与 `cordis.yml` 只在缺的时候补，已有的不覆盖
+- home 的文件布局如上表；启动时 `package.json` 与 `cordis.yml` 缺一个就启动失败，报错写明缺哪个、home 在哪，内核不补、也不改这两个文件
 - `cordis` 写在内核包的 peer 里，loader 与 include 写在内核包的依赖里，版本都如内核包清单所写
 - 包名一律从 home 的 `node_modules` 按真实路径解析，不从内核自己的目录找
 - 上面任何一样变了（包括升级 `cordis`、loader、include 的版本），就是改了这条接缝，内核版本号升 x（[开发](/docs/develop#发版)）
@@ -64,8 +60,8 @@ description: 连接内核应用与插件管理（生命周期插件仓 gwb-lifec
 
 ## 测试
 
-`apps/desktop/tests/main.test.ts` 保护内核准备 home 的那部分：缺 `package.json`、`cordis.yml` 时补最小形态，已有的不覆盖，userData 设在 `<home>/electron`。包名解析的测试见[插件加载](/docs/seams/loading)。条目树的形状由插件管理那边保护：`gwb-lifecycle-plugins` 仓里用与内核相同版本的 loader、include 建一个 home 跑条目树的测试，内核升级这两个包、改了条目树的形状时，那组测试最先失败。
+`apps/desktop/tests/main.test.ts` 保护内核准备 home 的那部分：名字与路径两种写法选定 home，userData 设在 `<home>/electron`，缺 `package.json`、`cordis.yml`（缺两个或只缺一个）时启动失败、报错写明缺哪个，不补文件。包名解析的测试见[插件加载](/docs/seams/loading)。条目树的形状由插件管理那边保护：`gwb-lifecycle-plugins` 仓里用与内核相同版本的 loader、include 建一个 home 运行条目树的测试，内核升级这两个包、改了条目树的形状时，那组测试最先失败。
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="已有的 package.json 不覆盖" */}
+{/* has file="../apps/desktop/tests/main.test.ts" text="缺 package.json、cordis.yml 启动失败：对话框与日志写明缺哪两个、home 在哪、由谁准备，内核不补" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="缺 package.json、cordis.yml 时补最小形态；userData 设在 <home>/electron" */}
+{/* has file="../apps/desktop/tests/main.test.ts" text="只缺 package.json 或只缺 cordis.yml：启动失败，只报缺的那一个" */}
