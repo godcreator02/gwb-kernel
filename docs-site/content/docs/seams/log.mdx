@@ -26,9 +26,11 @@ description: 连接内核应用与所有插件：插件、内核、页面 consol
 - 只有一个输出：stderr 加 home 里的 `gwb.log`，每一行都进这两处
 - 内核自己的日志也走 `ctx.logger`，插件收得到（cordis 实例建好之前的几行与启动失败那一行除外，它们只进 stderr 与 `gwb.log`）；插件里没被处理的异常与 rejection 记成 `kernel` 的 error，不让内核退出
 - 写日志出任何问题都只报一句，不会让内核崩溃；没有终端时写 stderr 报的错被忽略，文件照写
-- 每条 error 与 warn 都会触发一次 `gwb:shell` 的重新推送（去抖）：没有外壳时，最近的错误行显示在只读状态页上（见[内核应用](/docs/desktop)）
+- 每条 error 都会触发一次 `gwb:shell` 的重新推送（200 毫秒内的多次合并成一次）：没有外壳时，最近的错误行显示在只读状态页上（见[内核应用](/docs/desktop)）。warn 只进日志、不触发推送，下一次推送时随最近的错误行一起出现在只读状态页上
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="页面 console 进 cordis 日志，名字是 renderer" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="插件或页面写 warn：只进日志，不推 gwb:shell" */}
 
 插件保证：
 - 日志一律经 `ctx.logger`，不直接写 `gwb.log`；直接写 stderr 的内容不会进文件
@@ -43,6 +45,6 @@ description: 连接内核应用与所有插件：插件、内核、页面 consol
 
 ## 测试
 
-`apps/desktop/tests/main.test.ts` 用假的 electron 与真的 cordis 保护汇成一条流与一行的格式：页面 console 的四个级别记成名字 `renderer` 的对应级别，没被处理的异常记成 `kernel` 的 error，插件写的 error 行进 `gwb.log` 并在去抖后随 `gwb:shell` 推给页面。`apps/desktop/tests/log-file.test.ts` 保护写文件那一段，包括文件打不开、写不进、轮转失败时都不抛出：
+`apps/desktop/tests/main.test.ts` 用假的 electron 与真的 cordis 保护汇成一条流与一行的格式：页面 console 的四个级别记成名字 `renderer` 的对应级别，没被处理的异常记成 `kernel` 的 error，插件写的 error 行进 `gwb.log` 并在 200 毫秒后随 `gwb:shell` 推给页面，插件与页面写的 warn 只进 `gwb.log`、不推送。`apps/desktop/tests/log-file.test.ts` 保护写文件那一段，包括文件打不开、写不进、轮转失败时都不抛出：
 
 {/* has file="../apps/desktop/tests/log-file.test.ts" text="文件开不出来也不致命" */}

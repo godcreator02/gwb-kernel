@@ -1,0 +1,43 @@
+---
+title: 页面边界：主框架只能是内核的 index.html，gwb:command 只收顶层框架，warn 不再触发推送
+born-at: 2026-09-25T10:00
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 页面边界
+domain: 这条线
+---
+
+## 背景
+
+devkit 仓的全生态定案（`gwb-devkit` 文档站 `spec/ecosystem-simplify` 第四节）定下：页面能调用整条命令总线，不给命令分权限等级，改为只守页面边界——页面只可能是本地 `index.html`，主框架跳转、`window.open` 一律拒绝，`gwb:command` 只接收顶层框架。第一期里这一项还没做。
+
+同一期还写着「warn 不触发推送」。核对时内核仍是 error 与 warn 都触发 `gwb:shell` 的重新推送：日志的 exporter 对两种级别都调用推送，页面 console 的 warning 也经这条路。
+
+## 结论与边界
+
+- **主框架跳转**：`will-navigate` 只放行目标地址去掉 `#` 片段后与当前地址相同的，也就是整页重新加载；别的一律拒绝。整页重新加载必须放行：界面插件的外壳状态栏「刷新」用 `location.reload()`，devkit 的 cdp 脚本用 `Page.reload`
+- **重定向**：`will-redirect` 只拒绝主框架的；iframe 里的重定向与跳转不管
+- **新窗口**：`setWindowOpenHandler` 一律 `deny`，不转给系统浏览器
+- **`gwb:command`**：`event.senderFrame` 是 null（发送方已跳走或销毁）或有父框架时，回 `{ ok: false, error }`，不交给命令服务；回执形状沿用内核已有的失败回执
+- 每次拒绝写一行 `kernel` 的 warn，写明被拒的地址
+- **推送**：只有 error 触发 `gwb:shell` 的重新推送，warn 只进日志；只读状态页的错误行下一次推送时一并带上 warn
+- 两条判定抽成纯函数（`page-boundary.ts`），单测固定；接线在 `main.ts` 的假 electron 测试里固定
+
+## 否掉的候选
+
+- **will-navigate 一律拒绝，连整页重新加载也拒**：外壳的刷新按钮与 devkit 的重新加载会失效
+- **拿 index.html 的文件路径算出地址来比对**（`pathToFileURL`）：要自己复刻 Chromium 对 file 地址的规范化（盘符、百分号编码）；改为拿 `webContents.getURL()` 比，两边都是 Chromium 给的地址。主框架只由内核 `loadFile` 进 `index.html`，之后只能重新加载自己，所以一直是 `index.html`
+- **被拒的 `window.open` 转给系统浏览器打开**：定案写一律拒绝；要打开外部链接的插件在主进程里自己调用 Electron 的 `shell.openExternal`
+- **iframe 的跳转、重定向也拦**：会让嵌网页的 iframe 用不了，而 iframe 里本来就没有 `window.gwb`（preload 只在顶层框架运行）
+- **error 也不再触发推送**（定案第四节原文是 warn 与 error 都不触发）：没有外壳时，只读状态页就看不到加载之后新来的错误；这次只按第一期清单去掉 warn
+
+## 代价与遗留
+
+- 与页面同源的 iframe 能经 `parent.gwb` 调用顶层框架的 `window.gwb`，发送方就是顶层框架，`senderFrame` 检查挡不住；这一处靠页面只加载本地代码，由外壳和插件决定页面上放什么
+- 定案第一期的「只读状态页只在没有外壳时推送」这次没做：有外壳时 error 仍会推送整份状态，页面入口遇到同一个外壳地址直接忽略
+- 拖入链接、iframe 里调 `window.open` 的实机验证，与全部插件一起在同一个 home 里统一做，本卡写时还没做
+
+## 依据
+
+- `apps/desktop/tests/page-boundary.test.ts`、`apps/desktop/tests/main.test.ts`（「页面边界」「gwb:command 只接收顶层框架」「写 warn 不推 gwb:shell」三个用例）
+- 无实机物证

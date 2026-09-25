@@ -75,6 +75,8 @@ home 是磁盘上的一个目录，也是一个普通的 npm 项目根：内核�
 
 内核在页面上只提供三样东西：一个空的 `#root`、一张 importmap、一个 `window.gwb`。页面显示什么全部由外壳决定——谁调用 `setShell`，谁就是外壳，后调用的替换先调用的。没有外壳、或外壳启动失败时，页面显示只读状态页：各条目加载到哪一步、最近的错误日志，没有按钮。见[外壳接管](/docs/seams/shell)。
 
+页面能调用整条命令总线，所以内核不给命令分权限，只保证页面边界：主框架只可能是内核包里的 `index.html`，跳到别的地址、重定向、`window.open` 一律拒绝，只放行整页重新加载；`gwb:command` 只接收顶层框架的调用。守住这一处比给每条命令分等级便宜得多（[页面边界](/trajectory/2026-09-25-page-navigation-lock)，做法见 [IPC 通道](/docs/seams/ipc)）。
+
 ## 内核不认识 cordis.yml 里的插件与命令
 
 - 加载哪些插件，由 `cordis.yml` 决定，内核用 cordis 官方的 include 去读

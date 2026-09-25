@@ -55,7 +55,8 @@ cd apps\desktop; pnpm start
 
 | 测试文件 | 证明什么 |
 | --- | --- |
-| `apps/desktop/tests/main.test.ts` | electron 换成假的，cordis 与 loader 用真的，用真实的 react 打包产物，在临时 home 上重新求值 `main.ts`：名字与路径两种写法选定 home、缺文件时补最小形态且不覆盖已有的、userData 在 `<home>/electron`；拿不到单实例锁时写一行 error、退出码 1，第二个实例启动时把窗口调到前面；`runtime.json` 的字段；启动顺序与启动失败（见[启动与退出](/docs/desktop/boot)）；页面 console 进日志；IPC 通道与命令转交；`gwbKernel` 的四个成员；插件写 error 日志后去抖推送一次只读状态页的数据；退出时卸载插件树 |
+| `apps/desktop/tests/main.test.ts` | electron 换成假的，cordis 与 loader 用真的，用真实的 react 打包产物，在临时 home 上重新求值 `main.ts`：名字与路径两种写法选定 home、缺文件时补最小形态且不覆盖已有的、userData 在 `<home>/electron`；拿不到单实例锁时写一行 error、退出码 1，第二个实例启动时把窗口调到前面；`runtime.json` 的字段；启动顺序与启动失败（见[启动与退出](/docs/desktop/boot)）；页面 console 进日志；主框架跳走、重定向、`window.open` 被拒绝，整页重新加载放行；IPC 通道与命令转交，`gwb:command` 不接收 iframe 的调用；`gwbKernel` 的四个成员；插件写 error 日志后 200 毫秒推送一次只读状态页的数据，写 warn 不推送；退出时卸载插件树 |
+| `apps/desktop/tests/page-boundary.test.ts` | 页面边界的两条判定：哪些跳转算整页重新加载（同一地址，`#` 之后不算差别；网页、别的本地文件、带查询串都不算），哪些发送方算顶层框架（有父框架的、已销毁的都不算） |
 | `apps/desktop/tests/log-file.test.ts` | 在临时目录里用真的文件系统、不打桩：`GWB_LOG_LIMIT_MB` 怎么解析；到上限轮转、只留一份旧的，轮转后写的行进新文件；启动时已超上限的文件第一行日志就轮转；上限 0 不轮转；轮转失败、打不开、写不进都不抛，写不进只告警一次。轮转失败用「目标文件的位置被一个目录占着」制造，这是 Windows 上真会遇到的形态 |
 | `apps/desktop/tests/entry-state.test.ts` | 手工构造条目：只读状态页上每种条目状态说成什么（停用、没有 fiber、等待中缺哪个服务、失败的第一行、认不出的状态数字） |
 | `apps/desktop/tests/index-html.test.ts` | 页面入口：只读状态页画出一句说明、home、每个条目一行、错误行；外壳挂载、替换、撤销，外壳启动失败时回到只读状态页 |

@@ -17,7 +17,7 @@ vi.mock('electron', () => ({
 
 interface ProbeRecord {
   kernel?: GwbKernelApi
-  logger?: { error(message: string): void }
+  logger?: { error(message: string): void; warn(message: string): void }
   events: string[]
 }
 const probeGlobal = globalThis as typeof globalThis & { __gwbMainTestProbe?: ProbeRecord }
@@ -29,7 +29,14 @@ const kernelPackageVersion = (
 interface FakeWindow {
   options: Record<string, unknown>
   events: EventEmitter
-  webContents: { send: Mock; events: EventEmitter; on(event: string, listener: (...args: unknown[]) => void): void }
+  webContents: {
+    send: Mock
+    events: EventEmitter
+    on(event: string, listener: (...args: unknown[]) => void): void
+    windowOpenHandler?: (details: { url: string }) => unknown
+    setWindowOpenHandler(handler: (details: { url: string }) => unknown): void
+    getURL(): string
+  }
   show: Mock
   focus: Mock
   loadFile: Mock
@@ -80,6 +87,11 @@ function makeFakeElectron(options: FakeElectronOptions): FakeElectron {
       on(event: string, listener: (...args: unknown[]) => void): void {
         this.events.on(event, listener)
       },
+      windowOpenHandler: undefined as ((details: { url: string }) => unknown) | undefined,
+      setWindowOpenHandler(handler: (details: { url: string }) => unknown): void {
+        this.windowOpenHandler = handler
+      },
+      getURL: (): string => FAKE_PAGE_URL,
     }
     show = vi.fn()
     focus = vi.fn()
@@ -140,6 +152,9 @@ function makeFakeElectron(options: FakeElectronOptions): FakeElectron {
     ipcListeners,
   }
 }
+
+const FAKE_PAGE_URL = 'file:///C:/fake-app-dir/dist/index.html'
+const topFrameEvent = { senderFrame: { parent: null } }
 
 const temporaryDirs: string[] = []
 const openedDescriptors: number[] = []
@@ -400,6 +415,35 @@ describe('main.ts：启动', () => {
     await quitAndWaitForCleanup(booted)
   })
 
+  it('页面边界：主框架跳到别处、主框架的重定向、window.open 一律拒绝并记一行 warn；整页重新加载放行', async () => {
+    silenceStderr()
+    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const webContents = booted.electron.windows[0]!.webContents
+    const navigationTo = (url: string, extra: Record<string, unknown> = {}) => ({ url, preventDefault: vi.fn(), ...extra })
+
+    const draggedLink = navigationTo('https://example.com/')
+    webContents.events.emit('will-navigate', draggedLink)
+    expect(draggedLink.preventDefault).toHaveBeenCalled()
+    const reload = navigationTo(`${FAKE_PAGE_URL}#/somewhere`)
+    webContents.events.emit('will-navigate', reload)
+    expect(reload.preventDefault).not.toHaveBeenCalled()
+
+    const mainFrameRedirect = navigationTo('https://example.com/elsewhere', { isMainFrame: true })
+    webContents.events.emit('will-redirect', mainFrameRedirect)
+    expect(mainFrameRedirect.preventDefault).toHaveBeenCalled()
+    const iframeRedirect = navigationTo('https://example.com/elsewhere', { isMainFrame: false })
+    webContents.events.emit('will-redirect', iframeRedirect)
+    expect(iframeRedirect.preventDefault).not.toHaveBeenCalled()
+
+    expect(webContents.windowOpenHandler?.({ url: 'https://example.com/popup' })).toEqual({ action: 'deny' })
+
+    const log = booted.readLog()
+    expect(log).toContain('warn kernel 页面只能是内核的 index.html，拒绝主框架跳转到 https://example.com/')
+    expect(log).toContain('warn kernel 页面只能是内核的 index.html，拒绝主框架重定向到 https://example.com/elsewhere')
+    expect(log).toContain('warn kernel 页面只能是内核的 index.html，拒绝打开新窗口 https://example.com/popup')
+    await quitAndWaitForCleanup(booted)
+  })
+
   it('进程里没被处理的 rejection 与异常记成 kernel 的 error，不退出', async () => {
     silenceStderr()
     const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
@@ -426,8 +470,20 @@ describe('main.ts：IPC 通道', () => {
     silenceStderr()
     const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
     const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
-    expect(await relayCommand({}, 42, undefined)).toEqual({ ok: false, error: '命令名要是字符串' })
-    expect(await relayCommand({}, 'demo.hello', undefined)).toEqual({ ok: false, error: '没有命令服务（ctx.gwbCommands），无法执行 demo.hello' })
+    expect(await relayCommand(topFrameEvent, 42, undefined)).toEqual({ ok: false, error: '命令名要是字符串' })
+    expect(await relayCommand(topFrameEvent, 'demo.hello', undefined)).toEqual({ ok: false, error: '没有命令服务（ctx.gwbCommands），无法执行 demo.hello' })
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('gwb:command 只接收顶层框架：iframe 发来的、发送方框架已销毁的都回失败回执，不交给命令服务', async () => {
+    silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
+    const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
+    const rejected = { ok: false, error: 'gwb:command 只接收顶层框架的调用，demo.echo 没有执行' }
+    expect(await relayCommand({ senderFrame: { parent: { parent: null } } }, 'demo.echo', {})).toEqual(rejected)
+    expect(await relayCommand({ senderFrame: null }, 'demo.echo', {})).toEqual(rejected)
+    expect(await relayCommand(topFrameEvent, 'demo.echo', {})).toMatchObject({ ok: true })
     await quitAndWaitForCleanup(booted)
   })
 
@@ -456,7 +512,7 @@ describe('main.ts：插件看到的内核', () => {
     expect(probe.kernel?.dataDir).toBe(booted.dataDir)
     expect(probe.kernel?.version).toBe(kernelPackageVersion)
     const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
-    expect(await relayCommand({}, 'demo.echo', { a: 1 })).toEqual({ ok: true, data: { command: 'demo.echo', args: { a: 1 }, context: { via: 'ui' } } })
+    expect(await relayCommand(topFrameEvent, 'demo.echo', { a: 1 })).toEqual({ ok: true, data: { command: 'demo.echo', args: { a: 1 }, context: { via: 'ui' } } })
     await quitAndWaitForCleanup(booted)
   })
 
@@ -517,6 +573,22 @@ describe('main.ts：插件看到的内核', () => {
     expect(errors.some((line) => line.includes('error probe 探针插件报的错'))).toBe(true)
     expect(errors.some((line) => line.includes('error probe 探针插件报的第二个错'))).toBe(true)
     expect(booted.readLog()).toContain('error probe 探针插件报的错')
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('插件或页面写 warn：只进日志，不推 gwb:shell', async () => {
+    silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
+    const window = booted.electron.windows[0]!
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    const sentBefore = shellMessagesSent(window).length
+    probeGlobal.__gwbMainTestProbe.logger!.warn('探针插件的警告')
+    window.webContents.events.emit('console-message', { level: 'warning', message: '页面的警告' })
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(shellMessagesSent(window)).toHaveLength(sentBefore)
+    expect(booted.readLog()).toContain('warn probe 探针插件的警告')
+    expect(booted.readLog()).toContain('warn renderer 页面的警告')
     await quitAndWaitForCleanup(booted)
   })
 })

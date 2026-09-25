@@ -28,12 +28,12 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 
 | 通道 | 方向 | 传什么 |
 | --- | --- | --- |
-| `gwb:command` | 页面 → 主进程，回执原路返回 | 命令名与参数；内核应用交给命令转交（[接缝 10](/docs/seams/commands)），回执 `GwbResult` 原样交回 |
+| `gwb:command` | 页面 → 主进程，回执原路返回 | 命令名与参数；只接收顶层框架发来的，内核应用交给命令转交（[接缝 10](/docs/seams/commands)），回执 `GwbResult` 原样交回 |
 | `gwb:event` | 主进程 → 页面 | 插件经 `gwbKernel.emit` 发出的 payload，原样 |
 | `gwb:shell` | 主进程 → 页面 | 整份外壳状态 `{ url, report }`：外壳地址、只读状态页的数据 |
 | `gwb:hello` | 页面 → 主进程 | 不带内容；主进程向发来的那个页面回一条 `gwb:shell` |
 
-`gwb:shell` 在这几种时候发：页面发来 `gwb:hello`；插件调用 `setShell` 或撤销；插件加载完、条目状态变化、有新的 error 或 warn 日志（这三种在短时间内的多次合并成一次）。
+`gwb:shell` 在这几种时候发：页面发来 `gwb:hello`；插件调用 `setShell` 或撤销；插件加载完、条目状态变化、有新的 error 日志（这三种在短时间内的多次合并成一次）。warn 日志只进日志，不触发推送。
 
 `GwbWindowApi` 里 `onShell` 的参数只写了 `url`：`report` 只给内核自己的页面入口画只读状态页用，不在契约里（只读状态页显示什么见[内核应用](/docs/desktop)）。`url` 怎么用见[外壳接管](/docs/seams/shell)。页面的 importmap 不经这个通道，写死在页面入口里（[页面上的 react](/docs/seams/page-react)）。
 
@@ -42,6 +42,10 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 **内核应用**保证：
 
 - `gwb:command` 收到的命令名和参数交给命令转交，回执原样交回页面；内核应用自己不登记任何命令
+- `gwb:command` 只接收顶层框架的调用：发送方是 iframe，或发送方框架已经跳走、销毁，都回 `{ ok: false, error }`，不交给命令转交
+- 页面只可能是内核包里的 `index.html`：主框架跳到别的地址、主框架上的重定向、`window.open` 一律拒绝，每次拒绝写一行 `kernel` 的 warn；只放行跳到当前地址（整页重新加载，`#` 之后的部分不算差别）。页面能调用整条命令总线，这是内核保证的唯一边界，命令不分权限（[页面边界](/trajectory/2026-09-25-page-navigation-lock)）
+
+{/* ref file="../apps/desktop/src/page-boundary.ts" */}
 - `gwb:event` 原样推给页面；窗口不在时事件就丢了，不补发
 - 每条 `gwb:shell` 都是整份当前状态，不是增量；页面发来 `gwb:hello` 就回一条，所以外壳插件比页面先调用 `setShell` 也不会错过
 - 页面上除了 `window.gwb` 什么都不注入：没有 Node、没有 `ipcRenderer`，新的通道只能由内核加
@@ -55,14 +59,19 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 ## 不负责的事
 
 - 内核应用不认识命令名，不校验参数，不给命令分权限：命令交给谁、回执长什么样见[命令转交](/docs/seams/commands)
+- 内核应用不管 iframe 里加载什么：iframe 可以嵌网页、在自己里面跳转，`window.gwb` 只注入顶层框架。iframe 与页面同源时能经 `parent.gwb` 调到顶层框架的 `window.gwb`，这时发送方是顶层框架，内核分不出来；页面上放哪些同源 iframe 由外壳和插件决定
 - 内核应用不保留事件，不知道谁在听，也不给事件标发送方：页面要区分，由发事件的插件自己写进 payload
 
 ## 测试
 
-`preload.cjs` 由 `apps/desktop/tests/preload.test.ts` 保护：给它一个假的 `electron` 求值，证明页面上只有 `window.gwb` 的三个函数、`command` 走 `gwb:command`、订阅能取消、`onShell` 订阅后马上发 `gwb:hello`。主进程回 `gwb:hello` 由 `apps/desktop/tests/main.test.ts` 保护。页面与主进程连起来只能在隔离 home 里实机验证（[开发](/docs/develop)；查看页面用 devkit 的 `devkit.cdp`）：插件 `emit` 的事件页面收得到，页面整页重新加载后立刻收到当前外壳状态。
+`preload.cjs` 由 `apps/desktop/tests/preload.test.ts` 保护：给它一个假的 `electron` 求值，证明页面上只有 `window.gwb` 的三个函数、`command` 走 `gwb:command`、订阅能取消、`onShell` 订阅后马上发 `gwb:hello`。主进程回 `gwb:hello`、`gwb:command` 拒绝非顶层框架、导航与新窗口被拒由 `apps/desktop/tests/main.test.ts` 保护，哪些跳转算整页重新加载、哪些框架算顶层由 `apps/desktop/tests/page-boundary.test.ts` 保护。页面与主进程连起来只能在隔离 home 里实机验证（[开发](/docs/develop)；查看页面用 devkit 的 `devkit.cdp`）：插件 `emit` 的事件页面收得到，页面整页重新加载后立刻收到当前外壳状态，拖进窗口的链接与 iframe 里的 `window.open` 都被拒绝。
 
 {/* has file="../apps/desktop/tests/preload.test.ts" text="只在页面上放一个 window.gwb，上面正好三个函数" */}
 
 {/* has file="../apps/desktop/tests/preload.test.ts" text="onShell 订阅 gwb:shell 之后马上发一次 gwb:hello" */}
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="gwb:hello：向发来的页面回一条整份外壳状态" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="gwb:command 只接收顶层框架" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="页面边界：主框架跳到别处、主框架的重定向、window.open 一律拒绝" */}

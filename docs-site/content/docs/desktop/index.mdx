@@ -1,6 +1,6 @@
 ---
 title: gwb-kernel-desktop · 内核应用
-description: 内核应用 apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口，发布成 npm 包装在每个 home 里、由启动器加载；它有哪些功能（选定 home 与单实例锁、加载插件、窗口与只读状态页、日志文件与轮转、runtime.json、退出清理），包根导出给插件与页面的接口类型，插件、页面、启动器与外部工具经哪些接口用它，它依赖什么，哪些事不归它做
+description: 内核应用 apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口，发布成 npm 包装在每个 home 里、由启动器加载；它有哪些功能（选定 home 与单实例锁、加载插件、窗口与只读状态页、页面边界、日志文件与轮转、runtime.json、退出清理），包根导出给插件与页面的接口类型，插件、页面、启动器与外部工具经哪些接口用它，它依赖什么，哪些事不归它做
 ---
 
 **本页回答**：内核应用有哪些功能；插件、页面和外部工具经哪些接口用它，各属于哪条接缝；它依赖什么、缺了会怎样；哪些事常被以为归它、其实归别的模块。包名 `@godcreator/gwb-kernel-desktop`，源码目录 `apps/desktop/src`，入口文件 `main.ts`。
@@ -13,7 +13,8 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 - **同一个 home 只运行一个实例**：Chromium 的 userData 放在 `<home>/electron`，Electron 的单实例锁按它区分。同一个 home 再启动一次，新实例写一行 error、退出码 1，`runtime.json` 不动，已在运行的实例把窗口调到前面；不同的 home 可以同时运行。锁由操作系统在进程结束时释放，崩溃不会留下过期的锁（[同一 home 只允许一个实例](/trajectory/2026-09-12-one-home-one-instance)）
 - **加载插件**：创建 cordis 实例，按 `cordis.yml` 加载插件；插件按包名 import 时，按 home 里的真实路径找到文件，换了版本的包重新加载时拿到新版本（[插件加载](/docs/seams/loading)）。一次启动依次做什么、哪几处顺序不能换，见[启动与退出](/docs/desktop/boot)
 - **窗口与外壳**：打开唯一的窗口，把页面交给调用 `setShell` 的外壳插件（[外壳接管](/docs/seams/shell)）
-- **只读状态页**：没有插件调用 `setShell`，或外壳启动失败（import 失败、默认导出不是函数）时，页面显示纯文本、没有按钮的只读状态页：页首一句说明是哪种情况，然后是 home 的路径、每个条目一行（id、包名、加载到哪一步：等待中的写还缺哪个服务，失败的写错误的第一行）、最近 20 行 error 与 warn 日志。条目状态变化、每来一行 error 或 warn，内核都重新推送整份状态，200 毫秒内的多次合并成一次；页面订阅时也会请求一次当前值，比插件晚加载完也不会错过
+- **只读状态页**：没有插件调用 `setShell`，或外壳启动失败（import 失败、默认导出不是函数）时，页面显示纯文本、没有按钮的只读状态页：页首一句说明是哪种情况，然后是 home 的路径、每个条目一行（id、包名、加载到哪一步：等待中的写还缺哪个服务，失败的写错误的第一行）、最近 20 行 error 与 warn 日志。条目状态变化、每来一行 error，内核都重新推送整份状态，200 毫秒内的多次合并成一次（warn 不触发推送）；页面订阅时也会请求一次当前值，比插件晚加载完也不会错过
+- **页面边界**：主框架只可能是内核包里的 `index.html`——主框架跳到别的地址、主框架上的重定向、`window.open` 一律拒绝并写一行 warn，只放行整页重新加载；`gwb:command` 只接收顶层框架的调用。页面能调用整条命令总线，这是内核保证的唯一边界（[IPC 通道](/docs/seams/ipc)）
 - **页面上的 react**：构建时把 react 打进 `dist/react/`，页面入口 `index.html` 里写死的 importmap 把 react 的四个包名指向这几个文件，外壳与插件在页面上写 `import 'react'` 就能找到内核包里的文件（[页面上的 react](/docs/seams/page-react)）
 - **转交命令、推送事件**：页面发来的命令交给命令插件提供的 `ctx.gwbCommands`（[命令转交](/docs/seams/commands)），插件发出的事件推给页面（[IPC 通道](/docs/seams/ipc)）
 - **日志**：插件、内核、页面 console 的日志汇成一条 cordis 日志流，每一行同时写 stderr 和 home 里的 `gwb.log`（[日志](/docs/seams/log)）。`gwb.log` 默认上限 128 MB，写到上限就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多 256 MB）再开一份新的；环境变量 `GWB_LOG_LIMIT_MB` 改上限，单位 MB，`0` 表示不轮转，不是非负整数时按默认值。文件打不开、写不进、轮转失败都只往 stderr 告警一句，内核照常运行
@@ -47,7 +48,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 | 接口 | 做什么 | 接缝 |
 | --- | --- | --- |
 | `window.gwb` | 页面上的三个函数：`command` 调命令、`on` 收事件、`onShell` 知道外壳是谁；类型 `GwbWindowApi` | [3 IPC 通道](/docs/seams/ipc) |
-| IPC 通道 `gwb:command` | 页面调命令；内核把它交给命令转交，回执原样返回 | [3 IPC 通道](/docs/seams/ipc) |
+| IPC 通道 `gwb:command` | 页面调命令，只接收顶层框架的调用；内核把它交给命令转交，回执原样返回 | [3 IPC 通道](/docs/seams/ipc) |
 | IPC 通道 `gwb:event` | `gwbKernel.emit` 推给页面的事件 | [3 IPC 通道](/docs/seams/ipc) |
 | IPC 通道 `gwb:shell` 与 `gwb:hello` | 内核推给页面的整份外壳状态：外壳地址、只读状态页的数据；页面订阅时发 `gwb:hello` 请求一次当前值 | [3 IPC 通道](/docs/seams/ipc) |
 | 外壳模块的默认导出 | 页面入口 import 外壳的地址，拿页面的 `#root` 调用它的默认导出；类型 `ShellBoot` | [4 外壳接管](/docs/seams/shell) |
@@ -119,7 +120,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 | cordis 的 `Context` 与 logger | cordis 实例、提供 `gwbKernel`、日志流、只读状态页的错误行 | 无法启动；`cordis` 写在 peer 里，由 home 根上唯一的那一份满足，插件用的也是它（[home 布局与条目树](/docs/seams/home)） |
 | `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` | 按条目加载插件、读 `cordis.yml` | 无法启动；它们是内核包自己的依赖，版本写死在 `apps/desktop/package.json` 的 `dependencies` 里，升级它们是改接缝，内核升 x（见[开发](/docs/develop#发版)） |
 | 服务 `ctx.gwbCommands`，由 `cordis.yml` 里的命令插件 `@godcreator/gwb-commands` 提供 | 页面发来的命令一律交给它 | 内核照常运行；页面发来的每条命令都回失败回执「没有命令服务」 |
-| react 与 react-dom（开发依赖） | 构建时打进 `dist/react/`，给页面用（见[开发](/docs/develop#内核包怎么打包-react)） | 内核包里缺这几个文件时，页面上的 react 加载失败，外壳挂不上，页面显示只读状态页 |
+| react 与 react-dom（开发依赖） | 构建时打进 `dist/react/`，给页面用（见[开发](/docs/develop#内核包怎么打包-react)） | 内核包里缺这几个文件时，页面上的 react 加载失败，外壳无法挂载，页面显示只读状态页 |
 | home 目录与文件系统 | 读包清单、解析包名、写 `gwb.log` 与 `runtime.json` | 目录建不出来时启动失败；`runtime.json` 写不进只记一行警告；`gwb.log` 打不开时日志只写 stderr，一分钟后再试 |
 
 ## 不做的事

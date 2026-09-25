@@ -34,7 +34,7 @@ description: 连接内核应用与命令插件；接口是服务 ctx.gwbCommands
 
 - 每条命令都在转交时读取 `ctx.gwbCommands`：命令插件运行中装上、换掉、停用，下一条命令就跟着变
 - 命令名和参数原样交给 `run`，第三个参数固定是 `{ via: 'ui' }`；`run` 得到的值原样交回页面
-- 命令名不是字符串时回 `{ ok: false, error: '命令名要是字符串' }`；`ctx.gwbCommands` 不存在时回 `{ ok: false, error: '没有命令服务（ctx.gwbCommands），无法执行 <命令名>' }`
+- 不是页面顶层框架发来的命令不转交，回 `{ ok: false, error }`（见 [IPC 通道](/docs/seams/ipc)）；命令名不是字符串时回 `{ ok: false, error: '命令名要是字符串' }`；`ctx.gwbCommands` 不存在时回 `{ ok: false, error: '没有命令服务（ctx.gwbCommands），无法执行 <命令名>' }`
 - 只找 `gwbCommands` 这一个服务名，不认识任何命令名，自己不登记命令
 
 {/* ref file="../apps/desktop/src/main.ts" lines="234-239" */}

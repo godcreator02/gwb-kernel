@@ -10,6 +10,7 @@ import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
 import { limitFromEnv, openLogFile } from './log-file.js'
+import { isReloadOfCurrentDocument, isTopFrame } from './page-boundary.js'
 
 const { app, BrowserWindow, Menu, dialog, ipcMain } = electron
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
@@ -130,7 +131,7 @@ const gwbLogExporter = {
   levels: { default: 3 },
   export: (message: CordisLogMessage): void => {
     writeLogLine(message.type ?? 'info', message.name ?? '', formatLogMessage(message))
-    if (isErrorOrWarning(message)) scheduleShellPush()
+    if (message.type === 'error') scheduleShellPush()
   },
 }
 
@@ -227,13 +228,14 @@ const kernel: GwbKernelApi = {
 }
 ctx.provide('gwbKernel', kernel)
 
-function relayPageCommand(command: unknown, args: unknown): unknown {
+function relayPageCommand(senderFrame: electron.WebFrameMain | null, command: unknown, args: unknown): unknown {
+  if (!isTopFrame(senderFrame)) return { ok: false, error: `gwb:command 只接收顶层框架的调用，${String(command)} 没有执行` }
   if (typeof command !== 'string') return { ok: false, error: '命令名要是字符串' }
   const commandBus = ctx.gwbCommands
   if (commandBus === undefined) return { ok: false, error: `没有命令服务（ctx.gwbCommands），无法执行 ${command}` }
   return commandBus.run(command, args, { via: 'ui' })
 }
-ipcMain.handle('gwb:command', (_event, command: unknown, args: unknown) => relayPageCommand(command, args))
+ipcMain.handle('gwb:command', (event, command: unknown, args: unknown) => relayPageCommand(event.senderFrame, command, args))
 ipcMain.on('gwb:hello', (event) => event.sender.send('gwb:shell', currentShellMessage()))
 
 /** electron 的级别名只有 warning 与 cordis 不同 */
@@ -242,6 +244,25 @@ function cordisLevelOfConsoleLevel(consoleLevel: string): 'error' | 'warn' | 'de
   if (consoleLevel === 'warning') return 'warn'
   if (consoleLevel === 'debug') return 'debug'
   return 'info'
+}
+
+/** 页面能调整条命令总线，所以主框架只能是内核的 index.html：跳走、重定向、开新窗口一律拒绝 */
+function lockPageToIndexHtml(webContents: electron.WebContents): void {
+  const refuse = (what: string, url: string): void => kernelLog.warn(`页面只能是内核的 index.html，拒绝${what} ${url}`)
+  webContents.on('will-navigate', (event) => {
+    if (isReloadOfCurrentDocument(event.url, webContents.getURL())) return
+    event.preventDefault()
+    refuse('主框架跳转到', event.url)
+  })
+  webContents.on('will-redirect', (event) => {
+    if (!event.isMainFrame) return
+    event.preventDefault()
+    refuse('主框架重定向到', event.url)
+  })
+  webContents.setWindowOpenHandler(({ url }) => {
+    refuse('打开新窗口', url)
+    return { action: 'deny' }
+  })
 }
 
 function createMainWindow(): electron.BrowserWindow {
@@ -254,6 +275,7 @@ function createMainWindow(): electron.BrowserWindow {
     webPreferences: { preload: path.join(moduleDir, 'preload.cjs') },
   })
   browserWindow.once('ready-to-show', () => mainWindow?.show())
+  lockPageToIndexHtml(browserWindow.webContents)
   browserWindow.webContents.on('console-message', (event) => {
     ctx.logger('renderer')[cordisLevelOfConsoleLevel(event.level)](event.message)
   })
