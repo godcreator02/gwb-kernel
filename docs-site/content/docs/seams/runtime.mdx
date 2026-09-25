@@ -1,6 +1,6 @@
 ---
 title: 7 runtime.json
-description: 连接内核应用与工作台进程之外的读者（devkit、照 INSTALL.md 安装工作台的 agent）：内核每次启动把这次运行的 pid、启动时刻、版本、应用目录、调试端口写进 home 里的 runtime.json；内核应用与读者之间只有这份约定，没有代码接口；文件在不等于进程在，读者自己确认
+description: 连接内核应用与工作台进程之外的读者（devkit、照 INSTALL.md 安装工作台的 agent）：内核每次启动把这次运行的 pid、启动时刻、版本、调试端口写进 home 里的 runtime.json；内核应用与读者之间只有这份约定，没有代码接口；文件在不等于进程在，读者自己确认
 ---
 
 **本页回答**：`runtime.json` 里写了什么、什么时候写、谁读；内核应用和读它的程序各保证什么。
@@ -10,7 +10,7 @@ description: 连接内核应用与工作台进程之外的读者（devkit、照 
 - [内核应用](/docs/desktop)：启动时写这份文件
 - 工作台进程之外的读者，不在本仓：
   - **devkit**（插件 `gwb-devkit` 的命令）：在一个工作台里按 home 名连接另一个正在运行的工作台时，从这份文件取调试端口，并用 `pid` 确认进程还在；删除一个 home 时按 `pid` 找到要结束的进程
-  - **安装工作台的 agent**：照 `INSTALL.md` 安装，轮询到 `mcp` 字段出现就算启动完成，核对 `version`；用 `pid` 关闭窗口（正本 `docs-site/content/outputs/install.mdx`）
+  - **安装工作台的 agent**：照 `INSTALL.md` 安装，轮询到 `startedAt` 晚于它启动的时刻、`pid` 是活着的进程、有 `mcp` 字段三条同时满足，再以 MCP 入口的 `index` 调通为准判断启动成功，核对 `version`；用 `pid` 关闭窗口（正本 `docs-site/content/outputs/install.mdx`）
 
 内核应用与读者之间没有代码接口，只靠这份约定：字段名写在内核的 `main.ts` 里，读者在各自的仓里按名字读。
 
@@ -23,14 +23,13 @@ description: 连接内核应用与工作台进程之外的读者（devkit、照 
 | `pid` | 内核主进程的进程号 |
 | `startedAt` | 启动时刻，毫秒时间戳 |
 | `version` | 内核的版本号，与 `gwbKernel.version` 相同 |
-| `appDir` | 应用目录，即 Electron 的 `app.getAppPath()`：从安装包启动是启动器所在的 `resources\app.asar`，从仓里 `pnpm start` 运行是 `apps/desktop` |
 | `cdp` | Chromium 调试端口；启动时没给 `--remote-debugging-port`，或给的不是 1–65535 的整数，就没有这个字段 |
 
-{/* ref file="../apps/desktop/src/main.ts" lines="89-97" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="85-92" */}
 
 调试端口只有启动进程的一方知道，页面和插件都读不到，所以由内核写下来。没开调试端口时不写这个字段，而不是写 0 或 `null`：读的一方只看字段在不在，不用再判断这个值有没有意义。
 
-MCP 入口插件 `gwb-mcp` 在它的端口开好之后往同一份文件里补一个 `mcp` 字段（MCP 入口的地址）；安装工作台的 agent 就是等这个字段出现来判断工作台启动完成。
+MCP 入口插件 `gwb-mcp` 在它的端口开好之后往同一份文件里补一个 `mcp` 字段（MCP 入口的地址）；它是安装工作台的 agent 判断启动完成的三个条件之一，另两个是 `startedAt` 与 `pid`：文件在上一次运行后一直留着，只看 `mcp` 在不在会把上一次的地址当成这一次的。
 
 ## 约定
 

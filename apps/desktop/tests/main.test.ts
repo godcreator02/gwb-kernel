@@ -124,7 +124,6 @@ function makeFakeElectron(options: FakeElectronOptions): FakeElectron {
     requestSingleInstanceLock: (): boolean => options.singleInstanceLockGranted ?? true,
     exit,
     quit,
-    getAppPath: (): string => 'C:\\fake-app-dir',
     commandLine: {
       getSwitchValue: (name: string): string => (name === 'remote-debugging-port' ? (options.remoteDebuggingPort ?? '') : ''),
     },
@@ -204,7 +203,6 @@ function listenersAddedSince(before: Map<string, Set<unknown>>): [string, (...ar
 interface BootOptions extends Omit<FakeElectronOptions, 'appData'> {
   gwbHome: string
   appData?: string
-  launcherVersion?: string
   resolveReady?: boolean
 }
 
@@ -219,8 +217,6 @@ async function importMain(options: BootOptions): Promise<BootedKernel> {
   const electron = makeFakeElectron({ ...options, appData })
   harness.electron = electron.module
   process.env.GWB_HOME = options.gwbHome
-  if (options.launcherVersion === undefined) delete process.env.GWB_LAUNCHER_VERSION
-  else process.env.GWB_LAUNCHER_VERSION = options.launcherVersion
   const before = listenerSnapshot()
   vi.resetModules()
   await import('../src/main')
@@ -304,7 +300,6 @@ afterEach(() => {
   stderrWrite?.mockRestore()
   stderrWrite = undefined
   delete process.env.GWB_HOME
-  delete process.env.GWB_LAUNCHER_VERSION
   delete probeGlobal.__gwbMainTestProbe
   // main.ts 退出时不关日志文件，这里替它关，临时目录才删得掉
   for (const descriptor of openedDescriptors.splice(0)) fs.closeSync(descriptor)
@@ -341,17 +336,16 @@ describe('main.ts：单实例锁与 runtime.json', () => {
     expect(booted.electron.exit).toHaveBeenCalledWith(1)
   })
 
-  it('runtime.json 每次启动整份重写：pid、启动时刻、版本、应用目录；没开调试端口就没有 cdp', async () => {
+  it('runtime.json 每次启动整份重写：pid、启动时刻、版本；没开调试端口就没有 cdp', async () => {
     silenceStderr()
     const home = makeTemporaryDir('gwb-main-home-')
     writeFiles(home, { 'runtime.json': '{"stale":true}' })
     const before = Date.now()
     const booted = await importMain({ gwbHome: home })
     const runtime = JSON.parse(fs.readFileSync(path.join(booted.dataDir, 'runtime.json'), 'utf8')) as Record<string, unknown>
-    expect(Object.keys(runtime).sort()).toEqual(['appDir', 'pid', 'startedAt', 'version'])
+    expect(Object.keys(runtime).sort()).toEqual(['pid', 'startedAt', 'version'])
     expect(runtime['pid']).toBe(process.pid)
     expect(runtime['version']).toBe(kernelPackageVersion)
-    expect(runtime['appDir']).toBe('C:\\fake-app-dir')
     expect(runtime['startedAt']).toBeGreaterThanOrEqual(before)
     expect(fs.readFileSync(path.join(booted.dataDir, 'runtime.json'), 'utf8').endsWith('}\n')).toBe(true)
   })
@@ -538,32 +532,16 @@ describe('main.ts：IPC 通道', () => {
 })
 
 describe('main.ts：插件看到的内核', () => {
-  it('插件拿到 gwbKernel：dataDir 是 home 的真实路径、version 是内核包的版本；页面的命令交给插件提供的 gwbCommands，带上 via: ui', async () => {
+  it('插件拿到 gwbKernel：只有 dataDir、version、emit、setShell 四个成员，dataDir 是 home 的真实路径、version 是内核包的版本；页面的命令交给插件提供的 gwbCommands，带上 via: ui', async () => {
     silenceStderr()
     probeGlobal.__gwbMainTestProbe = { events: [] }
     const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
     const probe = probeGlobal.__gwbMainTestProbe
+    expect(Object.keys(probe.kernel!).sort()).toEqual(['dataDir', 'emit', 'setShell', 'version'])
     expect(probe.kernel?.dataDir).toBe(booted.dataDir)
     expect(probe.kernel?.version).toBe(kernelPackageVersion)
     const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
     expect(await relayCommand(topFrameEvent, 'demo.echo', { a: 1 })).toEqual({ ok: true, data: { command: 'demo.echo', args: { a: 1 }, context: { via: 'ui' } } })
-    await quitAndWaitForCleanup(booted)
-  })
-
-  it('启动器在 GWB_LAUNCHER_VERSION 里交来安装包版本：插件拿到 launcherVersion，这个环境变量读完就删', async () => {
-    silenceStderr()
-    probeGlobal.__gwbMainTestProbe = { events: [] }
-    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins(), launcherVersion: '0.3.1' })
-    expect(probeGlobal.__gwbMainTestProbe.kernel?.launcherVersion).toBe('0.3.1')
-    expect(process.env.GWB_LAUNCHER_VERSION).toBeUndefined()
-    await quitAndWaitForCleanup(booted)
-  })
-
-  it('没有 GWB_LAUNCHER_VERSION（从源码直接启动内核）：插件拿到的 launcherVersion 是 undefined', async () => {
-    silenceStderr()
-    probeGlobal.__gwbMainTestProbe = { events: [] }
-    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
-    expect(probeGlobal.__gwbMainTestProbe.kernel?.launcherVersion).toBeUndefined()
     await quitAndWaitForCleanup(booted)
   })
 

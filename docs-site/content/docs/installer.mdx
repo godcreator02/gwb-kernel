@@ -8,7 +8,7 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
 安装包只带启动器与 Electron。内核是 npm 包 `@godcreator/gwb-kernel-desktop`，和插件一样装在每个 home 的 `node_modules` 里：这样插件的 peer `cordis` 与内核用的是 home 里同一份，各个 home 的内核版本也可以不同（[内核装进 home](/trajectory/2026-09-24-kernel-in-home)）。开始菜单里的「gwb-kernel」运行的就是启动器；安装包只在装的时候用一次。
 
 <Diagram name="first-install" title="第一次安装到另开一个 home：安装包只装启动器，内核包、cordis 与插件由 pnpm 装进 home">
-- 装机前在用户级配置里写好两项：`@godcreator` 的包从团队源下载；pnpm 放行 `@godcreator/*` 里发布不满一天的包
+- 安装前在用户级配置里写好两项：`@godcreator` 的包从团队源下载；pnpm 放行 `@godcreator/*` 里发布不满一天的包
 - 从 gitea 发布页下载 `gwb-setup-<版>.exe` 静默安装：装到 `%LOCALAPPDATA%\Programs\gwb-kernel`，只有启动器与 Electron
 - 建 `homes\default`，用 pnpm 依次装内核包（精确版本）、`cordis`（内核包 peer 里的版本）、`cordis.yml` 里列的 11 个基础插件
 - 启动：启动器选定 default，读内核包清单、比对 Electron 版本、加载内核；内核加载插件，把 MCP 入口地址写进 `runtime.json`，token 在 `mcp\secret.json`
@@ -20,7 +20,7 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
 ## 功能
 
 - **产出两种安装包**：在 `installer\build\dist\` 下生成 NSIS 安装包 `gwb-setup-<版>.exe`（一键安装、按当前用户安装、不需要管理员权限）和便携 zip `gwb-portable-<版>.zip`，`<版>` 是启动器的版本号。同目录的 `win-unpacked\` 是两种产物共用的未打包目录，只用来验证；每次打包整个重新生成，别日常直接运行它
-- **只带启动器**：内核、插件、pnpm 都不带。内核与插件由创建 home 的一方装进 home，经插件管理升级；安装包只在 Electron 版本或启动器本身变了时重打
+- **只带启动器**：内核、插件、pnpm 都不带。内核与插件由创建 home 的一方装进 home，经插件管理升级；安装包只在 Electron 版本或启动器本身变了时重新打包
 - **装好之后**：安装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，开始菜单出现「gwb-kernel」。启动器（清单、两个脚本、`semver`）在 `resources\app.asar` 里。home 在 `%APPDATA%\gwb-kernel\homes\` 下，和安装目录分开
 - **发布**：release 只上传 `gwb-setup-<版>.exe` 到 gitea 发布仓 `godcreator/gwb-kernel`，便携 zip 只在本地构建；顺序与注意事项见[开发](/docs/develop#发版)。怎么运行打包脚本、它一步步做什么、打完怎么验证，见[开发](/docs/develop#打安装包)
 
@@ -28,14 +28,14 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
 
 每次从开始菜单启动，启动器依次做四件事：
 
-1. **选定 home**：按和内核同一条规则读 `GWB_HOME`——不设是 `default`；只写名字是 `%APPDATA%\gwb-kernel\homes\<名字>`；带路径分隔符就是那个目录本身。算出的绝对路径写回 `GWB_HOME`，内核启动时再选一次，一定落在同一个目录。同时把安装包的版本号（就是启动器清单的 `version`）写进 `GWB_LAUNCHER_VERSION`，内核把它交给插件，外壳状态栏上的 `gwb-electron` 版本就是它
+1. **选定 home**：按和内核同一条规则读 `GWB_HOME`——不设是 `default`；只写名字是 `%APPDATA%\gwb-kernel\homes\<名字>`；带路径分隔符就是那个目录本身。算出的绝对路径写回 `GWB_HOME`，内核启动时再选一次，一定落在同一个目录。安装包的版本号不交给内核，插件拿不到它
 2. **检查内核包**：读 `<home>/node_modules/@godcreator/gwb-kernel-desktop` 的清单，内核要求的 Electron 版本（`engines.electron`）要包含启动器自带的 Electron，清单里要有 `main`
 3. **加载内核**：import `main` 指向的入口。之后怎么准备 home、怎么加载插件全由内核决定
 4. **不满足就拒绝**：home 里没有内核包、清单读不了、没声明 `engines.electron`、版本不满足、没有 `main`、内核入口 import 失败，一律弹框说明是哪个 home、缺什么、怎么补，退出码 1。启动器只读内核包的清单，不写 home，也不替人安装
 
-启动器与内核包之间只靠这两个清单字段与 `GWB_HOME`、`GWB_LAUNCHER_VERSION` 两个环境变量对接，约定写在[接缝 9 启动器加载内核](/docs/seams/launcher)。
+启动器与内核包之间只靠这两个清单字段与环境变量 `GWB_HOME` 对接，约定写在[接缝 9 启动器加载内核](/docs/seams/launcher)。
 
-**另开一个 home**：同一台机器上可以有多个 home，各自一个目录、各自一套内核包与插件，可以同时运行；同一个 home 只能运行一个实例（内核的单实例锁）。手工开：在另一个目录照 `INSTALL.md` 第 3 步装内核包、`cordis` 与插件，设 `GWB_HOME` 后启动同一个 `gwb-kernel.exe`。它的 MCP 端口不是 2870，token 也是它自己的，都从那个 home 的 `runtime.json` 与 `mcp\secret.json` 读。开发插件时用的测试 home 由 devkit 的 `devkit.home.new` 代办这几步，见 devkit 文档站的「测试 home」页（`gwb-devkit` 仓 `docs-site/content/docs/devkit/home.mdx`）。
+**另开一个 home**：同一台机器上可以有多个 home，各自一个目录、各自一套内核包与插件，可以同时运行；同一个 home 只能运行一个实例（内核的单实例锁）。手工开：在另一个目录照 `INSTALL.md` 第 3 步装内核包、`cordis` 与插件，设 `GWB_HOME` 后启动同一个 `gwb-kernel.exe`。它的 MCP 端口不是 2870，token 也是它自己的，都从那个 home 的 `runtime.json` 与 `mcp\secret.json` 读。开发插件时用的测试 home 由 devkit 的 `devkit.home.new` 完成这几步，见 devkit 文档站的「测试 home」页（`gwb-devkit` 仓 `docs-site/content/docs/devkit/home.mdx`）。
 
 ## 接口
 
@@ -43,12 +43,11 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
 
 | 接口 | 谁在用、做什么 |
 | --- | --- |
-| 安装程序 `gwb-setup-<版>.exe` 与便携 zip | 人和装机的 agent 用它安装启动器；按当前用户安装，产品名 `gwb-kernel` 决定安装目录与开始菜单项 |
+| 安装程序 `gwb-setup-<版>.exe` 与便携 zip | 人和安装工作台的 agent 用它安装启动器；按当前用户安装，产品名 `gwb-kernel` 决定安装目录与开始菜单项 |
 | home 里的内核包 `@godcreator/gwb-kernel-desktop` | 启动器从 `<home>/node_modules/@godcreator/gwb-kernel-desktop` 读清单、import `main` 指向的入口 |
 | 内核包清单的 `engines.electron` | 内核声明它要的 Electron 版本范围；启动器拿当前 Electron 比对 |
 | 环境变量 `GWB_HOME` | 启动器读它选定 home，再写回绝对路径交给内核 |
-| 环境变量 `GWB_LAUNCHER_VERSION` | 启动器写入安装包的版本号，内核读出来放进 `gwbKernel.launcherVersion` 交给插件 |
-| 给人和装机 agent 的发布物 | gitea release 上的 `gwb-setup-<版>.exe`、开始菜单里的「gwb-kernel」；装机步骤在仓根 `INSTALL.md` |
+| 给人和安装工作台的 agent 的发布物 | gitea release 上的 `gwb-setup-<版>.exe`、开始菜单里的「gwb-kernel」；安装步骤在仓根 `INSTALL.md` |
 
 {/* has file="../installer/electron-builder.yml" text="artifactName: gwb-setup-" */}
 
@@ -59,8 +58,6 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
 {/* has file="../apps/launcher/src/launch-plan.ts" text="export const KERNEL_PACKAGE = '@godcreator/gwb-kernel-desktop'" */}
 
 {/* has file="../apps/launcher/src/main.ts" text="process.env.GWB_HOME = homeDir" */}
-
-{/* has file="../apps/launcher/src/main.ts" text="process.env.GWB_LAUNCHER_VERSION = app.getVersion()" */}
 
 ## 依赖
 
@@ -75,5 +72,5 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
 ## 不做的事
 
 - **不带内核、插件与 pnpm，不写 home**：启动器只读 home 里内核包的清单；home 里缺什么由创建 home 的一方照 `INSTALL.md` 装，启动器不替人安装
-- **不决定内核怎么运行**：内核怎么准备 home、怎么加载插件全由内核自己决定；启动器只保证交给内核的 `GWB_HOME` 是它选定的那个绝对路径、`GWB_LAUNCHER_VERSION` 是安装包的版本号
+- **不决定内核怎么运行**：内核怎么准备 home、怎么加载插件全由内核自己决定；启动器只保证交给内核的 `GWB_HOME` 是它选定的那个绝对路径
 - **不自己定 electron 版本**：版本只写在 `apps/launcher/package.json` 的 `devDependencies.electron` 一处，打包时经命令行传给 electron-builder

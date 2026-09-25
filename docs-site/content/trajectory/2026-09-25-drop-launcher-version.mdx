@@ -1,0 +1,39 @@
+---
+title: 删掉 gwbKernel.launcherVersion 与 GWB_LAUNCHER_VERSION：唯一的使用者没用上，要生效还得发安装包
+born-at: 2026-09-25T13:31
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 删安装包版本
+domain: 这条线
+---
+
+## 背景
+
+内核 0.5.1 给内核服务加了可选字段 `launcherVersion`：启动器 0.3.1 把安装包的版本写进环境变量 `GWB_LAUNCHER_VERSION`，内核读出后删掉、放进 `gwbKernel.launcherVersion`，给外壳状态栏同时显示安装包与内核的版本（commit 8a6f8c3）。
+
+supersedes:: [安装包的版本经内核服务交给插件](2026-09-25-launcher-version-via-kernel.md)
+
+到今天，启动器 0.3.1 从没打过安装包、没发布过，每台机器上装的都是更早的安装包，没有任何一个运行中的内核拿到过这个值；外壳状态栏上的安装包版本从来都是「未知」。人定下：删掉这个功能，不考虑下游插件。
+
+## 结论与边界
+
+- 内核不再读 `GWB_LAUNCHER_VERSION`，`GwbKernelApi` 删掉 `launcherVersion`，内核服务只剩 `dataDir`、`version`、`emit`、`setShell` 四个成员
+- 启动器删掉写 `GWB_LAUNCHER_VERSION` 的那一行，回到只管选定 home、检查内核包、加载内核；启动器的版本号不升、不打安装包、不发布，机器上装的安装包照常使用
+- 同一版一起删掉 `runtime.json` 的 `appDir`：内核装进 home 以后，从安装版启动时它总是指向启动器的 `app.asar`，说明不了内核从哪来（这个字段的来历见 [内核写 runtime.json](2026-09-11-kernel-writes-runtime-record.md)）
+- 删掉包根导出类型上已有的字段、删掉接缝 7 上已有的字段，都属于改接缝，内核升 x：0.6.2 → 0.7.0
+
+## 否掉的候选
+
+- **留着，等哪天打安装包时自然生效**：只有一个使用者（外壳状态栏），它要的只是显示一个版本号；为了让它生效就得打一版安装包、让每台机器重装，代价和收益不相称。留着的话，接缝 2、9 与安装包页都得一直讲一个从没生效的值和「0.3.1 之前的安装包」这种分支
+- **只删文档、代码留着**：类型上的可选字段仍然是接缝的一部分，插件照样能读到它、一直读到 `undefined`，文档不讲反而更让人误解
+
+## 代价与遗留
+
+- 外壳状态栏如果读了 `launcherVersion`，在内核 0.7.0 上类型检查会失败，要跟着删掉那一项；外壳要显示安装包版本，得另找办法
+- 内核升 x 以后，所有插件 peer 里内核包的范围都要改成 `^0.7.0`，在新内核上重新验过
+- 启动器清单的版本号仍是 0.3.1，这个号从没发布过；下次真要打安装包时照 `gwb-release` 决定用哪个号
+
+## 依据
+
+- `apps/desktop/tests/main.test.ts`：插件拿到的 `gwbKernel` 只有四个成员，`runtime.json` 只有 `pid`、`startedAt`、`version`（开了调试端口时加 `cdp`）
+- 无实机物证
