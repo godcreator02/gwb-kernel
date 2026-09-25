@@ -12,7 +12,7 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 命令到了主进程之后交给谁执行，是另一条接缝：[命令转交](/docs/seams/commands)。
 
-## 交换什么
+## 接口
 
 页面上只有 `window.gwb`，形状是包根导出的 `GwbWindowApi`：
 
@@ -53,7 +53,7 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 这两段说明：主框架跳到别的地址（包括网页、拖进窗口的文件、不带 `target` 的链接点击）与主框架上的重定向一律拒绝，每次写一行 `kernel` 的 warn，只放行跳到当前地址（整页重新加载，`#` 之后的部分不算差别）；`window.open` 与 `target="_blank"` 从不打开新窗口，协议是 `http:` 或 `https:` 的交给系统默认浏览器并写一行 info，打开失败再写一行 warn，别的协议与解析不了的地址拒绝并写一行 warn。
 
-## 各方保证
+## 约定
 
 **内核应用**保证：
 
@@ -71,13 +71,13 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 - `onShell` 只由内核的页面入口订阅；外壳和别的页面代码用 `command` 与 `on`
 - 要在系统浏览器里打开网页，链接写 `target="_blank"` 或调用 `window.open`；不带 `target` 的链接点击是主框架跳转，会被拒绝
 
-## 谁不负责什么
+## 不负责的事
 
 - 内核应用不认识命令名，不校验参数，不给命令分权限（[命令转交](/docs/seams/commands)）
 - 内核应用不管 iframe 里加载什么：iframe 可以嵌网页、在自己里面跳转，`window.gwb` 只注入顶层框架。同源的 iframe 能经 `parent.gwb` 调到顶层框架的 `window.gwb`，那时发送方就是顶层框架，内核分不出来；页面上放哪些同源 iframe 由外壳和插件决定
 - 内核应用不保留事件，也不给事件标发送方
 
-## 由什么测试保护
+## 测试
 
 - `apps/desktop/tests/preload.test.ts`：给 `preload.cjs` 一个假的 `electron` 求值，证明页面上只有 `window.gwb` 的三个函数、`command` 走 `gwb:command`、订阅能取消、`onShell` 订阅后马上发 `gwb:hello`
 - `apps/desktop/tests/page-boundary.test.ts`：三条判定——哪些跳转算整页重新加载、哪些发送方算顶层框架、`window.open` 的哪些地址交给系统浏览器

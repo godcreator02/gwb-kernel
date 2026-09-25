@@ -20,7 +20,7 @@ description: 连接页面入口与调用 setShell 的外壳插件；交换的是
 
 两者之间经过主进程：`setShell` 是内核服务的成员（[内核服务](/docs/seams/kernel)），外壳状态经通道 `gwb:shell` 推给页面（[IPC 通道](/docs/seams/ipc)）。
 
-## 交换什么
+## 接口
 
 外壳插件在主进程里调用 `setShell`，把自己在页面上运行的那个模块的地址交给内核：
 
@@ -39,7 +39,7 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 
 这段说明：换外壳先 `dispose` 旧的、清空 `#root`；同一个地址在 import 还没完成时又推来一次，靠 `shellUrlBeingLoaded` 认出来，不挂载第二遍；地址是 `null`、import 失败、默认导出不是函数，都画只读状态页，失败时第一行写明原因。页面入口里写死了 importmap，外壳模块里 react 的四个包名可以直接 import（[页面上的 react](/docs/seams/page-react)）。
 
-## 各方保证
+## 约定
 
 **页面入口**保证：
 
@@ -54,13 +54,13 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 - 在页面上运行的模块默认导出一个 `ShellBoot`；`dispose` 移除自己在页面上创建的一切
 - 用到 react 时构建时外置那四个包名，留给 importmap
 
-## 谁不负责什么
+## 不负责的事
 
 - 页面入口不挑外壳：主进程推来哪个地址就挂载哪个；谁能调用 `setShell` 也不限制
 - 页面入口除了只读状态页不渲染任何界面，不认识窗格；只读状态页不分析失败原因，没有按钮（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）
 - 外壳插件不管页面入口怎么拿到它的地址，也不直接接触 IPC 通道
 
-## 由什么测试保护
+## 测试
 
 `apps/desktop/tests/index-html.test.ts` 把页面脚本放进一个极简的假 DOM 求值，证明：外壳挂载，同一地址不重复挂载（import 还没完成时也一样），换外壳先 `dispose` 旧的，外壳撤销时回到只读状态页，撤销后同一地址再推来重新挂载，`dispose` 抛错、import 失败、默认导出不是函数各自的处理，失败后同一地址再推来会重试。外壳模块的形状由外壳那边的类型检查保护（外壳从内核包 `import type` 取 `ShellBoot`）。真实窗口里的显示在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
 

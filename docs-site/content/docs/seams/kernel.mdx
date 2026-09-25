@@ -12,7 +12,7 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 上下文上的命令服务 `gwbCommands` 不属于这条接缝：它由命令插件提供，内核只调用它来转交页面发来的命令（[命令转交](/docs/seams/commands)）。
 
-## 交换什么
+## 接口
 
 `gwbKernel` 的形状就是包根导出的 `GwbKernelApi`，插件的 `apply` 拿到的上下文类型是 `GwbContext`：
 
@@ -29,7 +29,7 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 这段说明三件事：`emit` 只是往当前窗口发一条 `gwb:event`，窗口不在就什么都不发；`setShell` 每次都立刻推一次整份外壳状态；撤销函数只在当前外壳地址仍是自己交出的那个时才清空。
 
-## 各方保证
+## 约定
 
 **内核应用**保证：
 
@@ -44,14 +44,14 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 - `emit` 的 payload 能经 Electron 的 IPC 传过去（结构化克隆：函数、Promise 传不过去）
 - 把 `setShell` 返回的撤销函数交给 `ctx.effect`，插件卸载时把页面交还
 
-## 谁不负责什么
+## 不负责的事
 
 - 内核应用不给插件分数据目录，也不检查插件写了哪里
 - 内核应用的 `emit` 不知道谁在听，不区分事件类型，不给事件编号；页面要区分来源，由发事件的插件写进 payload
 - 内核应用的 `setShell` 不挑外壳：谁调用谁就是，也不检查地址指向的模块能不能加载
 - `version` 只是内核包的版本：安装包（启动器）的版本插件拿不到，插件的版本由插件管理报告
 
-## 由什么测试保护
+## 测试
 
 形状由类型检查保护：内核里这个对象标成同一个 `src/api.ts` 里的 `GwbKernelApi`，对不上时本仓 `pnpm check` 失败。行为由 `apps/desktop/tests/main.test.ts` 保护：一个从 `cordis.yml` 加载进来的测试插件取到 `gwbKernel`，证明它只有四个成员、`dataDir` 是 home 的真实路径、`version` 是内核包的版本、`emit` 推到页面、后调用的 `setShell` 替换先调用的、撤销只在自己仍是当前外壳时清空。
 

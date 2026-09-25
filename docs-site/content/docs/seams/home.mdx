@@ -10,7 +10,7 @@ description: 连接内核应用与插件管理（devkit 仓的 @godcreator/gwb-p
 - [内核应用](/docs/desktop)：决定 home 的文件布局；带着 loader 与 include，条目树的形状、`cordis.yml` 怎么读写都由这两个包决定；按真实路径解析包名
 - 插件管理 `@godcreator/gwb-plugin-manager`（devkit 仓 `gwb-devkit`）：`cordis.yml` 里的普通插件，也是唯一写 home 的插件——经 loader 的条目树改 `cordis.yml`，运行机器上的 pnpm 改 `package.json` 与 `node_modules/`
 
-## 交换什么
+## 接口
 
 **home 的文件布局**，每样东西归谁写，全站只在这里列一份：
 
@@ -36,7 +36,7 @@ description: 连接内核应用与插件管理（devkit 仓的 @godcreator/gwb-p
 
 **按真实路径解析包名**：包换了版本，`node_modules/<包名>` 的真实路径跟着换，停用再启用那条条目就拿到新版本（规则见[插件加载](/docs/seams/loading)）。
 
-## 各方保证
+## 约定
 
 **内核应用**保证：
 
@@ -55,14 +55,14 @@ description: 连接内核应用与插件管理（devkit 仓的 @godcreator/gwb-p
 
 插件在自己 `package.json` 的 peer 里写内核包的 `^` 范围，插件管理拿它和运行中的内核版本比对、把范围不包含的插件标出来（[插件在 peer 里写兼容哪个内核](/docs/design#插件在-peer-里写兼容哪个内核)）。内核升级之后看这张表，就知道哪些插件要复查。
 
-## 谁不负责什么
+## 不负责的事
 
 - 内核应用不知道插件管理存在：loader 与 include 照常读写 `cordis.yml`、加载条目，不为插件管理留任何接口；home 里没有插件管理时，运行中就没人能装包、改条目
 - 内核应用不带 pnpm，不装包、不升级包
 - 内核应用不读插件 peer 里的内核包范围：范围不包含当前内核的插件照常加载
 - 插件管理不决定 home 的布局、条目树的形状、包名怎么解析
 
-## 由什么测试保护
+## 测试
 
 `apps/desktop/tests/main.test.ts` 保护内核准备 home 的那部分：缺 `package.json`、`cordis.yml` 时补最小形态，已有的不覆盖，userData 设在 `<home>/electron`。包名解析的测试见[插件加载](/docs/seams/loading)。条目树的形状由插件管理那边保护：devkit 仓里用与内核相同版本的 loader、include 搭一个 home 跑条目树的测试，内核升级这两个包、改了条目树的形状时，那组测试最先失败。
 
