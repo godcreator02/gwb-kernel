@@ -111,7 +111,7 @@ interface CordisLogMessage {
 const cordisLoggerService = ctx.logger as unknown as {
   (name: string): { constructor: { format(exporter: unknown, message: unknown): string } }
   exporter(exporter: unknown): void
-  buffer?: CordisLogMessage[]
+  buffer: CordisLogMessage[]
 }
 // Logger 类从一个实例的 constructor 上取，不 import cordis 的内部模块
 const CordisLogger = cordisLoggerService('gwb').constructor
@@ -131,6 +131,7 @@ const gwbLogExporter = {
 }
 
 function formatLogMessage(message: CordisLogMessage): string {
+  // cordis 的 %o 用 JSON.stringify，参数有循环引用、BigInt 就抛；抛出去会让写日志的插件跟着抛，留在缓冲里的那一行还会让每次推送状态页都抛
   try {
     return CordisLogger.format(gwbLogExporter, message)
   } catch {
@@ -155,7 +156,7 @@ function formatBufferedErrorLine(message: CordisLogMessage): string {
 }
 
 function recentErrorLines(): string[] {
-  return (cordisLoggerService.buffer ?? []).filter(isErrorOrWarning).slice(-RECENT_ERROR_LINES_SHOWN).map(formatBufferedErrorLine)
+  return cordisLoggerService.buffer.filter(isErrorOrWarning).slice(-RECENT_ERROR_LINES_SHOWN).map(formatBufferedErrorLine)
 }
 
 function statusPageReport(): StatusPageReport {

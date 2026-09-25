@@ -17,7 +17,7 @@ vi.mock('electron', () => ({
 
 interface ProbeRecord {
   kernel?: GwbKernelApi
-  logger?: { error(message: string): void; warn(message: string): void }
+  logger?: { error(...args: unknown[]): void; warn(message: string): void }
   events: string[]
 }
 const probeGlobal = globalThis as typeof globalThis & { __gwbMainTestProbe?: ProbeRecord }
@@ -585,6 +585,23 @@ describe('main.ts：插件看到的内核', () => {
     expect(errors.some((line) => line.includes('error probe 探针插件报的错'))).toBe(true)
     expect(errors.some((line) => line.includes('error probe 探针插件报的第二个错'))).toBe(true)
     expect(booted.readLog()).toContain('error probe 探针插件报的错')
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('插件写的 error 带着 cordis 格式化不了的参数（循环引用）：写日志的一方不抛，这一行照样进 gwb.log 与只读状态页', async () => {
+    silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
+    const window = booted.electron.windows[0]!
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    const sentBefore = shellMessagesSent(window).length
+    const circular: Record<string, unknown> = {}
+    circular.self = circular
+    const probeLogger = probeGlobal.__gwbMainTestProbe.logger!
+    expect(() => probeLogger.error('探针插件带循环引用的错', circular)).not.toThrow()
+    await vi.waitFor(() => expect(shellMessagesSent(window).length).toBe(sentBefore + 1), { timeout: 2_000 })
+    expect(shellMessagesSent(window).at(-1)!.report.errors.some((line) => line.includes('error probe 探针插件带循环引用的错'))).toBe(true)
+    expect(booted.readLog()).toContain('error probe 探针插件带循环引用的错')
     await quitAndWaitForCleanup(booted)
   })
 
