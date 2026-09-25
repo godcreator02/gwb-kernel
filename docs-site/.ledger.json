@@ -228,13 +228,13 @@
   "content/docs/seams/ipc.mdx": {
     "../apps/desktop/src/preload.cjs:all": {
       "kind": "git",
-      "blob": "2d5226970031e639456de3d32f9bb03fdc1d3cf2",
-      "commit": "53e302d8d32241b42ca2c6585165cbde6b465505",
+      "blob": "cb7e8f1a1e2b66019b2af7897a002881f92a87b2",
+      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
       "lines": [
         1,
         19
       ],
-      "hash": "4e0d49f6635b27baeb37e32e5ea6d342dffdeefa86473d8f15b3d8d404abd3d4"
+      "hash": "72709b776bf7edd1d3ae916a4a08278229495c8583d6b5bbef2861bf52fb933d"
     },
     "has ../apps/desktop/tests/main.test.ts \"gwb:hello：向发来的页面回一条整份外壳状态\"": {
       "kind": "has"
@@ -247,28 +247,18 @@
     },
     "../apps/desktop/src/api.ts:6-11": {
       "kind": "git",
-      "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
-      "commit": "53e302d8d32241b42ca2c6585165cbde6b465505",
+      "blob": "a9361e76f87242a68da4f61e22c486d180829008",
+      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
       "lines": [
         6,
         11
       ],
       "hash": "034d4296ceede8e903c6fbd56db439be1ff23fc325e3526191ed4f2ce45c44b2"
     },
-    "../apps/desktop/src/api.ts:35-46": {
-      "kind": "git",
-      "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
-      "commit": "53e302d8d32241b42ca2c6585165cbde6b465505",
-      "lines": [
-        35,
-        46
-      ],
-      "hash": "904ad0d121e8f68238016773b3974b0d1931cf0fdde6d72fbb3583ffa1250361"
-    },
     "../apps/desktop/src/page-boundary.ts:all": {
       "kind": "git",
       "blob": "c8ea974836da337814d61967c0a9066fa3c7a59e",
-      "commit": "53e302d8d32241b42ca2c6585165cbde6b465505",
+      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
       "lines": [
         1,
         20
@@ -286,6 +276,16 @@
     },
     "has ../apps/desktop/tests/page-boundary.test.ts \"window.open 的地址只有 http、https 交给系统浏览器\"": {
       "kind": "has"
+    },
+    "../apps/desktop/src/api.ts:33-44": {
+      "kind": "git",
+      "blob": "a9361e76f87242a68da4f61e22c486d180829008",
+      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
+      "lines": [
+        33,
+        44
+      ],
+      "hash": "904ad0d121e8f68238016773b3974b0d1931cf0fdde6d72fbb3583ffa1250361"
     }
   },
   "content/docs/seams/kernel.mdx": {
@@ -445,27 +445,17 @@
     "../apps/desktop/src/api.ts:all": {
       "kind": "git",
       "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
+      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
       "lines": [
         1,
         56
       ],
       "hash": "01d4aa30459be92a655677912a097203b76280ad833a93327ee5c37cf9ca8e80"
     },
-    "../apps/desktop/package.json:9-16": {
-      "kind": "git",
-      "blob": "3263147ed6ce14442ad24f7561d763a9071cd115",
-      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
-      "lines": [
-        9,
-        16
-      ],
-      "hash": "0af65abaa41e78f4b2df8fe24f1a621f2adb33c094ec0c193bad5edcbbce9d18"
-    },
     "../apps/desktop/tsconfig.api.json:all": {
       "kind": "git",
       "blob": "2e25391fcdf34b7c1fccf4be998991210e2ed46e",
-      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
+      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
       "lines": [
         1,
         11
@@ -480,6 +470,16 @@
     },
     "has ../apps/desktop/tests/importmap.test.ts \"包根的 types 指向接口类型那份 d.ts，default 是内核入口\"": {
       "kind": "has"
+    },
+    "../apps/desktop/package.json:9-17": {
+      "kind": "git",
+      "blob": "87b698b8aa3094ab9f1967a50b95eb2f1b36553a",
+      "commit": "4c2bf0d7850f96b62fd9e514471c14ec238bf972",
+      "lines": [
+        9,
+        17
+      ],
+      "hash": "39a25bf9c5442d5a1068e2930c0ec31bd60f177934fc7cc54d788617371df1dd"
     }
   },
   "content/docs/seams/page-react.mdx": {

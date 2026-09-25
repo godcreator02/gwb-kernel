@@ -44,7 +44,7 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 
 内核包的包根有两个条件：`types` 指向 `dist/api.d.ts`，给 TypeScript 用；`default` 指向 `dist/main.js`，是内核入口，由启动器 import（[启动器加载内核](/docs/seams/launcher)）。包根的运行时入口一加载就启动 Electron 应用，所以包根对外只给类型：
 
-{/* ref file="../apps/desktop/package.json" lines="9-16" */}
+{/* ref file="../apps/desktop/package.json" lines="9-17" */}
 
 `dist/api.d.ts` 由单独一份 tsc 配置 `tsconfig.api.json` 生成：只编译 `src/api.ts`、只出声明文件，内核内部实现的类型不跟着发出去。`pnpm build` 在编译内核之后运行它：
 
