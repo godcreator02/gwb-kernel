@@ -223,9 +223,6 @@
     },
     "has ../apps/launcher/src/main.ts \"process.env.GWB_HOME = homeDir\"": {
       "kind": "has"
-    },
-    "has ../apps/launcher/src/main.ts \"process.env.GWB_LAUNCHER_VERSION = app.getVersion()\"": {
-      "kind": "has"
     }
   },
   "content/docs/seams/ipc.mdx": {
@@ -301,23 +298,23 @@
     "has ../apps/desktop/tests/main.test.ts \"emit 推 gwb:event；setShell 立刻推整份状态\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/api.ts:13-28": {
+    "../apps/desktop/src/api.ts:13-26": {
       "kind": "git",
-      "blob": "50f523191d4066b668737d98dc3a0a9c1f7c4181",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "a9361e76f87242a68da4f61e22c486d180829008",
+      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
       "lines": [
         13,
-        28
+        26
       ],
-      "hash": "6cfd98188b6789236cd75c700ae14bc8948dac33b17bb3d595a431fde908d20b"
+      "hash": "7c4189bb5f942a43b6905dc1a399bbcac194c4d25d05f3ad26c10a73e0023144"
     },
-    "../apps/desktop/src/api.ts:30-33": {
+    "../apps/desktop/src/api.ts:28-31": {
       "kind": "git",
-      "blob": "50f523191d4066b668737d98dc3a0a9c1f7c4181",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "a9361e76f87242a68da4f61e22c486d180829008",
+      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
       "lines": [
-        30,
-        33
+        28,
+        31
       ],
       "hash": "b43abfb1754857a545e1d2164bb8435474b82940eac60660df1d1b207660f99c"
     }
@@ -367,22 +364,22 @@
     "has ../apps/desktop/tests/main.test.ts \"开了合法的调试端口就写 cdp\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/main.ts:89-97": {
+    "../apps/desktop/src/main.ts:85-92": {
       "kind": "git",
-      "blob": "e59d0e3d30fc3016a023e9c242a09950fa67e433",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "861d96320af4d5838e52b2e55ae32e544588d516",
+      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
       "lines": [
-        89,
-        97
+        85,
+        92
       ],
-      "hash": "621b23dd45db82268dbffb794905ec97ebf0368a7a361c5715d481ea0b97c4b3"
+      "hash": "4cf4d485c21d2fe0fd166f7b0ad3d18214592361bebf553366b65ce745d2d7f0"
     }
   },
   "content/docs/seams/launcher.mdx": {
     "../apps/launcher/src/main.ts:17-19": {
       "kind": "git",
-      "blob": "a02c3483a08fdf58cf5edc17b7b54044acbc0701",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "f6547781d717176fa42bd978be16a85a31a7c5af",
+      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
       "lines": [
         17,
         19
@@ -397,46 +394,23 @@
     },
     "../apps/desktop/package.json:9-9": {
       "kind": "git",
-      "blob": "eaa82385df27d70e7f1b2b5ddf1845ee106b7c54",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "3263147ed6ce14442ad24f7561d763a9071cd115",
+      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
       "lines": [
         9,
         9
       ],
       "hash": "3f8ef15817076dd75d89f3900392bea775518c8a836a76beb2ac0b9c712b7ce0"
     },
-    "../apps/desktop/package.json:44-46": {
+    "../apps/desktop/package.json:31-33": {
       "kind": "git",
-      "blob": "eaa82385df27d70e7f1b2b5ddf1845ee106b7c54",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "3263147ed6ce14442ad24f7561d763a9071cd115",
+      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
       "lines": [
-        44,
-        46
+        31,
+        33
       ],
       "hash": "d14faf1367c1399c93d85b7b7f599918e30151b9968d25654695137325010f8a"
-    },
-    "../apps/launcher/src/main.ts:20-21": {
-      "kind": "git",
-      "blob": "a02c3483a08fdf58cf5edc17b7b54044acbc0701",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
-      "lines": [
-        20,
-        21
-      ],
-      "hash": "3fe16784649589b0b025ab4e7a83d3d130b5e2f4473aded09d5bcb9b9cbe41f7"
-    },
-    "../apps/desktop/src/main.ts:22-24": {
-      "kind": "git",
-      "blob": "e59d0e3d30fc3016a023e9c242a09950fa67e433",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
-      "lines": [
-        22,
-        24
-      ],
-      "hash": "e505546c1664ad5425764f106b9f7db09f7f89a3dbabdb93311c3ab202b6a2b3"
-    },
-    "has ../apps/desktop/tests/main.test.ts \"启动器在 GWB_LAUNCHER_VERSION 里交来安装包版本\"": {
-      "kind": "has"
     }
   },
   "content/docs/seams/commands.mdx": {
@@ -470,18 +444,18 @@
   "content/docs/desktop/api.mdx": {
     "../apps/desktop/src/api.ts:all": {
       "kind": "git",
-      "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
-      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
+      "blob": "a9361e76f87242a68da4f61e22c486d180829008",
+      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
       "lines": [
         1,
-        58
+        56
       ],
-      "hash": "d500d93146af2a34f341dd1d1db367409ef476959341313b4ab8b2ced64204f6"
+      "hash": "01d4aa30459be92a655677912a097203b76280ad833a93327ee5c37cf9ca8e80"
     },
     "../apps/desktop/package.json:9-16": {
       "kind": "git",
-      "blob": "04c7521cbfdf29c4eb441d60f2e796e6f6c6e0da",
-      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
+      "blob": "3263147ed6ce14442ad24f7561d763a9071cd115",
+      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
       "lines": [
         9,
         16
@@ -491,7 +465,7 @@
     "../apps/desktop/tsconfig.api.json:all": {
       "kind": "git",
       "blob": "2e25391fcdf34b7c1fccf4be998991210e2ed46e",
-      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
+      "commit": "6ab4ed820607ad8433a1a1faca9253fedcaf0289",
       "lines": [
         1,
         11

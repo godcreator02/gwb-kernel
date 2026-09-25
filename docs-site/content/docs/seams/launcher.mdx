@@ -22,7 +22,7 @@ description: 连接安装包里的启动器与装在 home 里的内核包：启�
 
 {/* ref file="../apps/desktop/package.json" lines="9-9" */}
 
-{/* ref file="../apps/desktop/package.json" lines="44-46" */}
+{/* ref file="../apps/desktop/package.json" lines="31-33" */}
 
 启动器依次判断：home 里有没有内核包、清单读不读得出、有没有声明 `engines.electron`、当前 Electron 在不在范围里、有没有 `main`。全部满足就 import 入口文件；不满足、或 import 抛错，弹框说明原因、退出码 1。
 
