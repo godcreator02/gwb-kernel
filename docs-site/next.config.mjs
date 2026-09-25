@@ -40,7 +40,7 @@ const config = {
     { source: '/docs/kernel', destination: '/docs/desktop', permanent: true },
     { source: '/docs/kernel/home', destination: '/docs/desktop', permanent: true },
     { source: '/docs/kernel/loading', destination: '/docs/seams/loading', permanent: true },
-    { source: '/docs/kernel/contract', destination: '/docs/vocab', permanent: true },
+    { source: '/docs/kernel/contract', destination: '/docs/desktop/api', permanent: true },
     { source: '/docs/kernel/importmap', destination: '/docs/seams/page-react', permanent: true },
     { source: '/docs/kernel/bridge', destination: '/docs/seams/shell', permanent: true },
     { source: '/docs/kernel/logs', destination: '/docs/seams/log', permanent: true },
@@ -59,6 +59,8 @@ const config = {
     { source: '/docs/seams/skills', destination: '/docs', permanent: false },
     { source: '/spec/ecosystem-simplify', destination: '/spec', permanent: false },
     { source: '/spec/platform-plugins', destination: '/spec', permanent: false },
+    { source: '/spec/kernel-in-home', destination: '/spec', permanent: false },
+    { source: '/spec/drop-shared-scan', destination: '/spec', permanent: false },
     // 接缝图就是入口页
     { source: '/docs/map', destination: '/docs', permanent: false },
     { source: '/docs/seams', destination: '/docs', permanent: false },

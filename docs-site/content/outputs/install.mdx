@@ -14,13 +14,8 @@ description: 仓根 INSTALL.md 由这一页生成——写给替用户安装 gwb
 `%APPDATA%\gwb-kernel\homes\default\cordis.yml` 已经存在、里面至少有一行 `- id:`——**已经装过，只升级，
 别做第 3 步**（它会覆盖用户的 home）。`homes\` 下的其他目录是别的 home（测试用的），跟这个判断无关：
 
-- **home 的 `package.json` 里没有 `@godcreator/gwb-kernel-desktop`**：这个 home 是旧安装包（内核打在安装包里）装的。关掉工作台窗口，
-  在这个 home 里照第 3 步装上内核包与 `cordis`（只做「装内核包与 cordis」那两条，`cordis.yml` 与插件不动），再装新版安装包（第 2 步），然后启动。
-  顺序不能反：新安装包只带启动器，先装它、home 里还没有内核包，启动时就弹框
 - 升级内核：连上 MCP 入口之后 `run plugin-manager.update-kernel`（装新的内核包、把 home 根上的 `cordis` 对齐到内核要的版本），
   然后重启工作台（关掉窗口、从开始菜单重新打开）才生效。安装包只带启动器，只有出了新版安装包才需要重装
-- home 里还装着 `@godcreator/gwb-plugin-sources`：它已经退役，四条命令并回了插件管理（`plugin-manager.search`、`plugin-manager.source.add` / `list` / `remove`，
-  参数与回执不变）。连上 MCP 入口之后 `run plugin-manager.uninstall {"pkg":"@godcreator/gwb-plugin-sources"}` 卸掉它
 - 升级插件：连上 MCP 入口之后 `run plugin-manager.update {"all":true}`（只升几个给 `{"only":["<包名>"]}`），或让用户在「插件管理」窗格点「全部更新」。内核包与 `cordis` 不归它升
 
 ## 1. 机器上的前置条件（改的是用户级配置——动手前告诉用户要改什么）
@@ -135,7 +130,7 @@ $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json 
 - `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次启动都会换一个随机字符串）；内核包与 `cordis` 不是插件，不写进去
 - 命令插件（`gwb-commands`，页面和 MCP 入口的命令都经它执行）与插件管理（`gwb-plugin-manager`，之后装卸、升级插件都经它）是普通插件，和别的插件一样写进 `cordis.yml`、装进 home
 - 除了内核包与 `cordis`，只装插件、不装库：页面用的 react 随内核包装上，
-  设计令牌表随 `gwb-shell` 装上。**别再安装 `gwb-shared-react` / `gwb-tokens`**：这两个包已停止发布
+  设计令牌表随 `gwb-shell` 装上
 - 退出码为 0 就成功。输出里如果有一行 `Issues with peer dependencies found`：说明有插件的 peer 没满足——它用到的某个插件没装，
   或装的版本不在它写的范围里（还没适配上游的新版本）。包照样装上了，但那个插件可能启动不了——在 home 里运行 `& $pnpm peers check`
   拿到明细，原样告诉用户；连上 MCP 入口之后 `plugin-manager.list` 的 `unmetPeers` 也逐包列出
@@ -165,13 +160,13 @@ if ($runtime) { $runtime } else { '30 秒内没等到这次启动写的 runtime.
 
 - `runtime.json` 里有 `version`（内核版本）与 `"mcp": { "url": "http://127.0.0.1:2870/mcp" }`——MCP 入口的地址
   **以这个字段为准**
-- 同目录的 `gwb.log` 一行一条，格式是 `<时间> <级别> <来源> <内容>`。应该有 `info kernel up` 与 `info gwb-mcp MCP 入口已就绪` 两行（旧版 gwb-mcp 写的是「MCP 门就绪」）；
+- 同目录的 `gwb.log` 一行一条，格式是 `<时间> <级别> <来源> <内容>`。应该有 `info kernel up` 与 `info gwb-mcp MCP 入口已就绪` 两行；
   `Select-String "$env:APPDATA\gwb-kernel\homes\default\gwb.log" -Pattern '^\S+ error '` 应当没有任何输出
   （`warn` 行读一读，不算失败）。`gwb.log` 超过 128 MB 会改名成 `gwb.log.1` 另起一份，找不到早先的行就去 `.1` 里找
 
 能看到窗口的话，窗口里应该是：
 
-- **装好了**：工作台界面，底部状态栏右边写着 `gwb-kernel <版>`，这个版本号就是 `runtime.json` 里的 `version`（鼠标停在上面会列出安装包、外壳等其余版本）
+- **装好了**：工作台界面，底部状态栏右边写着 `gwb-kernel <版>`，这个版本号就是 `runtime.json` 里的 `version`（鼠标停在上面会列出外壳等其余版本）
 - **内核已启动、外壳没有加载**：深色底上一页只读的等宽文字，第一行是「没有外壳插件（没有插件调用 setShell）。」或「外壳启动失败：…」，
   下面是 home 的路径、`cordis.yml` 里每个条目的 id、包名与状态，以及最近的错误与警告。照「常见问题」里「窗口里只有只读状态页」那一行查
 
@@ -257,7 +252,7 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 | 窗口里只有只读状态页、没有状态栏 | 外壳没加载成功 | 看 `gwb.log` 里的 `error` 行，多半是第 3 步没装成功 |
 | 页面上的命令都回「没有命令服务」 | 命令插件没加载成功 | 看 `cordis.yml` 里有没有 `commands` 那条、home 里装没装 `@godcreator/gwb-commands` |
 | MCP 入口连不上 | 工作台没启动，或 2870 端口被占用（default 的 MCP 入口不换端口） | 看 `runtime.json` 有没有 `mcp`；在 `gwb.log` 里找 `gwb-mcp` 那行；关掉占用 2870 端口的程序再启动 |
-| 「插件管理」里安装插件失败，回执说找不到 pnpm 或版本不对 | 两个固定位置都没有 pnpm，或找到的不是 12.x、低于 12.4.2；插件管理 0.8.3 起不再自带 pnpm | 照第 1 步第 1 条装好，回执里写着检查了哪两个位置 |
+| 「插件管理」里安装插件失败，回执说找不到 pnpm 或版本不对 | 两个固定位置都没有 pnpm，或找到的不是 12.x、低于 12.4.2 | 照第 1 步第 1 条装好，回执里写着检查了哪两个位置 |
 
 ## 之后
 

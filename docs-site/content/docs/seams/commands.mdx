@@ -41,7 +41,7 @@ description: 连接内核应用与命令插件；接口是服务 ctx.gwbCommands
 
 **命令插件**保证：
 
-- 提供名为 `gwbCommands` 的服务，`run(命令名, 参数, 来源)` 返回 promise；不认识第三个参数的旧版命令插件忽略它，行为不变
+- 提供名为 `gwbCommands` 的服务，`run(命令名, 参数, 来源)` 返回 promise
 - 任何命令都回 `{ ok, data, error }`：命令不存在、处理函数抛错也收成 `ok: false`，`run` 不 reject
 - 来源只转交，不按来源限制谁能调哪条命令
 
