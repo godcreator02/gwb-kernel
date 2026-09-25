@@ -5,20 +5,21 @@ description: 内核不再扫描 home 里各包的 gwb.shared，importmap 只剩�
 
 # 删掉 gwb.shared 扫描
 
-**本页回答**：「任何包都能在清单里写 `gwb.shared`、内核扫描 home 拼进 importmap」这套机制为什么还在、删掉它要改哪几个仓、按什么顺序、哪几件事要人先定。
+**本页回答**：「任何包都能在清单里写 `gwb.shared`、内核扫描 home 合成 importmap」这套机制为什么还在、删掉它要改哪几个仓、按什么顺序、哪几件事要人先定。
 
-**状态：人定（2026-09-24）不等块笔记、内核直接删扫描，内核升 0.5.0（升 x）。块笔记 `main` 已在 9e0b674 撤掉界面包的 `gwb.shared`；内核 0.5.0 已发（内核仓 b17001f），default 还没升；devkit（第五步）已做完并发版（devkit 0.18.14、插件管理 0.8.4）；界面插件仓（第六步）未动，已往它的收件页投了通知。**
+**状态（2026-09-25 核对）：内核一侧全部完成——内核 0.5.0 删了扫描，0.6.0 连 `gwb.shared` 字段也删了，importmap 写死在页面入口 `index.html`；default 已经在跑内核 0.6.1。块笔记（第一步）、devkit（第五步）、界面插件（第六步，外壳 0.13.10）都已完成，default 里的旧库 `@godcreator/block-note` 已卸掉。还剩两件：块笔记窗格在 default 上照常显示没有亲眼确认（见验收最后一条）；块笔记仓与论文插件仓的 `tools/build-plugin.ts` 还从内核包清单读 `gwb.shared`，装着内核 0.6 时读不到、构建会报错，要改成写死 react 的四个名字——通知「内核直接跟 0.6」已经在两个仓的收件页，还没处理，归各自的仓做。**
 
-**2026-09-25 更进一步：内核 0.6.0 连 `gwb.shared` 字段也删了**，importmap 写死在页面入口 `index.html` 里、只有 react 的四个包名，`./react*` 出口一并删掉（轨迹卡[importmap 写死在页面入口](/trajectory/2026-09-25-static-importmap)）。下面凡是「从内核包清单的 `gwb.shared` 读外置名单」的项，改成外置名单直接写死这四个名字；devkit 发版检查的对应改动已投 devkit 收件页。
+**2026-09-25 起内核 0.6.0 连 `gwb.shared` 字段也删了**，importmap 写死在页面入口 `index.html` 里、只有 react 的四个包名，`./react*` 出口一并删掉（轨迹卡[importmap 写死在页面入口](/trajectory/2026-09-25-static-importmap)）。下面凡是「从内核包清单的 `gwb.shared` 读外置名单」的项，改成外置名单直接写死这四个名字；devkit 发版检查的对应改动已投递到 devkit 收件页。
 
 ## 验收
 
-- [x] 内核拼 importmap 不再读 home 清单：importmap 只有内核包自己清单里 `gwb.shared` 声明的名字，别的包写了 `gwb.shared` 不收录
+- [x] 内核合成 importmap 不再读 home 清单：importmap 只有内核包自己清单里 `gwb.shared` 声明的名字，别的包写了 `gwb.shared` 不收录
 - [x] 内核仓里扫描 home、同名冲突处理、「同一句警告只记一次」的代码与测试删掉；「页面上的包名」接缝页、接缝图、关键设计、内核应用页、术语表、开发页改成只讲内核给的包名
 - [x] 块笔记 v2 的界面包 `@godcreator/block-notebook-ui` 不再声明 `gwb.shared`；v2 各插件浏览器端产物把方言打包进去，外置名单只剩内核包声明的四个名字
-- [ ] 论文插件（`gwb-paper-fetch` 仓）浏览器端外置名单只剩内核包声明的四个名字
+- [x] 论文插件（`gwb-paper-fetch` 仓）浏览器端外置名单只剩内核包声明的四个名字（bn-papers 0.6.1：外置名单从内核包清单读，其余依赖包括块笔记界面包都打包进去；论文仓 24c9af6、1bcbc0f）
 - [x] devkit 发版检查：浏览器端产物能 import 的名字只取内核包的 `gwb.shared`；非内核包写了 `gwb.shared` 就拒；`devkit.capabilities` 只对内核包报 importmap 外置名
-- [ ] default home 里除了内核包，没有任何已装的包在清单里写 `gwb.shared`，块笔记窗格照常显示
+- [x] default home 里除了内核包，没有已装的包在清单里写 `gwb.shared`（2026-09-25 核对：home 清单的 35 个直接依赖都没有，内核 0.6.1 自己也没有这个字段了。`node_modules/.pnpm` 里还留着块笔记旧库 0.5.2 与 0.5.3、`gwb-shared-react`、`gwb-tokens`、内核 0.4.1、外壳 0.13.5 这几份旧目录，它们的清单写着 `gwb.shared`；锁文件已经不引用它们，是 pnpm 还没清理的旧目录，内核 0.6 也不读）
+- [ ] 块笔记窗格在 default 上照常显示——**未亲眼确认**：`shell.pane.list` 里三个块笔记阅读窗格开着、各自上报了正在显示的文档，内核 0.6.1 启动以来 `gwb.log` 没有 error；只读手段看不到画面，要人看一眼
 
 ## 由来
 
@@ -27,7 +28,7 @@ devkit 仓全生态精简计划第五期原定「react 改由内核提供，删�
 - react 的四个包名由内核包提供，声明**仍写在内核包自己清单的 `gwb.shared` 里**。devkit 的发版检查、`devkit.capabilities`、各插件的 `build.ts` 本来就读这个字段，所以不用改
 - 扫描 home 的机制留着，因为块笔记的库 `@godcreator/block-note` 还声明着自己的包名。计划是等第三期块笔记撤掉声明再删
 
-现在还在声明的只有三处：内核包、块笔记 `main` 线的库 `lib/`、块笔记 v2 线的界面包 `packages/ui`。
+当时还在声明的只有三处：内核包、块笔记 `main` 线的库 `lib/`、块笔记 v2 线的界面包 `packages/ui`。
 
 **跟块笔记 v2 线的冲突**：v2 线的轨迹卡「拆掉旧 lib」（2026-09-24）决定让方言入口进页面 importmap、接替旧库那一份，并且明确否掉了「各插件自己打包一份」，理由是每个插件都要多带一份 mdast / micromark，页面上会有好几份解析器。v2 计划页还列着「核心插件的 `./shared` 入口也进页面 importmap」。这和 devkit 第三期「block-note 撤掉自己的 `gwb.shared`、块笔记系列插件把解析库各自打包进构建产物」正好相反，要先定下来走哪边（见待决定第 1 条）。
 
@@ -39,40 +40,45 @@ devkit 仓全生态精简计划第五期原定「react 改由内核提供，删�
 
 ## 删掉之后的样子
 
+这一节是内核 0.5.0 的做法；0.6.0 又往前一步，见页头第二段。
+
 - 内核启动时从自己的包目录读 `gwb.shared`、解析成 `file://` 地址，这就是整张 importmap；解析不到照旧启动失败。不再读 home 清单，也不再每次推送都重算
 - `gwb:shell` 消息的 `imports` 字段形状不变，页面入口不用改
 - 内核包清单里的 `gwb.shared` 字段**保留**：它是「内核给页面哪些包名」的唯一来源，插件构建时照它外置、devkit 照它检查
-- 别的包写 `gwb.shared`，内核不看、不警告；拦截放在 devkit 发版检查上，发不出去
+- 别的包写 `gwb.shared`，内核不看、不警告；拒绝放在 devkit 发版检查上，发不出去
 
 ## 待决定
 
 1. ~~**块笔记 v2 走哪边**~~（已定：块笔记 `main` 在 9e0b674 按推荐做了，界面包撤掉声明、各插件自己打包方言）：推荐**界面包撤掉声明、各插件自己打包方言**。理由见上面「为什么删」；代价是每个带界面的块笔记插件多带一份 mdast / micromark，v2 线要写一张新轨迹卡推翻「拆掉旧 lib」里的这一条，计划页里「核心插件的 `./shared` 入口进 importmap」一并删掉。反过来保留机制的话，就要把 devkit 第三期那条改掉，接缝页把「库也能声明」写成长期约定
-2. ~~**内核删扫描代码什么时候发**~~（人定 2026-09-24：不等块笔记换线，内核直接删）：推荐**等 default 换成 v2 之后**（v2 计划页 W6）。default 现在跑的是块笔记 `main` 线，它的库还靠这套机制；`main` 线只修关键 bug，不为这件事改它。另一种做法是内核先发、default 暂时不升内核，但只要有人在 default 上运行 `plugin-manager.update-kernel`，块笔记窗格就起不来
-3. ~~**内核版本号升哪一位**~~（人定 2026-09-24：升 x，0.5.0；同一版还删掉了词汇表包，接口类型改由内核包的包根导出）：推荐**升 y**，但发之前按 gwb-release 再问一次人。按契约清单，「别的包的 `gwb.shared` 不再收录」属于调用方依赖着的语义变了，字面上该升 x；可发版时已经没有任何装着的包还依赖它（这正是第 2 条要等的前提），升 x 只会让全部插件 peer 里的 `^0.4.x` 出范围、逐个重发
-4. ~~**devkit 拦不拦非内核包写 `gwb.shared`**~~（人定 2026-09-24：拦，devkit 0.18.14 起）：推荐**拦**。内核不再警告，这是唯一能让写错的人当场知道的地方。这条检查要等块笔记 `main` 线不再发版之后才能上（它的库还声明着，会被拦住）
+2. ~~**内核删扫描代码什么时候发**~~（人定 2026-09-24：不等块笔记换线，内核直接删）：推荐**等 default 换成 v2 之后**（v2 计划页 W6）。default 当时跑的是块笔记 `main` 线，它的库还靠这套机制；`main` 线只修关键 bug，不为这件事改它。另一种做法是内核先发、default 暂时不升内核，但只要有人在 default 上运行 `plugin-manager.update-kernel`，块笔记窗格就显示不出来
+3. ~~**内核版本号升哪一位**~~（人定 2026-09-24：升 x，0.5.0；同一版还删掉了词汇表包，接口类型改由内核包的包根导出）：推荐**升 y**，但发之前按 gwb-release 再问一次人。按契约清单，「别的包的 `gwb.shared` 不再收录」属于调用方依赖着的语义变了，字面上该升 x；可发版时已经没有任何装着的包还依赖它（这正是第 2 条要等的前提），升 x 只会让全部插件 peer 里的 `^0.4.x` 超出范围、逐个重发
+4. ~~**devkit 要不要拒绝非内核包写 `gwb.shared`**~~（人定 2026-09-24：拒绝，devkit 0.18.14 起）：推荐**拒绝**。内核不再警告，这是唯一能让写错的人当场知道的地方。这条检查要等块笔记 `main` 线不再发版之后才能上（它的库还声明着，会被拒）
 
 ## 实施步骤
 
-**第一步：块笔记 v2 线**（`gwb-block-note` 仓的 `v2` 分支，工作区 `../gwb-block-note-v2`；动手前读那个仓的 AGENTS）
+**第一步：块笔记 v2 线**（`gwb-block-note` 仓；v2 已在 2026-09-24 合回 `main`；动手前读那个仓的 AGENTS）
 
 - [x] `packages/ui`：清单去掉 `gwb.shared`，删掉只给 importmap 用的 `shared/` 入口与它的产物检查（块笔记 `main` 9e0b674）
 - [x] `tools/build-plugin.ts`：外置名单改成只从内核包清单的 `gwb.shared` 读（照 devkit 模板的 `build.ts`）；各插件产物检查里 importmap 名单跟着改（块笔记 `main` 9e0b674）
 - [x] 文档（块笔记 `main` 9e0b674，轨迹卡「方言撤出 importmap」）：界面包入口页、贡献接缝页里「方言在页面 importmap 里」的说法；计划页删掉「核心插件的 `./shared` 入口进页面 importmap」；写轨迹卡，推翻「拆掉旧 lib」里方言进 importmap 那一条
-- [ ] 在隔离 home 里验证：各窗格正常显示，页面 importmap 里只有 react 四个名字，日志没有 error
+- [x] 在隔离 home 里验证：块笔记仓 W5 发版前在隔离 home `bn-release-2609242239` 验过（块笔记仓交接页「v2 引擎替换」的进度）。那份记录没有单独写 importmap 名单；内核 0.6 起 importmap 写死在页面入口，只会有 react 的四个名字
+- [ ] 跟内核 0.6：`tools/build-plugin.ts` 的外置名单写死 react 的四个名字，不再读内核包清单的 `gwb.shared`（通知在块笔记仓收件页「内核直接跟 0.6」，归块笔记仓）
 
-**第二步：论文插件**（随 v2 计划页 W3 改接 v2 时一起做；动手前读 `gwb-paper-fetch` 仓的 AGENTS）
+**第二步：论文插件**（动手前读 `gwb-paper-fetch` 仓的 AGENTS）
 
-- [ ] `tools/build-plugin.ts`：外置名单只剩内核包声明的名字，块笔记的界面包打包进去
+- [x] `tools/build-plugin.ts`：外置名单只剩内核包声明的名字，块笔记的界面包打包进去（论文仓 24c9af6，bn-papers 0.6.1 已发、装在 default）
+- [ ] 跟内核 0.6：外置名单写死 react 的四个名字（通知在论文仓收件页「内核直接跟 0.6」，归论文仓）
 
-**第三步：等 default 换成 v2**（v2 计划页 W5、W6；人定不再是内核发版的前提，default 升到 0.5.0 之前核对这一项）
+**第三步：等 default 换成 v2**（v2 计划页 W5、W6）
 
-- [ ] 核对 default home：`node_modules` 下除内核包外，没有已装的包在清单里写 `gwb.shared`；旧库 `@godcreator/block-note` 已从 home 清单里去掉
+- [x] 核对 default home：`node_modules` 下除内核包外，没有已装的包在清单里写 `gwb.shared`；旧库 `@godcreator/block-note` 已从 home 清单里去掉（块笔记 W6 在 2026-09-24 卸掉，2026-09-25 核对）
 
 **第四步：内核仓**
 
 - [x] `apps/desktop/src/imports.ts` 只留 `kernelSharedImports`，`main.ts` 启动时算一次、推送时直接用；删掉扫描、同名冲突与警告去重，测试跟着删改
 - [x] 现状页：「页面上的包名」接缝页、接缝图（去掉「声明 gwb.shared 的库」那一框）、`shared-names` 图、关键设计、内核应用页、术语表、开发页；写轨迹卡
-- [ ] ~~版本号按待决定第 3 条问人~~（人定 0.5.0）后发版；default 用 `plugin-manager.update-kernel` 升上去并重启，核对块笔记窗格
+- [x] 发版（人定 0.5.0，之后 0.6.0、0.6.1）；default 已升到内核 0.6.1（2026-09-25 核对：`shell.env` 与 `runtime.json` 都报 0.6.1）
+- [ ] 核对 default 上的块笔记窗格：未亲眼确认，同验收最后一条
 
 **第五步：devkit 仓**（动手前读 `gwb-devkit` 仓的 AGENTS）
 
@@ -83,19 +89,20 @@ devkit 仓全生态精简计划第五期原定「react 改由内核提供，删�
 
 **第六步：界面插件仓**（动手前读 `gwb-ui-plugins` 仓的 AGENTS）
 
-- [ ] 外壳页里「按各包 `gwb.shared` 算好的 importmap」改成内核包提供；`importmap-flow` 图跟着改
+- [x] 外壳页里「按各包 `gwb.shared` 算好的 importmap」改成内核包提供；`importmap-flow` 图跟着改（界面插件仓 e6072f6：外壳 0.13.10 跟内核 0.6，peer 写内核包 `^0.6.1`，已装进 default）
 
 ## 不做的事
 
 - 块笔记 `main` 线的库不改：它只修关键 bug，default 换成 v2 后就不再用
-- 不把 `gwb.shared` 字段改名：内核包清单里的这个字段继续当名单来源，改名要让 devkit 与全部插件的构建跟着改，没有收益
-- 不给内核加「发现别的包写了 `gwb.shared` 就警告」：那就又要扫描 home，拦截放在 devkit 发版检查
+- 不把 `gwb.shared` 字段改名：内核包清单里的这个字段继续当名单来源，改名要让 devkit 与全部插件的构建跟着改，没有收益（内核 0.6.0 起字段整个删掉，这条不再适用）
+- 不给内核加「发现别的包写了 `gwb.shared` 就警告」：那就又要扫描 home，拒绝放在 devkit 发版检查
 
 ## 进度
 
 新的在上。
 
+- 2026-09-25｜只读核对 default：`shell.env` 报内核 0.6.1、外壳 0.13.10；`plugin-manager.list` 里已没有旧库 `@godcreator/block-note`；home 清单的 35 个直接依赖都不写 `gwb.shared`，`.pnpm` 里写着它的几份旧目录锁文件已不引用；三个块笔记阅读窗格开着、上报了正在显示的文档，内核 0.6.1 启动以来 `gwb.log` 没有 error，画面没有亲眼看。勾掉论文插件、块笔记隔离 home 验证、第三步、第六步与 default 升级；剩下块笔记窗格要人看一眼，以及块笔记仓、论文仓跟内核 0.6 写死外置名单（在两个仓的收件页）｜内核仓会话
 - 2026-09-25｜内核 0.6.0：删掉 `gwb.shared` 字段、`./react*` 出口、`imports.ts` 与 `gwb:shell` 的 `imports` 字段，importmap 写死在 `index.html`。隔离 home `static-importmap-2609250107`（装的基础插件与外壳构建于内核 0.4.1）从源码启动 0.6.0：页面只有一段 importmap，react 19.2.8 加载到，外壳与插件管理窗格正常显示，日志没有 error｜总控台会话
-- 2026-09-24｜发版：内核 0.5.0（内核仓 b17001f）；devkit 0.18.14、插件管理 0.8.4（devkit 仓 128c7f6，在跑内核 0.5.0 的隔离 home 里调 `devkit.release` 发的——default 还是 0.4.1，不在它们新的 peer 范围里）。隔离 home `kernel05-2609242251`：`plugin-manager.update-kernel {"version":"0.5.0"}` 后重启，页面 importmap 只有 react 四个名字，外壳正常挂上，日志没有 error；基础插件（peer 还写 `^0.4.x`）照常 active、标 `kernelUntested`，devkit 与插件管理新版 active、范围包含 0.5.0。default 没升。发之前往 15 个下游仓的收件页投了「要适配内核 0.5」（其中 4 个仓的收件页原本就有别人未提交的改动，写了没提交）｜总控台会话
+- 2026-09-24｜发版：内核 0.5.0（内核仓 b17001f）；devkit 0.18.14、插件管理 0.8.4（devkit 仓 128c7f6，在跑内核 0.5.0 的隔离 home 里调 `devkit.release` 发的——default 当时还是 0.4.1，不在它们新的 peer 范围里）。隔离 home `kernel05-2609242251`：`plugin-manager.update-kernel {"version":"0.5.0"}` 后重启，页面 importmap 只有 react 四个名字，外壳正常加载，日志没有 error；基础插件（peer 还写 `^0.4.x`）照常 active、标 `kernelUntested`，devkit 与插件管理新版 active、范围包含 0.5.0。default 没升。发之前往 15 个下游仓的收件页投递了「要适配内核 0.5」（其中 4 个仓的收件页原本就有别人未提交的改动，写了没提交）｜总控台会话
 - 2026-09-24｜人定不等块笔记、内核直接删扫描、内核升 0.5.0。块笔记 `main` 已在 9e0b674 撤掉界面包的 `gwb.shared`、各插件把方言打包进去、浏览器端外置名单改从内核包清单读。内核仓：`imports.ts` 只留 `kernelSharedImports`，`main.ts` 启动时算一次、推送时直接用，扫描、同名冲突与警告去重连同测试删掉；同一版把词汇表包并进内核包（接口类型从内核包的包根导出）。现状页（页面上的包名、接缝图、`shared-names` 图、关键设计、开发、内核应用、术语表、入口页、新页「包根导出的接口类型」）与 AGENTS / README / INSTALL 已改，写了轨迹卡「删掉 gwb.shared 扫描」「词汇表包并进内核包」；待提交、发版、default 升级。代价：default 里的块笔记旧版 0.5.3 还靠扫描把自己的包名放进 importmap，default 升到内核 0.5.0 之前要先把块笔记升到不再声明的版本｜内核仓会话
 - 2026-09-24｜写方案：查到还在声明的只有内核包、块笔记 `main` 线的库、v2 线的界面包三处；v2 线的「拆掉旧 lib」与 devkit 第三期方向相反，列为待决定第 1 条｜总控台会话

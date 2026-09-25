@@ -2,7 +2,7 @@
 
 你是替用户在一台 Windows 机器上安装 gwb 的 agent。**安装包只带启动器与 Electron，不带内核、不带插件，也不带 pnpm——内核包、`cordis` 与插件都由你用机器上装好的 pnpm 12（第 1 步）装进 home。** 启动器启动时从 home 里加载内核，home 里没有内核包就弹框说明、不启动。
 照下面做完，用户得到一个装好 11 个基础插件（包括命令插件、插件管理、MCP 入口）、MCP 入口开在 `http://127.0.0.1:2870/mcp` 的工作台，
-之后你（或别的 agent）通过这个 MCP 入口干活。命令一律在 PowerShell 里运行。
+之后你（或别的 agent）通过这个 MCP 入口使用工作台。命令一律在 PowerShell 里运行。
 
 ## 0. 先确认装没装过
 
@@ -20,7 +20,7 @@
 
 ## 1. 机器上的前置条件（改的是用户级配置——动手前告诉用户要改什么）
 
-1. **pnpm 12（不低于 12.4.2），装在两个固定位置之一**：插件管理与 devkit 只按顺序检查这两个位置、第一个存在的作数，
+1. **pnpm 12（不低于 12.4.2），装在两个固定位置之一**：插件管理与 devkit 只按顺序检查这两个位置、用第一个存在的，
    不找 PATH、不读设置：`%LOCALAPPDATA%\pnpm\bin\pnpm.exe`（pnpm 官方安装脚本的默认位置）、
    `%APPDATA%\npm\node_modules\pnpm\pnpm.exe`（`npm i -g pnpm` 装的 pnpm 包里的原生可执行文件）。这一步、第 3 步和之后
    插件管理用的都是同一个。先看有没有：
@@ -74,6 +74,9 @@ Start-Process .\gwb-setup-<版>.exe -ArgumentList '/S' -Wait
 安装到 `%LOCALAPPDATA%\Programs\gwb-kernel\`，按当前用户安装、不需要管理员权限，开始菜单会出现「gwb-kernel」。
 装的是哪一版启动器：`(Get-Item "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe").VersionInfo.ProductVersion`，和发布页的版本号比。
 **先别启动**——第 3 步要在它启动之前把 home 初始化好；已经启动了就先关掉窗口。
+
+这时候启动（开始菜单或双击 exe）看到的是：不开窗口，只弹一个错误框，说 home 里没有内核包 `@godcreator/gwb-kernel-desktop`、照 `INSTALL.md` 装；
+点确定后进程以退出码 1 结束，home 里不写任何文件。这是正常的，照第 3 步装好再启动。
 
 ## 3. 初始化 default home
 
@@ -134,30 +137,38 @@ $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json 
 
 ## 4. 启动、核对
 
-```powershell
-Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe"
-```
-
-几秒内就绪。轮询到 `runtime.json` 里出现 `mcp` 这个字段就算启动完成：
+**只看 `runtime.json` 有没有 `mcp` 字段不能证明这次启动成功**：程序退出后这个文件照样留着，上一次运行写的 `mcp` 也还在。
+这次启动写的 `runtime.json` 要同时满足三条：`startedAt`（毫秒时间戳）晚于你启动的时刻、`pid` 是一个活着的进程、有 `mcp` 字段。
+所以先记下时刻再启动，轮询到三条都满足：
 
 ```powershell
 $rt = "$env:APPDATA\gwb-kernel\homes\default\runtime.json"
+$launchedAt = [DateTimeOffset]::Now.ToUnixTimeMilliseconds()
+Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe"
+$runtime = $null
 for ($i = 0; $i -lt 30; $i++) {
   Start-Sleep 1
-  if ((Test-Path $rt) -and (Get-Content $rt -Raw | ConvertFrom-Json).mcp) { break }
+  if (-not (Test-Path $rt)) { continue }
+  $candidate = Get-Content $rt -Raw | ConvertFrom-Json
+  if ($candidate.startedAt -ge $launchedAt -and $candidate.mcp -and (Get-Process -Id $candidate.pid -ErrorAction SilentlyContinue)) { $runtime = $candidate; break }
 }
-Get-Content $rt
+if ($runtime) { $runtime } else { '30 秒内没等到这次启动写的 runtime.json：看 gwb.log 的最后几行' }
 ```
+
+几秒内就绪。30 秒没等到：`gwb.log` 最后有 `已有实例在运行，本实例退出`，说明这个 home 已经有一个在运行（同一个 home 只能运行一个实例）；
+别的情况照下面「常见问题」查。**三条满足也只说明进程在运行、MCP 插件写了地址；以第 5 步用这个地址调通 `index` 为准**，那一步通了才算启动成功。
 
 * `runtime.json` 里有 `version`（内核版本）与 `"mcp": { "url": "http://127.0.0.1:2870/mcp" }`——MCP 入口的地址
   **以这个字段为准**
 * 同目录的 `gwb.log` 一行一条，格式是 `<时间> <级别> <来源> <内容>`。应该有 `info kernel up` 与 `info gwb-mcp MCP 入口已就绪` 两行（旧版 gwb-mcp 写的是「MCP 门就绪」）；
   `Select-String "$env:APPDATA\gwb-kernel\homes\default\gwb.log" -Pattern '^\S+ error '` 应当没有任何输出
-  （`warn` 行读一读，不算失败）
-* 能看到窗口的话：底部状态栏右边写着 `gwb <版>`，这个版本号就是 `runtime.json` 里的 `version`
+  （`warn` 行读一读，不算失败）。`gwb.log` 超过 128 MB 会改名成 `gwb.log.1` 另起一份，找不到早先的行就去 `.1` 里找
 
-`runtime.json` 在程序退出后也会保留（下一次启动时整份重写），所以只凭它存不存在判断不了程序还在不在运行——
-要确认就检查它的 `pid` 是不是一个活着的进程。
+能看到窗口的话，窗口里应该是：
+
+* **装好了**：工作台界面，底部状态栏右边写着 `gwb-kernel <版>`，这个版本号就是 `runtime.json` 里的 `version`（鼠标停在上面会列出安装包、外壳等其余版本）
+* **内核已启动、外壳没有加载**：深色底上一页只读的等宽文字，第一行是「没有外壳插件（没有插件调用 setShell）。」或「外壳启动失败：…」，
+  下面是 home 的路径、`cordis.yml` 里每个条目的 id、包名与状态，以及最近的错误与警告。照「常见问题」里「窗口里只有只读状态页」那一行查
 
 ## 5. 连接 MCP 入口
 
@@ -166,18 +177,41 @@ MCP 入口的地址在 `runtime.json` 的 `mcp.url`（default 就是 `http://127
 没带或对不上一律返回 401。
 
 先不改任何客户端配置，用 MCP 入口自带的命令行客户端验证一遍（零依赖；不给 token 时它读 default home 的凭据文件）。
-它要 node 18 起才能运行，而且装在第 3 步的 home 里——第 3 步没装成就没有它。机器上没有 node 的话跳过这一段，直接在客户端里配置、调 `index` 验证：
+它装在第 3 步的 home 里（第 3 步没装成就没有它），要 Node 18 起才能运行。**机器上没有 `node` 命令也能跑**（比如 pnpm 是用官方安装脚本装的独立版本）：
+安装包带的 Electron 设了环境变量 `ELECTRON_RUN_AS_NODE=1` 就是一个 Node（版本见状态栏悬停提示里的 Node 那一项）。下面先定义一个 `gwbClient`，两种情况都用它：
 
 ```powershell
 $gwbHome = "$env:APPDATA\gwb-kernel\homes\default"
 $client = "$gwbHome\node_modules\@godcreator\gwb-mcp\bin\client.mjs"
 $url = (Get-Content "$gwbHome\runtime.json" -Raw | ConvertFrom-Json).mcp.url
-node $client --url $url index
-node $client --url $url run plugin-manager.list
-node $client --url $url run skill.list
+if (Get-Command node -ErrorAction SilentlyContinue) {
+  function gwbClient { node $client --url $url @args }
+} else {
+  # gwb-kernel.exe 是窗口程序：直接调用时 PowerShell 不等它结束、也收不到输出，所以经 Start-Process 等它结束、输出写进临时文件
+  function gwbClient {
+    $outFile = New-TemporaryFile
+    $env:ELECTRON_RUN_AS_NODE = '1'
+    try {
+      $process = Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe" -ArgumentList (@("`"$client`"", '--url', $url) + $args) -NoNewWindow -Wait -PassThru -RedirectStandardOutput $outFile
+    } finally {
+      Remove-Item Env:ELECTRON_RUN_AS_NODE
+    }
+    Get-Content $outFile -Raw
+    Remove-Item $outFile
+    if ($process.ExitCode -ne 0) { throw "client.mjs 退出码 $($process.ExitCode)" }
+  }
+}
+gwbClient index
+gwbClient run plugin-manager.list
+gwbClient run skill.list
 ```
 
-MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带请求头的配置片段：`node $client --url $url run mcp.token`
+`ELECTRON_RUN_AS_NODE` 只在调用客户端的那一刻设上、用完就删：它留在环境里的话，之后再从这个 PowerShell 用 `Start-Process` 启动工作台，exe 会当成 Node 运行，工作台不会启动。
+
+**`index` 调通才算第 4 步的启动成功**：回执开头的 `home` 是这个 home 的名字（default 就是 `default`），`version` 是 MCP 插件的版本。
+连不上、401、或 `home` 不是你启动的那个，都不算成功。
+
+MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带请求头的配置片段：`gwbClient run mcp.token`
 返回 `{ token, file, mcpServers }`，`mcpServers` 里已带 `headers`，原样复制就能连上（**返回内容含明文凭据**，别贴到
 公开的地方）：
 
@@ -185,10 +219,10 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
   （要所有项目都能用就加 `--scope user`），然后开新会话，或在会话里 `/mcp` 重连
 * 其他客户端：原样复制上面 `mcpServers` 那一段（形状是 `{ "gwb": { "type": "http", "url": …, "headers": { "Authorization": "Bearer <token>" } } }`）
 
-连上后**先调 `index`**：它返回的 instructions 讲清楚之后怎么干活。再核对：
+连上后**先调 `index`**：它返回的 instructions 讲清楚之后怎么使用工作台。再核对：
 
-* `run plugin-manager.list` 返回第 3 步装的 11 个插件，各带一个条目、`active: true`；另有内核包与 `cordis` 两行，没有条目。
-  插件的 `kernelUntested` 为 `true` 只是报告：它还没在清单里声明兼容哪个内核，照常加载，不算失败
+* `run plugin-manager.list` 返回第 3 步装的 11 个插件，各带一个条目、`active: true`；内核包与 `cordis` 不是插件，不在里面。
+  插件的 `kernelUntested` 为 `true` 只是报告：它的 peer 里没写内核包，或写的范围不包含运行中的内核，照常加载，不算失败
 * `run skill.list` 能列出说明书，至少有 `mcp`、`gwb-commands`、`gwb-plugin-manager`、`gwb-devkit`
 * `run plugin-manager.search` 能列出源上可装的插件——「插件管理」窗格的「可装」栏用的就是它
 
@@ -201,24 +235,24 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 * 把第 3 步起的 `$gwbHome` 换成那个目录；启动前设 `GWB_HOME`：写名字就是 `%APPDATA%\gwb-kernel\homes\<名字>`，写带路径分隔符的就是那个目录本身。
   例：`$env:GWB_HOME = $gwbHome; Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe"`
 * MCP 入口的端口不是 2870，一律从那个 home 的 `runtime.json` 的 `mcp.url` 取
-* 命令行客户端要显式给那个 home 的 token：`node $client --url $url --token (Get-Content "$gwbHome\mcp\secret.json" -Raw | ConvertFrom-Json).token index`
+* 命令行客户端要显式给那个 home 的 token：`gwbClient --token (Get-Content "$gwbHome\mcp\secret.json" -Raw | ConvertFrom-Json).token index`（`$url` 先换成那个 home 的）
   （也可以设环境变量 `GWB_MCP_TOKEN`）。不给的话它用 default home 的 token，会 401
 
 ## 常见问题
 
-| 现象                                         | 多半是                                                        | 怎么办                                                                    |
-| ------------------------------------------ | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `pnpm add` 报 404，找不到 `@godcreator/…`       | 第 1 步第 2 条那行没配                                             | 补上再装                                                                   |
-| 启动时弹框说 home 里没有内核包                         | 第 3 步的内核包没装，或装在了别的 home                                    | 照第 3 步在这个 home 里装内核包与 `cordis` 再启动                                     |
-| 启动时弹框说 Electron 版本不满足内核包要求                 | 安装包太旧，内核包要的 Electron 更新                                    | 装最新的安装包                                                                |
-| 装完提示 `Issues with peer dependencies found` | 有插件没适配上游的新版本                                               | `& $pnpm peers check` 看明细告诉用户                                          |
-| 报版本太新、minimum release age                  | 第 1 步第 3 条没配                                               | 补上再装                                                                   |
-| 第 1 步找不到 pnpm，或版本不是 12.x、低于 12.4.2         | pnpm 没装、装在别处，或版本不对                                         | 照第 1 步第 1 条装到两个固定位置之一                                                  |
-| 连 npmjs 超时                                 | 网络                                                         | 按第 1 步第 4 条换镜像                                                         |
-| 窗口里只有只读状态页、没有状态栏                           | 外壳没加载成功                                                    | 看 `gwb.log` 里的 `error` 行，多半是第 3 步没装成功                                  |
-| 页面上的命令都回「没有命令服务」                           | 命令插件没加载成功                                                  | 看 `cordis.yml` 里有没有 `commands` 那条、home 里装没装 `@godcreator/gwb-commands` |
-| MCP 入口连不上                                  | 工作台没启动，或 2870 端口被占用（default 的 MCP 入口不换端口）                  | 看 `runtime.json` 有没有 `mcp`；在 `gwb.log` 里找 `gwb-mcp` 那行；腾出 2870 端口再启动   |
-| 「插件管理」里安装插件失败，回执说找不到 pnpm 或版本不对            | 两个固定位置都没有 pnpm，或找到的不是 12.x、低于 12.4.2；插件管理 0.8.3 起不再自带 pnpm | 照第 1 步第 1 条装好，回执里写着检查了哪两个位置                                            |
+| 现象                                         | 多半是                                                        | 怎么办                                                                       |
+| ------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `pnpm add` 报 404，找不到 `@godcreator/…`       | 第 1 步第 2 条那行没配                                             | 补上再装                                                                      |
+| 启动时弹框说 home 里没有内核包                         | 第 3 步的内核包没装，或装在了别的 home                                    | 照第 3 步在这个 home 里装内核包与 `cordis` 再启动                                        |
+| 启动时弹框说 Electron 版本不满足内核包要求                 | 安装包太旧，内核包要的 Electron 更新                                    | 装最新的安装包                                                                   |
+| 装完提示 `Issues with peer dependencies found` | 有插件没适配上游的新版本                                               | `& $pnpm peers check` 看明细告诉用户                                             |
+| 报版本太新、minimum release age                  | 第 1 步第 3 条没配                                               | 补上再装                                                                      |
+| 第 1 步找不到 pnpm，或版本不是 12.x、低于 12.4.2         | pnpm 没装、装在别处，或版本不对                                         | 照第 1 步第 1 条装到两个固定位置之一                                                     |
+| 连 npmjs 超时                                 | 网络                                                         | 按第 1 步第 4 条换镜像                                                            |
+| 窗口里只有只读状态页、没有状态栏                           | 外壳没加载成功                                                    | 看 `gwb.log` 里的 `error` 行，多半是第 3 步没装成功                                     |
+| 页面上的命令都回「没有命令服务」                           | 命令插件没加载成功                                                  | 看 `cordis.yml` 里有没有 `commands` 那条、home 里装没装 `@godcreator/gwb-commands`    |
+| MCP 入口连不上                                  | 工作台没启动，或 2870 端口被占用（default 的 MCP 入口不换端口）                  | 看 `runtime.json` 有没有 `mcp`；在 `gwb.log` 里找 `gwb-mcp` 那行；关掉占用 2870 端口的程序再启动 |
+| 「插件管理」里安装插件失败，回执说找不到 pnpm 或版本不对            | 两个固定位置都没有 pnpm，或找到的不是 12.x、低于 12.4.2；插件管理 0.8.3 起不再自带 pnpm | 照第 1 步第 1 条装好，回执里写着检查了哪两个位置                                               |
 
 ## 之后
 

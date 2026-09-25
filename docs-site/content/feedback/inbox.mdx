@@ -7,34 +7,6 @@ docfirst: none
 # 投来的反馈
 
 **本页回答**：别的仓在用这个仓的东西的过程中投来了什么意见。一条一节：`## <日期> <一句话标题>`，
-第一行写来源；处理完删——这里是周转区不是档案，判据该留的落轨迹卡。
+第一行写来源；处理完删——这一页只放还没处理的意见，不存档，需要留下的判断依据写进轨迹卡。
 
-## 2026-09-18 SPEC 已撤 npm 管道，AGENTS.md 仍写「降为内部管道」
-
-来源：总控台会话（console 仓，全生态依赖体检）。
-
-d39be1e（撤 npm 管道）改了 `installer/SPEC.md:19`（「npm publish **已撤（2026-09-18）**……源上那三个版本已删」）、
-站里三页与轨迹卡，但正本 `docs-site/content/outputs/agents.mdx:96` 与重摆出的仓根 `AGENTS.md:91` 仍写
-「npm 发 registry 降为内部管道」——同一仓两份正本说法矛盾。建议 agents.mdx 改口后跑
-`pnpm docfirst render` 重摆 AGENTS.md 一起提交。
-
-## 2026-09-18 INSTALL.md「gwb-plugin-api 必须是 home 直接依赖，否则外壳起不来」与实测不符
-
-来源：总控台会话（console 仓，全生态依赖体检）。
-
-INSTALL.md 第 3 步把 `gwb-plugin-api` 列为必须直接依赖的三件共享库之一（「否则外壳起不来」）。
-实测 default home：`package.json` 依赖表与 `node_modules` 顶层都没有它，外壳照常在跑——它经
-baseui、bn-* 等插件自己的 `dependencies` 传递就位（`pnpm why` 可复核）。要么改口「传递依赖已够、
-可不直接装」，要么重新验判据后改文档；照文装机目前只是多装一个无害包。
-
-## 2026-09-25 块笔记已撤掉 `gwb.shared`：importmap 里只剩内核包提供的 react，这套机制可以删了
-
-来源：块笔记仓（gwb-block-note）把引擎替换合回 main 之后按全生态机制定案对齐的会话。
-
-照 devkit 定案（`gwb-devkit/docs-site/content/spec/ecosystem-simplify.mdx`）第四节：块笔记界面包 `@godcreator/block-notebook-ui`
-不再声明 `gwb.shared`、不再出给 importmap 用的文件，方言入口打包进各插件；各插件浏览器端只外置内核包清单 `gwb.shared` 的键（从装好的
-内核包读，不手抄）。块笔记系列插件与论文插件的 main 上都已改完，下一次发版带出去（块笔记仓提交「方言撤出页面 importmap」）。
-定案里写的「`gwb.shared` 机制留给 block-note，等它撤掉声明后再删」到这一步条件满足：插件一侧不再有任何包声明 `gwb.shared`，
-`collectImports` 扫描 home 清单、同名多个提供方全部拒绝那段可以删，importmap 只写内核自己的条目。
-注意 default 里还装着旧的 `@godcreator/block-note`（它声明着 `gwb.shared`），块笔记新版发出、default 切换之后才会被卸掉；
-在那之前删机制，default 里旧版块笔记的浏览器端会解析不到库，所以删之前先看 default 切换做了没有（块笔记 spec「v2 引擎替换」的 W6）。
+此刻没有待处理的反馈。

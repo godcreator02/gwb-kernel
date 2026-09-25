@@ -10,6 +10,9 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 
 ## 开发
 
+有两条启动方式，各管一件事：**日常使用、在新机器上安装**走安装版（开始菜单「gwb-kernel」，装法见 [INSTALL.md](INSTALL.md)），不进这个仓；
+**改内核本身**才从源码启动，而且只在隔离 home 里运行、不碰日常用的 default。下面是源码这一条：
+
 ```powershell
 pnpm install
 pnpm check                              # 构建内核包（连同 react 的打包产物与包根的类型声明）+ typecheck + lint + test
@@ -17,7 +20,7 @@ $env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 构建并在隔离 home
 ```
 
 隔离 home 里要先装好命令插件等插件（用 devkit 的 `devkit.home.new`，或照 `INSTALL.md` 用 pnpm 装），否则页面只显示只读状态页。
-日常使用从安装版启动，不从仓里运行；安装包由 `installer/` 生成。
+安装包由 `installer/` 生成。
 
 ## 文档
 
