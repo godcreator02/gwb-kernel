@@ -76,9 +76,6 @@
     "has ../apps/desktop/src/main.ts \"process.env.GWB_HOME\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/src/main.ts \"limitFromEnv(process.env.GWB_LOG_LIMIT_MB)\"": {
-      "kind": "has"
-    },
     "has ../apps/desktop/src/main.ts \"getSwitchValue('remote-debugging-port')\"": {
       "kind": "has"
     },
@@ -346,17 +343,17 @@
     "has ../apps/desktop/tests/main.test.ts \"插件或页面写 warn：只进日志，不推 gwb:shell\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/main.ts:66-71": {
+    "../apps/desktop/src/main.ts:65-70": {
       "kind": "git",
-      "blob": "861d96320af4d5838e52b2e55ae32e544588d516",
-      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
+      "blob": "e8836844b1068bcc7520a1b49e8bb56e874e9321",
+      "commit": "d761153bee08a7775b5a7e926feb8aa0977c80c3",
       "lines": [
-        66,
-        71
+        65,
+        70
       ],
       "hash": "b7aeb2aaba2d2cdf45452c609d445ad66b98990ae47b42e4df7a1bad9c56b745"
     },
-    "has ../apps/desktop/src/log-file.ts \"DEFAULT_LIMIT_BYTES = 128 * 1024 * 1024\"": {
+    "has ../apps/desktop/src/log-file.ts \"LOG_LIMIT_BYTES = 128 * 1024 * 1024\"": {
       "kind": "has"
     }
   },
