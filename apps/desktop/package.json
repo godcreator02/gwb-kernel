@@ -6,7 +6,6 @@
   },
   "type": "module",
   "main": "dist/main.js",
-  "//exports": "根入口的 types 是内核给插件与页面的接口类型（src/api.ts），插件只 import type；default 是内核入口，由启动器加载",
   "exports": {
     ".": {
       "types": "./dist/api.d.ts",
@@ -31,7 +30,6 @@
   "engines": {
     "electron": "^44.1.1"
   },
-  "//peerDependencies": "cordis 由 home 根上的那一份满足，内核与插件解析到同一份；它也出现在包根导出的类型里（GwbContext 继承 cordis 的 Context）；判据见文档站",
   "peerDependencies": {
     "cordis": "4.0.0-rc.10"
   },

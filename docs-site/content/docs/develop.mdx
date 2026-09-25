@@ -31,7 +31,7 @@ cd apps\desktop; pnpm start
 
 `pnpm start` 先构建再启动 electron。构建依次是：整个删掉 `dist/`（清单的 `files` 只列 `dist`，上一次构建留下的文件不删就会被一起发出去）；`tsc` 编译内核；用 `tsconfig.api.json` 只为 `src/api.ts` 生成包根导出的类型声明 `dist/api.d.ts`；把页面的 `index.html`、`preload.cjs` 复制进 `dist/`；最后运行 `scripts/build-react.ts` 把 react 打进 `dist/react/`（见下面[内核包怎么打包 react](#内核包怎么打包-react)）：
 
-{/* ref file="../apps/desktop/package.json" lines="24-30" */}
+{/* ref file="../apps/desktop/package.json" lines="23-29" */}
 
 ### 隔离 home 里的插件从哪来
 

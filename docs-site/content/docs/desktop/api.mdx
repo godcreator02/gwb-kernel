@@ -33,7 +33,7 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 
 内核包的包根有两个条件：`types` 指向 `dist/api.d.ts`，给 TypeScript 用；`default` 指向 `dist/main.js`，是内核入口。包根的运行时入口一加载就启动 Electron 应用，所以包根对外只给类型：
 
-{/* ref file="../apps/desktop/package.json" lines="8-16" */}
+{/* ref file="../apps/desktop/package.json" lines="8-15" */}
 
 清单顶层不写 `types`，类型只经 `exports` 给出：插件的 TypeScript 要用认 `exports` 的模块解析方式（`bundler`，或 `node16` 起）。这几条由 `apps/desktop/tests/importmap.test.ts` 核对：
 
