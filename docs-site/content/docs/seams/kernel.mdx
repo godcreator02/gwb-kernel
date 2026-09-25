@@ -1,6 +1,6 @@
 ---
 title: 2 内核服务 gwbKernel
-description: 连接内核应用与任何插件；交换的是内核在 cordis 根上下文提供的服务 gwbKernel——dataDir、version、emit、setShell 四个成员，类型 GwbKernelApi 从内核包的包根导出；内核应用保证它先于任何插件提供、永不撤销，插件保证数据只写在自己的目录、把 setShell 的撤销函数交给 ctx.effect
+description: 连接内核应用与任何插件；交换的是内核在 cordis 根上下文提供的服务 gwbKernel——dataDir、version、emit、setShell 四个成员，类型 GwbKernelApi 从内核包的包根导出；内核应用保证它先于任何插件提供、永不撤销，插件保证数据只写在归自己的目录或文件里、把 setShell 的撤销函数交给 ctx.effect
 ---
 
 **本页回答**：内核直接给插件的服务 `gwbKernel` 有哪几个成员、各是什么意思；内核应用和插件使用它时各保证什么。
@@ -40,7 +40,7 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 **插件**保证：
 
-- 数据写在 `dataDir` 下自己的目录里，不碰别的插件的目录，也不改 home 根上的 `package.json`、`cordis.yml`（那两份归插件管理，见 [home 布局与条目树](/docs/seams/home)）
+- 数据写在 `dataDir` 下归自己的目录或文件里，不碰别的插件的；home 里已有的文件各归谁见[总表](/docs/wiring#home-布局与文件)，比如 home 根上的 `settings.json` 归设置插件、`package.json` 与 `cordis.yml` 归插件管理（[home 布局与条目树](/docs/seams/home)）
 - `emit` 的 payload 能经 Electron 的 IPC 传过去（结构化克隆：函数、Promise 传不过去）
 - 把 `setShell` 返回的撤销函数交给 `ctx.effect`，插件卸载时把页面交还
 
