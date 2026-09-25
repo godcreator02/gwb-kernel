@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { DEFAULT_LIMIT_BYTES, limitFromEnv, openLogFile } from '../src/log-file'
+import { openLogFile } from '../src/log-file'
 
 /**
  * 上限与轮转的判据：没到线不动、到线滚一份并把上一份留住、滚不动也不能把内核带走。
@@ -14,6 +14,7 @@ const logPath = (): string => path.join(dir, 'gwb.log')
 const read = (file: string): string => fs.readFileSync(file, 'utf8')
 /** 定长 10 字节的一行：好算上限到没到线 */
 const line = (c: string): string => c.repeat(9) + '\n'
+const ignoreWarnings = (): void => {}
 
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gwb-log-'))
@@ -22,96 +23,42 @@ afterEach(() => {
   fs.rmSync(dir, { recursive: true, force: true })
 })
 
-describe('limitFromEnv', () => {
-  it('没给 / 空的 / 不是整数的 / 负的 → 默认值：一个打错的配置项不该把上限弄没', () => {
-    expect(limitFromEnv(undefined)).toBe(DEFAULT_LIMIT_BYTES)
-    expect(limitFromEnv('')).toBe(DEFAULT_LIMIT_BYTES)
-    expect(limitFromEnv('   ')).toBe(DEFAULT_LIMIT_BYTES)
-    expect(limitFromEnv('abc')).toBe(DEFAULT_LIMIT_BYTES)
-    expect(limitFromEnv('1.5')).toBe(DEFAULT_LIMIT_BYTES)
-    expect(limitFromEnv('-1')).toBe(DEFAULT_LIMIT_BYTES)
-  })
-
-  it('正整数按 MB 算', () => {
-    expect(limitFromEnv('64')).toBe(64 * 1024 * 1024)
-  })
-
-  it('0 是有意的「不轮转、留全量」，照给', () => {
-    expect(limitFromEnv('0')).toBe(0)
-  })
-})
-
 describe('openLogFile', () => {
   it('没到上限不轮转：只有 gwb.log，一条都不少、一句都不喊', () => {
     const warns: string[] = []
     const log = openLogFile({ file: logPath(), limitBytes: 1000, onWarn: (m) => warns.push(m) })
     log.write(line('a'))
     log.write(line('b'))
-    log.close()
     expect(read(logPath())).toBe(line('a') + line('b'))
     expect(fs.existsSync(`${logPath()}.1`)).toBe(false)
     expect(warns).toEqual([])
   })
 
   it('超上限滚一份：现行只剩新的，滚走的那段整份进 .1，且只留一份', () => {
-    const log = openLogFile({ file: logPath(), limitBytes: 10, keep: 1 })
+    const log = openLogFile({ file: logPath(), limitBytes: 10, onWarn: ignoreWarnings })
     log.write(line('a')) // 10，到线
     log.write(line('b')) // 滚：.1 = a
     log.write(line('c')) // 10，到线
     log.write(line('d')) // 再滚：上一份 .1 被顶掉
-    log.close()
     expect(read(logPath())).toBe(line('d'))
     expect(read(`${logPath()}.1`)).toBe(line('c'))
     expect(fs.existsSync(`${logPath()}.2`)).toBe(false)
   })
 
   it('轮转后写的那条落进新的 gwb.log，不落进刚改名的 .1——fd 不能悬在改过名的文件上', () => {
-    const log = openLogFile({ file: logPath(), limitBytes: 8 })
+    const log = openLogFile({ file: logPath(), limitBytes: 8, onWarn: ignoreWarnings })
     log.write(line('旧')) // 10，到线
     log.write(line('新'))
-    log.close()
     expect(read(`${logPath()}.1`)).toBe(line('旧'))
     expect(read(logPath())).toBe(line('新'))
   })
 
-  it('keep=2：旧的顺次往后挪（.1 → .2），最老的那份被顶掉', () => {
-    // 每段正好一个上限：一份文件一段，链条看得清
-    const log = openLogFile({ file: logPath(), limitBytes: 5, keep: 2 })
-    log.write('aaaaa')
-    log.write('bbbbb') // 滚：.1 = aaaaa
-    log.write('ccccc') // 滚：.2 = aaaaa，.1 = bbbbb
-    log.write('ddddd') // 滚：aaaaa 被顶掉，.2 = bbbbb，.1 = ccccc
-    log.close()
-    expect(read(logPath())).toBe('ddddd')
-    expect(read(`${logPath()}.1`)).toBe('ccccc')
-    expect(read(`${logPath()}.2`)).toBe('bbbbb')
-    expect(fs.existsSync(`${logPath()}.3`)).toBe(false)
-  })
-
-  it('keep=0：滚掉的那份直接删，不留 .1', () => {
-    const log = openLogFile({ file: logPath(), limitBytes: 4, keep: 0 })
-    log.write('aaaaa')
-    log.write('b')
-    log.close()
-    expect(read(logPath())).toBe('b')
-    expect(fs.existsSync(`${logPath()}.1`)).toBe(false)
-  })
-
   it('开局就超限（上一轮内核留下的那份）→ 第一条日志就把它滚走', () => {
     fs.writeFileSync(logPath(), 'x'.repeat(500))
-    const log = openLogFile({ file: logPath(), limitBytes: 64 })
+    const log = openLogFile({ file: logPath(), limitBytes: 64, onWarn: ignoreWarnings })
     log.write('新\n')
-    log.close()
     expect(read(`${logPath()}.1`)).toBe('x'.repeat(500))
     expect(read(logPath())).toBe('新\n')
-  })
-
-  it('上限 0 = 不轮转：长到天上去也不动它', () => {
-    const log = openLogFile({ file: logPath(), limitBytes: 0 })
-    log.write('x'.repeat(5000))
-    log.close()
-    expect(read(logPath())).toBe('x'.repeat(5000))
-    expect(fs.existsSync(`${logPath()}.1`)).toBe(false)
   })
 
   it('轮转没成不致命：照样往后写、一条不丢，只喊一句，再长一个上限才重试', () => {
@@ -136,7 +83,6 @@ describe('openLogFile', () => {
     log.write(line('9'))
     wrote.push(line('9'))
     expect(warns).toHaveLength(2) // 又长满一个上限，真会再试
-    log.close()
     expect(read(logPath())).toBe(wrote.join('')) // 滚不动就继续往后写，一条都没丢
     expect(fs.statSync(`${logPath()}.1`).isDirectory()).toBe(true) // 也没把占位的那格铲掉
   })
@@ -148,7 +94,6 @@ describe('openLogFile', () => {
     const log = openLogFile({ file, limitBytes: 100, onWarn: (m) => warns.push(m) })
     expect(warns).toHaveLength(1)
     expect(() => log.write('谁\n')).not.toThrow()
-    expect(() => log.close()).not.toThrow()
   })
 
   it('路径被目录占着：写不进去也不致命，且**只喊一句**、不每条日志喊一遍', () => {
@@ -160,7 +105,6 @@ describe('openLogFile', () => {
     expect(warns).toEqual([]) // 开的时候是真没报错
     for (const c of ['a', 'b', 'c', 'd', 'e']) expect(() => log.write(line(c))).not.toThrow()
     expect(warns).toHaveLength(1)
-    log.close()
   })
 
   it('onWarn 自己抛也不许漏出去', () => {

@@ -17,7 +17,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 - **页面边界**：主框架只可能是内核包里的 `index.html`——主框架跳到别的地址、主框架上的重定向一律拒绝并写一行 warn，只放行整页重新加载；`window.open` 与 `target="_blank"` 从不打开新窗口，`http:`、`https:` 地址交给系统默认浏览器打开并写一行 info，别的协议拒绝并写一行 warn；`gwb:command` 只接收顶层框架的调用。页面能调用整条命令总线，这是内核保证的唯一边界（[IPC 通道](/docs/seams/ipc)）
 - **页面上的 react**：构建时把 react 打进 `dist/react/`，页面入口 `index.html` 里写死的 importmap 把 react 的四个包名指向这几个文件，外壳与插件在页面上写 `import 'react'` 就能找到内核包里的文件（[页面上的 react](/docs/seams/page-react)）
 - **转交命令、推送事件**：页面发来的命令交给命令插件提供的 `ctx.gwbCommands`（[命令转交](/docs/seams/commands)），插件发出的事件推给页面（[IPC 通道](/docs/seams/ipc)）
-- **日志**：插件、内核、页面 console 的日志汇成一条 cordis 日志流，每一行同时写 stderr 和 home 里的 `gwb.log`（[日志](/docs/seams/log)）。`gwb.log` 默认上限 128 MB，写到上限就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多 256 MB）再开一份新的；环境变量 `GWB_LOG_LIMIT_MB` 改上限，单位 MB，`0` 表示不轮转，不是非负整数时按默认值。文件打不开、写不进、轮转失败都只往 stderr 告警一句，内核照常运行
+- **日志**：插件、内核、页面 console 的日志汇成一条 cordis 日志流，每一行同时写 stderr 和 home 里的 `gwb.log`（[日志](/docs/seams/log)）。`gwb.log` 上限 128 MB，写到上限就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多 256 MB）再开一份新的。文件打不开、写不进、轮转失败都只往 stderr 告警一句，内核照常运行
 - **记下这次运行**：每次启动把 pid、启动时刻、版本、调试端口写进 home 里的 `runtime.json`（[runtime.json](/docs/seams/runtime)）
 - **出错与退出**：启动失败时弹错误框、退出码 1；插件抛出的未捕获异常只记进日志，工作台不退出；所有窗口关闭时卸载整棵插件树，最多等 5 秒（[启动与退出](/docs/desktop/boot)）
 
@@ -98,17 +98,14 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 ### 启动参数
 
-启动内核的人或程序经这三项控制它，不属于哪条接缝（从安装包启动时，启动器已经把 `GWB_HOME` 换成了绝对路径）：
+启动内核的人或程序经这两项控制它，不属于哪条接缝（从安装包启动时，启动器已经把 `GWB_HOME` 换成了绝对路径）：
 
 | 参数 | 做什么 |
 | --- | --- |
 | 环境变量 `GWB_HOME` | 用哪个 home，规则见上面「功能」的第一条 |
-| 环境变量 `GWB_LOG_LIMIT_MB` | `gwb.log` 的上限，单位 MB；`0` 表示不轮转，排查问题要留全部日志时用 |
 | 命令行开关 `--remote-debugging-port` | Chromium 调试端口；开了就记进 `runtime.json` |
 
 {/* has file="../apps/desktop/src/main.ts" text="process.env.GWB_HOME" */}
-
-{/* has file="../apps/desktop/src/main.ts" text="limitFromEnv(process.env.GWB_LOG_LIMIT_MB)" */}
 
 {/* has file="../apps/desktop/src/main.ts" text="getSwitchValue('remote-debugging-port')" */}
 

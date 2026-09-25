@@ -41,9 +41,9 @@ description: 连接内核应用与所有插件：插件、内核、页面 consol
 
 - 内核应用不为页面或窗格建日志通道：页面上要显示日志的插件自己注册 exporter，再用自己的命令、事件交给页面
 - 内核应用不给日志分级过滤、不按插件分文件、不提供查询
-- 内核应用不保证 `gwb.log` 留着全部历史：文件到上限（默认 128 MB，环境变量 `GWB_LOG_LIMIT_MB` 可调）就改名为 `gwb.log.1`，只留这一份旧的（见[内核应用](/docs/desktop)）。128 MB 的依据：实测平常一天约写 48 MB，某个插件出错刷屏时一小时能写约 675 MB；128 MB 平常能留住两天半的日志用来事后查错，刷屏时十几分钟轮转一次，加上那份旧的，磁盘占用不超过 256 MB。读数与验证记录在仓根 `probes/2609201430_log-cap-rotation/`
+- 内核应用不保证 `gwb.log` 留着全部历史：文件到上限（128 MB）就改名为 `gwb.log.1`，只留这一份旧的（见[内核应用](/docs/desktop)）。128 MB 的依据：实测平常一天约写 48 MB，某个插件出错刷屏时一小时能写约 675 MB；128 MB 平常能留住两天半的日志用来事后查错，刷屏时十几分钟轮转一次，加上那份旧的，磁盘占用不超过 256 MB。读数与验证记录在仓根 `probes/2609201430_log-cap-rotation/`
 
-{/* has file="../apps/desktop/src/log-file.ts" text="DEFAULT_LIMIT_BYTES = 128 * 1024 * 1024" */}
+{/* has file="../apps/desktop/src/log-file.ts" text="LOG_LIMIT_BYTES = 128 * 1024 * 1024" */}
 
 ## 测试
 

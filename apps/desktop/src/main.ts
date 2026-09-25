@@ -9,7 +9,7 @@ import type { GwbKernelApi } from './api.js'
 import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
-import { limitFromEnv, openLogFile } from './log-file.js'
+import { LOG_LIMIT_BYTES, openLogFile } from './log-file.js'
 import { isReloadOfCurrentDocument, isTopFrame, opensInSystemBrowser } from './page-boundary.js'
 
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = electron
@@ -55,8 +55,7 @@ addMissingMinimalHomeFiles(dataDir)
 
 const logFile = openLogFile({
   file: path.join(dataDir, 'gwb.log'),
-  limitBytes: limitFromEnv(process.env.GWB_LOG_LIMIT_MB),
-  keep: 1,
+  limitBytes: LOG_LIMIT_BYTES,
   // 不走 writeLogLine：它也写这个文件，出错时会再次进入自己
   onWarn: (message) => {
     process.stderr.write(`${new Date().toISOString()} warn kernel ${message}\n`)
