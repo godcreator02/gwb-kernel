@@ -29,11 +29,11 @@ const entry = new URL('./client.js', import.meta.url).href
 ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effect，插件卸载时交还页面
 ```
 
-{/* ref file="../apps/desktop/src/api.ts" lines="23-27" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="21-25" */}
 
 页面入口 import 这个地址，只认它的默认导出：拿到 `#root`，返回可选的 `dispose`。
 
-{/* ref file="../apps/desktop/src/api.ts" lines="48-49" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="46-47" */}
 
 页面入口里写死了 importmap，外壳模块里 react 的四个包名可以直接 import（[页面上的 react](/docs/seams/page-react)）。
 

@@ -6,23 +6,23 @@
     "has ../apps/desktop/tests/index-html.test.ts \"外壳在用时推来 url: null（外壳撤销）：dispose 旧外壳，回到只读状态页\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/api.ts:23-27": {
+    "../apps/desktop/src/api.ts:21-25": {
       "kind": "git",
-      "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
-      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
+      "blob": "a9361e76f87242a68da4f61e22c486d180829008",
+      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
       "lines": [
-        23,
-        27
+        21,
+        25
       ],
       "hash": "e98393537c67ef51f7d6f14d8d3cf29ff55190fc06c4eb6d20894b21b66f9caa"
     },
-    "../apps/desktop/src/api.ts:48-49": {
+    "../apps/desktop/src/api.ts:46-47": {
       "kind": "git",
-      "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
-      "commit": "90615184e45900917f4ff7840a28047e55940cc3",
+      "blob": "a9361e76f87242a68da4f61e22c486d180829008",
+      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
       "lines": [
-        48,
-        49
+        46,
+        47
       ],
       "hash": "ec9ecc8997fe82dfb12a9146ee1789bd4d855067e4ca664e23217e79a192d885"
     }
@@ -31,13 +31,13 @@
     "has ../apps/desktop/tests/main.test.ts \"已有的 package.json 不覆盖\"": {
       "kind": "has"
     },
-    "../apps/desktop/package.json:47-54": {
+    "../apps/desktop/package.json:32-39": {
       "kind": "git",
-      "blob": "83b50e94178c5612b7fff21a623283bdfaeb4b2e",
-      "commit": "b17001fbeba906da6f02267679a83f17b80b7e85",
+      "blob": "87b698b8aa3094ab9f1967a50b95eb2f1b36553a",
+      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
       "lines": [
-        47,
-        54
+        32,
+        39
       ],
       "hash": "5e6c0a70d786642e9b9de639caabd57adbf48a07f558481b1a38297b7e8a04c0"
     }
@@ -49,15 +49,15 @@
     "has ../apps/desktop/src/main.ts \"void app.whenReady().then(startAfterAppReady).catch(reportBootFailureAndExit)\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/main.ts:279-296": {
+    "../apps/desktop/src/main.ts:289-306": {
       "kind": "git",
-      "blob": "e59d0e3d30fc3016a023e9c242a09950fa67e433",
-      "commit": "8a6f8c34a2017a8595c30cf20121f133d6c155a6",
+      "blob": "861d96320af4d5838e52b2e55ae32e544588d516",
+      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
       "lines": [
-        279,
-        296
+        289,
+        306
       ],
-      "hash": "bc34d6b5419790ec68545179f056fccbc38f10b5bb7e905831500a3b911320e9"
+      "hash": "8704a3d356e6e858c6f1eacc715b03b222a3aa13bf65f5f175608d37a87d72a8"
     }
   },
   "content/docs/desktop/index.mdx": {
@@ -343,17 +343,20 @@
     "has ../apps/desktop/tests/main.test.ts \"页面 console 进 cordis 日志，名字是 renderer\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/main.ts:69-74": {
+    "has ../apps/desktop/tests/main.test.ts \"插件或页面写 warn：只进日志，不推 gwb:shell\"": {
+      "kind": "has"
+    },
+    "../apps/desktop/src/main.ts:66-71": {
       "kind": "git",
-      "blob": "a1d983f9ab802521551a0e56ee46f9a6abe677c0",
-      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
+      "blob": "861d96320af4d5838e52b2e55ae32e544588d516",
+      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
       "lines": [
-        69,
-        74
+        66,
+        71
       ],
       "hash": "b7aeb2aaba2d2cdf45452c609d445ad66b98990ae47b42e4df7a1bad9c56b745"
     },
-    "has ../apps/desktop/tests/main.test.ts \"插件或页面写 warn：只进日志，不推 gwb:shell\"": {
+    "has ../apps/desktop/src/log-file.ts \"DEFAULT_LIMIT_BYTES = 128 * 1024 * 1024\"": {
       "kind": "has"
     }
   },
@@ -420,23 +423,23 @@
     "has ../apps/desktop/tests/main.test.ts \"命令交给插件提供的 gwbCommands\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/main.ts:25-32": {
+    "../apps/desktop/src/main.ts:22-29": {
       "kind": "git",
-      "blob": "a1d983f9ab802521551a0e56ee46f9a6abe677c0",
-      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
+      "blob": "861d96320af4d5838e52b2e55ae32e544588d516",
+      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
       "lines": [
-        25,
-        32
+        22,
+        29
       ],
       "hash": "9f708770648e91748683da9fb83b24b0574e7275041c6279afae0c618c12a21c"
     },
-    "../apps/desktop/src/main.ts:231-237": {
+    "../apps/desktop/src/main.ts:226-232": {
       "kind": "git",
-      "blob": "a1d983f9ab802521551a0e56ee46f9a6abe677c0",
-      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
+      "blob": "861d96320af4d5838e52b2e55ae32e544588d516",
+      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
       "lines": [
-        231,
-        237
+        226,
+        232
       ],
       "hash": "3b9850d0b70648c40af5e1b0ef7454b66bf3b778444920a890b99853022c686b"
     }

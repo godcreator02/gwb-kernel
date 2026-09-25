@@ -33,7 +33,7 @@ description: 内核一次启动按什么顺序做事、哪几处顺序不能换�
 
 ready 之后这一段的顺序本身就是约束：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="279-296" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="289-306" */}
 
 - **`gwbKernel` 在注册 loader 之前提供**：它在模块求值时就已提供，任何插件加载时都已经在了（[`gwbKernel` 要在注册 loader 之前提供](/trajectory/2026-09-07-wall-gwbkernel-provide-early)）
 - **窗口先于 loader**：页面在插件加载的过程中就显示只读状态页，页面的 console 也从一开始就进日志

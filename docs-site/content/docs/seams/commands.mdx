@@ -24,7 +24,7 @@ description: 连接内核应用与命令插件；接口是服务 ctx.gwbCommands
 
 内核应用只用到 `gwbCommands` 的 `run` 一个方法，在自己的代码里把它声明成 cordis 上下文上的可选服务：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="25-32" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="22-29" */}
 
 `run(命令名, 参数, { via: 'ui' })` 返回 promise，得到的值原样交回页面，页面按内核包导出的 `GwbResult` 读它。第三个参数是请求来源：命令插件把它原样交给处理函数，处理函数据此认出请求来自界面（比如块笔记的撤销只撤来自界面的提交）。内核转交的命令一律带 `'ui'`；MCP 入口调用时带 `'mcp'`、插件直接调用时不带，这两种与内核无关。`gwbCommands` 的完整类型（登记命令、来源的取值等）不在内核包导出的类型里，由命令插件自己导出。
 
@@ -37,7 +37,7 @@ description: 连接内核应用与命令插件；接口是服务 ctx.gwbCommands
 - 不是页面顶层框架发来的命令不转交，回 `{ ok: false, error }`（见 [IPC 通道](/docs/seams/ipc)）；命令名不是字符串时回 `{ ok: false, error: '命令名要是字符串' }`；`ctx.gwbCommands` 不存在时回 `{ ok: false, error: '没有命令服务（ctx.gwbCommands），无法执行 <命令名>' }`
 - 只找 `gwbCommands` 这一个服务名，不认识任何命令名，自己不登记命令
 
-{/* ref file="../apps/desktop/src/main.ts" lines="231-237" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="226-232" */}
 
 **命令插件**保证：
 
