@@ -232,7 +232,7 @@
     "../apps/desktop/src/preload.cjs:all": {
       "kind": "git",
       "blob": "2d5226970031e639456de3d32f9bb03fdc1d3cf2",
-      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
+      "commit": "53e302d8d32241b42ca2c6585165cbde6b465505",
       "lines": [
         1,
         19
@@ -251,7 +251,7 @@
     "../apps/desktop/src/api.ts:6-11": {
       "kind": "git",
       "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
-      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
+      "commit": "53e302d8d32241b42ca2c6585165cbde6b465505",
       "lines": [
         6,
         11
@@ -261,7 +261,7 @@
     "../apps/desktop/src/api.ts:35-46": {
       "kind": "git",
       "blob": "40e50ecdce3d6f7290ce0d052da62106e028dfed",
-      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
+      "commit": "53e302d8d32241b42ca2c6585165cbde6b465505",
       "lines": [
         35,
         46
@@ -270,18 +270,24 @@
     },
     "../apps/desktop/src/page-boundary.ts:all": {
       "kind": "git",
-      "blob": "b5d4f4cce63730b2bd1596fa573a03f74aca8488",
-      "commit": "6d0e90407d3c60cc11726061d1a549fc6656dc0c",
+      "blob": "c8ea974836da337814d61967c0a9066fa3c7a59e",
+      "commit": "53e302d8d32241b42ca2c6585165cbde6b465505",
       "lines": [
         1,
-        14
+        20
       ],
-      "hash": "0cb6ea25c9ebc10102881eb9debb3c5aa1dc68758585d60abeeb233194b9404e"
+      "hash": "3a6b56976fb44b830593f4b7780ada8ce4b6b5d42c1c55e1d802a0e3b82be560"
     },
     "has ../apps/desktop/tests/main.test.ts \"gwb:command 只接收顶层框架\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/tests/main.test.ts \"页面边界：主框架跳到别处、主框架的重定向、window.open 一律拒绝\"": {
+    "has ../apps/desktop/tests/main.test.ts \"页面边界：主框架跳到别处（包括 http、https）、主框架的重定向一律拒绝\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"window.open：窗口一律 deny；http、https 交给系统浏览器\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/tests/page-boundary.test.ts \"window.open 的地址只有 http、https 交给系统浏览器\"": {
       "kind": "has"
     }
   },
