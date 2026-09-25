@@ -62,7 +62,7 @@ cd apps\desktop; pnpm start
 | `apps/desktop/tests/index-html.test.ts` | 页面入口：只读状态页画出一句说明、home、每个条目一行、错误行；外壳挂载、替换、撤销，外壳启动失败时回到只读状态页 |
 | `apps/desktop/tests/preload.test.ts` | 页面上只有一个 `window.gwb`、正好三个函数，各自走哪个通道 |
 | `apps/desktop/tests/bare-import.test.ts` | 按 home 解析包名（含 scoped 包、链接换指向后拿到新版本） |
-| `apps/desktop/tests/importmap.test.ts` | 页面入口里写死的 importmap 只有 react 的四个包名、写在页面脚本之前、指到打包脚本产出的文件（见[页面上的 react](/docs/seams/page-react)）；本仓内核包清单：包根的 `types` 指向 `dist/api.d.ts` |
+| `apps/desktop/tests/importmap.test.ts` | 页面入口里写死的 importmap 只有 react 的四个包名、写在页面脚本之前、每个地址在构建后的 `dist/` 里都有对应的文件（见[页面上的 react](/docs/seams/page-react)）；本仓内核包清单：包根的 `types` 指向 `dist/api.d.ts` |
 | `apps/desktop/tests/react-bundles.test.ts` | react 的打包产物，见下面[内核包怎么打包 react](#内核包怎么打包-react) |
 | `apps/launcher/tests/launch-plan.test.ts` | 在临时目录上证明：启动器选 home 的规则和内核的逐个输入结果相同；home 里没有内核包、清单不是合法 JSON、没声明 `engines.electron`、Electron 版本不满足、没有 `main` 时各自拒绝并说明原因；版本满足时给出内核包的入口文件；启动器带的 Electron 满足内核包声明的范围 |
 
@@ -115,7 +115,7 @@ devkit.dev {"home":"<隔离 home 名>","dir":"<本仓根>","packages":["apps/des
 
 {/* ref file="../apps/desktop/scripts/build-react.ts" lines="22-43" */}
 
-**测试**：`apps/desktop/tests/react-bundles.test.ts` 读真实的产物（仓根 `pnpm check` 先构建内核包），查三件事：四个文件里都没有 `typeof require` 探针；react-dom 的两个文件以那句 import 开头、带着修补后的 `__require`；`react.js` 的具名导出里有 `default`、`useState`、`useEffect`、`createElement`、`useEffectEvent`。`importmap.test.ts` 另外查 `index.html` 里 importmap 的四个地址指到打包脚本产出的文件。
+**测试**：`apps/desktop/tests/react-bundles.test.ts` 读真实的产物（仓根 `pnpm check` 先构建内核包），查三件事：四个文件里都没有 `typeof require` 探针；react-dom 的两个文件以那句 import 开头、带着修补后的 `__require`；`react.js` 的具名导出里有 `default`、`useState`、`useEffect`、`createElement`、`useEffectEvent`。`importmap.test.ts` 另外查 `index.html` 里 importmap 的四个地址在 `dist/` 里都有对应的文件。
 
 {/* has file="../apps/desktop/tests/react-bundles.test.ts" text="react.js 带具名导出" */}
 

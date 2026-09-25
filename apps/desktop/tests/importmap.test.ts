@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 /**
  * 页面 importmap 写死在 index.html 里：四个 react 包名指向打包脚本产出的文件。
- * 只读本仓的源文件，不起 electron；页面上真的加载到这四个文件只能实机验证
+ * 读源文件与构建产物（根目录 pnpm check 先构建内核包），不起 electron；页面上真的加载到这四个文件只能实机验证
  */
 
 const packageDir = path.join(import.meta.dirname, '..')
@@ -23,11 +23,10 @@ describe('页面的 importmap', () => {
     expect(html.indexOf('<script type="importmap">')).toBeLessThan(html.indexOf('<script type="module">'))
   })
 
-  it('每个地址都是相对 index.html 的 ./react/<文件>，文件由 scripts/build-react.ts 产出', () => {
-    const script = fs.readFileSync(path.join(packageDir, 'scripts', 'build-react.ts'), 'utf8')
+  it('每个地址都是相对 index.html 的 ./react/<文件>，构建后 dist/ 里有这个文件', () => {
     for (const url of Object.values(staticImportmap())) {
       expect(url).toMatch(/^\.\/react\/[a-z-]+\.js$/)
-      expect(script).toContain(`out: '${path.basename(url)}'`)
+      expect(fs.existsSync(path.join(packageDir, 'dist', url))).toBe(true)
     }
   })
 })

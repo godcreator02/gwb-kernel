@@ -47,6 +47,6 @@ importmap 是静态的：内核启动时不计算、不推送，也不读任何�
 
 ## 测试
 
-`apps/desktop/tests/importmap.test.ts` 读本仓源文件：`index.html` 里只有一段 importmap、只有 react 的四个包名、写在页面脚本之前；每个地址都是 `./react/<文件>`，文件名是 `scripts/build-react.ts` 产出的那几个。打包产物本身由 `apps/desktop/tests/react-bundles.test.ts` 保护（见[开发](/docs/develop#内核包怎么打包-react)）。页面上真的用上内核包里的 react，只能在隔离 home 里实机验证（见[开发](/docs/develop)）。
+`apps/desktop/tests/importmap.test.ts` 读本仓源文件与构建产物：`index.html` 里只有一段 importmap、只有 react 的四个包名、写在页面脚本之前；每个地址都是 `./react/<文件>`，构建后 `dist/` 里有这个文件。打包产物的内容由 `apps/desktop/tests/react-bundles.test.ts` 保护（见[开发](/docs/develop#内核包怎么打包-react)）。页面上真的用上内核包里的 react，只能在隔离 home 里实机验证（见[开发](/docs/develop)）。
 
-{/* has file="../apps/desktop/tests/importmap.test.ts" text="每个地址都是相对 index.html 的 ./react/<文件>，文件由 scripts/build-react.ts 产出" */}
+{/* has file="../apps/desktop/tests/importmap.test.ts" text="每个地址都是相对 index.html 的 ./react/<文件>，构建后 dist/ 里有这个文件" */}
