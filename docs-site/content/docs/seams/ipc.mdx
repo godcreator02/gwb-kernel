@@ -43,7 +43,8 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 
 - `gwb:command` 收到的命令名和参数交给命令转交，回执原样交回页面；内核应用自己不登记任何命令
 - `gwb:command` 只接收顶层框架的调用：发送方是 iframe，或发送方框架已经跳走、销毁，都回 `{ ok: false, error }`，不交给命令转交
-- 页面只可能是内核包里的 `index.html`：主框架跳到别的地址、主框架上的重定向、`window.open` 一律拒绝，每次拒绝写一行 `kernel` 的 warn；只放行跳到当前地址（整页重新加载，`#` 之后的部分不算差别）。页面能调用整条命令总线，这是内核保证的唯一边界，命令不分权限（[页面边界](/trajectory/2026-09-25-page-navigation-lock)）
+- 页面只可能是内核包里的 `index.html`：主框架跳到别的地址（包括拖进窗口的链接、不带 `target` 的链接点击，网页地址也一样）、主框架上的重定向一律拒绝，每次拒绝写一行 `kernel` 的 warn；只放行跳到当前地址（整页重新加载，`#` 之后的部分不算差别）。页面能调用整条命令总线，这是内核保证的唯一边界，命令不分权限（[页面边界](/trajectory/2026-09-25-page-navigation-lock)）
+- `window.open` 与 `target="_blank"` 的链接从不打开新窗口：地址的协议是 `http:` 或 `https:` 时交给系统默认浏览器打开，写一行 `kernel` 的 info（带地址），系统浏览器打开失败再写一行 `kernel` 的 warn；别的协议（`file:`、`javascript:`、`data:`、自定义协议）和解析不了的地址拒绝，写一行 `kernel` 的 warn（[网页链接交给系统浏览器](/trajectory/2026-09-25-open-external-links)）
 
 {/* ref file="../apps/desktop/src/page-boundary.ts" */}
 - `gwb:event` 原样推给页面；窗口不在时事件就丢了，不补发
@@ -55,6 +56,7 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 - 参数能经 Electron 的 IPC 传过去（结构化克隆：函数、DOM 节点传不过去）
 - 不再需要时调用 `on`、`onShell` 返回的取消订阅函数
 - `onShell` 只由内核的页面入口订阅；外壳和别的页面代码用 `command` 与 `on`
+- 要在系统浏览器里打开网页，链接写 `target="_blank"` 或调用 `window.open`；不带 `target` 的链接点击是主框架跳转，会被拒绝
 
 ## 不负责的事
 
@@ -64,7 +66,7 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 
 ## 测试
 
-`preload.cjs` 由 `apps/desktop/tests/preload.test.ts` 保护：给它一个假的 `electron` 求值，证明页面上只有 `window.gwb` 的三个函数、`command` 走 `gwb:command`、订阅能取消、`onShell` 订阅后马上发 `gwb:hello`。主进程回 `gwb:hello`、`gwb:command` 拒绝非顶层框架、导航与新窗口被拒由 `apps/desktop/tests/main.test.ts` 保护，哪些跳转算整页重新加载、哪些框架算顶层由 `apps/desktop/tests/page-boundary.test.ts` 保护。页面与主进程连起来只能在隔离 home 里实机验证（[开发](/docs/develop)；查看页面用 devkit 的 `devkit.cdp`）：插件 `emit` 的事件页面收得到，页面整页重新加载后立刻收到当前外壳状态，拖进窗口的链接与 iframe 里的 `window.open` 都被拒绝。
+`preload.cjs` 由 `apps/desktop/tests/preload.test.ts` 保护：给它一个假的 `electron` 求值，证明页面上只有 `window.gwb` 的三个函数、`command` 走 `gwb:command`、订阅能取消、`onShell` 订阅后马上发 `gwb:hello`。主进程回 `gwb:hello`、`gwb:command` 拒绝非顶层框架、主框架跳转被拒、`window.open` 按协议交给系统浏览器或拒绝（包括系统浏览器打开失败只写 warn）由 `apps/desktop/tests/main.test.ts` 保护，哪些跳转算整页重新加载、哪些框架算顶层、哪些地址交给系统浏览器由 `apps/desktop/tests/page-boundary.test.ts` 保护。页面与主进程连起来只能在隔离 home 里实机验证（[开发](/docs/develop)；查看页面用 devkit 的 `devkit.cdp`）：插件 `emit` 的事件页面收得到，页面整页重新加载后立刻收到当前外壳状态，拖进窗口的链接被拒绝，`target="_blank"` 的网页链接在系统浏览器里打开。
 
 {/* has file="../apps/desktop/tests/preload.test.ts" text="只在页面上放一个 window.gwb，上面正好三个函数" */}
 
@@ -74,4 +76,8 @@ description: 连接页面与内核应用的主进程；接口是页面上 window
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="gwb:command 只接收顶层框架" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="页面边界：主框架跳到别处、主框架的重定向、window.open 一律拒绝" */}
+{/* has file="../apps/desktop/tests/main.test.ts" text="页面边界：主框架跳到别处（包括 http、https）、主框架的重定向一律拒绝" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="window.open：窗口一律 deny；http、https 交给系统浏览器" */}
+
+{/* has file="../apps/desktop/tests/page-boundary.test.ts" text="window.open 的地址只有 http、https 交给系统浏览器" */}

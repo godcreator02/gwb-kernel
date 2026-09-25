@@ -1,0 +1,45 @@
+---
+title: window.open 的 http、https 地址交给系统默认浏览器，窗口照旧 deny；主框架跳转仍一律拒绝
+born-at: 2026-09-25T12:30
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 外链进浏览器
+domain: 这条线
+---
+
+## 背景
+
+页面边界落地时，`setWindowOpenHandler` 一律 `deny`，被拒的地址只写一行 warn，不转给系统浏览器；插件要打开外部链接，得在主进程里自己调 Electron 的 `shell.openExternal`，再给页面开一条命令。
+
+pivots-from:: [2026-09-25-page-navigation-lock](2026-09-25-page-navigation-lock.md)
+
+这样一来，页面上写成 `target="_blank"` 的网页链接（插件窗格里的文档链接、渲染出来的 markdown 链接）点了没有任何反应，只在 `gwb.log` 里多一行 warn。人定下：这类地址交给系统默认浏览器打开，范围只到 `setWindowOpenHandler`。
+
+## 结论与边界
+
+- `setWindowOpenHandler` 仍然一律返回 `deny`，工作台不开第二个窗口
+- 地址用 `URL` 解析，协议是 `http:` 或 `https:`（大小写不论）的交给 `shell.openExternal`，写一行 `kernel` 的 info，带地址
+- `shell.openExternal` 的 promise 失败时写一行 `kernel` 的 warn，带地址与错误，不抛
+- 别的协议（`file:`、`javascript:`、`data:`、自定义协议）和解析不了的字符串照旧拒绝，写一行 `kernel` 的 warn
+- 主框架跳转（`will-navigate`：拖进窗口的链接、不带 `target` 的链接点击）与主框架重定向不变，仍一律拒绝，网页地址也不交给浏览器
+- 判定抽成纯函数 `opensInSystemBrowser`，与页面边界的另两条判定放在同一个文件里单测；接线在 `main.ts` 的假 electron 测试里固定
+- 内核包升 y 到 0.6.2：只加行为，接口类型与已有通道不变
+
+对插件作者的意思：要在系统浏览器里打开网页，链接写 `target="_blank"` 或调用 `window.open`；不带 `target` 的普通链接点击是主框架跳转，照旧被拒绝，什么都不会发生。
+
+## 否掉的候选
+
+- **维持一律拒绝**：每个要打开外链的插件都得自己在主进程调 `shell.openExternal` 并给页面开一条命令，同一段代码散在各插件里；页面里现成的 `target="_blank"` 链接点了没有反应，用户看不出原因
+- **主框架跳转遇到 http、https 也交给系统浏览器**：拖进窗口的链接、页面里忘了写 `target` 的链接都会直接弹出浏览器，用户没有明确表示要离开工作台；主框架跳转一律拒绝这条规则也就不再简单。人定范围只到 `setWindowOpenHandler`
+- **放行 `file:` 或自定义协议**：交给系统等于打开本地文件或唤起别的应用，页面上的任何代码（包括 iframe 里嵌的网页）都能触发，风险与 http、https 不在一个量级
+
+## 代价与遗留
+
+- 页面上的任何代码，包括 iframe 里嵌的网页，都能调用 `window.open` 让系统浏览器打开任意 http、https 地址，不弹确认框；能做的仅限于在用户的浏览器里开一个网页，每次都在 `gwb.log` 里留一行 info
+- 插件作者要记得写 `target="_blank"`，写漏了链接点了没反应，只能从 `gwb.log` 的 warn 里看出来
+- 在真实窗口里点 `target="_blank"` 链接、拖进链接的实机验证，与全部插件一起在同一个 home 里统一做，本卡写时还没做
+
+## 依据
+
+- `apps/desktop/tests/page-boundary.test.ts`（`opensInSystemBrowser` 三个用例）、`apps/desktop/tests/main.test.ts`（「window.open」两个用例与「页面边界」用例）
+- 无实机物证

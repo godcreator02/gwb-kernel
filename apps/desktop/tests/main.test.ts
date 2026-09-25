@@ -51,6 +51,7 @@ interface FakeElectron {
   quit: Mock
   setApplicationMenu: Mock
   showErrorBox: Mock
+  openExternal: Mock
   windows: FakeWindow[]
   ipcHandlers: Map<string, (...args: unknown[]) => unknown>
   ipcListeners: Map<string, (...args: unknown[]) => unknown>
@@ -61,6 +62,7 @@ interface FakeElectronOptions {
   singleInstanceLockGranted?: boolean
   remoteDebuggingPort?: string
   loadFileFails?: boolean
+  openExternalFails?: boolean
 }
 
 function makeFakeElectron(options: FakeElectronOptions): FakeElectron {
@@ -77,6 +79,9 @@ function makeFakeElectron(options: FakeElectronOptions): FakeElectron {
   const quit = vi.fn()
   const setApplicationMenu = vi.fn()
   const showErrorBox = vi.fn()
+  const openExternal = vi.fn(async () => {
+    if (options.openExternalFails === true) throw new Error('系统浏览器打不开（测试造的）')
+  })
 
   class BrowserWindow implements FakeWindow {
     options: Record<string, unknown>
@@ -135,6 +140,7 @@ function makeFakeElectron(options: FakeElectronOptions): FakeElectron {
       BrowserWindow,
       Menu: { setApplicationMenu },
       dialog: { showErrorBox },
+      shell: { openExternal },
       ipcMain: {
         handle: (channel: string, handler: (...args: unknown[]) => unknown) => ipcHandlers.set(channel, handler),
         on: (channel: string, listener: (...args: unknown[]) => unknown) => ipcListeners.set(channel, listener),
@@ -147,6 +153,7 @@ function makeFakeElectron(options: FakeElectronOptions): FakeElectron {
     quit,
     setApplicationMenu,
     showErrorBox,
+    openExternal,
     windows,
     ipcHandlers,
     ipcListeners,
@@ -415,7 +422,7 @@ describe('main.ts：启动', () => {
     await quitAndWaitForCleanup(booted)
   })
 
-  it('页面边界：主框架跳到别处、主框架的重定向、window.open 一律拒绝并记一行 warn；整页重新加载放行', async () => {
+  it('页面边界：主框架跳到别处（包括 http、https）、主框架的重定向一律拒绝并记一行 warn；整页重新加载放行', async () => {
     silenceStderr()
     const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
     const webContents = booted.electron.windows[0]!.webContents
@@ -435,12 +442,39 @@ describe('main.ts：启动', () => {
     webContents.events.emit('will-redirect', iframeRedirect)
     expect(iframeRedirect.preventDefault).not.toHaveBeenCalled()
 
-    expect(webContents.windowOpenHandler?.({ url: 'https://example.com/popup' })).toEqual({ action: 'deny' })
-
+    expect(booted.electron.openExternal).not.toHaveBeenCalled()
     const log = booted.readLog()
     expect(log).toContain('warn kernel 页面只能是内核的 index.html，拒绝主框架跳转到 https://example.com/')
     expect(log).toContain('warn kernel 页面只能是内核的 index.html，拒绝主框架重定向到 https://example.com/elsewhere')
-    expect(log).toContain('warn kernel 页面只能是内核的 index.html，拒绝打开新窗口 https://example.com/popup')
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('window.open：窗口一律 deny；http、https 交给系统浏览器并记一行 info，别的协议拒绝并记一行 warn', async () => {
+    silenceStderr()
+    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-') })
+    const webContents = booted.electron.windows[0]!.webContents
+
+    expect(webContents.windowOpenHandler?.({ url: 'https://example.com/popup' })).toEqual({ action: 'deny' })
+    expect(webContents.windowOpenHandler?.({ url: 'file:///C:/Users/me/Desktop/notes.html' })).toEqual({ action: 'deny' })
+    expect(booted.electron.openExternal).toHaveBeenCalledTimes(1)
+    expect(booted.electron.openExternal).toHaveBeenCalledWith('https://example.com/popup')
+
+    const log = booted.readLog()
+    expect(log).toContain('info kernel 交给系统浏览器打开 https://example.com/popup')
+    expect(log).toContain('warn kernel 页面只能是内核的 index.html，拒绝打开新窗口 file:///C:/Users/me/Desktop/notes.html')
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('window.open：系统浏览器打开失败只记一行 warn（带地址与错误），不抛', async () => {
+    silenceStderr()
+    const booted = await bootUntilUp({ gwbHome: makeTemporaryDir('gwb-main-home-'), openExternalFails: true })
+    const webContents = booted.electron.windows[0]!.webContents
+
+    expect(webContents.windowOpenHandler?.({ url: 'https://example.com/broken' })).toEqual({ action: 'deny' })
+    await vi.waitFor(() =>
+      expect(booted.readLog()).toMatch(/warn kernel 系统浏览器没能打开 https:\/\/example\.com\/broken：.*系统浏览器打不开（测试造的）/),
+    )
+    expect(booted.readLog()).not.toMatch(/error kernel .*系统浏览器打不开/)
     await quitAndWaitForCleanup(booted)
   })
 

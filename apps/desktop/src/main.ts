@@ -10,9 +10,9 @@ import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
 import { limitFromEnv, openLogFile } from './log-file.js'
-import { isReloadOfCurrentDocument, isTopFrame } from './page-boundary.js'
+import { isReloadOfCurrentDocument, isTopFrame, opensInSystemBrowser } from './page-boundary.js'
 
-const { app, BrowserWindow, Menu, dialog, ipcMain } = electron
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = electron
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 /** 本包清单在 dist/ 的上一级；不读安装包外层应用的清单 */
 const kernelPackageDir = path.join(moduleDir, '..')
@@ -246,7 +246,12 @@ function cordisLevelOfConsoleLevel(consoleLevel: string): 'error' | 'warn' | 'de
   return 'info'
 }
 
-/** 页面能调整条命令总线，所以主框架只能是内核的 index.html：跳走、重定向、开新窗口一律拒绝 */
+function openInSystemBrowser(url: string): void {
+  kernelLog.info(`交给系统浏览器打开 ${url}`)
+  shell.openExternal(url).catch((err) => kernelLog.warn(`系统浏览器没能打开 ${url}：${stackOf(err)}`))
+}
+
+/** 页面能调整条命令总线，所以主框架只能是内核的 index.html：跳走、重定向一律拒绝；开新窗口一律 deny，http、https 地址改由系统浏览器打开 */
 function lockPageToIndexHtml(webContents: electron.WebContents): void {
   const refuse = (what: string, url: string): void => kernelLog.warn(`页面只能是内核的 index.html，拒绝${what} ${url}`)
   webContents.on('will-navigate', (event) => {
@@ -260,7 +265,8 @@ function lockPageToIndexHtml(webContents: electron.WebContents): void {
     refuse('主框架重定向到', event.url)
   })
   webContents.setWindowOpenHandler(({ url }) => {
-    refuse('打开新窗口', url)
+    if (opensInSystemBrowser(url)) openInSystemBrowser(url)
+    else refuse('打开新窗口', url)
     return { action: 'deny' }
   })
 }

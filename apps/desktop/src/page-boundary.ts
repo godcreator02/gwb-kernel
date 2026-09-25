@@ -8,6 +8,12 @@ export function isReloadOfCurrentDocument(targetUrl: string, currentUrl: string)
   return withoutFragment(targetUrl) === withoutFragment(currentUrl)
 }
 
+/** 只认 http、https：file、javascript、data 与自定义协议交给系统会打开本地文件或别的应用 */
+export function opensInSystemBrowser(url: string): boolean {
+  const protocol = URL.parse(url)?.protocol
+  return protocol === 'http:' || protocol === 'https:'
+}
+
 /** senderFrame 在框架跳走或销毁后是 null，那样的调用也不接收 */
 export function isTopFrame(frame: { parent: unknown } | null): boolean {
   return frame !== null && frame.parent === null

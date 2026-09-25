@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isReloadOfCurrentDocument, isTopFrame } from '../src/page-boundary'
+import { isReloadOfCurrentDocument, isTopFrame, opensInSystemBrowser } from '../src/page-boundary'
 
 const indexHtml = 'file:///C:/Users/me/AppData/Roaming/gwb-kernel/homes/x/node_modules/@godcreator/gwb-kernel-desktop/dist/index.html'
 
@@ -34,5 +34,25 @@ describe('isTopFrame：gwb:command 只接收顶层框架', () => {
 
   it('发送方框架已经跳走或销毁（senderFrame 是 null）也不算', () => {
     expect(isTopFrame(null)).toBe(false)
+  })
+})
+
+describe('opensInSystemBrowser：window.open 的地址只有 http、https 交给系统浏览器', () => {
+  it('http、https 交出去，协议大写也认', () => {
+    expect(opensInSystemBrowser('http://example.com/')).toBe(true)
+    expect(opensInSystemBrowser('https://example.com/docs?x=1#part')).toBe(true)
+    expect(opensInSystemBrowser('HTTPS://EXAMPLE.COM/')).toBe(true)
+  })
+
+  it('file、javascript、data、自定义协议不交', () => {
+    expect(opensInSystemBrowser('file:///C:/Users/me/Desktop/notes.html')).toBe(false)
+    expect(opensInSystemBrowser('javascript:alert(1)')).toBe(false)
+    expect(opensInSystemBrowser('data:text/html,<h1>hi</h1>')).toBe(false)
+    expect(opensInSystemBrowser('ms-settings:privacy')).toBe(false)
+  })
+
+  it('解析不了的字符串不交', () => {
+    expect(opensInSystemBrowser('not a url')).toBe(false)
+    expect(opensInSystemBrowser('')).toBe(false)
   })
 })
