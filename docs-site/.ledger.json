@@ -9,7 +9,7 @@
     "../apps/desktop/src/api.ts:46-47": {
       "kind": "git",
       "blob": "a9361e76f87242a68da4f61e22c486d180829008",
-      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         46,
         47
@@ -19,7 +19,7 @@
     "../apps/desktop/src/index.html:70-106": {
       "kind": "git",
       "blob": "2022a595c9092b823c6e778628b2a9c90502fb62",
-      "commit": "bdddc14ff29c2629194f6f839036f92ac2d2255c",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         70,
         106
@@ -65,7 +65,7 @@
     "../apps/desktop/src/main.ts:289-306": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         289,
         306
@@ -75,7 +75,7 @@
     "../apps/desktop/src/main.ts:308-317": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         308,
         317
@@ -85,7 +85,7 @@
     "../apps/desktop/src/main.ts:144-146": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         144,
         146
@@ -95,7 +95,7 @@
     "../apps/desktop/src/main.ts:319-341": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         319,
         341
@@ -119,7 +119,7 @@
     "../apps/desktop/src/main.ts:22-29": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         22,
         29
@@ -129,7 +129,7 @@
     "../apps/desktop/src/main.ts:49-54": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         49,
         54
@@ -139,7 +139,7 @@
     "../apps/desktop/src/main.ts:148-152": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         148,
         152
@@ -149,7 +149,7 @@
     "../apps/desktop/src/main.ts:184-187": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         184,
         187
@@ -159,7 +159,7 @@
     "../apps/desktop/src/entry-state.ts:3-19": {
       "kind": "git",
       "blob": "73646fbaa26a1c496c0c001980e10fbb0b226f4e",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         3,
         19
@@ -169,7 +169,7 @@
     "../apps/desktop/src/main.ts:154-171": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         154,
         171
@@ -179,7 +179,7 @@
     "../apps/desktop/scripts/build-react.ts:14-43": {
       "kind": "git",
       "blob": "45cd0d2915a17ee111baa2c207a7730a0b1613d2",
-      "commit": "c59c09184901012c7d66825e3dc043aaca5516d7",
+      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
       "lines": [
         14,
         43
@@ -636,6 +636,15 @@
     },
     "has ../apps/desktop/tests/importmap.test.ts \"每个地址都是相对 index.html 的 ./react/<文件>，构建后 dist/ 里有这个文件\"": {
       "kind": "has"
+    }
+  },
+  "content/docs/index.mdx": {
+    "tree ../apps depth=1": {
+      "kind": "tree",
+      "names": [
+        "desktop/",
+        "launcher/"
+      ]
     }
   }
 }

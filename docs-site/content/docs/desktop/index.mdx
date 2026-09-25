@@ -106,13 +106,13 @@ cordis 的 fiber 状态是 `const enum`，在本仓的 `isolatedModules` 设置�
 | 文件系统与 home 目录 | 补最小文件、解析包名、写 `gwb.log` 与 `runtime.json` | 真的文件系统 | 临时目录 |
 | react、react-dom（只在构建时） | 打进 `dist/react/` 给页面用 | 开发依赖里写死的版本 | `react-bundles.test.ts` 读真实产物 |
 
-缺了会怎样：electron、cordis、loader、include 任何一个缺了都起不来；`ctx.gwbCommands` 缺了内核照常运行，页面发来的每条命令都回「没有命令服务」；`dist/react/` 里缺文件时外壳挂不上，页面显示只读状态页；home 目录建不出来时启动失败，`runtime.json` 写不进只记一行 warn，`gwb.log` 打不开时日志只写 stderr、一分钟后再试。
+缺了会怎样：electron、cordis、loader、include 任何一个缺了都起不来；`ctx.gwbCommands` 缺了内核照常运行，页面发来的每条命令都回「没有命令服务」；`dist/react/` 里缺文件时外壳加载不了，页面显示只读状态页；home 目录建不出来时启动失败，`runtime.json` 写不进只记一行 warn，`gwb.log` 打不开时日志只写 stderr、一分钟后再试。
 
 ## 怎么单独测
 
 全部测试在 `apps/desktop/tests/`，由仓根 `pnpm test`（`pnpm check` 的最后一步）运行；`pnpm check` 先构建内核包，`main.test.ts` 与 react 的两份测试读的是真实的构建产物。
 
-| 测试文件 | 喂什么 | 证明什么 |
+| 测试文件 | 给它什么 | 证明什么 |
 | --- | --- | --- |
 | `main.test.ts` | 假 electron、真的 cordis / loader / include、临时 home；每个用例重新求值一次 `main.ts` | 选 home 的两种写法、补最小文件且不覆盖已有的、userData 在 `<home>/electron`；拿不到单实例锁时写 error、退出码 1，第二个实例启动时把窗口调到前面；`runtime.json` 的字段；启动顺序与启动失败；页面 console 进日志；页面边界；IPC 通道与命令转交；`gwbKernel` 的四个成员；error 去抖后推只读状态页、格式化不了的参数不抛、warn 不推；退出时卸载插件树 |
 | `page-boundary.test.ts` | 字符串与假的框架对象 | 页面边界的三条判定 |

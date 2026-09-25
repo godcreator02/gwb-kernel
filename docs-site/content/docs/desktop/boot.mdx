@@ -23,7 +23,7 @@ description: 内核一次启动按什么顺序做事、分成模块求值时与 
 
 **模块求值时**做完不需要窗口的部分：选定 home、设置 userData、补齐最小文件，打开日志文件，检查单实例锁，写 `runtime.json`，创建 cordis 实例、把根上下文的 `baseUrl` 设到 home、接上日志、提供 `gwbKernel`、注册 IPC 通道。**Electron ready 之后**才去掉默认菜单、创建窗口并加载页面、注册 loader、加载全部条目。
 
-入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等它会互相等待、静默卡死（[ESM 主进程顶层等 ready 会卡死](/trajectory/2026-09-09-wall-esm-await-whenready)）。ready 之后的部分挂在 `whenReady()` 返回的 promise 上，启动失败也在这条链上处理：
+入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等它会互相等待、静默卡死（[ESM 主进程顶层等 ready 会卡死](/trajectory/2026-09-09-wall-esm-await-whenready)）。ready 之后的部分放在 `whenReady()` 返回的 promise 的 `then` 里执行，启动失败也在这条链上处理：
 
 {/* ref file="../apps/desktop/src/main.ts" lines="308-317" */}
 
