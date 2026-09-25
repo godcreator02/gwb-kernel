@@ -26,6 +26,11 @@ domain: 这条线
 - `build.ps1` 不再接受 `-KernelDir` 参数，内核仓固定是脚本所在的仓；镜像地址 `ELECTRON_BUILDER_BINARIES_MIRROR` 直接赋值，不再看环境里有没有设。两处都只有一种用法
 - 删掉 `installer/package.json` 的 `scripts.build`（打包一律直接运行 `build.ps1`）与只剩一行指路的 `installer/SPEC.md`
 
+**仓根配置**
+
+- `vitest.config.ts` 删掉 `passWithNoTests: true`：一个测试都没找到时应当失败，而不是算通过
+- `pnpm-workspace.yaml` 的 `allowBuilds` 删掉 `electron`：electron 44.1.1 的包清单里没有 `scripts`，这一项什么都没放行（二进制仍由 `pnpm setup:electron` 显式下载，见 [electron 不带安装脚本](2026-09-07-wall-electron-postinstall.md)）。删掉后 `pnpm install --frozen-lockfile` 照常通过
+
 **推迟到下次升 x**
 
 这一轮找出来、但要改接缝上已有东西的八项，逐条写在路线页「下次升 x 时一起做」：启动时补 home 的两个文件、`gwb:command` 的顶层框架判断与主框架重定向拒绝、`runtime.json` 写不进只 warn、`cdp` 先校验端口再写、`GWB_HOME` 不设就用 `default`、只读状态页「一条条目都没有」与 loader 加载之前回空报告、包根导出的 `ShellBoot` / `GwbWindowApi.onShell` / `exports["."].default`、日志文件启动时打不开每 60 秒重试。任何一项单独做都要升 x、让所有插件的 peer 出范围，代价远大于收益；等内核本来就要升 x 时一起做，下游只需适配一次。
