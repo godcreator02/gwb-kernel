@@ -212,124 +212,95 @@
     }
   },
   "content/docs/develop.mdx": {
+    "../apps/desktop/package.json:24-30": {
+      "kind": "git",
+      "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
+      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
+      "lines": [
+        24,
+        30
+      ],
+      "hash": "0054b33c07bcd3f25ec4d751236453b2627e7bc425d79ac179eb2e2fdb1d0cb2"
+    },
+    "../package.json:5-14": {
+      "kind": "git",
+      "blob": "d702649f0e7f2216aac3e114557edcff374bfb9c",
+      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
+      "lines": [
+        5,
+        14
+      ],
+      "hash": "47313b19244005277ecc83d56fe7fdd2140631e25903c02cb4147315a0572e02"
+    },
+    "has ../apps/desktop/package.json \"https://git.tianshen02.online:28377/api/packages/godcreator/npm/\"": {
+      "kind": "has"
+    }
+  },
+  "content/docs/installer.mdx": {
+    "has ../apps/launcher/src/launch-plan.ts \"export const KERNEL_PACKAGE = '@godcreator/gwb-kernel-desktop'\"": {
+      "kind": "has"
+    },
+    "../apps/launcher/src/main.ts:7-29": {
+      "kind": "git",
+      "blob": "f6547781d717176fa42bd978be16a85a31a7c5af",
+      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
+      "lines": [
+        7,
+        29
+      ],
+      "hash": "d037f92b2c67f3832f4b00551189ab78c596d5c691d6295a8d8aeb420517685e"
+    },
+    "../installer/scripts/build.ps1:all": {
+      "kind": "git",
+      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
+      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
+      "lines": [
+        1,
+        63
+      ],
+      "hash": "ffb2e5060a79443ba10cef0b0f62f1e5ddf52676127a3c3a739d6c8466e94bd6"
+    },
     "../installer/electron-builder.yml:all": {
       "kind": "git",
       "blob": "f2c1ac8ae6c93478826241e336563ff05a69d897",
-      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
+      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
       "lines": [
         1,
         23
       ],
       "hash": "573f97458108bab3b5279c9c3359b5344820583ef6307884b211f923ad97c9be"
     },
-    "has ../apps/launcher/tests/launch-plan.test.ts \"和内核选 home 的规则逐个输入结果相同\"": {
-      "kind": "has"
-    },
-    "has ../apps/launcher/tests/launch-plan.test.ts \"启动器带的 Electron 满足内核包声明的 engines.electron\"": {
-      "kind": "has"
-    },
-    "has ../apps/desktop/tests/log-file.test.ts \"轮转没成不致命\"": {
-      "kind": "has"
-    },
-    "../apps/desktop/scripts/build-react.ts:22-43": {
+    "../apps/launcher/src/launch-plan.ts:12-18": {
       "kind": "git",
-      "blob": "45cd0d2915a17ee111baa2c207a7730a0b1613d2",
-      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
+      "blob": "7dff040f70bdaa876e353c4f05b40bf9fbdd052e",
+      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
       "lines": [
-        22,
-        43
+        12,
+        18
       ],
-      "hash": "5f734d72844eeeec9ad25a349f98846d82d45ad6195e5ec74e6384cc83660d6b"
+      "hash": "1e25287626754a484e3a0cf2f64d5956550805b8903fcd1a8cc47d2a8eddd3bb"
     },
-    "has ../apps/desktop/tests/react-bundles.test.ts \"react.js 带具名导出\"": {
+    "has ../apps/launcher/tests/launch-plan.test.ts \"home 里没有内核包：拒绝，说明是哪个 home、照 INSTALL.md 装\"": {
       "kind": "has"
     },
-    "../package.json:6-13": {
-      "kind": "git",
-      "blob": "d702649f0e7f2216aac3e114557edcff374bfb9c",
-      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
-      "lines": [
-        6,
-        13
-      ],
-      "hash": "9a25b100b4bb46e391240fdeea40bf6c2dfb0f694c87ad737453fb62fb211d36"
+    "tree ../apps/launcher/src depth=1": {
+      "kind": "tree",
+      "names": [
+        "launch-plan.ts",
+        "main.ts"
+      ]
     },
-    "../installer/scripts/build.ps1:15-16": {
-      "kind": "git",
-      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
-      "lines": [
-        15,
-        16
-      ],
-      "hash": "0c908c861c86a3fbce059a70892f954b64ed188a7a49af0f193eae25f922a315"
+    "exists ../installer/scripts/build.ps1": {
+      "kind": "exists",
+      "type": "file"
     },
-    "../installer/scripts/build.ps1:18-22": {
-      "kind": "git",
-      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
-      "lines": [
-        18,
-        22
-      ],
-      "hash": "f4b3cf8c5180673cc7abc9da158918f41978da1c302b8b11a0a37777ae1173cd"
+    "exists ../installer/electron-builder.yml": {
+      "kind": "exists",
+      "type": "file"
     },
-    "../installer/scripts/build.ps1:24-26": {
-      "kind": "git",
-      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
-      "lines": [
-        24,
-        26
-      ],
-      "hash": "0ded539efcf45c538124de218e7329b9b18bd5d7e132a64a9c648e386d1064e2"
-    },
-    "../installer/scripts/build.ps1:28-48": {
-      "kind": "git",
-      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
-      "lines": [
-        28,
-        48
-      ],
-      "hash": "93e409b2a06ffcdba697f82c69238577c65b57a68a3657ccd7a5ee249541faaf"
-    },
-    "../installer/scripts/build.ps1:50-58": {
-      "kind": "git",
-      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
-      "lines": [
-        50,
-        58
-      ],
-      "hash": "509d2766e4e77b7bf0de27614dbc979c9ab40a6189c997df52b11af1c3877221"
-    },
-    "../apps/desktop/package.json:22-26": {
-      "kind": "git",
-      "blob": "4698e825c31a8aa93cf2edd125c828311d4d08e1",
-      "commit": "57b2adc7fb97fa2b2a705a08ba7ae8bc058cdf67",
-      "lines": [
-        22,
-        26
-      ],
-      "hash": "4f5800f64af2f4e82e81bc88b519ff2cd2dee95c81f196519486b6036bc05641"
-    }
-  },
-  "content/docs/installer.mdx": {
-    "has ../installer/electron-builder.yml \"artifactName: gwb-setup-\"": {
-      "kind": "has"
-    },
-    "has ../installer/electron-builder.yml \"perMachine: false\"": {
-      "kind": "has"
-    },
-    "has ../installer/electron-builder.yml \"productName: gwb-kernel\"": {
-      "kind": "has"
-    },
-    "has ../apps/launcher/src/launch-plan.ts \"export const KERNEL_PACKAGE = '@godcreator/gwb-kernel-desktop'\"": {
-      "kind": "has"
-    },
-    "has ../apps/launcher/src/main.ts \"process.env.GWB_HOME = homeDir\"": {
-      "kind": "has"
+    "exists ../installer/icons/icon.ico": {
+      "kind": "exists",
+      "type": "file"
     }
   },
   "content/docs/seams/ipc.mdx": {
