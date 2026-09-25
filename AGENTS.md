@@ -4,7 +4,7 @@ god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只�
 本仓只放两样：内核应用 `apps/desktop`（npm 包，包根同时导出内核给插件与页面的接口类型）、安装包（启动器 `apps/launcher` 与打包脚本 `installer/`）。内核包和插件一样装在 home 里，安装包只带启动器与 Electron。插件一个也不放——命令插件 `@godcreator/gwb-commands` 在基础插件仓 `gwb-base-plugins`，插件管理 `@godcreator/gwb-plugin-manager` 在 devkit 仓 `gwb-devkit`，都是 `cordis.yml` 里的普通插件。
 
 现状从文档站入口读（`docs-site/content/docs/index.mdx`，启动文档站后是 `/docs`）：入口页就是接缝图，也是全部包的总索引；只做什么、刻意不做什么、内核为什么装在 home 里、插件怎么声明兼容哪个内核见同目录 `design.mdx`，
-十条接缝各一页见 `seams/`，怎么跑、怎么验证、怎么发版见 `develop.mdx`；每个包一个模块页（含每个测试文件证明什么、代码地图）：内核应用见 `desktop/`（包根导出的接口类型见 `desktop/api.mdx`），安装包（含启动器与打包步骤）见 `installer.mdx`。
+十条接缝各一页见 `seams/`，怎么跑、怎么测、怎么发版见 `develop.mdx`；每个包一页：内核应用见 `desktop/`（包根导出的接口类型见 `desktop/api.mdx`），安装包（含启动器）见 `installer.mdx`。
 
 ## 准入判据
 
@@ -27,7 +27,7 @@ god 工作台的内核：一个 Electron 应用，cordis 在主进程里，只�
 
 ## 怎么跑
 
-**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）。安装包：`pwsh installer\scripts\build.ps1`，安装包带什么、打包步骤与打完怎么验证见文档站「安装包与启动器」页（`docs-site/content/docs/installer.mdx`）；
+**日常从安装版启动，不进这个仓**（开始菜单「gwb-kernel」）。安装包：`pwsh installer\scripts\build.ps1`，打包步骤见文档站「开发」页的「打安装包」（`docs-site/content/docs/develop.mdx`），安装包带什么见 `installer.mdx`；
 新机器安装照仓根 `INSTALL.md`。别日常直接运行 `build\dist\win-unpacked\`——每次构建整个重新生成，会和运行中的 exe 冲突。
 
 **改内核本身才进这个仓**，只在隔离 home 里实际运行验证。内核不带插件，隔离 home 里的命令插件等插件要先装好：用 `devkit.home.new` 新建（它装好基础插件、用安装版打开，关掉窗口后再从源码启动同一个 home），或照 `INSTALL.md` 第 3 步用 pnpm 装。`pnpm start` 会先构建内核，再启动：

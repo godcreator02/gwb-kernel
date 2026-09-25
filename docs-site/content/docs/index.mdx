@@ -21,7 +21,7 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 
 - **想知道内核为什么长这样**：[关键设计](/docs/design)
 - **在本仓动手**（怎么跑、怎么检查、怎么在隔离 home 里验证、怎么发版）：[开发](/docs/develop)；硬约束在仓根 AGENTS
-- **改内核应用**：[内核应用](/docs/desktop)（模块页：管什么、不知道什么、接口、怎么测、代码地图），再看[启动与退出](/docs/desktop/boot)
+- **改内核应用**：[内核应用](/docs/desktop)看它有哪些功能、提供哪些接口，再看[启动与退出](/docs/desktop/boot)
 - **写插件**：[插件加载](/docs/seams/loading)、[内核服务](/docs/seams/kernel)、[日志](/docs/seams/log)，接口类型从[包根导出的接口类型](/docs/desktop/api)取
 - **做界面**：[IPC 通道](/docs/seams/ipc)、[外壳接管](/docs/seams/shell)、[页面上的 react](/docs/seams/page-react)
 - **换命令插件**：[命令转交](/docs/seams/commands)
@@ -63,7 +63,7 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 
 ## 包
 
-| 包名 | 在哪 | 模块页 |
+| 包名 | 在哪 | 页 |
 | --- | --- | --- |
 | `@godcreator/gwb-kernel-desktop` | `apps/desktop` | [内核应用](/docs/desktop)；子页[启动与退出](/docs/desktop/boot)、[包根导出的接口类型](/docs/desktop/api) |
 | `gwb-kernel-launcher` 与 `gwb-installer` | `apps/launcher`、`installer/` | [安装包与启动器](/docs/installer) |

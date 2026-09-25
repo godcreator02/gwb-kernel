@@ -119,103 +119,25 @@
     "../apps/desktop/src/main.ts:22-29": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
       "lines": [
         22,
         29
       ],
       "hash": "9f708770648e91748683da9fb83b24b0574e7275041c6279afae0c618c12a21c"
     },
-    "../apps/desktop/src/main.ts:49-54": {
-      "kind": "git",
-      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
-      "lines": [
-        49,
-        54
-      ],
-      "hash": "b619918227c64cc6e40ddddfe6b363d137b6e1e836bbab33d6dc58dc8066bdca"
-    },
-    "../apps/desktop/src/main.ts:148-152": {
-      "kind": "git",
-      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
-      "lines": [
-        148,
-        152
-      ],
-      "hash": "84db13824b0548407ea734ef5ea40bff378e7f49ef4ffef51d96870dd279bea1"
-    },
-    "../apps/desktop/src/main.ts:184-187": {
-      "kind": "git",
-      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
-      "lines": [
-        184,
-        187
-      ],
-      "hash": "a776a7eacb8e1a6084b92da783324f85d7658c0c9bb7ce0fd51182c588fc37ea"
-    },
-    "../apps/desktop/src/entry-state.ts:3-19": {
-      "kind": "git",
-      "blob": "73646fbaa26a1c496c0c001980e10fbb0b226f4e",
-      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
-      "lines": [
-        3,
-        19
-      ],
-      "hash": "054c1c7422eb367809d020f1d876c59f6b50b37cb5c6e9dad73d55293d915026"
-    },
-    "../apps/desktop/src/main.ts:154-171": {
-      "kind": "git",
-      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
-      "lines": [
-        154,
-        171
-      ],
-      "hash": "c41022168618c598d91f8e296e25d02391d281849d705a4e3727817a2ec64de1"
-    },
-    "../apps/desktop/scripts/build-react.ts:14-43": {
-      "kind": "git",
-      "blob": "45cd0d2915a17ee111baa2c207a7730a0b1613d2",
-      "commit": "64fc269e251644cbbcc4e7168d84264a9b5cc27c",
-      "lines": [
-        14,
-        43
-      ],
-      "hash": "b7076b47522a503968b15d0212e3d5f8a092f29b3a8a1800147634e1113e3402"
-    },
-    "has ../apps/desktop/tests/main.test.ts \"main.ts 的行为锁：electron 换成假的，cordis、loader、include 用真的，home 是临时目录\"": {
+    "has ../apps/desktop/src/main.ts \"RECENT_ERROR_LINES_SHOWN = 20\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/tests/log-file.test.ts \"路径被目录占着\"": {
+    "has ../apps/desktop/src/main.ts \"SHELL_PUSH_DEBOUNCE_MS = 200\"": {
       "kind": "has"
-    },
-    "has ../apps/desktop/tests/react-bundles.test.ts \"react.js 带具名导出\"": {
-      "kind": "has"
-    },
-    "tree ../apps/desktop/src depth=1": {
-      "kind": "tree",
-      "names": [
-        "api.ts",
-        "bare-import.ts",
-        "entry-state.ts",
-        "home-path.ts",
-        "index.html",
-        "log-file.ts",
-        "main.ts",
-        "page-boundary.ts",
-        "preload.cjs",
-        "react/"
-      ]
     }
   },
   "content/docs/develop.mdx": {
     "../apps/desktop/package.json:24-30": {
       "kind": "git",
       "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
-      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
       "lines": [
         24,
         30
@@ -225,7 +147,7 @@
     "../package.json:5-14": {
       "kind": "git",
       "blob": "d702649f0e7f2216aac3e114557edcff374bfb9c",
-      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
       "lines": [
         5,
         14
@@ -234,6 +156,101 @@
     },
     "has ../apps/desktop/package.json \"https://git.tianshen02.online:28377/api/packages/godcreator/npm/\"": {
       "kind": "has"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"main.ts 的行为锁：electron 换成假的，cordis、loader、include 用真的，home 是临时目录\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/tests/log-file.test.ts \"路径被目录占着\"": {
+      "kind": "has"
+    },
+    "has ../apps/launcher/tests/launch-plan.test.ts \"home 里没有内核包：拒绝，说明是哪个 home、照 INSTALL.md 装\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/entry-state.ts \"const FIBER_STATE_NAMES = ['PENDING', 'LOADING', 'ACTIVE', 'FAILED', 'DISPOSED', 'UNLOADING']\"": {
+      "kind": "has"
+    },
+    "../apps/desktop/scripts/build-react.ts:14-43": {
+      "kind": "git",
+      "blob": "45cd0d2915a17ee111baa2c207a7730a0b1613d2",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "lines": [
+        14,
+        43
+      ],
+      "hash": "b7076b47522a503968b15d0212e3d5f8a092f29b3a8a1800147634e1113e3402"
+    },
+    "has ../apps/desktop/tests/react-bundles.test.ts \"react.js 带具名导出\"": {
+      "kind": "has"
+    },
+    "../installer/scripts/build.ps1:15-16": {
+      "kind": "git",
+      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "lines": [
+        15,
+        16
+      ],
+      "hash": "0c908c861c86a3fbce059a70892f954b64ed188a7a49af0f193eae25f922a315"
+    },
+    "../installer/scripts/build.ps1:18-22": {
+      "kind": "git",
+      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "lines": [
+        18,
+        22
+      ],
+      "hash": "f4b3cf8c5180673cc7abc9da158918f41978da1c302b8b11a0a37777ae1173cd"
+    },
+    "../installer/scripts/build.ps1:24-26": {
+      "kind": "git",
+      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "lines": [
+        24,
+        26
+      ],
+      "hash": "0ded539efcf45c538124de218e7329b9b18bd5d7e132a64a9c648e386d1064e2"
+    },
+    "../installer/scripts/build.ps1:28-48": {
+      "kind": "git",
+      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "lines": [
+        28,
+        48
+      ],
+      "hash": "93e409b2a06ffcdba697f82c69238577c65b57a68a3657ccd7a5ee249541faaf"
+    },
+    "../installer/scripts/build.ps1:50-58": {
+      "kind": "git",
+      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "lines": [
+        50,
+        58
+      ],
+      "hash": "509d2766e4e77b7bf0de27614dbc979c9ab40a6189c997df52b11af1c3877221"
+    },
+    "../installer/electron-builder.yml:all": {
+      "kind": "git",
+      "blob": "f2c1ac8ae6c93478826241e336563ff05a69d897",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "lines": [
+        1,
+        23
+      ],
+      "hash": "573f97458108bab3b5279c9c3359b5344820583ef6307884b211f923ad97c9be"
+    },
+    "../installer/scripts/build.ps1:10-13": {
+      "kind": "git",
+      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
+      "lines": [
+        10,
+        13
+      ],
+      "hash": "eb90509ef8733555708c819e17bdfe3dd2d497f6b5a1905fffa6f97e2fc0b5e6"
     }
   },
   "content/docs/installer.mdx": {
@@ -243,64 +260,21 @@
     "../apps/launcher/src/main.ts:7-29": {
       "kind": "git",
       "blob": "f6547781d717176fa42bd978be16a85a31a7c5af",
-      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
       "lines": [
         7,
         29
       ],
       "hash": "d037f92b2c67f3832f4b00551189ab78c596d5c691d6295a8d8aeb420517685e"
     },
-    "../installer/scripts/build.ps1:all": {
-      "kind": "git",
-      "blob": "d883fc0fa1c87a2f5be62db2ff1c0917a33d8320",
-      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
-      "lines": [
-        1,
-        63
-      ],
-      "hash": "ffb2e5060a79443ba10cef0b0f62f1e5ddf52676127a3c3a739d6c8466e94bd6"
-    },
-    "../installer/electron-builder.yml:all": {
-      "kind": "git",
-      "blob": "f2c1ac8ae6c93478826241e336563ff05a69d897",
-      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
-      "lines": [
-        1,
-        23
-      ],
-      "hash": "573f97458108bab3b5279c9c3359b5344820583ef6307884b211f923ad97c9be"
-    },
-    "../apps/launcher/src/launch-plan.ts:12-18": {
-      "kind": "git",
-      "blob": "7dff040f70bdaa876e353c4f05b40bf9fbdd052e",
-      "commit": "6a625ea637cdf1fb80be714b1224be564f73991e",
-      "lines": [
-        12,
-        18
-      ],
-      "hash": "1e25287626754a484e3a0cf2f64d5956550805b8903fcd1a8cc47d2a8eddd3bb"
-    },
-    "has ../apps/launcher/tests/launch-plan.test.ts \"home 里没有内核包：拒绝，说明是哪个 home、照 INSTALL.md 装\"": {
+    "has ../installer/electron-builder.yml \"artifactName: gwb-setup-\"": {
       "kind": "has"
     },
-    "tree ../apps/launcher/src depth=1": {
-      "kind": "tree",
-      "names": [
-        "launch-plan.ts",
-        "main.ts"
-      ]
+    "has ../installer/electron-builder.yml \"perMachine: false\"": {
+      "kind": "has"
     },
-    "exists ../installer/scripts/build.ps1": {
-      "kind": "exists",
-      "type": "file"
-    },
-    "exists ../installer/electron-builder.yml": {
-      "kind": "exists",
-      "type": "file"
-    },
-    "exists ../installer/icons/icon.ico": {
-      "kind": "exists",
-      "type": "file"
+    "has ../installer/electron-builder.yml \"productName: gwb-kernel\"": {
+      "kind": "has"
     }
   },
   "content/docs/seams/ipc.mdx": {
@@ -513,7 +487,7 @@
     "../apps/launcher/src/main.ts:17-19": {
       "kind": "git",
       "blob": "f6547781d717176fa42bd978be16a85a31a7c5af",
-      "commit": "e735f2fac140bfc7148f9ea49ff8667a086202c7",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
       "lines": [
         17,
         19
@@ -529,7 +503,7 @@
     "../apps/desktop/package.json:8-8": {
       "kind": "git",
       "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
-      "commit": "e735f2fac140bfc7148f9ea49ff8667a086202c7",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
       "lines": [
         8,
         8
@@ -539,7 +513,7 @@
     "../apps/desktop/package.json:31-33": {
       "kind": "git",
       "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
-      "commit": "e735f2fac140bfc7148f9ea49ff8667a086202c7",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
       "lines": [
         31,
         33
@@ -549,7 +523,7 @@
     "../apps/launcher/src/launch-plan.ts:28-53": {
       "kind": "git",
       "blob": "7dff040f70bdaa876e353c4f05b40bf9fbdd052e",
-      "commit": "e735f2fac140bfc7148f9ea49ff8667a086202c7",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
       "lines": [
         28,
         53
@@ -624,7 +598,7 @@
     "../apps/desktop/src/index.html:14-24": {
       "kind": "git",
       "blob": "2022a595c9092b823c6e778628b2a9c90502fb62",
-      "commit": "e735f2fac140bfc7148f9ea49ff8667a086202c7",
+      "commit": "79036c5ce934991bf5201a3bc8cd026e5c69fe02",
       "lines": [
         14,
         24

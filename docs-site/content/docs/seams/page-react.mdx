@@ -13,7 +13,7 @@ description: 连接内核应用与页面上运行的代码（外壳、插件的�
 
 ## 连接的模块
 
-- [内核应用](/docs/desktop)：页面入口 `index.html` 里写着 importmap；构建时把 react 打进 `dist/react/`（怎么打见[内核应用](/docs/desktop#页面上的-react-怎么打包)）
+- [内核应用](/docs/desktop)：页面入口 `index.html` 里写着 importmap；构建时把 react 打进 `dist/react/`（怎么打见[开发](/docs/develop#内核包怎么打包-react)）
 - 页面上运行的代码：外壳和插件的浏览器端产物（窗格等）
 
 ## 接口
@@ -48,7 +48,7 @@ importmap 是静态的：内核启动时不计算、不推送，也不读任何�
 
 ## 测试
 
-`apps/desktop/tests/importmap.test.ts` 读 `index.html` 与构建产物：只有一段 importmap、只有 react 的四个包名、写在页面脚本之前，每个地址都是 `./react/<文件>` 并且构建后的 `dist/` 里有这个文件。四个文件的内容由 `apps/desktop/tests/react-bundles.test.ts` 保护（[内核应用](/docs/desktop#怎么单独测)）。页面上真的用上内核包里的 react，只能在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
+`apps/desktop/tests/importmap.test.ts` 读 `index.html` 与构建产物：只有一段 importmap、只有 react 的四个包名、写在页面脚本之前，每个地址都是 `./react/<文件>` 并且构建后的 `dist/` 里有这个文件。四个文件的内容由 `apps/desktop/tests/react-bundles.test.ts` 保护（[开发](/docs/develop#内核包怎么打包-react)）。页面上真的用上内核包里的 react，只能在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
 
 {/* has file="../apps/desktop/tests/importmap.test.ts" text="index.html 里只有 react 的四个包名，写在页面脚本之前" */}
 

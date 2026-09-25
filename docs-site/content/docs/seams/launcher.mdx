@@ -53,7 +53,7 @@ description: 连接安装包里的启动器与装在 home 里的内核包；交�
 
 ## 测试
 
-`apps/launcher/tests/launch-plan.test.ts` 在临时目录上证明：选 home 的规则和内核的 `home-path.ts` 逐个输入结果相同；五种不满足各自拒绝并说明原因；满足时给出内核包的入口文件；启动器带的 Electron 满足内核包声明的范围。启动器从 home 真的加载起内核、拒绝时弹框，只能实机验证（[安装包与启动器](/docs/installer#怎么单独测)）。
+`apps/launcher/tests/launch-plan.test.ts` 在临时目录上证明：选 home 的规则和内核的 `home-path.ts` 逐个输入结果相同；五种不满足各自拒绝并说明原因；满足时给出内核包的入口文件；启动器带的 Electron 满足内核包声明的范围。启动器从 home 真的加载起内核、拒绝时弹框，只能实机验证（[开发](/docs/develop#验证)）。
 
 {/* has file="../apps/launcher/tests/launch-plan.test.ts" text="和内核选 home 的规则逐个输入结果相同" */}
 
