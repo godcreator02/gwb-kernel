@@ -1,0 +1,22 @@
+---
+title: 构建前不清 dist，早已移走的 builtin 目录跟着内核包一直发到 0.6.0；构建第一步改成删掉 dist，内核升 0.6.1
+born-at: 2026-09-25T03:05
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 残留 dist
+domain: 这条线
+---
+
+## 背景
+
+内核包清单的 `files` 只列 `dist`，发版时 `dist/` 里有什么就发什么。构建脚本原来只往 `dist/` 里写（tsc、复制页面两个文件、打包 react），从不删。插件管理早已不作为内置模块放在内核里，但本机 `apps/desktop/dist/builtin/plugin-manager/` 一直留着。
+
+## 看到了什么
+
+devkit 0.19.0 的 `devkit.services` 从 home 里各包的 `.d.ts` 现读服务表，在 default（内核 0.4.1）与隔离 home `k06-verify-2609250242`（内核 0.6.0）上都列出 `gwbPluginManager` 有两个提供方：插件管理自己，和内核包里的 `dist/builtin/plugin-manager/dist/index.d.ts`。隔离 home `kernel05-2609242251` 装的内核包 0.5.0 里同样有 `dist/builtin/`；0.4.1、0.5.0、0.6.0 三个装在本机 home 里的版本都核实过带着它。运行时不受影响——内核不再加载这个目录——但它随包进了每个 home，任何按文件扫包的工具都会读到它。
+
+## 结论
+
+`pnpm build` 第一步整个删掉 `dist/`，再构建；本地删一次后重新构建，`dist/` 下只剩 `react/` 一个子目录与内核自己的文件。内核包升 y 到 0.6.1，只改了发出去的文件，接口与行为不变。
+
+边界：已经装在各 home 里的 0.4.1 到 0.6.0 仍带着这个目录，升到 0.6.1 才没有。

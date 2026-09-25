@@ -1,7 +1,7 @@
 {
   "name": "@godcreator/gwb-kernel-desktop",
   "productName": "gwb-kernel",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "author": {
     "name": "godcreator"
   },
@@ -23,7 +23,7 @@
   "scripts": {
     "//setup-electron": "postinstall 已拆（0.2.1）：作为依赖装进消费方时它找不到本仓的 electron，必炸。electron 包不带 postinstall，仓内 clone 后跑一次 setup:electron 装二进制",
     "setup:electron": "node node_modules/electron/install.js",
-    "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.api.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\" && node scripts/build-react.ts",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && tsc -p tsconfig.api.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\" && node scripts/build-react.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "pnpm build",
     "start": "pnpm build && electron ."
