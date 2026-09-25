@@ -635,5 +635,136 @@
         "launcher/"
       ]
     }
+  },
+  "content/docs/wiring.mdx": {
+    "has ../apps/desktop/src/api.ts \"export interface GwbResult<T = unknown> {\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/api.ts \"export interface GwbKernelApi {\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/api.ts \"export interface GwbContext extends Context {\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/api.ts \"export interface GwbWindowApi {\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/api.ts \"gwb: GwbWindowApi\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/api.ts \"export type ShellBoot\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/api.ts \"onShell(cb: (shell: { url: string | null }) => void): () => void\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"report: statusPageReport()\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"ctx.provide('gwbKernel', kernel)\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"ctx.baseUrl = pathToFileURL(dataDir + path.sep).href\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"loaderFiber = await ctx.plugin(Loader, {})\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"ctx.loader.internal = { import: bareImportFromHome(dataDir) }\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"cordisLoggerService.exporter(gwbLogExporter)\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"process.on('unhandledRejection'\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"process.on('uncaughtException'\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"QUIT_CLEANUP_TIMEOUT_MS = 5000\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"ipcMain.handle('gwb:command'\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"webContents.send('gwb:event', payload)\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"webContents.send('gwb:shell'\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"ipcMain.on('gwb:hello'\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/preload.cjs \"contextBridge.exposeInMainWorld('gwb'\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/preload.cjs \"ipcRenderer.invoke('gwb:command', command, args)\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/preload.cjs \"subscribe('gwb:event', callback)\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/preload.cjs \"ipcRenderer.send('gwb:hello')\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/index.html \"./react/react-dom-client.js\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/index.html \"shellModule.default(root)\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"if (opensInSystemBrowser(url)) openInSystemBrowser(url)\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"ctx.logger('renderer')\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"homePathFor(process.env.GWB_HOME ?? 'default', app.getPath('appData'))\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/home-path.ts \"path.join(appDataDir, 'gwb-kernel', 'homes', gwbHomeSetting)\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"const dataDir = fs.realpathSync.native(homePath)\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"HOME_FILES_REQUIRED_AT_BOOT = ['package.json', 'cordis.yml']\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/bare-import.ts \"path.join(dataDir, 'node_modules', ...packageName.split('/'))\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"path.join(dataDir, 'gwb.log')\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"path.join(dataDir, 'runtime.json')\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"app.setPath('userData', path.join(dataDir, 'electron'))\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"app.requestSingleInstanceLock()\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"gwbCommands?: { run(command: string, args?: unknown, context?: { via: 'ui' }): Promise<unknown> }\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"const commandBus = ctx.gwbCommands\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"没有命令服务（ctx.gwbCommands），无法执行\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"commandBus.run(command, args, { via: 'ui' })\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/src/main.ts \"const kernelLog = ctx.logger('kernel')\"": {
+      "kind": "has"
+    }
   }
 }
