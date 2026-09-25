@@ -1,56 +1,60 @@
 ---
 title: 9 启动器加载内核 engines.electron · main
-description: 连接安装包里的启动器与装在 home 里的内核包：启动器按和内核同一条规则选定 home、把绝对路径写回 GWB_HOME，读 home 里内核包清单的 engines.electron 与 main，Electron 版本在范围内才 import 内核入口；启动器与内核包之间没有代码接口，只靠这两个清单字段与 GWB_HOME 这个环境变量
+description: 连接安装包里的启动器与装在 home 里的内核包；交换的是环境变量 GWB_HOME 与内核包清单的 engines.electron、main 两个字段：启动器按和内核同一条规则选定 home、把绝对路径写回 GWB_HOME，Electron 版本在内核包声明的范围里才 import 内核入口；两边之间没有代码接口，只靠这份约定
 ---
 
-**本页回答**：安装包里只有启动器，内核装在 home 里，启动器凭什么找到内核、判断能不能启动；启动器和内核包各保证什么；由什么测试保护。
+**本页回答**：安装包里只有启动器、内核装在 home 里，启动器凭什么找到内核、判断能不能启动；启动器和内核包各保证什么；由什么测试保护。
 
 ## 连接的模块
 
-- 启动器（`apps/launcher`，随[安装包](/docs/installer)发布，不发 npm 包）：Electron 的入口，选定 home、检查内核包、加载内核
-- [内核应用](/docs/desktop)（`apps/desktop`，npm 包 `@godcreator/gwb-kernel-desktop`）：和插件一样装在每个 home 的 `node_modules` 里，由创建 home 的一方安装
+- 启动器 `apps/launcher`（随[安装包](/docs/installer)发布，不发 npm 包）：安装版 Electron 的入口，选定 home、检查内核包、加载内核
+- [内核应用](/docs/desktop)：npm 包 `@godcreator/gwb-kernel-desktop`，和插件一样装在每个 home 的 `node_modules` 里，由创建 home 的一方安装
 
 启动器不 import 内核的任何模块，只读内核包的清单，再按清单里写的入口 import。
 
-## 接口
+## 交换什么
 
-**环境变量 `GWB_HOME`**：启动器按和内核同一条规则算出 home 的目录（`GWB_HOME` 是名字就在 appData 下 `gwb-kernel/homes/<名字>`，带路径分隔符就是目录本身，不设是 `default`），再把绝对路径写回 `GWB_HOME`。内核启动时再按同一条规则选一次，拿到的是绝对路径，一定落在同一个目录：
+**环境变量 `GWB_HOME`**：启动器按和内核同一条规则算出 home 的目录——是名字就在 appData 下 `gwb-kernel/homes/<名字>`，带路径分隔符就是目录本身，不设就是 `default`——再把绝对路径写回 `GWB_HOME`。内核启动时按同一条规则再选一次，拿到的是绝对路径，一定落在同一个目录：
 
 {/* ref file="../apps/launcher/src/main.ts" lines="17-19" */}
 
-**内核包清单里的两个字段**：`engines.electron` 写内核要的 Electron 版本范围，`main` 写入口文件：
+**内核包清单里的两个字段**：`main` 写入口文件，`engines.electron` 写内核要的 Electron 版本范围：
 
 {/* ref file="../apps/desktop/package.json" lines="8-8" */}
 
-{/* ref file="../apps/desktop/package.json" lines="28-30" */}
+{/* ref file="../apps/desktop/package.json" lines="31-33" */}
 
-启动器依次判断：home 里有没有内核包、清单读不读得出、有没有声明 `engines.electron`、当前 Electron 在不在范围里、有没有 `main`。全部满足就 import 入口文件；不满足、或 import 抛错，弹框说明原因、退出码 1。
+启动器依次判断：home 里有没有内核包、清单读不读得出、有没有声明 `engines.electron`、当前 Electron 在不在范围里、有没有 `main`：
 
-## 约定
+{/* ref file="../apps/launcher/src/launch-plan.ts" lines="28-53" */}
 
-启动器保证：
+全部满足就 import 入口文件；不满足、或 import 抛错，弹框说明原因，退出码 1。
+
+**选 home 的规则写了两份**（启动器 `apps/launcher/src/launch-plan.ts` 的 `homePathFor` 与内核 `apps/desktop/src/home-path.ts`）：启动器要先知道 home 在哪才能找到内核，没法 import 内核那份。两份由启动器的测试逐个输入比对，改规则时两份一起改。
+
+## 各方保证
+
+**启动器**保证：
+
 - 交给内核的 `GWB_HOME` 是它选定的那个绝对路径
 - 只读 home 里内核包的清单，不写 home，不替人安装内核包或别的包
 - 拒绝时说清是哪个 home、缺了什么、该怎么补
 
-内核包保证：
-- 清单里写 `engines.electron`（`^` 范围）与 `main`；换了 Electron 主版本就改 `engines.electron`，内核版本号升 x
-- 入口模块求值时不顶层 `await` Electron 的 ready，只把启动注册到 ready 上：ready 要等入口模块求值完才触发，顶层等它会卡死（见[启动与退出](/docs/desktop/boot)）
+**内核包**保证：
 
-**选 home 的规则写了两份**（启动器 `launch-plan.ts` 与内核 `home-path.ts`）：启动器要先知道 home 在哪才能加载内核，没法 import 内核那份。两份由启动器的测试逐个输入比对；改规则时两份一起改。
+- 清单里写 `engines.electron`（`^` 范围）与 `main`；换了 Electron 主版本就改 `engines.electron`，内核版本号升 x（[开发](/docs/develop#发版)）
+- 入口模块求值时不顶层 `await` Electron 的 ready，只把启动注册到 ready 上：ready 要等入口模块求值完才触发，顶层等它会卡死（[启动与退出](/docs/desktop/boot)）
+
+## 谁不负责什么
+
+- 启动器不检查插件和内核兼不兼容：那是插件 peer 里的内核包范围，由插件管理比对（[home 布局与条目树](/docs/seams/home)）
+- 启动器不检查 home 里有没有 `cordis` 与插件：缺了 `cordis`，import 内核入口时就失败，启动器弹框退出；缺插件时内核照常启动，只读状态页上看得到
+- 启动器不把安装包的版本交给内核：内核分不出自己是经启动器加载的，还是从仓里 `pnpm start` 直接运行的，两种情况做法相同
+
+## 由什么测试保护
+
+`apps/launcher/tests/launch-plan.test.ts` 在临时目录上证明：选 home 的规则和内核的 `home-path.ts` 逐个输入结果相同；五种不满足各自拒绝并说明原因；满足时给出内核包的入口文件；启动器带的 Electron 满足内核包声明的范围。启动器从 home 真的加载起内核、拒绝时弹框，只能实机验证（[安装包与启动器](/docs/installer#怎么单独测)）。
 
 {/* has file="../apps/launcher/tests/launch-plan.test.ts" text="和内核选 home 的规则逐个输入结果相同" */}
 
-## 不负责的事
-
-- 启动器不检查插件和内核兼不兼容：那是插件 peer 里的内核包范围，由插件管理报告（见 [home 布局与条目树](/docs/seams/home)）
-- 启动器不检查 home 里有没有 `cordis` 与插件：缺了 `cordis`，import 内核入口时就失败，启动器弹框退出；缺插件时内核照常启动，在只读状态页上看得到
-- 启动器不把安装包的版本交给内核：内核分不出自己是经启动器加载的，还是从仓里 `pnpm start` 直接运行的，两种情况做法相同
-
-## 测试
-
-`apps/launcher/tests/launch-plan.test.ts` 在临时目录上证明：选 home 的规则与内核的 `home-path.ts` 逐个输入结果相同；五种不满足各自拒绝并说明原因；满足时给出内核包的入口文件；启动器带的 Electron 满足内核包声明的范围。
-
 {/* has file="../apps/launcher/tests/launch-plan.test.ts" text="启动器带的 Electron 满足内核包声明的 engines.electron" */}
-
-启动器从 home 真的加载起内核、拒绝时弹框，只能实机验证，步骤见[开发](/docs/develop)。

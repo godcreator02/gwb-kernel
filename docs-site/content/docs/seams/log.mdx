@@ -1,52 +1,66 @@
 ---
 title: 8 日志 gwb.log
-description: 连接内核应用与所有插件：插件、内核、页面 console 三个来源都经 cordis 的 ctx.logger 汇成一条流，内核应用把它写到 stderr 与 home 里的 gwb.log，一行是「时间 级别 名字 正文」；要收日志的插件自己注册一个 exporter
+description: 连接内核应用与所有插件；交换的是 cordis 的日志流：插件、内核、页面 console 三个来源都经 ctx.logger 汇成一条，内核把它写到 stderr 与 home 里的 gwb.log，一行是「时间 级别 名字 正文」；要收日志的插件自己注册 exporter；内核保证只有这一个输出、写日志出问题不让内核崩溃，插件保证只经 ctx.logger 写、exporter 不抛
 ---
 
-**本页回答**：插件怎么写日志、写到哪里、一行长什么样；要在别处显示或查询日志的插件怎么拿到全部日志；内核应用和插件各保证什么。
+**本页回答**：插件怎样写日志、写到哪里、一行长什么样；要在别处显示或查询日志的插件怎样拿到全部日志；内核应用和插件各保证什么。
 
 ## 连接的模块
 
-- [内核应用](/docs/desktop)：注册输出到 stderr 与 `gwb.log` 的 exporter，把页面上的 console 输出转成日志
-- 任何插件：写日志都用 `ctx.logger`；收日志的插件（比如日志插件 `gwb-logger`）注册自己的 exporter
+- [内核应用](/docs/desktop)：注册写 stderr 与 `gwb.log` 的 exporter，把页面上的 console 输出转成日志
+- 任何插件：写日志都用 `ctx.logger`；收日志的插件（比如日志插件 `@godcreator/gwb-logger`）注册自己的 exporter
 
-## 接口
+## 交换什么
 
 **写**：插件用 cordis 的 `ctx.logger(名字)` 拿到一个 logger，调它的 `info` / `warn` / `error` / `debug`。内核自己用名字 `kernel`；页面上的 console 输出由内核转成名字 `renderer` 的日志，级别照搬（console 的 `warning` 记成 `warn`）。
 
-**一行的格式**是 `<ISO 时间> <级别> <名字> <正文>`，同时写 stderr 与 `<home>/gwb.log`；正文由 cordis 自己的 `Logger.format` 格式化，所有级别都写，包括 `debug`：
+**一行的格式**是 `<ISO 时间> <级别> <名字> <正文>`，同时写 stderr 与 `<home>/gwb.log`：
 
 {/* ref file="../apps/desktop/src/main.ts" lines="65-70" */}
 
-**收**：插件调用 `ctx.logger.exporter({ export(message) { … } })` 注册一个 exporter，就能收到内核、插件、页面三个来源的全部日志。注册是 cordis 的一个 effect，插件卸载时自动注销。注册之前的日志在 cordis 自带的缓冲 `ctx.logger.buffer` 里（最近 1000 条，不含 `debug`）；日志插件就是先读缓冲补上历史、再注册 exporter。cordis 在写日志的那次调用里依次同步调用每个 exporter 的 `export`。
+正文由 cordis 自己的 `Logger.format` 格式化，所有级别都写，包括 `debug`。插件传进来的参数 cordis 格式化不了时（`%o` 用 `JSON.stringify`，遇到循环引用、BigInt 就抛），内核退回把参数逐个转成字符串拼起来，这一行照样写进去：
 
-## 约定
+{/* ref file="../apps/desktop/src/main.ts" lines="123-142" */}
 
-内核应用保证：
-- 只有一个输出：stderr 加 home 里的 `gwb.log`，每一行都进这两处
-- 内核自己的日志也走 `ctx.logger`，插件收得到（cordis 实例建好之前的几行与启动失败那一行除外，它们只进 stderr 与 `gwb.log`）；插件里没被处理的异常与 rejection 记成 `kernel` 的 error，不让内核退出
-- 写日志出任何问题都只报一句，不会让内核崩溃；没有终端时写 stderr 报的错被忽略，文件照写
-- 每条 error 都会触发一次 `gwb:shell` 的重新推送（200 毫秒内的多次合并成一次）：没有外壳时，最近的错误行显示在只读状态页上（见[内核应用](/docs/desktop)）。warn 只进日志、不触发推送，下一次推送时随最近的错误行一起出现在只读状态页上
+**收**：插件调用 `ctx.logger.exporter({ export(message) { … } })` 注册一个 exporter，就能收到内核、插件、页面三个来源的全部日志；注册是 cordis 的一个 effect，插件卸载时自动注销。注册之前的日志在 cordis 自带的缓冲 `ctx.logger.buffer` 里（最近 1000 条，按 cordis 的默认级别，不含 `debug`），日志插件就是先读缓冲补上历史、再注册 exporter。cordis 在写日志的那次调用里依次同步调用每个 exporter 的 `export`。
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="页面 console 进 cordis 日志，名字是 renderer" */}
-
-{/* has file="../apps/desktop/tests/main.test.ts" text="插件或页面写 warn：只进日志，不推 gwb:shell" */}
-
-插件保证：
-- 日志一律经 `ctx.logger`，不直接写 `gwb.log`；直接写 stderr 的内容不会进文件
-- logger 的名字用自己能被认出的名字（通常是插件名或服务名），读日志的人靠它区分来源
-- 注册的 exporter 的 `export` 不抛异常、不做耗时的同步操作：它在别人写日志的那次调用里同步执行，抛出的异常会抛给写日志的一方，在它之后注册的 exporter 收不到这一行（cordis 的缓冲与内核的 exporter 注册在所有插件之前，不受影响）
-
-## 不负责的事
-
-- 内核应用不为页面或窗格建日志通道：页面上要显示日志的插件自己注册 exporter，再用自己的命令、事件交给页面
-- 内核应用不给日志分级过滤、不按插件分文件、不提供查询
-- 内核应用不保证 `gwb.log` 留着全部历史：文件到上限（128 MB）就改名为 `gwb.log.1`，只留这一份旧的（见[内核应用](/docs/desktop)）。128 MB 的依据：实测平常一天约写 48 MB，某个插件出错刷屏时一小时能写约 675 MB；128 MB 平常能留住两天半的日志用来事后查错，刷屏时十几分钟轮转一次，加上那份旧的，磁盘占用不超过 256 MB。读数与验证记录在仓根 `probes/2609201430_log-cap-rotation/`
+**上限与轮转**：`gwb.log` 写到 128 MB 就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多 256 MB），再开一份新的。128 MB 的依据是实测：平常一天约写 48 MB，某个插件出错刷屏时一小时能写约 675 MB；128 MB 平常能留住两天半的日志，刷屏时十几分钟轮转一次。读数记录在仓根 `probes/2609201430_log-cap-rotation/`。
 
 {/* has file="../apps/desktop/src/log-file.ts" text="LOG_LIMIT_BYTES = 128 * 1024 * 1024" */}
 
-## 测试
+## 各方保证
 
-`apps/desktop/tests/main.test.ts` 用假的 electron 与真的 cordis 保护汇成一条流与一行的格式：页面 console 的四个级别记成名字 `renderer` 的对应级别，没被处理的异常记成 `kernel` 的 error，插件写的 error 行进 `gwb.log` 并在 200 毫秒后随 `gwb:shell` 推给页面，插件与页面写的 warn 只进 `gwb.log`、不推送。`apps/desktop/tests/log-file.test.ts` 保护写文件那一段，包括文件打不开、写不进、轮转失败时都不抛出：
+**内核应用**保证：
+
+- 只有一个输出：stderr 加 home 里的 `gwb.log`，每一行都进这两处
+- 内核自己的日志也走 `ctx.logger`，插件收得到；只有 cordis 实例建好之前的几行与启动失败那一行直接写 stderr 与 `gwb.log`
+- 插件里没被处理的异常与 rejection 记成 `kernel` 的 error，不让内核退出
+- 写日志出任何问题都只报一句，不让内核崩溃：`gwb.log` 打不开时只写 stderr、每 60 秒重试打开一次；写不进只告警一次；轮转失败就继续写原来的文件，再写满一个上限后重试；没有终端时写 stderr 报的错被忽略，文件照写
+- 每条 error 都触发一次 `gwb:shell` 的推送（200 毫秒内的多次合并成一次），没有外壳时最近的错误行显示在只读状态页上；warn 只进日志、不触发推送，下一次推送时随最近的错误行一起出现
+
+**插件**保证：
+
+- 日志一律经 `ctx.logger`，不直接写 `gwb.log`；直接写 stderr 的内容不会进文件
+- logger 的名字用自己能被认出的名字（通常是插件名或服务名），读日志的人靠它区分来源
+- 注册的 exporter 的 `export` 不抛异常、不做耗时的同步操作：它在别人写日志的那次调用里同步执行，抛出的异常会抛给写日志的一方，排在它后面的 exporter 收不到这一行（cordis 的缓冲与内核的 exporter 注册在所有插件之前，不受影响）
+
+## 谁不负责什么
+
+- 内核应用不为页面或窗格建日志通道：页面上要显示日志的插件自己注册 exporter，再用自己的命令、事件交给页面
+- 内核应用不给日志分级过滤、不按插件分文件、不提供查询
+- 内核应用不保证 `gwb.log` 留着全部历史：只留当前一份与一份旧的
+
+## 由什么测试保护
+
+- `apps/desktop/tests/main.test.ts`：用假的 electron 与真的 cordis，证明页面 console 的级别记成名字 `renderer` 的对应级别，没被处理的异常记成 `kernel` 的 error，插件写的 error 进 `gwb.log` 并在 200 毫秒后随 `gwb:shell` 推给页面，带循环引用参数的 error 写日志的一方不抛、这一行照样写进去，warn 只进 `gwb.log`、不推送
+- `apps/desktop/tests/log-file.test.ts`：在临时目录里用真的文件系统，证明到上限轮转且只留一份旧的、轮转后写的行进新文件、启动时已超上限的文件第一行就轮转、轮转失败不丢行、打不开与写不进都不抛且写不进只告警一次
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="页面 console 进 cordis 日志，名字是 renderer" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="插件写的 error 带着 cordis 格式化不了的参数（循环引用）" */}
+
+{/* has file="../apps/desktop/tests/main.test.ts" text="插件或页面写 warn：只进日志，不推 gwb:shell" */}
+
+{/* has file="../apps/desktop/tests/log-file.test.ts" text="轮转没成不致命" */}
 
 {/* has file="../apps/desktop/tests/log-file.test.ts" text="文件开不出来也不致命" */}

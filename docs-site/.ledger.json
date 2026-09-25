@@ -34,15 +34,28 @@
     "has ../apps/desktop/tests/main.test.ts \"已有的 package.json 不覆盖\"": {
       "kind": "has"
     },
-    "../apps/desktop/package.json:31-38": {
+    "../apps/desktop/src/main.ts:35-47": {
       "kind": "git",
-      "blob": "a85846f3fc04b4fc65db009bacb1e31fbbc7846d",
-      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
       "lines": [
-        31,
-        38
+        35,
+        47
       ],
-      "hash": "5e6c0a70d786642e9b9de639caabd57adbf48a07f558481b1a38297b7e8a04c0"
+      "hash": "a26ad671b9042f1ca7153b5a39e3acb4b4f26a26802fe86b67907e41f058af54"
+    },
+    "../apps/desktop/package.json:35-41": {
+      "kind": "git",
+      "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
+      "lines": [
+        35,
+        41
+      ],
+      "hash": "9afff01b3cb1641af0223476b49d480a12be99fa6004205e9ee9c25b20e5d7c1"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"缺 package.json、cordis.yml 时补最小形态；userData 设在 <home>/electron\"": {
+      "kind": "has"
     }
   },
   "content/docs/desktop/boot.mdx": {
@@ -382,8 +395,8 @@
     },
     "../apps/desktop/src/main.ts:65-70": {
       "kind": "git",
-      "blob": "e8836844b1068bcc7520a1b49e8bb56e874e9321",
-      "commit": "d761153bee08a7775b5a7e926feb8aa0977c80c3",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
       "lines": [
         65,
         70
@@ -391,6 +404,22 @@
       "hash": "b7aeb2aaba2d2cdf45452c609d445ad66b98990ae47b42e4df7a1bad9c56b745"
     },
     "has ../apps/desktop/src/log-file.ts \"LOG_LIMIT_BYTES = 128 * 1024 * 1024\"": {
+      "kind": "has"
+    },
+    "../apps/desktop/src/main.ts:123-142": {
+      "kind": "git",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
+      "lines": [
+        123,
+        142
+      ],
+      "hash": "59feb8635aa539edd06e1f00182d0b70eb339ebc8206c2754ca5975d467ae419"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"插件写的 error 带着 cordis 格式化不了的参数（循环引用）\"": {
+      "kind": "has"
+    },
+    "has ../apps/desktop/tests/log-file.test.ts \"轮转没成不致命\"": {
       "kind": "has"
     }
   },
@@ -401,22 +430,22 @@
     "has ../apps/desktop/tests/main.test.ts \"开了合法的调试端口就写 cdp\"": {
       "kind": "has"
     },
-    "../apps/desktop/src/main.ts:84-91": {
+    "../apps/desktop/src/main.ts:80-98": {
       "kind": "git",
       "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
-      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
       "lines": [
-        84,
-        91
+        80,
+        98
       ],
-      "hash": "4cf4d485c21d2fe0fd166f7b0ad3d18214592361bebf553366b65ce745d2d7f0"
+      "hash": "f232430d66720cc1748d84e435754f8655c4e9dd48757969daa460edbae86267"
     }
   },
   "content/docs/seams/launcher.mdx": {
     "../apps/launcher/src/main.ts:17-19": {
       "kind": "git",
       "blob": "f6547781d717176fa42bd978be16a85a31a7c5af",
-      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
       "lines": [
         17,
         19
@@ -431,36 +460,43 @@
     },
     "../apps/desktop/package.json:8-8": {
       "kind": "git",
-      "blob": "a85846f3fc04b4fc65db009bacb1e31fbbc7846d",
-      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
+      "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
       "lines": [
         8,
         8
       ],
       "hash": "3f8ef15817076dd75d89f3900392bea775518c8a836a76beb2ac0b9c712b7ce0"
     },
-    "../apps/desktop/package.json:28-30": {
+    "../apps/desktop/package.json:31-33": {
       "kind": "git",
-      "blob": "a85846f3fc04b4fc65db009bacb1e31fbbc7846d",
-      "commit": "61c8720ad197cf3a63747c81628430edaedfe4f7",
+      "blob": "e4fca810abe6b39d429ff56d3224e1632d2a43ea",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
       "lines": [
-        28,
-        30
+        31,
+        33
       ],
       "hash": "d14faf1367c1399c93d85b7b7f599918e30151b9968d25654695137325010f8a"
+    },
+    "../apps/launcher/src/launch-plan.ts:28-53": {
+      "kind": "git",
+      "blob": "7dff040f70bdaa876e353c4f05b40bf9fbdd052e",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
+      "lines": [
+        28,
+        53
+      ],
+      "hash": "29a02d7fa8f117282a3b11431b91cb224ea217b099d21e87b224e8384b2bd05c"
     }
   },
   "content/docs/seams/commands.mdx": {
     "has ../apps/desktop/tests/main.test.ts \"gwb:command：命令名不是字符串、没有命令服务时回失败回执\"": {
       "kind": "has"
     },
-    "has ../apps/desktop/tests/main.test.ts \"命令交给插件提供的 gwbCommands\"": {
-      "kind": "has"
-    },
     "../apps/desktop/src/main.ts:22-29": {
       "kind": "git",
-      "blob": "861d96320af4d5838e52b2e55ae32e544588d516",
-      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
       "lines": [
         22,
         29
@@ -469,13 +505,16 @@
     },
     "../apps/desktop/src/main.ts:226-232": {
       "kind": "git",
-      "blob": "861d96320af4d5838e52b2e55ae32e544588d516",
-      "commit": "325c1d3d58c33cdabfd5bc8558dcd52618ff722f",
+      "blob": "e08cf8f11e41eb4af2deddddc1c765ca21a732b7",
+      "commit": "4bccc3d4f1623a11fda440ab71171f9146735af9",
       "lines": [
         226,
         232
       ],
       "hash": "3b9850d0b70648c40af5e1b0ef7454b66bf3b778444920a890b99853022c686b"
+    },
+    "has ../apps/desktop/tests/main.test.ts \"页面的命令交给插件提供的 gwbCommands，带上 via: ui\"": {
+      "kind": "has"
     }
   },
   "content/docs/desktop/api.mdx": {
