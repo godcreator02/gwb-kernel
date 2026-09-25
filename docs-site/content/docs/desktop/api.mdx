@@ -52,7 +52,7 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 
 {/* has file="../apps/desktop/package.json" text="tsc -p tsconfig.api.json" */}
 
-`apps/desktop/tests/importmap.test.ts` 核对本仓内核包清单：包根的 `types` 指向 `dist/api.d.ts`、`default` 是 `dist/main.js`。
+`apps/desktop/tests/importmap.test.ts` 核对本仓内核包清单：包根的 `types` 指向 `dist/api.d.ts`、`default` 是 `dist/main.js`，清单顶层不写 `types`——类型只经 `exports` 给出，插件的 TypeScript 要用认 `exports` 的模块解析方式（`bundler` 或 `node16` 起）。
 
 {/* has file="../apps/desktop/tests/importmap.test.ts" text="包根的 types 指向接口类型那份 d.ts，default 是内核入口" */}
 

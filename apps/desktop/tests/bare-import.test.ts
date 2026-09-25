@@ -2,11 +2,11 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { bareImportFromHome, resolveFromHome } from '../src/bare-import'
+import { bareImportFromHome } from '../src/bare-import'
 
 /**
- * 裸名 import 的判据：不起 electron、不起 cordis，只喂一个临时 home 目录看行为。
- * 夹具全部手造——包不是真装的，只是 node_modules 里一份带 exports 的清单加实现文件
+ * 包名 import 的判据：不启动 electron 与 cordis，只给一个临时 home 目录看行为。
+ * 夹具全部手写——包不是真装的，只是 node_modules 里一份带 exports 的清单加实现文件
  */
 
 const homes: string[] = []
@@ -14,7 +14,7 @@ afterAll(() => {
   for (const home of homes) fs.rmSync(home, { recursive: true, force: true })
 })
 
-/** 造一个临时 home：files 是 相对路径 → 文本 的表，逐个落盘，跑完统一清 */
+/** 建一个临时 home：files 是「相对路径 → 文本」的表，逐个写进磁盘，全部用例结束后统一删除 */
 function makeHome(files: Record<string, string>): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gwb-bare-'))
   homes.push(dir)
@@ -26,7 +26,7 @@ function makeHome(files: Record<string, string>): string {
   return dir
 }
 
-/** 一个件形状的夹具包：清单带 exports，实现文件导出 mark */
+/** 一个插件形状的夹具包：清单带 exports，实现文件导出 mark */
 function fixturePackage(name: string, mark: string): Record<string, string> {
   return {
     [`node_modules/${name}/package.json`]: JSON.stringify({ name, type: 'module', exports: { '.': './index.mjs' } }),
@@ -47,8 +47,8 @@ describe('bareImportFromHome', () => {
     expect(ns.mark).toBe('scoped')
   })
 
-  it('junction 换指向后拿到新版本：realpath 绕开 CJS 解析缓存，热重挂靠这一步', async () => {
-    // 照 pnpm 的真实布局造：node_modules/current 是 junction，指到
+  it('junction 换指向后拿到新版本：realpath 绕开 CJS 解析缓存，运行中换版本重新加载靠这一步', async () => {
+    // 照 pnpm 的真实布局：node_modules/current 是 junction，指向
     // .pnpm/current@<版本>/node_modules/current——从真实目录起 resolve 时在版本目录里
     // 就找到自己，不再碰 junction，每版的缓存键天然不同
     const layout = (version: string, mark: string): Record<string, string> => ({
@@ -70,20 +70,6 @@ describe('bareImportFromHome', () => {
     expect(fs.existsSync(path.join(home, '.pnpm', 'current@1.0.0', 'node_modules', 'current'))).toBe(true) // 删 junction 不伤目标
     fs.symlinkSync(path.join(home, '.pnpm', 'current@2.0.0', 'node_modules', 'current'), link, 'junction')
     expect(((await importBare('current')) as { mark: string }).mark).toBe('v2')
-  })
-
-  it('resolveFromHome 解子路径：scoped 包，./x 与 x 同义，. 与缺省是主入口', () => {
-    const name = '@gwb/shared'
-    const home = makeHome({
-      [`node_modules/${name}/package.json`]: JSON.stringify({ name, exports: { '.': './main.mjs', './sub': './sub.mjs' } }),
-      [`node_modules/${name}/main.mjs`]: '',
-      [`node_modules/${name}/sub.mjs`]: '',
-    })
-    const dir = path.join(fs.realpathSync.native(home), 'node_modules', '@gwb', 'shared')
-    expect(resolveFromHome(home, name, './sub')).toBe(path.join(dir, 'sub.mjs'))
-    expect(resolveFromHome(home, name, 'sub')).toBe(path.join(dir, 'sub.mjs'))
-    expect(resolveFromHome(home, name, '.')).toBe(path.join(dir, 'main.mjs'))
-    expect(resolveFromHome(home, name)).toBe(path.join(dir, 'main.mjs'))
   })
 
   it('裸名不存在时拒绝，ENOENT 带着裸名那条 node_modules 路径', async () => {

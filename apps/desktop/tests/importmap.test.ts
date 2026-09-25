@@ -33,14 +33,13 @@ describe('页面的 importmap', () => {
 })
 
 describe('本仓的内核包清单', () => {
-  it('包根的 types 指向接口类型那份 d.ts，default 是内核入口', () => {
+  it('包根的 types 指向接口类型那份 d.ts，default 是内核入口；清单顶层不写 types，类型只经 exports 给出', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), 'utf8')) as {
       main: string
-      types: string
       exports: Record<string, unknown>
     }
     expect(manifest.exports['.']).toEqual({ types: './dist/api.d.ts', default: './dist/main.js' })
-    expect(manifest.types).toBe('dist/api.d.ts')
+    expect(manifest).not.toHaveProperty('types')
     expect(manifest.main).toBe('dist/main.js')
   })
 })

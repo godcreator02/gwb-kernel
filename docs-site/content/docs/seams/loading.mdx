@@ -67,7 +67,7 @@ export function apply(ctx: GwbContext): void { /* … */ }
 
 ## 测试
 
-包名解析由 `apps/desktop/tests/bare-import.test.ts` 保护：在临时 home 里证明主入口、带 scope 的包、子路径都能解析并 import，链接改指向新版本后拿到新版本。内核按 `cordis.yml` 从 home 加载插件、退出时卸载整棵插件树，由 `apps/desktop/tests/main.test.ts` 用真的 loader 与 include 验证；运行中重新加载只能在隔离 home 里实机验证（[开发](/docs/develop)）。
+包名解析由 `apps/desktop/tests/bare-import.test.ts` 保护：在临时 home 里证明主入口、带 scope 的包都能解析并 import，链接改指向新版本后拿到新版本，包不存在时报错里带着 `node_modules` 下的路径。内核按 `cordis.yml` 从 home 加载插件、退出时卸载整棵插件树，由 `apps/desktop/tests/main.test.ts` 用真的 loader 与 include 验证；运行中重新加载只能在隔离 home 里实机验证（[开发](/docs/develop)）。
 
 {/* has file="../apps/desktop/tests/bare-import.test.ts" text="裸名解析并 import 成功" */}
 

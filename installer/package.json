@@ -2,7 +2,7 @@
   "name": "gwb-installer",
   "version": "0.1.0",
   "private": true,
-  "description": "gwb 安装包：把本仓内核打成 NSIS 安装程序与便携 zip，发版就是发 exe。打包步骤见文档站的「开发」页",
+  "description": "gwb 安装包：把启动器（apps/launcher）与 Electron 打成 NSIS 安装程序与便携 zip，不带内核与插件（它们装在 home 里）。打包步骤见文档站",
   "scripts": {
     "build": "pwsh -NoProfile -File scripts/build.ps1"
   },

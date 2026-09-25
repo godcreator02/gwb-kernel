@@ -63,7 +63,7 @@
         const box = document.createElement('div')
         box.className = 'gwb-report'
         appendTextElement(box, 'p', headline)
-        if (report) appendReportDetails(box, report)
+        appendReportDetails(box, report)
         root.appendChild(box)
       }
 
@@ -89,17 +89,17 @@
       }
 
       window.gwb.onShell(async (shell) => {
-        const url = shell?.url ?? null
+        const url = shell.url
         // 订阅时请求的一条与去抖推送的一条可能都在 import 完成之前到达，只比 currentShell 的话外壳会挂载两遍
         if (currentShell?.url === url || shellUrlBeingLoaded === url) return
         shellUrlBeingLoaded = url
         try {
           disposeCurrentShell()
           if (url === null) {
-            showStatusPage('没有外壳插件（没有插件调用 setShell）。', shell?.report)
+            showStatusPage('没有外壳插件（没有插件调用 setShell）。', shell.report)
             return
           }
-          await mountShell(url, shell?.report)
+          await mountShell(url, shell.report)
         } finally {
           shellUrlBeingLoaded = NOTHING_BEING_LOADED
         }

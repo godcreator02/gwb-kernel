@@ -1,4 +1,4 @@
-// 页面上的 window.gwb，形状见词汇表包的 GwbWindowApi；preload 在沙箱里运行，只能是 CJS
+// 页面上的 window.gwb，形状见包根导出的 GwbWindowApi（src/api.ts）；preload 在沙箱里运行，只能是 CJS
 const { contextBridge, ipcRenderer } = require('electron')
 
 function subscribe(channel, callback) {

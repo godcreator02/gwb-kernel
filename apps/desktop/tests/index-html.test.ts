@@ -40,7 +40,7 @@ interface ShellReport {
 }
 interface ShellState {
   url: string | null
-  report?: ShellReport
+  report: ShellReport
 }
 type OnShellCallback = (shell: ShellState) => Promise<void>
 
@@ -152,12 +152,6 @@ describe('index.html：只读状态页', () => {
     expect(box.children[2]!.textContent).toContain('cordis.yml')
   })
 
-  it('推送里没有 report 时只画那一句说明', async () => {
-    const page = loadPageScript()
-    await page.deliver({ url: failingShellUrl() })
-    expect(reportBox(page.root).children.map((child) => child.tagName)).toEqual(['p'])
-  })
-
   it('没有外壳时推来 url: null：画出只读状态页，第一句说明没有外壳插件', async () => {
     const page = loadPageScript()
     await page.deliver({ url: null, report: sampleReport })
@@ -188,15 +182,15 @@ describe('index.html：外壳接管', () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
     const url = shellModuleUrl('B')
-    await Promise.all([page.deliver({ url }), page.deliver({ url })])
+    await Promise.all([page.deliver({ url, report: sampleReport }), page.deliver({ url, report: sampleReport })])
     expect(shellEvents.__gwbPageTestEvents).toEqual(['mount B'])
   })
 
   it('换外壳：先 dispose 旧的、清空 #root，再挂新的', async () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
-    await page.deliver({ url: shellModuleUrl('C') })
-    await page.deliver({ url: shellModuleUrl('D') })
+    await page.deliver({ url: shellModuleUrl('C'), report: sampleReport })
+    await page.deliver({ url: shellModuleUrl('D'), report: sampleReport })
     expect(page.root.textContent).toBe('shell D')
     expect(shellEvents.__gwbPageTestEvents).toEqual(['mount C', 'dispose C', 'mount D'])
   })
@@ -204,7 +198,7 @@ describe('index.html：外壳接管', () => {
   it('外壳在用时推来 url: null（外壳撤销）：dispose 旧外壳，回到只读状态页', async () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
-    await page.deliver({ url: shellModuleUrl('G') })
+    await page.deliver({ url: shellModuleUrl('G'), report: sampleReport })
     await page.deliver({ url: null, report: sampleReport })
     expect(shellEvents.__gwbPageTestEvents).toEqual(['mount G', 'dispose G'])
     expect(reportBox(page.root).children[0]!.textContent).toContain('没有外壳插件')
@@ -214,9 +208,9 @@ describe('index.html：外壳接管', () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
     const url = shellModuleUrl('H')
-    await page.deliver({ url })
+    await page.deliver({ url, report: sampleReport })
     await page.deliver({ url: null, report: sampleReport })
-    await page.deliver({ url })
+    await page.deliver({ url, report: sampleReport })
     expect(shellEvents.__gwbPageTestEvents).toEqual(['mount H', 'dispose H', 'mount H'])
     expect(page.root.textContent).toBe('shell H')
   })
@@ -224,8 +218,8 @@ describe('index.html：外壳接管', () => {
   it('旧外壳 dispose 抛错：打一行 console.error，照样换上新的', async () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
-    await page.deliver({ url: shellModuleUrl('E', { disposeThrows: true }) })
-    await page.deliver({ url: shellModuleUrl('F') })
+    await page.deliver({ url: shellModuleUrl('E', { disposeThrows: true }), report: sampleReport })
+    await page.deliver({ url: shellModuleUrl('F'), report: sampleReport })
     expect(page.consoleError).toHaveBeenCalledTimes(1)
     expect(String(page.consoleError.mock.calls[0]?.[0])).toContain('dispose E 失败')
     expect(page.root.textContent).toBe('shell F')
@@ -254,8 +248,8 @@ describe('index.html：外壳接管', () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
     const url = registerModule('test-shell:not-a-function', async () => ({ default: 42 }))
-    await page.deliver({ url })
-    await page.deliver({ url })
+    await page.deliver({ url, report: sampleReport })
+    await page.deliver({ url, report: sampleReport })
     expect(page.consoleError).toHaveBeenCalledTimes(2)
   })
 })
