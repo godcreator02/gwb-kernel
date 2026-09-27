@@ -40,6 +40,9 @@ prepareImports 在页面动态加载前准备映射；机制不认识 React。sh
 
 kernel 0.8.0、shell 0.15.1 与配套版本已发布。首次迁移需要全生态更新内核 peer；此后的 React 构建与版本随 shell 发布。
 
+default 完整重启后确认运行 kernel 0.8.0、shell 0.15.1，33 个条目全部 ACTIVE，启动日志没有新增 error/warn。
+仍有一项兼容声明待迁移：gwb-collab 0.3.1 的 kernel peer 是 ^0.7.2，包源没有更新版本；本次没有据 ACTIVE 状态宣称它已适配。
+
 ## 代价
 
 提供方必须在使用方加载前登记；调用方仍须声明 peer 与 cordis 依赖。代码出口会在构建或检查进程求值，
