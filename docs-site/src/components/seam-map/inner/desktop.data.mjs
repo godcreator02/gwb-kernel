@@ -59,7 +59,7 @@ export const desktopGraph = defineSeamGraph({
       role: null,
       outside: true,
       blurb:
-        'home 是磁盘上的一个目录，也是一个 npm 项目根。package.json 与 cordis.yml 由创建 home 的一方准备，之后由插件管理经 pnpm 与条目树改；node_modules 由 pnpm 装；gwb.log 与 runtime.json 由内核写，日志插件、devkit、人与 agent 读。',
+        'home 是磁盘上的一个目录，也是一个 npm 项目根。package.json 与 cordis.yml 由创建 home 的一方准备，之后由插件管理经 pnpm 与条目树改；node_modules 由 pnpm 装；gwb.log 与 runtime.json 由内核写，基础界面、devkit、人与 agent 读。',
       caps: [
         { id: 'rt', name: '运行记录', ident: 'runtime.json' },
         { id: 'yml', name: '清单与条目', ident: 'package.json · cordis.yml' },
@@ -375,7 +375,7 @@ export const desktopGraph = defineSeamGraph({
       iface: '<home>/gwb.log（一行一个 JSON）· 写满 128 MB 改名为 gwb.log.1',
       convention: true,
       via: 'disk',
-      text: '日志插件、devkit 自己拼出 <home>/gwb.log 读，不问内核；一行的五个键与顺序就是它们依赖的格式。',
+      text: '基础界面、devkit 自己拼出 <home>/gwb.log 读，不问内核；一行的五个键与顺序就是它们依赖的格式。',
     },
     /* ref file="../apps/desktop/src/entry-log.ts" lines="113-120" hash="2324fab99fe1" blob="9c2a0bc85145" */
     {

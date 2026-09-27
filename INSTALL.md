@@ -1,7 +1,7 @@
 # 安装 gwb（写给 agent）
 
 你是替用户在一台 Windows 机器上安装 gwb 的 agent。**安装包只带启动器与 Electron，不带内核、不带插件，也不带 pnpm——内核包、`cordis` 与插件都由你用机器上装好的 pnpm 12（第 1 步）装进 home。** 启动器启动时从 home 里加载内核，home 里没有内核包就弹框说明、不启动。
-照下面做完，用户得到一个装好 11 个基础插件（包括命令插件、插件管理、MCP 入口）、MCP 入口开在 `http://127.0.0.1:2870/mcp` 的工作台，
+照下面做完，用户得到一个装好第 3 步那些基础插件（包括命令插件、插件管理、MCP 入口）、MCP 入口开在 `http://127.0.0.1:2870/mcp` 的工作台，
 之后你（或别的 agent）通过这个 MCP 入口使用工作台。命令一律在 PowerShell 里运行。用户还要写自己的插件时，装完再照最后一节「开发插件」补齐开发要用的几样。
 
 ## 0. 先确认装没装过
@@ -103,8 +103,6 @@ $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json 
   name: '@godcreator/gwb-settings'
 - id: skills
   name: '@godcreator/gwb-skills'
-- id: logger
-  name: '@godcreator/gwb-logger'
 - id: plugin-manager
   name: '@godcreator/gwb-plugin-manager'
 - id: shell
@@ -118,7 +116,7 @@ $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json 
 - id: mcp
   name: '@godcreator/gwb-mcp'
 '@)
-& $pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-logger @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp
+& $pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp
 ```
 
 - 内核包与 `cordis` 装完读回核对：`node_modules\@godcreator\gwb-kernel-desktop\package.json` 的 `version` 等于 `$kernel`，
@@ -219,7 +217,7 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 
 连上后**先调 `index`**：它返回的 instructions 讲清楚之后怎么使用工作台。再核对：
 
-- `run plugin-manager.list` 返回第 3 步装的 11 个插件，各带一个条目、`active: true`；内核包与 `cordis` 不是插件，不在里面。
+- `run plugin-manager.list` 返回第 3 步 `cordis.yml` 里的每个插件，各带一个条目、`active: true`；内核包与 `cordis` 不是插件，不在里面。
   插件的 `kernelUntested` 为 `true` 只是报告：它的 peer 里没写内核包，或写的范围不包含运行中的内核，照常加载，不算失败
 - `run skill.list` 能列出说明书，至少有 `mcp`、`gwb-commands`、`gwb-plugin-manager`、`gwb-devkit`
 - `run plugin-manager.search` 能列出源上可装的插件——「插件管理」窗格的「可装」栏用的就是它

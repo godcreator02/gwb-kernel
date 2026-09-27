@@ -27,7 +27,7 @@ stderr 上给终端看的文本，home 里 `gwb.log` 的一行 JSON。内核只�
 
 {/* ref file="../apps/desktop/tests/main.test.ts" lines="450-471" hash="0fa1690ad196" blob="db45edf1e552" */}
 
-这个格式是跨仓的契约：日志插件、devkit 都按它解析。改键、改取值、改格式，内核包都要升 x。stderr 上的文本「时间 级别 名字 正文」只给终端看，不是给程序读的。
+这个格式是跨仓的契约：基础界面、devkit 都按它解析。改键、改取值、改格式，内核包都要升 x。stderr 上的文本「时间 级别 名字 正文」只给终端看，不是给程序读的。
 
 ## 三处来源怎么汇成一条
 
@@ -118,7 +118,7 @@ exporter 在写日志的那次调用里同步执行，所以它不能抛：抛�
 
 ## 读日志
 
-要显示或查询日志的插件（日志插件 `@godcreator/gwb-logger`）与 devkit 直接读 `<home>\gwb.log`，要更早的再读 `gwb.log.1`；按时间顺序是先 `gwb.log.1` 再 `gwb.log`。
+要显示或查询日志的插件（基础界面 `@godcreator/gwb-baseui`，它登记命令 `logger.query` 并提供日志窗格）与 devkit 直接读 `<home>\gwb.log`，要更早的再读 `gwb.log.1`；按时间顺序是先 `gwb.log.1` 再 `gwb.log`。
 文件跨重启留着，上一次运行的日志也查得到。读的一方按行解析，认不出的行直接报错、不猜。
 日志一律经 `ctx.logger` 写，不直接写 `gwb.log`；插件直接写 stderr 的内容不会进文件。
 

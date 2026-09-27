@@ -61,7 +61,7 @@ full: true
 | 8 | 外壳接管 | 外壳插件与它的页面模块；`setShell`、页面入口 `index.html` | `setShell`、`ShellBoot`、`gwb:shell` | 页面入口不挑外壳，谁调用 `setShell` 谁就是；只读状态页之外的界面都由外壳插件渲染 | [外壳模块的契约](/docs/desktop/page#外壳模块的契约) |
 | 9 | 页面接口 | 页面上的代码（外壳、窗格等）；`preload.cjs` 注入的 `window.gwb` | `window.gwb`、`GwbWindowApi`、`gwb:event`、`gwb:hello` | `window.gwb` 只注入顶层框架，页面上放哪些同源 iframe 由外壳和插件决定 | [window.gwb 与五个通道](/docs/desktop/ipc#windowgwb-与五个通道)、[页面导航锁与外链](/docs/desktop/page#页面导航锁与外链) |
 | 10 | 写日志 | 任何插件与页面上的代码；内核的日志 | `ctx.logger`、`console-message`、`logger.exporter` | 内核不分级过滤、不按插件分文件、不为页面建日志通道；要在页面上显示日志的插件自己读 `gwb.log` | [三处来源怎么汇成一条](/docs/desktop/log#三处来源怎么汇成一条) |
-| 11 | gwb.log | 内核的日志；读日志的一方（日志插件 `@godcreator/gwb-logger`、devkit、人与 agent） | `gwb.log`、`gwb.log.1` | 内核不提供查询、不保留全部历史，查询与显示归日志插件 | [gwb.log 的一行](/docs/desktop/log#gwblog-的一行)、[上限与轮转](/docs/desktop/log#上限与轮转) |
+| 11 | gwb.log | 内核的日志；读日志的一方（基础界面 `@godcreator/gwb-baseui`、devkit、人与 agent） | `gwb.log`、`gwb.log.1` | 内核不提供查询、不保留全部历史，查询（`logger.query`）与显示（日志窗格）归基础界面 | [gwb.log 的一行](/docs/desktop/log#gwblog-的一行)、[上限与轮转](/docs/desktop/log#上限与轮转) |
 | 12 | runtime.json | 内核的启动；工作台进程之外的读者（devkit、装机的 agent）、往里补字段的 MCP 入口插件 `@godcreator/gwb-mcp` | `runtime.json` | 内核自己不读、不加锁、不保证原子写入；进程还在不在由读者核对 `pid` | [runtime.json](/docs/desktop/home#runtimejson) |
 | 13 | 条目树与包 | 插件管理 `@godcreator/gwb-plugin-manager`；loader 的条目树、home 里的 `package.json` 与 `node_modules/` | `ctx.loader.create` / `update` / `remove`、`ctx.fiber.entry` | 内核不知道插件管理存在、不带 pnpm、不读插件 peer 里的内核范围；装包与比对 peer 归插件管理，写在 `gwb-lifecycle-plugins` 仓的文档站 | [条目树](/docs/desktop/home#条目树) |
 

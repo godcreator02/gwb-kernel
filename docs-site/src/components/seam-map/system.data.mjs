@@ -28,7 +28,7 @@ const modules = [
     pkg: '装在 home 里',
     role: null,
     outside: true,
-    blurb: '每个插件是 home 里的一个 npm 包、cordis.yml 里的一条条目，由 loader 加载进主进程。外壳、命令插件、插件管理、日志插件、MCP 入口都在这里，都不在本仓。',
+    blurb: '每个插件是 home 里的一个 npm 包、cordis.yml 里的一条条目，由 loader 加载进主进程。外壳、基础界面、命令插件、插件管理、MCP 入口都在这里，都不在本仓。',
     caps: [
       { id: 'p-shell', name: '外壳插件', ident: 'gwb-shell' },
       { id: 'p-provider', name: '请求提供方', ident: 'gwb-commands' },
@@ -237,7 +237,7 @@ const seams = [
     iface: '<home>/gwb.log 一行一个 JSON：{ ts, level, source, name, msg }；写满 128 MB 改名为 gwb.log.1',
     convention: false,
     via: 'disk',
-    text: '内核把每一条日志写成 gwb.log 里的一行 JSON，五个键、顺序固定；同一条另写一份文本到 stderr。日志插件、devkit、人按行读这个文件，内核不提供查询。',
+    text: '内核把每一条日志写成 gwb.log 里的一行 JSON，五个键、顺序固定；同一条另写一份文本到 stderr。基础界面（logger.query 与日志窗格）、devkit、人按行读这个文件，内核不提供查询。',
   },
   /* ref file="../apps/desktop/src/main.ts" lines="128-145" hash="a7ec7254b2ed" blob="b613d37fa683" */
   {
