@@ -34,4 +34,4 @@ title: 日志：内核写结构化文件，插件只读
 - 给 `after`（上一次回执里的 `cursor`）：只取那之后新写的；`gwb.log` 比 `after` 小说明轮转过，先读 `gwb.log.1` 从 `after` 到末尾，再读新 `gwb.log` 全部
 - `minLevel` 只要这一级及以上；`name` 精确匹配；`text` 在 `name` 与 `msg` 里找子串，不分大小写
 
-回执 `{ file, cursor, entries }`：`file` 是 `gwb.log` 的绝对路径，`cursor` 是读完时 `gwb.log` 的字节长度，`entries` 是文件里的原样对象，从旧到新。不是 JSON 的行直接报错，写明文件与行首几十个字符。
+回执 `{ file, cursor, entries }`：`file` 是 `gwb.log` 的绝对路径，`cursor` 是读到的最后一个完整行在 `gwb.log` 里的末尾位置（字节），`entries` 是文件里的原样对象，从旧到新。文件末尾还没以换行结尾的那一段是内核还没写完的行，不返回、`cursor` 停在它前面。其余不是 JSON 的行直接报错，写明文件与行首几十个字符。
