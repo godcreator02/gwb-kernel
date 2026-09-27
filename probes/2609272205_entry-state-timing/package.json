@@ -1,0 +1,13 @@
+{
+  "name": "probe-entry-state-timing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "probe": "node run.mjs"
+  },
+  "dependencies": {
+    "@cordisjs/plugin-include": "1.1.0",
+    "@cordisjs/plugin-loader": "1.0.0-rc.7",
+    "cordis": "4.0.0-rc.10"
+  }
+}

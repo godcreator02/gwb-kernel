@@ -1,0 +1,123 @@
+node v24.14.1 | cordis 4.0.0-rc.10 | plugin-loader 1.0.0-rc.7 | plugin-include 1.1.0
+temp home: C:\Users\GODAME~1\AppData\Local\Temp\probe-entry-state-NZAKcp
+
+    3ms  status Loader（不属于条目）：PENDING → LOADING
+    4ms  status isolate（不属于条目）：PENDING → LOADING
+    4ms  status Loader（不属于条目）：LOADING → ACTIVE
+    5ms  status isolate（不属于条目）：LOADING → ACTIVE
+    5ms  --- 1. 启动加载：root.update 读 cordis.yml
+    5ms  status Include（条目 home，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+    6ms  --- root.update 返回
+   11ms  log [error] [include]     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing ⏎     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#home
+   11ms      ↑ 第一个参数是 Error：message="probe: 没有名为 probe-not-installed 的模块"，stack 第一行="    at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing"
+   11ms  log [info] [loader] apply plugin probe-sync
+   12ms  status probe-sync（条目 sync，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+   12ms  log [info] [loader] apply plugin probe-async
+   12ms  status probe-async（条目 async，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+   12ms  log [info] [loader] apply plugin probe-sync-fail
+   12ms  status probe-sync-fail（条目 sync-fail，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+   12ms  log [info] [loader] apply plugin probe-async-fail
+   12ms  status probe-async-fail（条目 async-fail，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+   12ms  log [info] [loader] apply plugin probe-svc-async
+   12ms  status AsyncService（条目 svc，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+   12ms  log [info] [loader] apply plugin probe-needs-svc
+   13ms  log [info] [loader] apply plugin probe-needs-nobody
+   13ms  log [info] [loader] apply plugin probe-nested
+   13ms  status probe-nested（条目 nested，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+   13ms  probe-sync apply（config={"v":1}）
+   13ms  probe-async apply 开始，等 300ms
+   13ms  probe-sync-fail apply，马上抛错
+   13ms  log [error] [probe-sync-fail] Error: probe-sync-fail 同步抛出的错误 ⏎     at Object.apply [as callback] (file:///D:/unitfolders/igldu-gwbkernel/gwb-kernel/probes/2609272205_entry-state-timing/plugins.mjs:29:11) ⏎     at Fiber.execute (file:///D:/unitfolders/igldu-gwbkernel/gwb-kernel/probes/2609272205_entry-state-timing/node_modules/cordis/lib/index.js:726:28) ⏎     at file:///D:/unitfolders/igldu-gwbkernel/gwb-kernel/probes/2609272205_entry-state-timing/node_modules/cordis/lib/index.js:816:37 ⏎     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#sync-fail ⏎     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#home
+   13ms      ↑ 第一个参数是 Error：message="probe-sync-fail 同步抛出的错误"，stack 第一行="Error: probe-sync-fail 同步抛出的错误"
+   13ms  status probe-sync-fail（条目 sync-fail，条目顶层，entry.fiber===fiber:false）：LOADING → UNLOADING
+   14ms  probe-async-fail apply 开始，200ms 后 reject
+   14ms  probe-svc-async 构造（已 provide probeSvc）
+   14ms  probe-svc-async init 开始，等 400ms
+   14ms  probe-nested apply，里面 ctx.plugin(probe-nested-child)
+   14ms  status probe-nested-child（条目 nested，子 fiber，entry.fiber===fiber:false）：PENDING → LOADING
+   14ms  status probe-sync（条目 sync，条目顶层，entry.fiber===fiber:false）：LOADING → ACTIVE
+   14ms  status probe-sync-fail（条目 sync-fail，条目顶层，entry.fiber===fiber:false）：UNLOADING → FAILED
+   14ms  probe-nested-child apply 开始，等 100ms
+   14ms  status probe-nested（条目 nested，条目顶层，entry.fiber===fiber:false）：LOADING → ACTIVE
+   14ms  status Include（条目 home，条目顶层，entry.fiber===fiber:false）：LOADING → ACTIVE
+  118ms  probe-nested-child apply 结束
+  119ms  status probe-nested-child（条目 nested，子 fiber，entry.fiber===fiber:false）：LOADING → ACTIVE
+  226ms  log [error] [probe-async-fail] Error: probe-async-fail 异步 reject 的错误 ⏎     at Object.apply [as callback] (file:///D:/unitfolders/igldu-gwbkernel/gwb-kernel/probes/2609272205_entry-state-timing/plugins.mjs:38:11) ⏎     at async Fiber._reload (file:///D:/unitfolders/igldu-gwbkernel/gwb-kernel/probes/2609272205_entry-state-timing/node_modules/cordis/lib/index.js:971:7)
+  226ms      ↑ 第一个参数是 Error：message="probe-async-fail 异步 reject 的错误"，stack 第一行="Error: probe-async-fail 异步 reject 的错误"
+  226ms  status probe-async-fail（条目 async-fail，条目顶层，entry.fiber===fiber:false）：LOADING → UNLOADING
+  226ms  status probe-async-fail（条目 async-fail，条目顶层，entry.fiber===fiber:false）：UNLOADING → FAILED
+  318ms  probe-async apply 结束
+  318ms  status probe-async（条目 async，条目顶层，entry.fiber===fiber:false）：LOADING → ACTIVE
+  427ms  probe-svc-async init 结束
+  427ms  status AsyncService（条目 svc，条目顶层，entry.fiber===fiber:false）：LOADING → ACTIVE
+  427ms  status probe-needs-svc（条目 needs-svc，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+  427ms  probe-needs-svc apply，拿到 probeSvc=true
+  428ms  status probe-needs-svc（条目 needs-svc，条目顶层，entry.fiber===fiber:false）：LOADING → ACTIVE
+  428ms  --- ctx.loader.await() 返回
+  428ms  == loader.await() 返回时：sync=ACTIVE  async=ACTIVE  sync-fail=FAILED（probe-sync-fail 同步抛出的错误）  async-fail=FAILED（probe-async-fail 异步 reject 的错误）  svc=ACTIVE  needs-svc=ACTIVE  needs-nobody=PENDING  nested=ACTIVE  missing=no fiber
+ 1233ms  == 再等 800ms：sync=ACTIVE  async=ACTIVE  sync-fail=FAILED（probe-sync-fail 同步抛出的错误）  async-fail=FAILED（probe-async-fail 异步 reject 的错误）  svc=ACTIVE  needs-svc=ACTIVE  needs-nobody=PENDING  nested=ACTIVE  missing=no fiber
+
+ 1233ms  --- 2. 停用 async（tree.update(id, { disabled: true })，plugin-manager 的停用就是这样）
+ 1234ms  log [info] [loader] unload plugin probe-async
+ 1234ms  status probe-async（条目 async，条目顶层，entry.fiber===fiber:false）：ACTIVE → UNLOADING
+ 1235ms  probe-async 撤销副作用
+ 1235ms  --- 改动的 promise 返回
+ 1235ms  status probe-async（条目 async，条目顶层，entry.fiber===fiber:false）：UNLOADING → DISPOSED
+ 1235ms  --- ctx.loader.await() 返回
+ 1244ms  log [error] [include]     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing ⏎     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#home
+ 1244ms      ↑ 第一个参数是 Error：message="probe: 没有名为 probe-not-installed 的模块"，stack 第一行="    at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing"
+ 1838ms  == 再等 600ms：sync=ACTIVE  async=disabled  sync-fail=FAILED（probe-sync-fail 同步抛出的错误）  async-fail=FAILED（probe-async-fail 异步 reject 的错误）  svc=ACTIVE  needs-svc=ACTIVE  needs-nobody=PENDING  nested=ACTIVE  missing=no fiber
+
+ 1838ms  --- 3. 启用 async（tree.update(id, { disabled: null })）
+ 1838ms  log [info] [loader] apply plugin probe-async
+ 1838ms  status probe-async（条目 async，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+ 1839ms  probe-async apply 开始，等 300ms
+ 1839ms  --- 改动的 promise 返回
+ 1845ms  log [error] [include]     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing ⏎     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#home
+ 1845ms      ↑ 第一个参数是 Error：message="probe: 没有名为 probe-not-installed 的模块"，stack 第一行="    at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing"
+ 2148ms  probe-async apply 结束
+ 2148ms  status probe-async（条目 async，条目顶层，entry.fiber===fiber:false）：LOADING → ACTIVE
+ 2149ms  --- ctx.loader.await() 返回
+ 2752ms  == 再等 600ms：sync=ACTIVE  async=ACTIVE  sync-fail=FAILED（probe-sync-fail 同步抛出的错误）  async-fail=FAILED（probe-async-fail 异步 reject 的错误）  svc=ACTIVE  needs-svc=ACTIVE  needs-nobody=PENDING  nested=ACTIVE  missing=no fiber
+
+ 2752ms  --- 4. 改 sync 的配置（tree.update(id, { config: { v: 2 } })）
+ 2753ms  log [info] [loader] reload plugin probe-sync
+ 2753ms  status probe-sync（条目 sync，条目顶层，entry.fiber===fiber:false）：ACTIVE → UNLOADING
+ 2753ms  probe-sync 撤销副作用
+ 2753ms  status probe-sync（条目 sync，条目顶层，entry.fiber===fiber:false）：UNLOADING → LOADING
+ 2753ms  probe-sync apply（config={"v":2}）
+ 2753ms  status probe-sync（条目 sync，条目顶层，entry.fiber===fiber:false）：LOADING → ACTIVE
+ 2753ms  --- 改动的 promise 返回
+ 2753ms  --- ctx.loader.await() 返回
+ 2758ms  log [error] [include]     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing ⏎     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#home
+ 2758ms      ↑ 第一个参数是 Error：message="probe: 没有名为 probe-not-installed 的模块"，stack 第一行="    at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing"
+ 3368ms  == 再等 600ms：sync=ACTIVE  async=ACTIVE  sync-fail=FAILED（probe-sync-fail 同步抛出的错误）  async-fail=FAILED（probe-async-fail 异步 reject 的错误）  svc=ACTIVE  needs-svc=ACTIVE  needs-nobody=PENDING  nested=ACTIVE  missing=no fiber
+
+ 3368ms  --- 5. 删掉服务提供方 svc（tree.remove）
+ 3368ms  log [info] [loader] unload plugin probe-svc-async
+ 3368ms  status AsyncService（条目 svc，条目顶层，entry.fiber===fiber:false）：ACTIVE → UNLOADING
+ 3368ms  status probe-needs-svc（条目 needs-svc，条目顶层，entry.fiber===fiber:false）：ACTIVE → UNLOADING
+ 3369ms  probe-needs-svc 撤销副作用
+ 3369ms  --- 改动的 promise 返回
+ 3369ms  status probe-needs-svc（条目 needs-svc，条目顶层，entry.fiber===fiber:false）：UNLOADING → PENDING
+ 3369ms  --- ctx.loader.await() 返回
+ 3369ms  status AsyncService（条目 svc，条目顶层，entry.fiber===fiber:false）：UNLOADING → DISPOSED
+ 3375ms  log [error] [include]     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing ⏎     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#home
+ 3375ms      ↑ 第一个参数是 Error：message="probe: 没有名为 probe-not-installed 的模块"，stack 第一行="    at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing"
+ 3983ms  == 再等 600ms：sync=ACTIVE  async=ACTIVE  sync-fail=FAILED（probe-sync-fail 同步抛出的错误）  async-fail=FAILED（probe-async-fail 异步 reject 的错误）  needs-svc=PENDING  needs-nobody=PENDING  nested=ACTIVE  missing=no fiber
+
+ 3983ms  --- 6. 再加回一条 probe-svc-async（tree.create）
+ 3984ms  log [info] [loader] apply plugin probe-svc-async
+ 3984ms  status AsyncService（条目 c84764cf，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+ 3984ms  probe-svc-async 构造（已 provide probeSvc）
+ 3984ms  probe-svc-async init 开始，等 400ms
+ 3984ms  --- 改动的 promise 返回
+ 3989ms  log [error] [include]     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing ⏎     at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#home
+ 3989ms      ↑ 第一个参数是 Error：message="probe: 没有名为 probe-not-installed 的模块"，stack 第一行="    at file:///C:/Users/GODAME%7E1/AppData/Local/Temp/probe-entry-state-NZAKcp/#missing"
+ 4384ms  probe-svc-async init 结束
+ 4385ms  status AsyncService（条目 c84764cf，条目顶层，entry.fiber===fiber:false）：LOADING → ACTIVE
+ 4385ms  status probe-needs-svc（条目 needs-svc，条目顶层，entry.fiber===fiber:false）：PENDING → LOADING
+ 4385ms  probe-needs-svc apply，拿到 probeSvc=true
+ 4385ms  status probe-needs-svc（条目 needs-svc，条目顶层，entry.fiber===fiber:false）：LOADING → ACTIVE
+ 4385ms  --- ctx.loader.await() 返回
+ 4990ms  == 再等 600ms：sync=ACTIVE  async=ACTIVE  sync-fail=FAILED（probe-sync-fail 同步抛出的错误）  async-fail=FAILED（probe-async-fail 异步 reject 的错误）  needs-svc=ACTIVE  needs-nobody=PENDING  nested=ACTIVE  missing=no fiber  c84764cf=ACTIVE

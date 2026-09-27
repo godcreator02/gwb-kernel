@@ -1,0 +1,39 @@
+---
+title: 条目的 ACTIVE 等异步 apply 完成才设上；等服务没有事件，import 失败的错误原文进不了日志
+born-at: 2026-09-27T22:05
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 条目状态时机
+domain: 条目表
+---
+
+## 背景
+
+排查 gwb 日志缺什么时，数了一遍 default home 的 `gwb.log`：自 2026-09-20 起九万多行，名字是 `loader` 的一行都没有，插件挂没挂上只能靠各插件自己写的「就绪」去猜。人的原话：
+
+> cordis的插件是否成功挂载的信息完全没有
+
+原因有两层。cordis 加载器自己的 `apply plugin X` / `unload` / `reload` 受 include 的 `enableLogs` 控制，默认关，内核加载 `cordis.yml` 时没开；真正的状态变化 cordis 会发 `internal/status`，内核订阅了，但只拿它刷新只读状态页。打算改成由内核接 `internal/status` 按条目记日志，动手前要先弄清几件事：异步 apply 的条目 ACTIVE 什么时候设上（决定「挂上了」和耗时记在哪一刻），等服务的条目发不发事件，嵌套插件的子 fiber 怎么排除，热更新走哪几个状态。
+
+这张卡接着「fiber 存在不等于挂上了」那条结论往下测状态变化的时机。
+pivots-from:: [fiber 不是挂上](2026-09-07-wall-fiber-not-active.md)
+
+## 结论与边界
+
+**ACTIVE 等异步 apply（或 `Service` 子类的异步 `[Service.init]`）的 promise 完成才设上**：成功的条目走 `PENDING → LOADING → ACTIVE`，LOADING 到 ACTIVE 的间隔就是 apply 的耗时，所以「挂上了」和耗时都能从 `internal/status` 直接取。失败不论同步抛错还是异步 reject，都走 `LOADING → UNLOADING → FAILED`；cordis 在失败时已经用插件自己的名字记了一条带完整调用栈的 error。
+
+**等服务的条目不发任何事件**：`inject` 不满足的条目一直停在初始的 PENDING，一条 `internal/status` 都没有，直到提供方 ACTIVE 那一刻才发第一条 `PENDING → LOADING`。`ctx.loader.await()` 会等异步 apply 和服务链全部完成才返回，但不等永远 PENDING 的条目、也不因 FAILED 抛出。所以「谁还在等、缺哪个服务」只能在 `ctx.loader.await()` 返回之后扫一遍条目得到，那一刻就是启动加载的最终结果。热更新里依赖方因为提供方被删而退回 PENDING 时是有事件的（`ACTIVE → UNLOADING → PENDING`）。
+
+**子 fiber 要排除**：插件里再 `ctx.plugin` 出来的子 fiber 也发 `internal/status`，而且 `fiber.entry` 指向同一个条目。条目顶层用 loader 自己的判据认：`fiber.parent.fiber?.entry !== fiber.entry`。`entry.fiber === fiber` 在实测里对所有 fiber 都是 false，不能用。
+
+**import 失败的错误原文进不了日志**：import 失败的条目没有 fiber、不发事件；include 记一条 `[error] [include]`，但那个 Error 的 `stack` 已被换成只剩条目路径，第一行不再是 `Error: <原文>`，而 cordis 格式化 Error 用的是 stack，于是日志里只有 `at file:///…/#<条目 id>`。原文在 Error 的 `message` 里。之后每次改条目树，include 都重新 import 一次、再记一条同样的 error。
+
+**`enableLogs` 不能代替状态日志**：打开后的 `apply plugin X` 在 `registry.plugin` 之前记，等服务、永远不会执行 apply 的条目也照样记一行。
+
+热更新各操作的状态：停用是 `ACTIVE → UNLOADING → DISPOSED`；启用同启动加载；改配置是同一个 fiber `ACTIVE → UNLOADING → LOADING → ACTIVE`，不经过 PENDING。
+
+边界：只测了 cordis 4.0.0-rc.10、plugin-loader 1.0.0-rc.7、plugin-include 1.1.0；没有测 loader 条目的 `isolate` 配置与 `group` 条目。
+
+## 依据
+
+`probes/2609272205_entry-state-timing/`，原始时间线在 `runs/01-timeline.txt`。关键几行：异步 apply 等 300ms 的条目 12ms 进 LOADING、318ms 进 ACTIVE；`[Service.init]` 等 400ms 的提供方 427ms 进 ACTIVE，依赖它的条目同一毫秒 `PENDING → LOADING`；`ctx.loader.await()` 在 428ms 返回，此时 `needs-nobody=PENDING`，全程没有它的状态事件；import 失败那条 error 的 Error `message` 是 `probe: 没有名为 probe-not-installed 的模块`，stack 第一行是 `    at file:///…/#missing`。
