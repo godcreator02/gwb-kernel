@@ -335,7 +335,8 @@ let logFileOpenFails = false
 vi.spyOn(fs, 'openSync').mockImplementation((...args: Parameters<typeof fs.openSync>) => {
   if (logFileOpenFails && String(args[0]).endsWith('gwb.log')) throw new Error('gwb.log 打不开（测试造的）')
   const descriptor = realOpenSync(...args)
-  if (String(args[0]).endsWith('gwb.log')) openedDescriptors.push(descriptor)
+  // 只记写日志用的那个（追加模式）；别处读完自己关的不记
+  if (String(args[0]).endsWith('gwb.log') && args[1] === 'a') openedDescriptors.push(descriptor)
   return descriptor
 })
 
@@ -467,6 +468,30 @@ describe('main.ts：日志文件', () => {
     const stderrText = stderrSpy.mock.calls.map((call) => String(call[0])).join('')
     expect(stderrText).toMatch(/\d{4}-\d\d-\d\dT[\d:.]+Z error probe 探针插件的第一行\n探针插件的第二行\n/)
     await quitAndWaitForCleanup(booted)
+  })
+})
+
+describe('main.ts：旧内核留下的文本日志', () => {
+  const oldTextLine = '2026-09-27T14:37:34.074Z info kernel up，home=旧的\n'
+
+  it('home 里的 gwb.log 是旧内核写的文本：改名成 gwb.log.text 原样留着，新 gwb.log 从头一行一个 JSON，并写一行说明', async () => {
+    silenceStderr()
+    const home = homeWithRequiredFiles()
+    writeFiles(home, { 'gwb.log': oldTextLine })
+    const booted = await bootUntilUp({ gwbHome: home })
+    expect(fs.readFileSync(path.join(booted.dataDir, 'gwb.log.text'), 'utf8')).toBe(oldTextLine)
+    expect(booted.readLog()).toContain(`info kernel gwb.log 从内核 0.10 起一行一个 JSON；旧内核写的文本日志改名为 ${path.join(booted.dataDir, 'gwb.log.text')}`)
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('拿不到单实例锁的实例不改日志文件的名字：正在运行的那个还在写它们', async () => {
+    silenceStderr()
+    const home = homeWithRequiredFiles()
+    writeFiles(home, { 'gwb.log': oldTextLine })
+    const booted = await importMain({ gwbHome: home, singleInstanceLockGranted: false })
+    expect(booted.electron.exit).toHaveBeenCalledWith(1)
+    expect(fs.existsSync(path.join(booted.dataDir, 'gwb.log.text'))).toBe(false)
+    expect(fs.readFileSync(path.join(booted.dataDir, 'gwb.log'), 'utf8').startsWith(oldTextLine)).toBe(true)
   })
 })
 

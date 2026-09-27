@@ -12,6 +12,7 @@ import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
 import { watchEntryStates } from './entry-log.js'
+import { setAsideTextLogs } from './legacy-text-log.js'
 import { LOG_LIMIT_BYTES, openLogFile, type LogFile } from './log-file.js'
 import {
   fileLineOf,
@@ -55,9 +56,30 @@ app.setPath('userData', path.join(dataDir, 'electron'))
 // 没有终端时每写一次 stderr 都抛 EPIPE，忽略它，日志文件照常写
 process.stderr.on('error', () => {})
 
-const logFile = openLogFileOrExit(path.join(dataDir, 'gwb.log'))
+const logFilePath = path.join(dataDir, 'gwb.log')
+const isOnlyInstanceOfHome = app.requestSingleInstanceLock()
+// 同一个 home 已有实例在运行时，它正写着这些文件，不改它们的名字
+const textLogsSetAside = isOnlyInstanceOfHome ? setAsideTextLogsOrExit(logFilePath) : []
+const logFile = openLogFileOrExit(logFilePath)
 
 /** 日志文件用不了：只写 stderr 再弹框退出，不经 reportBootFailureAndExit（它要写这个文件） */
+function exitBecauseLogFileUnusable(err: unknown): never {
+  const reason = err instanceof Error ? err.message : String(err)
+  process.stderr.write(`${new Date().toISOString()} error kernel 启动失败：${reason}\n`)
+  dialog.showErrorBox('gwb 启动失败', reason)
+  app.exit(1)
+  // 模块求值时 app.exit 当场结束进程、走不到这一行；throw 让这条路径在类型上不返回
+  throw err
+}
+
+function setAsideTextLogsOrExit(file: string): string[] {
+  try {
+    return setAsideTextLogs(file)
+  } catch (err) {
+    return exitBecauseLogFileUnusable(err)
+  }
+}
+
 function openLogFileOrExit(file: string): LogFile {
   try {
     return openLogFile({
@@ -69,12 +91,7 @@ function openLogFileOrExit(file: string): LogFile {
       },
     })
   } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err)
-    process.stderr.write(`${new Date().toISOString()} error kernel 启动失败：${reason}\n`)
-    dialog.showErrorBox('gwb 启动失败', reason)
-    app.exit(1)
-    // 模块求值时 app.exit 当场结束进程、走不到这一行；throw 让这条路径在类型上不返回
-    throw err
+    return exitBecauseLogFileUnusable(err)
   }
 }
 
@@ -85,9 +102,13 @@ function writeLogLine(level: LogLevel, name: string, message: string, timestamp 
   logFile.write(fileLineOf(record))
 }
 
-if (!app.requestSingleInstanceLock()) {
+if (!isOnlyInstanceOfHome) {
   writeLogLine('error', 'kernel', `home ${dataDir} 已有实例在运行，本实例退出`)
   app.exit(1)
+}
+
+if (textLogsSetAside.length > 0) {
+  writeLogLine('info', 'kernel', `gwb.log 从内核 0.10 起一行一个 JSON；旧内核写的文本日志改名为 ${textLogsSetAside.join('、')}`)
 }
 
 const missingHomeFiles = HOME_FILES_REQUIRED_AT_BOOT.filter((file) => !fs.existsSync(path.join(dataDir, file)))
