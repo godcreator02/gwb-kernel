@@ -43,9 +43,16 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 
 ## 兼容约束
 
-这些类型是插件与内核之间的约定，插件在 peer 里写它兼容的内核范围，插件管理拿运行中内核的 `gwbKernel.version` 比对。所以内核的版本号要反映已有的插件会不会被弄坏：
+这些类型是插件与内核之间的约定。插件在 peer 里写它兼容的内核范围，下限是验证时那个内核的版本号：
+
+```json
+{ "peerDependencies": { "@godcreator/gwb-kernel-desktop": "^<验证时那个内核的版本号>" } }
+```
+
+pnpm 装插件时拿它和 home 里的内核包比，不满足只警告；插件管理拿它和运行中内核的 `gwbKernel.version` 比，范围不包含的插件在回执里标出来，只标不拦；devkit 的 `devkit.release` 发插件前检查它。内核自己不读这个字段。这个比较要靠得住，内核的版本号就得反映已有的插件会不会被弄坏：
 
 - **会弄坏插件的改动**：删掉一个类型或成员；改参数、返回值的类型；改调用方依赖的语义（比如 `setShell` 的撤销在什么时候清空、`request` 在什么情况下拒绝、`handleRequest` 同名时怎么办）
+- **类型之外的约定同样算**：内核与插件、页面、home 之间任何一条接缝上已有的东西，包括升级 `cordis`、loader、include 的版本，改 home 的布局
 - **不会弄坏插件的改动**：加一个类型；给已有类型加可选成员；只改注释
 
 哪种改动升版本号的哪一位、发破坏性版本前后要多做哪几步，见[开发](/docs/develop)。

@@ -51,9 +51,12 @@ ctx.effect(() => ctx.gwbKernel.handleRequest('my-plugin.query', (payload) => ans
 - **同名拒绝**：一个通道只能有一个处理器，第二次登记同名通道直接抛错
 - **注销幂等**：注销函数只生效一次；旧的注销函数再调用，不会删掉后来重新登记的同名处理器
 - **注销不取消在途请求**：已经交给处理器的请求照样完成，之后的请求按未登记处理
+- **处理器抛错，页面的请求就拒绝**：内核不把错误改写成任何回执
 - **返回值要能经结构化克隆传回页面**：函数、DOM 节点、类实例上的方法都传不过去
 
 {/* ref file="../apps/desktop/tests/requests.test.ts" lines="12-20" hash="6c8fc2de32a0" blob="b660fe70de0c" */}
+
+{/* ref file="../apps/desktop/tests/requests.test.ts" lines="22-34" hash="5369f0a33118" blob="b660fe70de0c" */}
 
 {/* ref file="../apps/desktop/tests/main.test.ts" lines="718-732" hash="dcafcc0b1268" blob="db45edf1e552" */}
 

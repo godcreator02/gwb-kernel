@@ -45,10 +45,11 @@ home 根上的 `cordis` 只有一份：内核包把它写在 peer 里、写精�
 {/* ref file="../apps/desktop/package.json" lines="37-43" hash="9afff01b3cb1" blob="df73ceac0ed7" */}
 
 条目树的形状、`cordis.yml` 怎么读写都由这两个包决定，所以升级 `cordis`、loader、include 中的任何一个，都是改了插件管理依赖的接口，内核版本号升 x。
+插件管理点名换内核包时，把 home 根上的 `cordis` 一起对齐到新内核包 peer 里的版本，装完要重启工作台才生效。
 
 ## 条目树
 
-内核在 loader 的根层只放一条条目，`cordis.yml` 里的条目都长在它下面：
+内核在 loader 的根层只放一条条目，`cordis.yml` 里的条目都是它的子条目：
 
 {/* ref file="../apps/desktop/src/main.ts" lines="349-356" hash="e5fc330ba54d" blob="b613d37fa683" */}
 
@@ -64,8 +65,9 @@ home 根上的 `cordis` 只有一份：内核包把它写在 peer 里、写精�
 {/* ref file="../apps/desktop/src/main.ts" lines="153-155" hash="c80508e65041" blob="b613d37fa683" */}
 
 **运行中增删条目只经条目树**：loader 服务 `ctx.loader` 的 `create` / `update` / `remove` 会把改动写回 `cordis.yml`，同时当场加载或卸载。
-绕过它直接改文件，内存里的条目不知道，下一次写回会把磁盘上的改动盖掉；include 只在有 `hmr` 服务时才监听文件，内核不提供这个服务。
-条目树不在 `gwbKernel` 里，也不在内核包导出的类型里：它的形状就是上面那两个版本的 loader 与 include 的内部结构。
+绕过它直接改文件，内存里的条目不知道，下一次写回会把磁盘上的改动覆盖掉；include 只在有 `hmr` 服务时才监听文件，内核不提供这个服务。
+条目树不在 `gwbKernel` 里，也不在内核包导出的类型里：它的形状就是上面那两个版本的 loader 与 include 的内部结构。别的插件从 `ctx.fiber.entry` 读条目 id 与包名，
+这个字段同样是 loader 的内部结构，跟着 loader 的版本走。本仓没有测试检查条目树的形状，由插件管理所在的仓用同版本的 loader 与 include 测。
 
 **加载成功以 cordis 的状态为准**：条目的 fiber 进了 ACTIVE 才算加载成功；fiber 存在不等于加载成功，缺服务的条目停在 PENDING、不报错
 （[fiber 存在不等于加载成功](/trajectory/2026-09-07-wall-fiber-not-active)）。每个条目的结果在 `gwb.log` 里有一行，没有外壳时只读状态页也列出每个条目的状态。
@@ -82,9 +84,19 @@ junction 改指新版之后它仍会交回上一版的路径；pnpm 布局里真
 
 {/* ref file="../apps/desktop/tests/bare-import.test.ts" lines="50-73" hash="9f32b11bcff4" blob="205f23de64b1" */}
 
-插件包的入口导出 cordis 认识的形状：`name`、`inject`、`apply`，或者默认导出一个继承 cordis `Service` 的类。包清单的 `exports`
+插件包的入口导出 cordis 认识的形状，函数式写法如下，也可以默认导出一个继承 cordis `Service` 的类。包清单的 `exports`
 要让 `require.resolve` 解析得到入口（有 `default`、`require` 或 `node` 条件）。页面上 import 的包名不走这套解析，而是经 importmap，
 见[页面入口](/docs/desktop/page)。
+
+```ts
+import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
+
+export const name = '@godcreator/gwb-demo'
+export const inject = ['gwbData']           // 这些服务都在了，cordis 才调用 apply
+export function apply(ctx: GwbContext): void { /* … */ }
+```
+
+`inject` 里的服务缺一个，条目就停在 PENDING；提供方加载之后，cordis 自动接着加载它。卸载时插件清理自己创建的东西，清理怎么写才等得到见[启动与退出](/docs/desktop/boot#退出)。
 
 ## runtime.json
 

@@ -25,6 +25,8 @@ stderr 上给终端看的文本，home 里 `gwb.log` 的一行 JSON。内核只�
 
 {/* ref file="../apps/desktop/tests/log-record.test.ts" lines="7-12" hash="9d8f80064ac0" blob="03935a26d0e3" */}
 
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="450-471" hash="0fa1690ad196" blob="db45edf1e552" */}
+
 这个格式是跨仓的契约：日志插件、devkit 都按它解析。改键、改取值、改格式，内核包都要升 x。stderr 上的文本「时间 级别 名字 正文」只给终端看，不是给程序读的。
 
 ## 三处来源怎么汇成一条
@@ -33,6 +35,8 @@ stderr 上给终端看的文本，home 里 `gwb.log` 的一行 JSON。内核只�
 - **页面**上任何代码的 console 输出，主进程从窗口的 `console-message` 事件收到，转成名字 `renderer` 的日志：
 
 {/* ref file="../apps/desktop/src/main.ts" lines="340-342" hash="cb8cdc7db26f" blob="b613d37fa683" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="624-638" hash="bc02c50d5105" blob="db45edf1e552" */}
 
 - **内核自己**也走 `ctx.logger`，名字是 `kernel`；插件里没被处理的 rejection 与未捕获异常记成 `kernel` 的 error，工作台不退出：
 

@@ -67,6 +67,7 @@ description: 安装版 Electron 运行的第一个模块：按 GWB_HOME 选定 h
 - **启动器与内核都不能顶层 `await app.whenReady()`**：Electron 要等入口模块求值完才触发 ready，模块顶层等 ready 就互相等待，进程没有报错、没有窗口、没有日志地卡住。
   内核在求值时只把启动注册到 `app.whenReady()` 上，见[启动与退出](/docs/desktop/boot)与轨迹卡[ready 顶层等](/trajectory/2026-09-09-wall-esm-await-whenready)
 - **import 抛错也弹框**：比如 home 根上没装 `cordis`，内核包把它写成 peer，按 home 解析找不到。原因里带上错误的调用栈，退出码同样是 1
+- **不查 home 里有没有插件**：缺了某个插件包，内核照常启动，那一条目在挂载日志的汇总里记成没导入成功
 - **内核不知道自己是被启动器加载的**：从仓里 `pnpm start` 直接运行时没有启动器，内核照样自己读 `GWB_HOME`、读自己包里的清单取版本号，两种情况做法相同
 
 ## 第一次安装

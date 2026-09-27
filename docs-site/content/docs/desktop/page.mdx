@@ -37,6 +37,10 @@ const entry = new URL('./client.js', import.meta.url).href
 ctx.effect(() => ctx.gwbKernel.setShell(entry))                     // 再交出页面；卸载时自动交还
 ```
 
+页面入口先等 `prepareImports` 注入 importmap，再 import 外壳、确认默认导出是函数，把 `#root` 交给它：
+
+{/* ref file="../apps/desktop/src/index.html" lines="71-86" hash="363477ae4111" blob="27f4d97bcf1c" */}
+
 页面入口保证：
 
 - **同一时刻只有一个外壳**：换外壳先调用旧外壳的 `dispose`、清空 `#root`，再挂载新的；旧外壳的 `dispose` 抛错只打一行 `console.error`，照样换
@@ -46,7 +50,11 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))                     // 再交出
 外壳插件要做到：`setShell` 返回的撤销函数交给 `ctx.effect`；`dispose` **同步**移除自己在页面上创建的一切——页面入口在 `dispose` 返回后紧接着清空 `#root`，
 清理放进 Promise 就会晚于清空。后调用 `setShell` 的替换先调用的；撤销函数只在自己仍是当前外壳时才清空地址。
 
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="762-784" hash="10118bdb1e08" blob="db45edf1e552" */}
+
 {/* ref file="../apps/desktop/tests/index-html.test.ts" lines="231-237" hash="7bf3fd78ac48" blob="300970b180eb" */}
+
+{/* ref file="../apps/desktop/tests/index-html.test.ts" lines="239-246" hash="b476aa0e42eb" blob="300970b180eb" */}
 
 {/* ref file="../apps/desktop/tests/index-html.test.ts" lines="180-191" hash="180b6786a4a3" blob="300970b180eb" */}
 
@@ -58,7 +66,7 @@ React 由外壳插件打包、登记，升级 React 发外壳插件就够，不�
 {/* ref file="../apps/desktop/tests/importmap.test.ts" lines="8-12" hash="422b60270d55" blob="3b6f3cdb5d2d" */}
 
 **登记在主进程**：插件调用 `registerImports({ 包名: 本地文件 URL })`，把撤销函数交给 `ctx.effect`。名字要是精确的包名或子路径，不收前缀、相对路径；
-地址要是本地 `.js` 或 `.mjs` 文件的 `file:` URL。整批先校验再登记；同名同地址复用并记登记者个数，最后一个登记者撤销才移除；同名不同地址直接抛错：
+地址要是本地 `.js` 或 `.mjs` 文件的 `file:` URL。整批先校验再登记；同名同地址复用并记登记者个数，最后一个登记者撤销才移除；同名不同地址直接抛错，错误里写出两个地址：
 
 {/* ref file="../apps/desktop/src/browser-imports.ts" hash="1cdc46619f34" blob="a9ce57cbee25" */}
 
