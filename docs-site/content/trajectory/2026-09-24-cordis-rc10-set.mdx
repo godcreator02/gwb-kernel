@@ -2,7 +2,7 @@
 title: 内核换到 cordis 4.0.0-rc.10 一组：loader 1.0.0-rc.7、include 1.1.0 跟着升，内核与词汇表包升到 0.4.0
 born-at: 2026-09-24T16:20
 type: choice
-parent: [2026-09-24-kernel-in-home]
+parent: [2026-09-07-gwb-kernel]
 label: cordis rc.10 一组
 domain: 这条线
 ---
@@ -14,6 +14,8 @@ domain: 这条线
 
 把内核包的 `cordis` 改成 rc.10 之后，`pnpm peers check` 报 rc.10 要求 `@cordisjs/plugin-loader ^1.0.0-rc.7` 与 `@cordisjs/plugin-include ^1.1.0`：
 这三个包是 2026-09-08 一起发的一组，彼此的 peer 都指向对方的新版，只换 cordis 不行。
+
+pivots-from:: [内核装进 home](2026-09-24-kernel-in-home.mdx)
 
 ## 结论与边界
 

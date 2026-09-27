@@ -2,7 +2,7 @@
 title: plugin-manager 的文档分成接缝页与模块目录，并逐条对照关键判据
 born-at: 2026-09-23T16:00
 type: choice
-parent: [2026-09-23-plugin-manager-trim-split]
+parent: [2026-09-07-gwb-kernel]
 label: 文档分两层、对照判据
 domain: 这条线
 ---
@@ -12,6 +12,8 @@ domain: 这条线
 plugin-manager 的模块页改成接缝页「home 与插件管理」之后，接缝页只讲内核和它之间的约定，安装、热升级、条目与 id、找 pnpm 这些功能怎么工作，文档站上没有了，只剩代码注释和给 agent 看的 SKILL.md。人指出接缝页太短，功能要有自己的一组页。
 
 同时核对了 plugin-manager 和 K1–K8：K5（服务方法与命令一一重复）、K6（手写 loader 条目树的类型，用 `as unknown as` 取）、K2（自己的清单把只取类型的词汇表包写成了 peer）是判据页反例的原话；K7 有一处没写明的例外（卸载时不结束正在运行的 pnpm）。
+
+pivots-from:: [精简分两步](2026-09-23-plugin-manager-trim-split.mdx)
 
 ## 结论与边界
 

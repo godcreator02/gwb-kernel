@@ -2,7 +2,7 @@
 title: react 收进内核：内核包构建时打出 react 的四个包名、在自己清单的 gwb.shared 里声明，同名时内核优先；内核与词汇表包升 0.4.1
 born-at: 2026-09-24T17:05
 type: choice
-parent: [2026-09-24-kernel-in-home]
+parent: [2026-09-07-gwb-kernel]
 label: react 收进内核
 domain: 这条线
 ---
@@ -12,6 +12,8 @@ domain: 这条线
 内核装进 home 之后，页面上的 react 仍由外壳插件 `gwb-shell` 提供：外壳构建时把 react 打成浏览器能直接 import 的文件，在清单的
 `gwb.shared` 里声明四个包名，内核拼进 importmap。外壳、基础界面、块笔记的窗格都用这一份。人决定把它收进内核（交接页「内核装进 home」第五步）：
 react 是整个页面只能有一份的运行时，和 cordis 一样该由宿主给；少一个「谁来提供 react」的约定，升 react 也就是升内核。
+
+pivots-from:: [内核装进 home](2026-09-24-kernel-in-home.mdx)
 
 ## 结论与边界
 

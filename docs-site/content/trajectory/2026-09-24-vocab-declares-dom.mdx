@@ -2,7 +2,7 @@
 title: 词汇表包在类型声明里写明自己要 DOM 类型
 born-at: 2026-09-24T11:15
 type: choice
-parent: [2026-09-07-vocab-package-standalone]
+parent: [2026-09-07-gwb-kernel]
 label: 词汇表包声明 DOM
 domain: 这条线
 ---
@@ -18,6 +18,8 @@ devkit 的 `devkit.release` 在发版前关掉 `skipLibCheck` 跑一次类型检
 - **每个插件的 tsconfig 都加 `DOM` 库**：要改模板和所有现有插件；node 一侧的代码本来就不该用 DOM，这么改是给词汇表包的缺口打补丁
 - **把 `ShellBoot` 的参数改成不依赖 DOM 的结构类型**：改了导出类型的形状，要升 x，所有插件跟着改 peer 范围，代价远大于收益
 - **词汇表包在声明文件里写 `/// <reference lib="dom" preserve="true" />`**：只加一行，形状不变；`preserve="true"` 让 tsc 把这行留在 `dist/index.d.ts` 里
+
+pivots-from:: [词汇表独立包](2026-09-07-vocab-package-standalone.mdx)
 
 ## 结论与边界
 

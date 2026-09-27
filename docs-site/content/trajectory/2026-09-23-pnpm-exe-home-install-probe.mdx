@@ -2,7 +2,7 @@
 title: 实验结论——只带一个 pnpm.exe 就能装好新 home；插件管理依赖 @pnpm/exe.win32-x64 而不是 pnpm 包；包源照旧只配在用户级 .npmrc
 born-at: 2026-09-23T20:30
 type: evidence
-parent: [2026-09-23-platform-plugins-first-start-install]
+parent: [2026-09-07-gwb-kernel]
 label: pnpm.exe 装新 home
 domain: 发版
 ---
@@ -13,6 +13,8 @@ domain: 发版
 `probes/2609231950_pnpm-exe-home-install/` 验证了四件事，原始输出在它的 `runs/` 下。
 
 同一轮里人对设计改了一处：「保持用户级 .npmrc」——模板不带 `.npmrc`，`@godcreator` 的包源照旧只配在用户级 `.npmrc`。
+
+pivots-from:: [首启由内核装](2026-09-23-platform-plugins-first-start-install.mdx)
 
 ## 结论与边界
 

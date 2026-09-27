@@ -2,7 +2,7 @@
 title: plugin-manager 搬进内核仓，作为和内核一起开发的插件
 born-at: 2026-09-23T08:20
 type: choice
-parent: [2026-09-23-seams-over-modules]
+parent: [2026-09-07-gwb-kernel]
 label: 管理插件同仓
 domain: 这条线
 ---
@@ -16,6 +16,8 @@ plugin-manager 负责的很多事和内核直接耦合，没法独立于内核�
 （`@cordisjs/plugin-loader` 没有写进文档的结构，版本由内核决定）；写 home 的 `package.json` 与 `cordis.yml`（home 的
 布局由内核决定）；热升级靠停用再启用就能拿到新版本，前提是内核按真实路径解析包名；条目状态的数字表从内核的
 `entry-state.ts` 抄了一份。只有「升级后整页重新加载」走的是命令，属于正常的插件间交互。
+
+pivots-from:: [按接缝写](2026-09-23-seams-over-modules.mdx)
 
 ## 结论与边界
 

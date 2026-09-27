@@ -2,7 +2,7 @@
 title: 同一 home 只许一个实例，锁的钥匙是每 home 一份的 userData
 born-at: 2026-09-12T01:15
 type: choice
-parent: [2026-09-07-gwb-kernel, 2026-09-11-kernel-writes-runtime-record]
+parent: [2026-09-07-gwb-kernel]
 label: 单开锁
 domain: 主进程
 ---
@@ -17,6 +17,8 @@ home。但所有 home 一直共享**同一份 userData**（`%APPDATA%\gwb-kernel
 更要命的那个现场是**同一 home 被开两份**：agent 忘了 default 在跑又起一份，第二份照常挂件、
 跟第一份交错写 `gwb.log` 与 `runtime.json`，唯一的可见症状是 2870 被占、第二份的 mcp 件
 不开口——在总控台那边只看见工具全灰，不知道为什么。
+
+pivots-from:: [运行时记录](2026-09-11-kernel-writes-runtime-record.mdx)
 
 ## 结论与边界
 

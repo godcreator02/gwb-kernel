@@ -2,7 +2,7 @@
 title: 命令插件搬进内核仓；它和插件管理随安装包发布、从安装包加载
 born-at: 2026-09-23T18:00
 type: choice
-parent: [2026-09-18-no-seed-agent-installs, 2026-09-23-plugin-manager-into-kernel-repo]
+parent: [2026-09-07-gwb-kernel]
 label: 平台插件随安装包
 domain: 发版
 ---
@@ -17,6 +17,9 @@ domain: 发版
 
 09-18 撤掉安装包里的插件种子时，记下了四条代价：同一个版本号的安装包内容不唯一；npm 铺好、pnpm 接手的交接没验证过；peer 下限
 写得太松；种子要维护、还撞过两堵墙。SPEC 里另有一条：插件一律走包源与一键热升级，不走安装器，否则每发一个插件版都要重打 exe。
+
+pivots-from:: [不带种子，装机交给 agent](2026-09-18-no-seed-agent-installs.mdx)
+pivots-from:: [管理插件同仓](2026-09-23-plugin-manager-into-kernel-repo.mdx)
 
 ## 结论与边界
 

@@ -2,7 +2,7 @@
 title: 内置插件改为 loader 根层的条目加载——直接 ctx.plugin 加载的插件没有条目，按条目认身份的数据、说明书插件用不了
 born-at: 2026-09-23T20:50
 type: choice
-parent: [2026-09-23-core-plugins-built-in]
+parent: [2026-09-07-gwb-kernel]
 label: 内置插件做成根层条目
 domain: 内核
 ---
@@ -16,6 +16,8 @@ domain: 内核
 - 两个内置插件的说明书登记不上：说明书插件同样按调用方的条目认身份，报同样的错
 
 数据插件与说明书插件都靠调用方的 `fiber.entry` 认身份，直接加载的插件没有条目。
+
+pivots-from:: [核心插件内置](2026-09-23-core-plugins-built-in.mdx)
 
 ## 结论与边界
 
