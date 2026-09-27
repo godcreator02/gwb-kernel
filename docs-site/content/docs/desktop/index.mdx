@@ -1,6 +1,6 @@
 ---
 title: gwb-kernel-desktop · 内核应用
-description: 内核应用 apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口，发布成 npm 包装在每个 home 里、由启动器加载；它有哪些功能（选定 home 与单实例锁、加载插件、窗口与只读状态页、页面边界、页面上的 react、日志、runtime.json、出错与退出），插件、页面、启动器与外部工具经哪些接口用它，它依赖什么，哪些事不归它做
+description: 内核应用 apps/desktop 是内核本身——Electron 主进程里的一个 cordis 实例加一个窗口，发布成 npm 包装在每个 home 里、由启动器加载；它有哪些功能（选定 home 与单实例锁、加载插件、窗口与只读状态页、页面边界、浏览器模块解析、日志、runtime.json、出错与退出），插件、页面、启动器与外部工具经哪些接口用它，它依赖什么，哪些事不归它做
 ---
 
 **本页回答**：内核应用有哪些功能；插件、页面、启动器和外部工具经哪些接口用它，各属于哪条接缝；它依赖什么、缺了会怎样；哪些事常被以为归它、其实归别的模块。包名 `@godcreator/gwb-kernel-desktop`，源码目录 `apps/desktop/src`，入口文件 `main.ts`。
@@ -15,7 +15,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 - **窗口与外壳**：打开唯一的窗口，加载页面入口，把页面交给调用 `setShell` 的外壳插件（[外壳接管](/docs/seams/shell)）
 - **页面边界**：主框架只可能是内核包里的 `index.html`，跳到别的地址、重定向一律拒绝，只放行整页重新加载；`window.open` 与 `target="_blank"` 从不打开新窗口，`http:`、`https:` 地址交给系统默认浏览器；`gwb:command` 只接收顶层框架的调用。页面能调用整条命令总线，这是内核保证的唯一边界（[IPC 通道](/docs/seams/ipc#页面边界)）
 - **转交命令、推送事件**：页面发来的命令交给命令插件提供的 `ctx.gwbCommands`（[命令转交](/docs/seams/commands)），插件发出的事件推给页面（[IPC 通道](/docs/seams/ipc)）
-- **页面上的 react**：构建时把 react 打进 `dist/react/`，页面入口里写死的 importmap 把 react 的四个包名指向这几个文件（[页面上的 react](/docs/seams/page-react)；怎么打包见[开发](/docs/develop#内核包怎么打包-react)）
+- **浏览器模块解析**：插件登记名字到文件 URL，页面准备 importmap 后再加载模块；内核不携带 React。
 - **日志**：插件、内核、页面 console 的日志汇成一条 cordis 日志流，每一行同时写 stderr 和 home 里的 `gwb.log`；`gwb.log` 写到 128 MB 改名为 `gwb.log.1`（只留这一份旧的）再开一份新的；`gwb.log` 启动时打不开就启动失败，运行中写不进、轮转失败都只告警一句，内核照常运行（[日志](/docs/seams/log)）
 - **记下这次运行**：每次启动把 pid、启动时刻、版本、调试端口写进 home 里的 `runtime.json`；写不进、调试端口给的不是 1–65535 的整数时启动失败（[runtime.json](/docs/seams/runtime)）
 - **出错与退出**：启动失败时弹错误框、退出码 1；插件抛出的未捕获异常只记进日志，工作台不退出；所有窗口关闭时卸载整棵插件树，最多等 5 秒（[启动与退出](/docs/desktop/boot)）
@@ -37,10 +37,10 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 | 接口 | 给谁、做什么 | 接缝 |
 | --- | --- | --- |
 | `cordis.yml` 的条目与按 home 解析包名 | 插件：条目点名的包按 home 里的真实路径 import，插件导出 `apply` 或 `Service` 类 | [1 插件加载](/docs/seams/loading) |
-| 服务 `ctx.gwbKernel` | 插件：`dataDir`、`version`、`emit`、`setShell`，早于任何插件提供、永不撤销；类型 `GwbKernelApi` | [2 内核服务](/docs/seams/kernel) |
-| `window.gwb` 与 `gwb:command`、`gwb:event`、`gwb:shell`、`gwb:hello` 四个通道 | 页面：调命令、收事件、知道外壳是谁；类型 `GwbWindowApi` | [3 IPC 通道](/docs/seams/ipc) |
+| 服务 `ctx.gwbKernel` | 插件：`dataDir`、`version`、`emit`、`registerImports`、`setShell`，早于任何插件提供、永不撤销；类型 `GwbKernelApi` | [2 内核服务](/docs/seams/kernel) |
+| `window.gwb` 与 `gwb:command`、`gwb:event`、`gwb:shell`、`gwb:hello`、`gwb:imports` 五个通道 | 页面：调命令、收事件、知道外壳是谁；类型 `GwbWindowApi` | [3 IPC 通道](/docs/seams/ipc) |
 | 外壳模块的默认导出 | 外壳插件：页面入口 import 外壳的地址，拿页面的 `#root` 调用它的默认导出；类型 `ShellBoot` | [4 外壳接管](/docs/seams/shell) |
-| 页面入口里的 importmap | 页面上的代码：react 的四个包名 → 内核包 `dist/react/` 里的文件 | [5 页面上的 react](/docs/seams/page-react) |
+| 浏览器模块登记与准备 | 插件提供映射，页面调用 prepareImports 后加载模块 | [5 浏览器模块](/docs/seams/page-react) |
 | home 的文件布局与条目树 | 插件管理：启动时 home 里要已有 `package.json` 与 `cordis.yml`，缺了启动失败、内核不补；loader 根层只有一条承载 `cordis.yml` 的 include 条目 `home` | [6 home 布局与条目树](/docs/seams/home) |
 | `runtime.json` | devkit、安装工作台的 agent：每次启动整份重写 pid、启动时刻、版本，开了调试端口时还有端口 | [7 runtime.json](/docs/seams/runtime) |
 | cordis 日志流与 `gwb.log` | 插件用 `ctx.logger` 写日志、注册 exporter 收全部日志；人和 agent 读 `gwb.log`，一行是「时间 级别 名字 正文」 | [8 日志](/docs/seams/log) |
@@ -49,7 +49,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 内核在 cordis 上下文上声明的服务只有这两项：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="22-29" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="23-30" */}
 
 **启动参数**不属于哪条接缝，启动内核的人或程序经这两项控制它：环境变量 `GWB_HOME`（用哪个 home，规则见上面「功能」的第一条；从安装版启动时，启动器已经把它换成了绝对路径），命令行开关 `--remote-debugging-port`（Chromium 调试端口，开了就记进 `runtime.json`；给的不是 1–65535 的整数时启动失败）。
 
@@ -63,7 +63,6 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 | cordis 的 `Context` 与 logger | cordis 实例、提供 `gwbKernel`、日志流、只读状态页的错误行 | 无法启动；`cordis` 写在 peer 里，由 home 根上唯一的那一份满足，插件用的也是它（[home 布局与条目树](/docs/seams/home)） |
 | `@cordisjs/plugin-loader`、`@cordisjs/plugin-include` | 按条目加载插件、读写 `cordis.yml` | 无法启动；它们是内核包自己的依赖，版本写死在内核包清单的 `dependencies` 里，升级它们是改接缝，内核升 x（[开发](/docs/develop#发版)） |
 | 服务 `ctx.gwbCommands`，由命令插件 `@godcreator/gwb-commands` 提供 | 页面发来的命令一律交给它 | 内核照常运行；页面发来的每条命令都回失败回执「没有命令服务」 |
-| react 与 react-dom（开发依赖，只在构建时用） | 打进 `dist/react/` 给页面用 | 内核包里缺这几个文件时，页面上的 react 加载失败，外壳无法挂载，页面显示只读状态页 |
 | home 目录与文件系统 | 检查 `package.json` 与 `cordis.yml` 在不在、解析包名、写 `gwb.log` 与 `runtime.json` | 目录建不出来、缺这两个文件、`gwb.log` 打不开、`runtime.json` 写不进时都启动失败；运行中 `gwb.log` 写不进只告警一次，恢复之前日志只写 stderr |
 
 ## 不做的事

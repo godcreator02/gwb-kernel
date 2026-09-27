@@ -6,6 +6,7 @@ import { Context, type Fiber } from 'cordis'
 import Loader, { type ModuleLoader } from '@cordisjs/plugin-loader'
 import Include from '@cordisjs/plugin-include'
 import type { GwbKernelApi } from './api.js'
+import { createBrowserImports } from './browser-imports.js'
 import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
@@ -230,10 +231,12 @@ function scheduleShellPush(): void {
 }
 ctx.on('internal/status', () => scheduleShellPush())
 
+const browserImports = createBrowserImports()
 const kernel: GwbKernelApi = {
   dataDir,
   version: kernelVersion,
   emit: (payload) => mainWindow?.webContents.send('gwb:event', payload),
+  registerImports: (imports) => browserImports.register(imports),
   setShell: (url) => {
     currentShellUrl = url
     pushShellMessageNow()
@@ -254,6 +257,10 @@ function relayPageCommand(senderFrame: electron.WebFrameMain | null, command: un
   return commandBus.run(command, args, { via: 'ui' })
 }
 ipcMain.handle('gwb:command', (event, command: unknown, args: unknown) => relayPageCommand(event.senderFrame, command, args))
+ipcMain.handle('gwb:imports', (event) => {
+  if (!isTopFrame(event.senderFrame)) throw new Error('gwb:imports 只接收顶层框架的调用')
+  return browserImports.snapshot()
+})
 ipcMain.on('gwb:hello', (event) => event.sender.send('gwb:shell', currentShellMessage()))
 
 /** electron 的级别名只有 warning 与 cordis 不同 */

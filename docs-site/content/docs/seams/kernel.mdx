@@ -1,6 +1,6 @@
 ---
 title: 2 内核服务 gwbKernel
-description: 连接内核应用与任何插件；交换的是内核在 cordis 根上下文提供的服务 gwbKernel——dataDir、version、emit、setShell 四个成员，类型 GwbKernelApi 从内核包的包根导出；内核应用保证它先于任何插件提供、永不撤销，插件保证数据只写在归自己的目录或文件里、把 setShell 的撤销函数交给 ctx.effect
+description: 连接内核应用与任何插件；交换的是内核在 cordis 根上下文提供的服务 gwbKernel——dataDir、version、emit、registerImports、setShell 五个成员，类型 GwbKernelApi 从内核包的包根导出；内核应用保证它先于任何插件提供、永不撤销，插件保证数据只写在归自己的目录或文件里、把 setShell 的撤销函数交给 ctx.effect
 ---
 
 **本页回答**：内核直接给插件的服务 `gwbKernel` 有哪几个成员、各是什么意思；内核应用和插件使用它时各保证什么。
@@ -16,16 +16,17 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 `gwbKernel` 的形状就是包根导出的 `GwbKernelApi`，插件的 `apply` 拿到的上下文类型是 `GwbContext`：
 
-{/* ref file="../apps/desktop/src/api.ts" lines="13-31" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="13-33" */}
 
 - `dataDir`：这个 home 目录在磁盘上的真实路径——大小写、junction、斜杠写法不同的同一个目录得到同一个字符串
 - `version`：内核包 `@godcreator/gwb-kernel-desktop` 清单里的版本号
 - `emit(payload)`：往页面推一条事件，页面用 `window.gwb.on` 收（[IPC 通道](/docs/seams/ipc)）
+- `registerImports(mapping)`：登记浏览器模块映射，返回幂等撤销函数；用 `ctx.effect` 管理（[浏览器模块](/docs/seams/page-react)）
 - `setShell(url)`：把页面交给这个地址指向的模块，返回撤销函数（[外壳接管](/docs/seams/shell)）
 
 内核里这个对象就是这样实现的：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="233-247" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="235-250" */}
 
 这段说明三件事：`emit` 只是往当前窗口发一条 `gwb:event`，窗口不在就什么都不发；`setShell` 每次都立刻推一次整份外壳状态；撤销函数只在当前外壳地址仍是自己交出的那个时才清空。
 
@@ -53,10 +54,10 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 ## 测试
 
-形状由类型检查保护：内核里这个对象标成同一个 `src/api.ts` 里的 `GwbKernelApi`，对不上时本仓 `pnpm check` 失败。行为由 `apps/desktop/tests/main.test.ts` 保护：一个从 `cordis.yml` 加载进来的测试插件取到 `gwbKernel`，证明它只有四个成员、`dataDir` 是 home 的真实路径、`version` 是内核包的版本、`emit` 推到页面、后调用的 `setShell` 替换先调用的、撤销只在自己仍是当前外壳时清空。
+形状由类型检查保护：内核里这个对象标成同一个 `src/api.ts` 里的 `GwbKernelApi`，对不上时本仓 `pnpm check` 失败。行为由 `apps/desktop/tests/main.test.ts` 保护：一个从 `cordis.yml` 加载进来的测试插件取到 `gwbKernel`，证明它有五个成员、`dataDir` 是 home 的真实路径、`version` 是内核包的版本、`emit` 推到页面、后调用的 `setShell` 替换先调用的、撤销只在自己仍是当前外壳时清空。
 
 {/* has file="../apps/desktop/src/main.ts" text="const kernel: GwbKernelApi = {" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="插件拿到 gwbKernel：只有 dataDir、version、emit、setShell 四个成员" */}
+{/* has file="../apps/desktop/tests/main.test.ts" text="插件拿到 gwbKernel：提供路径、版本、事件、模块登记与外壳接管" */}
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="emit 推 gwb:event；setShell 立刻推整份状态" */}

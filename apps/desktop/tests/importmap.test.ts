@@ -2,32 +2,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-/**
- * 页面 importmap 写死在 index.html 里：四个 react 包名指向打包脚本产出的文件。
- * 读源文件与构建产物（根目录 pnpm check 先构建内核包），不起 electron；页面上真的加载到这四个文件只能实机验证
- */
-
 const packageDir = path.join(import.meta.dirname, '..')
 
-function staticImportmap(): Record<string, string> {
-  const html = fs.readFileSync(path.join(packageDir, 'src', 'index.html'), 'utf8')
-  const importmapScripts = [...html.matchAll(/<script type="importmap">([\s\S]*?)<\/script>/g)]
-  expect(importmapScripts).toHaveLength(1)
-  return (JSON.parse(importmapScripts[0]![1]!) as { imports: Record<string, string> }).imports
-}
-
 describe('页面的 importmap', () => {
-  it('index.html 里只有 react 的四个包名，写在页面脚本之前', () => {
-    expect(Object.keys(staticImportmap()).sort()).toEqual(['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime'])
+  it('内核不提供固定的 UI 模块，映射只能由插件登记', () => {
     const html = fs.readFileSync(path.join(packageDir, 'src', 'index.html'), 'utf8')
-    expect(html.indexOf('<script type="importmap">')).toBeLessThan(html.indexOf('<script type="module">'))
-  })
-
-  it('每个地址都是相对 index.html 的 ./react/<文件>，构建后 dist/ 里有这个文件', () => {
-    for (const url of Object.values(staticImportmap())) {
-      expect(url).toMatch(/^\.\/react\/[a-z-]+\.js$/)
-      expect(fs.existsSync(path.join(packageDir, 'dist', url))).toBe(true)
-    }
+    expect(html).not.toContain('type="importmap"')
+    expect(fs.existsSync(path.join(packageDir, 'dist', 'react'))).toBe(false)
   })
 })
 

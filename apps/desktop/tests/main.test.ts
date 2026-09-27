@@ -630,12 +630,12 @@ describe('main.ts：IPC 通道', () => {
 })
 
 describe('main.ts：插件看到的内核', () => {
-  it('插件拿到 gwbKernel：只有 dataDir、version、emit、setShell 四个成员，dataDir 是 home 的真实路径、version 是内核包的版本；页面的命令交给插件提供的 gwbCommands，带上 via: ui', async () => {
+  it('插件拿到 gwbKernel：提供路径、版本、事件、模块登记与外壳接管，dataDir 是 home 的真实路径、version 是内核包的版本；页面的命令交给插件提供的 gwbCommands，带上 via: ui', async () => {
     silenceStderr()
     probeGlobal.__gwbMainTestProbe = { events: [] }
     const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
     const probe = probeGlobal.__gwbMainTestProbe
-    expect(Object.keys(probe.kernel!).sort()).toEqual(['dataDir', 'emit', 'setShell', 'version'])
+    expect(Object.keys(probe.kernel!).sort()).toEqual(['dataDir', 'emit', 'registerImports', 'setShell', 'version'])
     expect(probe.kernel?.dataDir).toBe(booted.dataDir)
     expect(probe.kernel?.version).toBe(kernelPackageVersion)
     const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!

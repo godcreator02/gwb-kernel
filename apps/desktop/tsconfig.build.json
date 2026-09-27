@@ -4,7 +4,5 @@
     "outDir": "dist",
     "rootDir": "src"
   },
-  "include": ["src/**/*.ts"],
-  // react 的四个入口由 scripts/build-react.ts 用 esbuild 打包，不经 tsc 输出
-  "exclude": ["src/react/**"]
+  "include": ["src/**/*.ts"]
 }

@@ -18,6 +18,8 @@ export interface GwbKernelApi {
   version: string
   /** 往页面推一条事件；页面经 `window.gwb.on` 收 */
   emit(payload: unknown): void
+  /** 登记精确的浏览器包名到本地模块 URL；整批原子登记，同名同地址复用，冲突抛错。撤销函数交给 ctx.effect。 */
+  registerImports(imports: Readonly<Record<string, string>>): () => void
   /**
    * 把页面根交给这个 URL 指向的模块。模块的默认导出是 `ShellBoot`。
    * 返回撤销函数——包在 `ctx.effect` 里，插件卸载时页面根自动收回。后调用的替换先调用的。
@@ -32,6 +34,8 @@ export interface GwbContext extends Context {
 
 /** 页面上的 `window.gwb`，页面上运行的任何代码都能调用 */
 export interface GwbWindowApi {
+  /** 在动态 import 前等待当前映射注入；可检查必需名字。已注入的地址改变或撤销时拒绝，需整页重载。 */
+  prepareImports(required?: readonly string[]): Promise<void>
   /** 调一条命令。内核不认识命令名，一律交给提供 `gwbCommands` 的命令插件 */
   command<T = unknown>(command: string, args?: unknown): Promise<T>
   /** 收插件经 `gwbKernel.emit` 推来的事件，返回取消订阅的函数 */

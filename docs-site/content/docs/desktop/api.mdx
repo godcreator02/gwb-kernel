@@ -18,9 +18,9 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 | 类型 | 是什么 | 接缝 |
 | --- | --- | --- |
 | `GwbResult` | 命令的回执形状：`ok`、`data`、`error` | [3 IPC 通道](/docs/seams/ipc)、[10 命令转交](/docs/seams/commands) |
-| `GwbKernelApi` | 内核服务 `gwbKernel`：`dataDir`、`version`、`emit`、`setShell` | [2 内核服务](/docs/seams/kernel) |
+| `GwbKernelApi` | 内核服务 `gwbKernel`：`dataDir`、`version`、`emit`、`registerImports`、`setShell` | [2 内核服务](/docs/seams/kernel) |
 | `GwbContext` | 插件 `apply` 拿到的上下文：cordis 的 `Context` 加 `gwbKernel` | [2 内核服务](/docs/seams/kernel) |
-| `GwbWindowApi`，以及 `Window.gwb` 的全局声明 | 页面上的 `window.gwb`：`command`、`on`、`onShell` | [3 IPC 通道](/docs/seams/ipc) |
+| `GwbWindowApi`，以及 `Window.gwb` 的全局声明 | 页面上的 `window.gwb`：`command`、`on`、`onShell`、`prepareImports` | [3 IPC 通道](/docs/seams/ipc) |
 | `ShellBoot` | 外壳模块默认导出的形状 | [4 外壳接管](/docs/seams/shell) |
 
 整个 `src/api.ts` 就是这张表的定义：

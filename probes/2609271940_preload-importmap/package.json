@@ -1,0 +1,6 @@
+{
+  "name": "probe-preload-importmap",
+  "private": true,
+  "scripts": { "probe": "electron main.cjs" },
+  "devDependencies": { "electron": "44.1.1" }
+}

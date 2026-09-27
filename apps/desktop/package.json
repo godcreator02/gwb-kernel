@@ -1,6 +1,6 @@
 {
   "name": "@godcreator/gwb-kernel-desktop",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "author": {
     "name": "godcreator"
   },
@@ -13,7 +13,7 @@
     },
     "./package.json": "./package.json"
   },
-  "description": "gwb 内核：cordis 运行在 Electron 主进程里，整个应用只有主进程与渲染进程。只做第一个插件运行之前必须完成的事；包根导出内核给插件与页面的接口类型",
+  "description": "gwb 内核：提供主进程插件启动基础能力与页面模块解析环境；包根导出插件与页面的接口类型",
   "files": [
     "dist"
   ],
@@ -26,7 +26,7 @@
   },
   "scripts": {
     "setup:electron": "node node_modules/electron/install.js",
-    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && tsc -p tsconfig.api.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\" && node scripts/build-react.ts",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && tsc -p tsconfig.api.json && node -e \"const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "pnpm build",
     "start": "pnpm build && electron ."
@@ -43,13 +43,8 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.5",
     "cordis": "4.0.0-rc.10",
     "electron": "44.1.1",
-    "esbuild": "^0.27.7",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
     "typescript": "^7.0.2"
   }
 }

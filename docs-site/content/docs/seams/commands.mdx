@@ -24,11 +24,11 @@ description: 连接内核应用与命令插件；交换的是服务 ctx.gwbComma
 
 内核只用到 `gwbCommands` 的 `run` 一个方法，在自己的代码里把它声明成 cordis 上下文上的可选服务：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="22-29" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="23-30" */}
 
 转交的全部逻辑：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="249-255" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="252-258" */}
 
 这段说明：先判断发送方是不是顶层框架（[IPC 通道](/docs/seams/ipc#页面边界)），再判断命令名是不是字符串，然后在这一刻读 `ctx.gwbCommands`——没有就回失败回执，有就把 `run` 的结果原样返回。
 

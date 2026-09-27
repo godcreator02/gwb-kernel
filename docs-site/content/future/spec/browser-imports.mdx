@@ -1,0 +1,27 @@
+---
+title: 插件登记浏览器模块，shell 提供 React
+---
+
+## 验收
+
+- [x] 原子登记、同名复用、冲突拒绝与幂等撤销
+- [x] 页面准备映射后才加载 shell，撤销期间迟到的加载不挂载
+- [x] Electron 隔离 preload 注入 importmap 后主世界模块可解析
+- [x] React 由 shell 打包并通过代码登记
+- [x] 插件构建与 devkit 检查读提供方的代码出口
+- [ ] 三仓检查、文档同步、隔离 home 实机验证
+- [ ] 下游通知、发版、配套升级
+
+## 已定接口
+
+内核提供 `registerImports(mapping)`，返回注销函数，插件用 `ctx.effect` 管理。只接受精确包名到本地模块文件 URL。
+页面在动态 import 前调用 `window.gwb.prepareImports(required?)`；准备请求串行读取当前登记快照，完成 DOM 注入后才返回。
+已注入的地址改变或撤销时拒绝新的准备，要求整页重载；同一文档不尝试改绑或假装卸载模块。
+
+kernel 负责主进程插件启动及页面模块解析环境；React 的版本和产物由 shell 提供。不同提供方通过普通代码出口交付
+无副作用的 `browserImports()`，构建与运行时复用。没有包清单共享字段，也不扫描 home 发现提供方。
+
+## 实施范围
+
+kernel 的登记、IPC、preload、页面入口与测试；UI 仓 shell 的运行时及构建、theme/baseui 的构建；
+生命周期仓 devkit 的模板、产物检查与说明书。其他插件按依赖通知后适配，保持 React 版本不变。

@@ -6,14 +6,20 @@ import { describe, expect, it, vi } from 'vitest'
 /** preload.cjs 在沙箱里运行，只能 require('electron')；这里把它的源码交给一个假的 require 求值 */
 
 interface ExposedGwb {
+  prepareImports(required?: string[]): Promise<void>
   command(command: string, args?: unknown): Promise<unknown>
   on(callback: (payload: unknown) => void): () => void
   onShell(callback: (shell: unknown) => void): () => void
 }
 
-function loadPreload(): { gwb: ExposedGwb; exposedName: string; ipcRenderer: ReturnType<typeof fakeIpcRenderer> } {
+function loadPreload() {
   const source = fs.readFileSync(path.join(import.meta.dirname, '..', 'src', 'preload.cjs'), 'utf8')
   const ipcRenderer = fakeIpcRenderer()
+  const scripts: { type: string; textContent: string }[] = []
+  const document = {
+    createElement: () => ({ type: '', textContent: '' }),
+    head: { appendChild: (script: { type: string; textContent: string }) => scripts.push(script) },
+  }
   let exposedName = ''
   let exposed: unknown
   const electron = {
@@ -29,18 +35,18 @@ function loadPreload(): { gwb: ExposedGwb; exposedName: string; ipcRenderer: Ret
     if (id !== 'electron') throw new Error(`preload 只该 require electron，收到 ${id}`)
     return electron
   }
-  const evaluatePreload = new vm.Script(`(function (require) {
+  const evaluatePreload = new vm.Script(`(function (require, document) {
 ${source}
-})`, { filename: 'preload.cjs' }).runInThisContext() as (require: unknown) => void
-  evaluatePreload(fakeRequire)
-  return { gwb: exposed as ExposedGwb, exposedName, ipcRenderer }
+})`, { filename: 'preload.cjs' }).runInThisContext() as (require: unknown, document: unknown) => void
+  evaluatePreload(fakeRequire, document)
+  return { gwb: exposed as ExposedGwb, exposedName, ipcRenderer, scripts }
 }
 
 function fakeIpcRenderer() {
   const listeners = new Map<string, Set<(...args: unknown[]) => void>>()
   return {
     listeners,
-    invoke: vi.fn(async (...args: unknown[]) => ({ invoked: args })),
+    invoke: vi.fn(async (...args: unknown[]): Promise<unknown> => ({ invoked: args })),
     send: vi.fn(),
     on(channel: string, listener: (...args: unknown[]) => void) {
       if (!listeners.has(channel)) listeners.set(channel, new Set())
@@ -56,10 +62,35 @@ function fakeIpcRenderer() {
 }
 
 describe('preload.cjs', () => {
-  it('只在页面上放一个 window.gwb，上面正好三个函数', () => {
+  it('等待主进程快照并注入后才就绪；重复准备不重复注表，后来登记的新名字可以追加', async () => {
+    const { gwb, ipcRenderer, scripts } = loadPreload()
+    ipcRenderer.invoke.mockResolvedValue({ runtime: 'file:///runtime.js' })
+    await gwb.prepareImports(['runtime'])
+    expect(scripts).toEqual([{ type: 'importmap', textContent: JSON.stringify({ imports: { runtime: 'file:///runtime.js' } }) }])
+    await gwb.prepareImports()
+    expect(scripts).toHaveLength(1)
+    ipcRenderer.invoke.mockResolvedValue({ runtime: 'file:///runtime.js', late: 'file:///late.js' })
+    await gwb.prepareImports(['late'])
+    expect(JSON.parse(scripts[1]!.textContent)).toEqual({ imports: { late: 'file:///late.js' } })
+  })
+
+  it('未登记的依赖失败后可重试；已注入的地址变化或撤销时要求整页重载，不注入半张表', async () => {
+    const { gwb, ipcRenderer, scripts } = loadPreload()
+    ipcRenderer.invoke.mockResolvedValue({})
+    await expect(gwb.prepareImports(['runtime'])).rejects.toThrow(/runtime/)
+    ipcRenderer.invoke.mockResolvedValue({ runtime: 'file:///v1.js' })
+    await gwb.prepareImports(['runtime'])
+    ipcRenderer.invoke.mockResolvedValue({ fresh: 'file:///fresh.js', runtime: 'file:///v2.js' })
+    await expect(gwb.prepareImports()).rejects.toThrow(/重载/)
+    expect(scripts).toHaveLength(1)
+    ipcRenderer.invoke.mockResolvedValue({})
+    await expect(gwb.prepareImports()).rejects.toThrow(/重载/)
+  })
+
+  it('只在页面上放一个 window.gwb，提供命令、事件、外壳订阅与模块准备', () => {
     const { gwb, exposedName } = loadPreload()
     expect(exposedName).toBe('gwb')
-    expect(Object.keys(gwb).sort()).toEqual(['command', 'on', 'onShell'])
+    expect(Object.keys(gwb).sort()).toEqual(['command', 'on', 'onShell', 'prepareImports'])
   })
 
   it('command 经 gwb:command 调到主进程，回执原样交回', async () => {

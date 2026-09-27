@@ -1,0 +1,2 @@
+2026-09-27，Windows，首次运行（preload 来自当时工作树）
+{"electron":"44.1.1","chromium":"152.0.7977.65","value":42,"same":true,"maps":1,"refusal":"浏览器模块 probe/runtime 已改变或撤销，需要整页重载"}

@@ -1,0 +1,42 @@
+---
+title: kernel 提供模块解析机制，shell 提供 React
+born-at: 2026-09-27T20:08
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 代码登记模块
+domain: 这条线
+---
+
+supersedes:: [React 收进内核](2026-09-24-react-in-kernel.md)
+
+supersedes:: [静态 importmap](2026-09-25-static-importmap.md)
+
+## 背景
+
+用户复查 React 的归属及发版代价：升级 UI 运行时不应要求发布 kernel；其他插件也需要提供浏览器模块。
+用户选择代码连接，反对另设 ui-runtime.json；随后确定通用 importmap 服务属于 kernel，React 实现属于 shell，并授权实施。
+
+## 结论与边界
+
+kernel 的准入边界明确为主进程插件启动基础能力与页面模块解析环境。registerImports 原子登记名字到文件 URL，
+prepareImports 在页面动态加载前准备映射；机制不认识 React。shell 打包 React，先登记再交出页面入口。
+提供方以纯 browserImports() 代码出口供运行时、构建与发版检查复用，gwb.shared 扫描和 JSON 声明不恢复。
+
+同名同 URL 引用计数复用，不同 URL 拒绝。主进程撤销不是页面卸载；已经注入的映射变更要求整页重载，
+不会在旧 React 模块仍存活时悄悄改绑。精确名字与本地 ESM 足够当前场景，暂不做 scopes、前缀或远程模块。
+
+移除旧静态表破坏旧 shell 的假设，kernel 需发布破坏性版本，shell 与下游配套迁移；本次保持 React 版本不变。
+以后 React 升级由 shell 发版，兼容性仍需依据实际契约判断。
+
+## 依据
+
+独立 Electron 实验材料在 probes/2609271940_preload-importmap/：Electron 44.1.1 的隔离 preload 注入映射后，
+主世界可以动态 import；两次加载得到同一实例，并发准备不重复注入；地址改变后拒绝继续准备。
+
+隔离 home browser-imports-2609271949 的 kernel 与 shell/theme/baseui 开发版安装、重启和取证已通过，
+条目 ACTIVE，安装过程日志无新增 error/warn。这证明配套组合可运行，不证明尚未迁移的全部下游兼容。
+
+## 代价
+
+提供方必须在使用方加载前登记；调用方仍须声明 peer 与 cordis 依赖。代码出口会在构建或检查进程求值，
+因此必须无副作用且不依赖 Electron。发版检查可验证文件、白名单和冲突，不能静态证明没有副作用。

@@ -11,17 +11,6 @@
       .gwb-report ul { padding-left: 1.5em; margin: 0.5em 0; }
       .gwb-report pre { margin: 0.5em 0 0; white-space: pre-wrap; }
     </style>
-    <!-- 页面上唯一的共享包名：react 由内核包打包进 dist/react/（scripts/build-react.ts），外壳与插件的浏览器端代码都外置这四个名字 -->
-    <script type="importmap">
-      {
-        "imports": {
-          "react": "./react/react.js",
-          "react/jsx-runtime": "./react/react-jsx-runtime.js",
-          "react-dom": "./react/react-dom.js",
-          "react-dom/client": "./react/react-dom-client.js"
-        }
-      }
-    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -32,6 +21,8 @@
       const NOTHING_BEING_LOADED = Symbol('没有外壳地址在加载')
       // 正在 import、还没挂上的外壳地址：挂上之前 currentShell 还是旧的，靠它认出同一个地址又推来了一次
       let shellUrlBeingLoaded = NOTHING_BEING_LOADED
+      let shellGeneration = 0
+      let failedShell = null
 
       function appendTextElement(parent, tagName, text) {
         const element = document.createElement(tagName)
@@ -77,14 +68,20 @@
         root.textContent = ''
       }
 
-      async function mountShell(url, report) {
+      async function mountShell(url, report, generation) {
         try {
+          await window.gwb.prepareImports()
+          if (generation !== shellGeneration) return
           const shellModule = await import(url)
+          if (generation !== shellGeneration) return
           if (typeof shellModule.default !== 'function') throw new Error(`${url} 的默认导出不是函数`)
           currentShell = { url, handle: shellModule.default(root) ?? null }
         } catch (err) {
-          console.error(`外壳启动失败：${String(err)}`)
-          showStatusPage(`外壳启动失败：${String(err)}`, report)
+          if (generation !== shellGeneration) return
+          failedShell = { url, message: `外壳启动失败：${String(err)}` }
+          // 更新提供方到整页刷新之间的正常过渡，不把已知的刷新要求记成启动故障。
+          if (!String(err).includes('GWB_IMPORTS_RELOAD_REQUIRED:')) console.error(failedShell.message)
+          showStatusPage(failedShell.message, report)
         }
       }
 
@@ -92,16 +89,23 @@
         const url = shell.url
         // 订阅时请求的一条与去抖推送的一条可能都在 import 完成之前到达，只比 currentShell 的话外壳会挂载两遍
         if (currentShell?.url === url || shellUrlBeingLoaded === url) return
+        // error 会触发新的状态报告；同一失败不能再次产生日志，否则形成反馈循环。
+        if (failedShell?.url === url) {
+          showStatusPage(failedShell.message, shell.report)
+          return
+        }
+        failedShell = null
         shellUrlBeingLoaded = url
+        const generation = ++shellGeneration
         try {
           disposeCurrentShell()
           if (url === null) {
             showStatusPage('没有外壳插件（没有插件调用 setShell）。', shell.report)
             return
           }
-          await mountShell(url, shell.report)
+          await mountShell(url, shell.report, generation)
         } finally {
-          shellUrlBeingLoaded = NOTHING_BEING_LOADED
+          if (generation === shellGeneration) shellUrlBeingLoaded = NOTHING_BEING_LOADED
         }
       })
     </script>

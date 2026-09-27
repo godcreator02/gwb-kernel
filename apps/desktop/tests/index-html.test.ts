@@ -74,7 +74,7 @@ async function importFromModuleTable(url: string): Promise<unknown> {
   return load()
 }
 
-function loadPageScript(): { root: FakeElement; deliver: (shell: ShellState) => Promise<void>; consoleError: ReturnType<typeof vi.fn> } {
+function loadPageScript() {
   const html = fs.readFileSync(path.join(import.meta.dirname, '..', 'src', 'index.html'), 'utf8')
   const script = /<script type="module">([\s\S]*?)<\/script>/.exec(html)?.[1]
   if (script === undefined) throw new Error('index.html 里没有找到页面脚本')
@@ -84,8 +84,10 @@ function loadPageScript(): { root: FakeElement; deliver: (shell: ShellState) => 
     createElement: (tagName: string) => new FakeElement(tagName),
   }
   let onShell: OnShellCallback | undefined
+  const prepareImports = vi.fn(async () => {})
   const window = {
     gwb: {
+      prepareImports,
       onShell: (callback: OnShellCallback) => {
         onShell = callback
       },
@@ -99,7 +101,7 @@ ${scriptWithImportSeam}
   evaluatePageScript(document, window, { error: consoleError }, importFromModuleTable)
   if (onShell === undefined) throw new Error('页面脚本没有订阅 onShell')
   const subscribed = onShell
-  return { root, deliver: (shell) => subscribed(shell), consoleError }
+  return { root, deliver: (shell: ShellState) => subscribed(shell), consoleError, prepareImports }
 }
 
 const sampleReport: ShellReport = {
@@ -168,6 +170,54 @@ describe('index.html：只读状态页', () => {
   })
 })
 describe('index.html：外壳接管', () => {
+  it('提供方更新后的重载要求显示在状态页，不记成启动故障', async () => {
+    const page = loadPageScript()
+    page.prepareImports.mockRejectedValueOnce(new Error('GWB_IMPORTS_RELOAD_REQUIRED: 需要整页重载'))
+    await page.deliver({ url: 'test-shell:reload', report: sampleReport })
+    expect(reportBox(page.root).textContent).toContain('需要整页重载')
+    expect(page.consoleError).not.toHaveBeenCalled()
+  })
+  it('失败后的状态推送只更新报告，不因错误日志反馈而反复 import', async () => {
+    const page = loadPageScript()
+    const url = failingShellUrl()
+    await page.deliver({ url, report: sampleReport })
+    await page.deliver({ url, report: { ...sampleReport, home: 'updated-home' } })
+    expect(page.prepareImports).toHaveBeenCalledTimes(1)
+    expect(page.consoleError).toHaveBeenCalledTimes(1)
+    expect(reportBox(page.root).textContent).toContain('updated-home')
+    await page.deliver({ url: null, report: sampleReport })
+    await page.deliver({ url, report: sampleReport })
+    expect(page.prepareImports).toHaveBeenCalledTimes(2)
+  })
+  it('映射就绪前不求值外壳；准备失败时显示原因', async () => {
+    const page = loadPageScript()
+    let ready!: () => void
+    page.prepareImports.mockReturnValueOnce(new Promise<void>((resolve) => { ready = resolve }))
+    const load = vi.fn(async () => ({ default: () => {} }))
+    const mounted = page.deliver({ url: registerModule('test-shell:wait', load), report: sampleReport })
+    await Promise.resolve()
+    expect(load).not.toHaveBeenCalled()
+    ready()
+    await mounted
+    expect(load).toHaveBeenCalledTimes(1)
+    page.prepareImports.mockRejectedValueOnce(new Error('模块地址改变，需要整页重载'))
+    await page.deliver({ url: 'test-shell:changed', report: sampleReport })
+    expect(reportBox(page.root).textContent).toContain('需要整页重载')
+  })
+
+  it('外壳准备期间撤销，迟到的 import 不再挂载', async () => {
+    const page = loadPageScript()
+    let resolveModule!: (value: unknown) => void
+    const load = vi.fn(() => new Promise<unknown>((resolve) => { resolveModule = resolve }))
+    const mount = vi.fn()
+    const pending = page.deliver({ url: registerModule('test-shell:late', load), report: sampleReport })
+    await vi.waitFor(() => expect(load).toHaveBeenCalled())
+    await page.deliver({ url: null, report: sampleReport })
+    resolveModule({ default: mount })
+    await pending
+    expect(mount).not.toHaveBeenCalled()
+    expect(reportBox(page.root).textContent).toContain('没有外壳插件')
+  })
   it('有外壳地址就 import 它，把 #root 交给默认导出；同一个地址再推一次不重复挂载', async () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
@@ -244,12 +294,12 @@ describe('index.html：外壳接管', () => {
     expect(reportBox(page.root).children[0]!.textContent).toContain(url)
   })
 
-  it('外壳 import 失败后再推同一个地址会重试', async () => {
+  it('外壳 import 失败后重复状态不会重复记录错误', async () => {
     shellEvents.__gwbPageTestEvents = []
     const page = loadPageScript()
     const url = registerModule('test-shell:not-a-function', async () => ({ default: 42 }))
     await page.deliver({ url, report: sampleReport })
     await page.deliver({ url, report: sampleReport })
-    expect(page.consoleError).toHaveBeenCalledTimes(2)
+    expect(page.consoleError).toHaveBeenCalledTimes(1)
   })
 })

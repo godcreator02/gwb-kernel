@@ -31,13 +31,13 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 
 页面入口 import 这个地址，只认它的默认导出：拿到 `#root`，返回可选的 `dispose`。
 
-{/* ref file="../apps/desktop/src/api.ts" lines="46-47" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="50-51" */}
 
 页面入口里接管的全部逻辑：
 
-{/* ref file="../apps/desktop/src/index.html" lines="70-106" */}
+{/* ref file="../apps/desktop/src/index.html" lines="61-110" */}
 
-这段说明：换外壳先 `dispose` 旧的、清空 `#root`；同一个地址在 import 还没完成时又推来一次，靠 `shellUrlBeingLoaded` 认出来，不挂载第二遍；地址是 `null`、import 失败、默认导出不是函数，都画只读状态页，失败时第一行写明原因。页面入口里写死了 importmap，外壳模块里 react 的四个包名可以直接 import（[页面上的 react](/docs/seams/page-react)）。
+这段说明：换外壳先 `dispose` 旧的、清空 `#root`；同一个地址在 import 还没完成时又推来一次，靠 `shellUrlBeingLoaded` 认出来，不挂载第二遍；地址是 `null`、import 失败、默认导出不是函数，都画只读状态页，失败时第一行写明原因。页面先 await prepareImports，再动态 import 外壳；提供方必须事先登记模块（[页面上的 react](/docs/seams/page-react)）。
 
 ## 约定
 
@@ -52,7 +52,7 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 
 - 把 `setShell` 返回的撤销函数交给 `ctx.effect`，插件卸载时交还页面
 - 在页面上运行的模块默认导出一个 `ShellBoot`；`dispose` 移除自己在页面上创建的一切
-- 用到 react 时构建时外置那四个包名，留给 importmap
+- 构建时从提供方代码出口取外置名单；已注入映射改变时整页重载
 
 ## 不负责的事
 
@@ -62,10 +62,10 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 
 ## 测试
 
-`apps/desktop/tests/index-html.test.ts` 把页面脚本放进一个极简的假 DOM 求值，证明：外壳挂载，同一地址不重复挂载（import 还没完成时也一样），换外壳先 `dispose` 旧的，外壳撤销时回到只读状态页，撤销后同一地址再推来重新挂载，`dispose` 抛错、import 失败、默认导出不是函数各自的处理，失败后同一地址再推来会重试。外壳模块的形状由外壳那边的类型检查保护（外壳从内核包 `import type` 取 `ShellBoot`）。真实窗口里的显示在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
+`apps/desktop/tests/index-html.test.ts` 证明：准备映射后挂载，同一地址不重复挂载，换外壳先 dispose，撤销后迟到的 import 不挂载。失败后的重复推送只更新报告，避免错误日志触发循环；撤销后重新交出地址才重试。要求整页重载是提供方更新时的正常过渡，显示提示而不记录 error。真实窗口在隔离 home 验证。
 
 {/* has file="../apps/desktop/tests/index-html.test.ts" text="同一个地址在 import 完成前连推两次，只挂载一次" */}
 
 {/* has file="../apps/desktop/tests/index-html.test.ts" text="外壳在用时推来 url: null（外壳撤销）：dispose 旧外壳，回到只读状态页" */}
 
-{/* has file="../apps/desktop/tests/index-html.test.ts" text="外壳 import 失败后再推同一个地址会重试" */}
+{/* has file="../apps/desktop/tests/index-html.test.ts" text="外壳 import 失败后重复状态不会重复记录错误" */}
