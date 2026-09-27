@@ -1,0 +1,24 @@
+---
+born-at: 2026-09-27T21:43
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 请求与命令
+domain: 内核边界
+---
+
+## 背景
+
+用户要求拆开命令转交与 GwbResult 的归属。内核直接查找 gwbCommands、附加 ui 来源并形成命令失败回执，使命令协议变化牵动宿主。
+
+## 结论与边界
+
+内核增加 handleRequest/request 请求通道，提供方通过代码登记处理器。commands 拥有请求载荷、ui 来源、回执定义和纯浏览器客户端；shell 的 host.call 接到该客户端。
+不增加重试、取消或远程协议。旧 command 和 GwbResult 暂留兼容，移除另走破坏性迁移；内核不反向 import commands。
+
+这次调整把通用传输与旧命令适配分开，旧转交仅作为迁移期兼容路径。
+pivots-from:: [命令转交接缝](2026-09-24-command-relay-own-seam.md)
+
+## 依据
+
+apps/desktop/tests/requests.test.ts、preload.test.ts、main.test.ts 覆盖通道生命周期、返回值与页面来源检查。
+隔离 home request-channel-2609272140 已加载开发内核，旧 shell 正常启动；完整 commands 链路的证据需随配套实现补入现状与交付记录。

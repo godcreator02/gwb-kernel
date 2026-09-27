@@ -592,6 +592,21 @@ describe('main.ts：启动', () => {
 })
 
 describe('main.ts：IPC 通道', () => {
+  it('请求通道只接收顶层框架，处理器由插件登记并随卸载撤销', async () => {
+    silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
+    const request = booted.electron.ipcHandlers.get('gwb:request')!
+    const handler = vi.fn((value: unknown) => ({ echo: value }))
+    const off = probeGlobal.__gwbMainTestProbe.kernel!.handleRequest('sample', handler)
+    expect(() => request({ senderFrame: null }, 'sample', 1)).toThrow(/顶层框架/)
+    expect(() => request({ senderFrame: { parent: {} } }, 'sample', 1)).toThrow(/顶层框架/)
+    expect(handler).not.toHaveBeenCalled()
+    expect(await request(topFrameEvent, 'sample', 42)).toEqual({ available: true, value: { echo: 42 } })
+    off()
+    expect(await request(topFrameEvent, 'sample', 42)).toEqual({ available: false })
+    await quitAndWaitForCleanup(booted)
+  })
   it('gwb:command：命令名不是字符串、没有命令服务时回失败回执', async () => {
     silenceStderr()
     const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
@@ -635,7 +650,7 @@ describe('main.ts：插件看到的内核', () => {
     probeGlobal.__gwbMainTestProbe = { events: [] }
     const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
     const probe = probeGlobal.__gwbMainTestProbe
-    expect(Object.keys(probe.kernel!).sort()).toEqual(['dataDir', 'emit', 'registerImports', 'setShell', 'version'])
+    expect(Object.keys(probe.kernel!).sort()).toEqual(['dataDir', 'emit', 'handleRequest', 'registerImports', 'setShell', 'version'])
     expect(probe.kernel?.dataDir).toBe(booted.dataDir)
     expect(probe.kernel?.version).toBe(kernelPackageVersion)
     const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!

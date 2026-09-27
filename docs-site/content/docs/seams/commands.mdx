@@ -1,5 +1,5 @@
 ---
-title: 10 命令转交 gwbCommands
+title: 10 兼容命令转交 gwbCommands
 description: 连接内核应用与命令插件；交换的是服务 ctx.gwbCommands 的 run(命令名, 参数, { via：'ui' })；内核应用把页面经 gwb:command 发来的命令原样交给它、标明来自界面、回执原样交回，命令名不是字符串或没有这个服务时自己回失败回执；命令插件保证任何命令都回 { ok, data, error }、run 不 reject
 ---
 
@@ -13,6 +13,8 @@ description: 连接内核应用与命令插件；交换的是服务 ctx.gwbComma
 - 命令插件是 `cordis.yml` 里的普通插件；内核应用认识的只有 `gwbCommands` 这个服务名
 </Diagram>
 
+新调用方通过 commands 提供的浏览器客户端与[请求通道](/docs/seams/requests)连接；本页的 `gwb:command` 仍保留给未迁移调用方。内核不从 commands 重导出类型，兼容接口仅保留旧定义。
+
 ## 连接的模块
 
 - [内核应用](/docs/desktop)：主进程里处理通道 `gwb:command` 的那一段
@@ -24,11 +26,11 @@ description: 连接内核应用与命令插件；交换的是服务 ctx.gwbComma
 
 内核只用到 `gwbCommands` 的 `run` 一个方法，在自己的代码里把它声明成 cordis 上下文上的可选服务：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="23-30" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="24-31" */}
 
 转交的全部逻辑：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="252-258" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="255-261" */}
 
 这段说明：先判断发送方是不是顶层框架（[IPC 通道](/docs/seams/ipc#页面边界)），再判断命令名是不是字符串，然后在这一刻读 `ctx.gwbCommands`——没有就回失败回执，有就把 `run` 的结果原样返回。
 

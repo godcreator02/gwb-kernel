@@ -1,0 +1,31 @@
+---
+title: 页面请求通道
+description: 插件主动登记请求处理器，内核负责传输与生命周期，载荷和业务回执由提供方定义。
+---
+
+页面调用 `window.gwb.request(channel, payload)`，主进程插件通过 `ctx.gwbKernel.handleRequest(channel, handler)` 接收。
+例如 commands 登记自己的通道；内核不认识命令名、来源标记或命令回执，提供方自行解释载荷。
+
+| 阶段 | 负责方 | 保证 |
+| --- | --- | --- |
+| 登记 | 插件 | 用 `ctx.effect` 接住注销函数 |
+| 接收 | 内核 | 只接收顶层框架；同名通道不能重复登记 |
+| 处理 | 提供方 | 解释载荷并返回可结构化克隆的结果 |
+| 注销 | 内核 | 幂等；拒绝后续请求，在途请求仍能完成 |
+
+## 传输与业务分开
+
+处理器不存在时，页面请求以 `GWB_REQUEST_UNAVAILABLE: <channel>` 错误拒绝。
+处理器抛错、IPC 失败也使请求拒绝，不自动转成任何业务回执。传输内部的 `available` 包装由 preload 解开，插件的同名字段不会被解释。
+
+登记和分发的实现集中在这一处：
+
+{/* ref file="../apps/desktop/src/requests.ts" */}
+
+`apps/desktop/tests/requests.test.ts` 验证冲突、重复注销、重新登记、在途请求与处理器异常；
+`apps/desktop/tests/main.test.ts` 验证非顶层框架不能进入处理器，`preload.test.ts` 验证内部传输状态不会泄漏或误解业务值。
+
+## 兼容入口
+
+`window.gwb.command` 仍按旧协议工作；新代码使用 commands 的浏览器客户端。
+内核的 `GwbResult` 也保留为弃用定义，不反向依赖 commands。移除它们需要单独的破坏性版本和下游迁移。

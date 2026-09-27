@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 /** preload.cjs 在沙箱里运行，只能 require('electron')；这里把它的源码交给一个假的 require 求值 */
 
 interface ExposedGwb {
+  request(channel: string, payload?: unknown): Promise<unknown>
   prepareImports(required?: string[]): Promise<void>
   command(command: string, args?: unknown): Promise<unknown>
   on(callback: (payload: unknown) => void): () => void
@@ -90,13 +91,24 @@ describe('preload.cjs', () => {
   it('只在页面上放一个 window.gwb，提供命令、事件、外壳订阅与模块准备', () => {
     const { gwb, exposedName } = loadPreload()
     expect(exposedName).toBe('gwb')
-    expect(Object.keys(gwb).sort()).toEqual(['command', 'on', 'onShell', 'prepareImports'])
+    expect(Object.keys(gwb).sort()).toEqual(['command', 'on', 'onShell', 'prepareImports', 'request'])
   })
 
   it('command 经 gwb:command 调到主进程，回执原样交回', async () => {
     const { gwb, ipcRenderer } = loadPreload()
     expect(await gwb.command('demo.hello', { a: 1 })).toEqual({ invoked: ['gwb:command', 'demo.hello', { a: 1 }] })
     expect(ipcRenderer.invoke).toHaveBeenCalledWith('gwb:command', 'demo.hello', { a: 1 })
+  })
+
+  it('request 解开传输状态而不改业务回执；仅未登记转换为稳定的不可用错误', async () => {
+    const { gwb, ipcRenderer } = loadPreload()
+    ipcRenderer.invoke.mockResolvedValue({ available: true, value: { available: false } })
+    expect(await gwb.request('sample', 42)).toEqual({ available: false })
+    expect(ipcRenderer.invoke).toHaveBeenCalledWith('gwb:request', 'sample', 42)
+    ipcRenderer.invoke.mockResolvedValue({ available: false })
+    await expect(gwb.request('sample')).rejects.toThrow('GWB_REQUEST_UNAVAILABLE: sample')
+    ipcRenderer.invoke.mockRejectedValue(new Error('connection closed'))
+    await expect(gwb.request('sample')).rejects.toThrow('connection closed')
   })
 
   it('on 订阅 gwb:event，回调只收到 payload；返回的函数取消的正是这一个订阅', () => {

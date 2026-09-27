@@ -35,6 +35,11 @@ function subscribe(channel, callback) {
 }
 
 contextBridge.exposeInMainWorld('gwb', {
+  request: async (channel, payload) => {
+    const reply = await ipcRenderer.invoke('gwb:request', channel, payload)
+    if (!reply.available) throw new Error(`GWB_REQUEST_UNAVAILABLE: ${channel}`)
+    return reply.value
+  },
   prepareImports,
   command: (command, args) => ipcRenderer.invoke('gwb:command', command, args),
   on: (callback) => subscribe('gwb:event', callback),
