@@ -9,8 +9,16 @@ title: 插件登记浏览器模块，shell 提供 React
 - [x] Electron 隔离 preload 注入 importmap 后主世界模块可解析
 - [x] React 由 shell 打包并通过代码登记
 - [x] 插件构建与 devkit 检查读提供方的代码出口
-- [ ] 三仓检查、文档同步、隔离 home 实机验证
-- [ ] 下游通知、发版、配套升级
+- [x] 三仓检查、文档同步、隔离 home 实机验证
+- [x] 下游通知、发版、配套版本安装到 default
+- [ ] 用户重启 default 后核对运行版本、全部条目 ACTIVE 与 unmetPeers
+
+## 交付状态（2026-09-27）
+
+kernel 0.8.0、shell 0.15.1、theme 0.3.14、baseui 0.1.20、devkit 0.23.10、plugin-manager 0.14.4 已发布。
+基础八件与 13 个应用仓的 22 个包已适配、检查、隔离安装取证并发布；academic-deck 的在途代码没有改，迁移通知留在该仓 docs/migrations/。
+default 的整个 data 目录与 home 清单、设置已备份，32 个本次版本经同一条 plugin-manager.update specs 安装，cordis 已对齐。
+命令回执 restartRequired:true，未重新加载条目；当前进程仍是旧内核，必须重启后才核验最终运行状态。
 
 ## 已定接口
 

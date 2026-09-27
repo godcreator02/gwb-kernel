@@ -34,7 +34,11 @@ prepareImports 在页面动态加载前准备映射；机制不认识 React。sh
 主世界可以动态 import；两次加载得到同一实例，并发准备不重复注入；地址改变后拒绝继续准备。
 
 隔离 home browser-imports-2609271949 的 kernel 与 shell/theme/baseui 开发版安装、重启和取证已通过，
-条目 ACTIVE，安装过程日志无新增 error/warn。这证明配套组合可运行，不证明尚未迁移的全部下游兼容。
+条目 ACTIVE，安装过程日志无新增 error/warn。随后基础八件与 13 个下游仓共 22 个包也完成构建、检查、隔离安装和发布，
+全部条目 ACTIVE、安装日志无新增 error。隔离 home 的告警插件因未配凭据走 SKIP，docs-site 与 docfirst 共装产生同名说明书 warn，
+这些不作为 importmap 故障。11 个独立窗格模块在真实页面动态 import 成功，均导出 mountPane；块笔记空库与外观窗格实际渲染成功。
+
+kernel 0.8.0、shell 0.15.1 与配套版本已发布。首次迁移需要全生态更新内核 peer；此后的 React 构建与版本随 shell 发布。
 
 ## 代价
 
