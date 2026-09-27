@@ -25,7 +25,7 @@ description: 内核一次启动按什么顺序做事、分成模块求值时与 
 
 入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等它会互相等待、静默卡死（[ESM 主进程顶层等 ready 会卡死](/trajectory/2026-09-09-wall-esm-await-whenready)）。ready 之后的部分放在 `whenReady()` 返回的 promise 的 `then` 里执行，启动失败也在这条链上处理：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="348-357" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="347-356" */}
 
 启动失败时先写一行日志，再弹错误框（Electron 保证 ready 之前也能弹出，窗口可能还没有），框里带着 `gwb.log` 的路径，退出码 1。
 
@@ -33,13 +33,13 @@ description: 内核一次启动按什么顺序做事、分成模块求值时与 
 
 只有 `gwb.log` 打不开时不经过这个函数，因为它要写的正是这个文件：这时只写 stderr，错误框里写明日志文件的路径与打不开的原因，退出码 1。所以 `gwb.log` 在其余几项检查之前打开，那几项失败时的那一行才进得了日志文件。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="59-80" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="58-79" */}
 
 ## 顺序是约束
 
 ready 之后这一段：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="329-346" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="328-345" */}
 
 - **`gwbKernel` 在注册 loader 之前提供**：它在模块求值时就已提供，任何插件加载时都已经在了（[`gwbKernel` 要在注册 loader 之前提供](/trajectory/2026-09-07-wall-gwbkernel-provide-early)）
 - **窗口先于 loader**：插件加载的过程中页面就显示只读状态页，页面的 console 也从一开始就进日志
@@ -52,13 +52,13 @@ ready 之后这一段：
 
 插件和内核在同一个进程里，插件的错误就是这个进程的错误。内核对未捕获的异常和没人处理的 rejection 只写一行 `kernel` 的 error、不退出——一个坏插件不该让整个工作台退出（[两个进程合并为一个](/trajectory/2026-09-09-single-process)）。插件自己加载失败由 cordis 记在它的条目上，内核在日志里写一行 `loader` 的 error，只读状态页上也看得到（[日志](/docs/seams/log)）。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="177-179" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="176-178" */}
 
 ## 退出
 
 所有窗口关闭就退出。退出前内核卸载 loader，整棵插件树的清理逐层执行；插件启动的长期子进程靠这一步结束，否则主进程一退它们就成了孤儿进程。谁创建了 cordis 实例，谁负责卸载它。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="359-382" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="358-381" */}
 
 - 第一次进入 `will-quit` 时拦下退出、开始清理；清理完调用的 `app.quit()` 会再次进入，那一次放行。loader 还没加载（刚启动就退出）时没有可卸载的，同样放行
 - **等清理结束要内核和插件都做到**：内核 `dispose()` 之后还要 `await()` 才等得到嵌套的异步清理；插件要把清理的 promise 从 effect 的清理函数里返回出来。少做一方，退出时就等不到插件的清理（[退出收尾：内核等、插件返回](/trajectory/2026-09-12-quit-dispose-two-halves)）

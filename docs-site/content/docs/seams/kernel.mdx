@@ -27,7 +27,7 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 内核里这个对象就是这样实现的：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="248-264" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="247-263" */}
 
 这段说明三件事：`emit` 只是往当前窗口发一条 `gwb:event`，窗口不在就什么都不发；`setShell` 每次都立刻推一次整份外壳状态；撤销函数只在当前外壳地址仍是自己交出的那个时才清空。
 
