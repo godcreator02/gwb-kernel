@@ -16,7 +16,7 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 `gwbKernel` 的形状就是包根导出的 `GwbKernelApi`，插件的 `apply` 拿到的上下文类型是 `GwbContext`：
 
-{/* ref file="../apps/desktop/src/api.ts" lines="16-38" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="9-31" */}
 
 - `dataDir`：这个 home 目录在磁盘上的真实路径——大小写、junction、斜杠写法不同的同一个目录得到同一个字符串
 - `version`：内核包 `@godcreator/gwb-kernel-desktop` 清单里的版本号
@@ -27,7 +27,7 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 内核里这个对象就是这样实现的：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="237-253" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="235-251" */}
 
 这段说明三件事：`emit` 只是往当前窗口发一条 `gwb:event`，窗口不在就什么都不发；`setShell` 每次都立刻推一次整份外壳状态；撤销函数只在当前外壳地址仍是自己交出的那个时才清空。
 
