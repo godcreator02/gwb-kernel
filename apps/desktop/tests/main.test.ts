@@ -303,10 +303,10 @@ function pluginModule(name: string, body: string[]): Record<string, string> {
   }
 }
 
-/** 五种条目：同步挂上、异步 apply 等 50ms 挂上、apply 抛错、等一个没人提供的服务、包没装 */
+/** 六种条目：同步挂上、异步 apply 等 50ms 挂上、apply 抛错、等一个没人提供的服务、包没装、模块求值时就抛错 */
 function fakeHomeForMountLog(): string {
   const home = makeTemporaryDir('gwb-main-home-')
-  const ids = ['sync', 'slow', 'broken', 'waiting', 'missing']
+  const ids = ['sync', 'slow', 'broken', 'waiting', 'missing', 'throws-on-import']
   writeFiles(home, {
     'package.json': JSON.stringify({ name: 'gwb-home', private: true }),
     'cordis.yml': ids.map((id) => `- id: ${id}\n  name: gwb-test-${id}\n`).join(''),
@@ -314,6 +314,7 @@ function fakeHomeForMountLog(): string {
     ...pluginModule('gwb-test-slow', ['export async function apply() {', '  await new Promise((resolve) => setTimeout(resolve, 50))', '}']),
     ...pluginModule('gwb-test-broken', ['export function apply() {', "  throw new Error('探针插件故意抛的错')", '}']),
     ...pluginModule('gwb-test-waiting', ["export const inject = ['nobodyProvidesThis']", 'export function apply() {}']),
+    ...pluginModule('gwb-test-throws-on-import', ["throw new Error('模块求值时抛的错')"]),
   })
   return home
 }
@@ -483,9 +484,11 @@ describe('main.ts：条目挂载日志', () => {
     expect(log).not.toMatch(/loader gwb-test-(waiting|missing) 挂上了/)
     expect(log).toContain(
       'error loader 条目加载完：2 个挂上；在等：gwb-test-waiting（缺 nobodyProvidesThis）；' +
-        '挂载失败：gwb-test-broken（原因见前面各自的 error）；没导入成功：gwb-test-missing（原因见 include 的 error）',
+        '挂载失败：gwb-test-broken（原因见前面各自的 error）；没导入成功：gwb-test-missing，gwb-test-throws-on-import（原因见 include 的 error）',
     )
-    expect(log).toMatch(/error include .*gwb-test-missing/)
+    // import 失败的错误原文要在正文第一行：模块求值时抛错走异步 reject，loader 会把 stack 换成只剩条目路径
+    expect(log).toMatch(/error include Error: ENOENT: [^\n]*gwb-test-missing/)
+    expect(log).toMatch(/error include Error: 模块求值时抛的错\n/)
     await quitAndWaitForCleanup(booted)
   })
 

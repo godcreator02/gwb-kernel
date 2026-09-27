@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fileLineOf, levelOf, sourceOfLoggerName, terminalLineOf, withLostErrorMessages, type LogRecord } from '../src/log-record'
+import { fileLineOf, levelOf, sourceOfLoggerName, terminalLineOf, type LogRecord } from '../src/log-record'
 
 const record: LogRecord = { ts: '2026-09-27T14:00:00.000Z', level: 'error', source: 'plugin', name: 'gwb-x', msg: '第一行\n第二行' }
 
@@ -30,20 +30,5 @@ describe('级别与来源', () => {
       'plugin',
       'plugin',
     ])
-  })
-})
-
-describe('补回 Error 原文', () => {
-  it('正文里找不到某个 Error 的 message（stack 被换成只剩条目路径）：把「名字: message」补在最前面', () => {
-    const lost = new Error('没有名为 gwb-x 的模块')
-    lost.stack = '    at file:///C:/home/#gwb-x\n    at file:///C:/home/#home'
-    expect(withLostErrorMessages(lost.stack, [lost])).toBe(`Error: 没有名为 gwb-x 的模块\n${lost.stack}`)
-  })
-
-  it('正文里已有 message、或参数里没有 Error：原样返回', () => {
-    const intact = new Error('好好的错误')
-    const formatted = String(intact.stack)
-    expect(withLostErrorMessages(formatted, [intact])).toBe(formatted)
-    expect(withLostErrorMessages('普通一句 42', ['普通一句 %d', 42])).toBe('普通一句 42')
   })
 })

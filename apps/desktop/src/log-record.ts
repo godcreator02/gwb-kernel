@@ -33,14 +33,3 @@ export function fileLineOf(record: LogRecord): string {
 export function terminalLineOf(record: LogRecord): string {
   return `${record.ts} ${record.level} ${record.name} ${record.msg}\n`
 }
-
-/**
- * cordis 格式化 Error 用的是 stack；loader 在 import 失败时把 stack 换成只剩条目路径，原文只留在 message 里。
- * 正文里找不到哪个 Error 的 message，就把「名字: message」补在最前面
- */
-export function withLostErrorMessages(formatted: string, args: readonly unknown[]): string {
-  const lostMessages = args
-    .filter((arg): arg is Error => arg instanceof Error && !formatted.includes(arg.message))
-    .map((error) => `${error.name}: ${error.message}`)
-  return lostMessages.length === 0 ? formatted : [...lostMessages, formatted].join('\n')
-}

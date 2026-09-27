@@ -19,7 +19,6 @@ import {
   RENDERER_LOGGER_NAME,
   sourceOfLoggerName,
   terminalLineOf,
-  withLostErrorMessages,
   type LogLevel,
 } from './log-record.js'
 import { isReloadOfCurrentDocument, isTopFrame, opensInSystemBrowser } from './page-boundary.js'
@@ -166,7 +165,7 @@ const gwbLogExporter = {
 function formatLogMessage(message: CordisLogMessage): string {
   // cordis 的 %o 用 JSON.stringify，参数有循环引用、BigInt 就抛；抛出去会让写日志的插件跟着抛，留在缓冲里的那一行还会让每次推送状态页都抛
   try {
-    return withLostErrorMessages(CordisLogger.format(gwbLogExporter, message), message.args ?? [])
+    return CordisLogger.format(gwbLogExporter, message)
   } catch {
     return (message.args ?? []).map((arg) => (arg instanceof Error ? arg.message : String(arg))).join(' ')
   }

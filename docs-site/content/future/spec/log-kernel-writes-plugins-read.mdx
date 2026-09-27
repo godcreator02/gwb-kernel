@@ -2,7 +2,7 @@
 title: 日志：内核写结构化文件，插件只读
 ---
 
-- [ ] 内核 0.10.0：`gwb.log` 改成一行一个 JSON（带 `source`）、补上 import 失败丢掉的 Error 原文、条目挂载日志与汇总；测试、现状页、轨迹卡；隔离 home 验证；发版；给 peer 里写了内核包的下游仓投反馈
+- [ ] 内核 0.10.0：`gwb.log` 改成一行一个 JSON（带 `source`）、条目挂载日志与汇总；测试、现状页、轨迹卡；隔离 home 验证；发版；给 peer 里写了内核包的下游仓投反馈
 - [ ] gwb-logger：只留 `logger.query`（读 `gwb.log` 与 `gwb.log.1`）；删 exporter、内存缓冲、逐条推给页面的事件、`gwbLogger` 服务、`logger.backlog`、`logger.where`；升 x 发版
 - [ ] baseui 日志窗格：可见时每秒调一次 `logger.query { after }`，不可见不调；不再注入 `gwbLogger`，窗格总是登记；发版
 - [ ] devkit：`devkit.dev` 读目标 home 新增的日志时按 JSONL 解析；发版

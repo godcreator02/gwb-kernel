@@ -37,3 +37,7 @@ pivots-from:: [fiber 不是挂上](2026-09-07-wall-fiber-not-active.md)
 ## 依据
 
 `probes/2609272205_entry-state-timing/`，原始时间线在 `runs/01-timeline.txt`。关键几行：异步 apply 等 300ms 的条目 12ms 进 LOADING、318ms 进 ACTIVE；`[Service.init]` 等 400ms 的提供方 427ms 进 ACTIVE，依赖它的条目同一毫秒 `PENDING → LOADING`；`ctx.loader.await()` 在 428ms 返回，此时 `needs-nobody=PENDING`，全程没有它的状态事件；import 失败那条 error 的 Error `message` 是 `probe: 没有名为 probe-not-installed 的模块`，stack 第一行是 `    at file:///…/#missing`。
+
+## 2026-09-27 补记：原文丢失只出在探针自己的 import 上
+
+「import 失败的错误原文进不了日志」这一条只在本探针的装配下成立：探针的 `ctx.loader.internal.import` 是自己写的 async 函数，错误在它里面抛出，loader 把 stack 换成了只剩条目路径。内核真实的 import（按 home 解析包名再 `import()`）下，包没装时同步抛出 ENOENT，模块求值时抛错也保留着 `Error: <原文>` 那一行：内核仓 `apps/desktop/tests/main.test.ts` 的挂载日志测试在不做任何补救的情况下，两种情况的原文都在 include 那行 error 的第一行。据此，内核里为它加的补救在同一天删掉了，没有发版。

@@ -30,11 +30,9 @@ description: 连接内核应用与所有插件；插件、内核、页面 consol
 
 {/* ref file="../apps/desktop/src/main.ts" lines="82-87" */}
 
-正文由 cordis 自己的 `Logger.format` 格式化，所有级别都写，包括 `debug`。两处补救：插件传进来的参数 cordis 格式化不了时（`%o` 用 `JSON.stringify`，遇到循环引用、BigInt 就抛），内核退回把参数逐个转成字符串拼起来，这一行照样写进去；cordis 格式化 Error 用的是 stack，而 loader 在包 import 失败时把 stack 换成了只剩条目路径，错误原文只在 `message` 里，内核发现正文里没有某个 Error 的 `message`，就把「名字: message」补在正文最前面（[条目状态时机的实验](/trajectory/2026-09-27-entry-state-timing)）：
+正文由 cordis 自己的 `Logger.format` 格式化，所有级别都写，包括 `debug`。插件传进来的参数 cordis 格式化不了时（`%o` 用 `JSON.stringify`，遇到循环引用、BigInt 就抛），内核退回把参数逐个转成字符串拼起来，这一行照样写进去：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="156-173" */}
-
-{/* ref file="../apps/desktop/src/log-record.ts" lines="37-46" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="155-172" */}
 
 **挂载日志**：内核按条目写，logger 名是 `loader`（`source` 是 `kernel`）。每个插件条目挂上了（带 apply 的耗时，从进入 LOADING 算到 ACTIVE）、挂载失败（错误的第一行）、卸载、因为提供方被卸载而退回等待（缺哪几个服务）各写一行；include 这类只装条目的容器，以及插件里再 `ctx.plugin` 出来的子插件不写。
 
@@ -78,13 +76,11 @@ description: 连接内核应用与所有插件；插件、内核、页面 consol
 
 ## 测试
 
-- `apps/desktop/tests/log-record.test.ts`：文件里一行一个 JSON、五个键顺序固定、正文换行留在字符串里；终端上的文本格式；级别与来源的归类；正文里找不到 Error 的 `message` 时补在最前面
-- `apps/desktop/tests/main.test.ts`：用假的 electron 与真的 cordis，证明 `gwb.log` 打不开时启动失败、只写 stderr，`gwb.log` 每行都能按 JSON 解析、来源分对、终端上是文本，页面 console 的级别记成名字 `renderer` 的对应级别，没被处理的异常记成 `kernel` 的 error，插件写的 error 进 `gwb.log` 并在 200 毫秒后随 `gwb:shell` 推给页面，带循环引用参数的 error 写日志的一方不抛、这一行照样写进去，warn 只进 `gwb.log`、不推送；五种条目（同步挂上、异步挂上、apply 抛错、等一个没人提供的服务、包没装）各自的挂载日志与汇总，全部挂上时汇总是 info，退出时不写卸载
+- `apps/desktop/tests/log-record.test.ts`：文件里一行一个 JSON、五个键顺序固定、正文换行留在字符串里；终端上的文本格式；级别与来源的归类
+- `apps/desktop/tests/main.test.ts`：用假的 electron 与真的 cordis，证明 `gwb.log` 打不开时启动失败、只写 stderr，`gwb.log` 每行都能按 JSON 解析、来源分对、终端上是文本，页面 console 的级别记成名字 `renderer` 的对应级别，没被处理的异常记成 `kernel` 的 error，插件写的 error 进 `gwb.log` 并在 200 毫秒后随 `gwb:shell` 推给页面，带循环引用参数的 error 写日志的一方不抛、这一行照样写进去，warn 只进 `gwb.log`、不推送；六种条目（同步挂上、异步挂上、apply 抛错、等一个没人提供的服务、包没装、模块求值时抛错）各自的挂载日志与汇总，两种 import 失败的错误原文都在 include 那行 error 的第一行，全部挂上时汇总是 info，退出时不写卸载
 - `apps/desktop/tests/log-file.test.ts`：在临时目录里用真的文件系统，证明到上限轮转且只留一份旧的、轮转后写的行进新文件、启动时已超上限的文件第一行就轮转、轮转失败不丢行、首次打不开就抛错且错误信息带路径与原因、写不进不抛且只告警一次、轮转后重新打开失败只告警一次且不再重开
 
 {/* ref file="../apps/desktop/tests/log-record.test.ts" lines="7-12" */}
-
-{/* ref file="../apps/desktop/tests/log-record.test.ts" lines="37-41" */}
 
 {/* ref file="../apps/desktop/tests/main.test.ts" lines="448-469" */}
 
