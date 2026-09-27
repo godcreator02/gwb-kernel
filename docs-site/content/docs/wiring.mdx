@@ -16,7 +16,7 @@ description: 内核给插件的全部接入面总表——上下文上的服务�
 | `ctx.gwbKernel` | 直接取，不写进 `inject`：内核在根上下文上提供，插件的上下文沿父上下文取到 | 成员 `dataDir`、`version`、`emit`、`handleRequest`、`registerImports`、`setShell`；在注册 loader 之前提供，永不撤销（[内核服务](/docs/seams/kernel)） |
 | `ctx.baseUrl` | cordis 上下文的属性，从根上下文继承 | home 目录的 `file:` 地址；loader 与 include 从它出发找 `cordis.yml` |
 | `ctx.loader` | loader 提供的服务；内核在根上下文上注册 loader | 条目树（`create`、`update`、`remove`、`resolve`、`root`）。根层只有一条 id 为 `home` 的 include 条目，由它读 `cordis.yml`，所以 `cordis.yml` 里的条目 id 都是 `home:<手写 id>`；包名一律按 home 的 `node_modules` 里的真实路径解析。形状由 loader 与 include 的版本决定，不在内核包导出的类型里（[插件加载](/docs/seams/loading)、[home 布局与条目树](/docs/seams/home)） |
-| `ctx.logger` | cordis 自带 | 插件写日志、注册自己的 exporter 都经它；内核注册的 exporter 把每一行写进 stderr 与 `gwb.log`，error 行还会进只读状态页（[日志](/docs/seams/log)） |
+| `ctx.logger` | cordis 自带 | 插件写日志经它；内核注册唯一的 exporter，把每一条写进 stderr（文本）与 `gwb.log`（一行一个 JSON），error 还会进只读状态页（[日志](/docs/seams/log)） |
 | `ctx.fiber.entry` | 插件自己上下文上的 fiber，loader 在上面加了 `entry` | 这个插件对应的条目：`id`、`options.name`（包名）、`parent`。不在 cordis 的类型里，也不在内核包导出的类型里，用它的插件按运行时的形状取（见下面「约定通道」） |
 | `GwbKernelApi` | 从内核包的包根 `import type` | `ctx.gwbKernel` 的形状 |
 | `GwbContext` | 同上 | 插件 `apply` 拿到的上下文：cordis 的 `Context` 加 `gwbKernel` |
@@ -99,7 +99,9 @@ IPC 通道的两端都在内核包里（页面一侧是 `preload.cjs`，主进�
 
 {/* has file="../apps/desktop/src/main.ts" text="if (opensInSystemBrowser(url)) openInSystemBrowser(url)" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="ctx.logger('renderer')" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="321-321" */}
+
+{/* ref file="../apps/desktop/src/log-record.ts" lines="15-16" */}
 
 ### home 布局与文件
 
@@ -111,7 +113,7 @@ home 里每个文件谁写、谁读，全站只在这里列一份。
 | `package.json` | 创建 home 的一方（`INSTALL.md` 或 `devkit.home.new`）；之后只由插件管理运行的 pnpm 改 | 内核（启动时只看在不在）、pnpm | 包清单。缺了内核启动失败、不补（[home 布局与条目树](/docs/seams/home)） |
 | `cordis.yml` | 创建 home 的一方；之后由 include 经条目树写回 | include（内核放在根层的那条 `home` 条目） | 条目清单。缺了内核启动失败、不补 |
 | `node_modules/` | pnpm，由插件管理调用 | 内核按真实路径解析包名；启动器从这里加载内核包 | |
-| `gwb.log`、`gwb.log.1` | 内核（注册在 cordis 日志流上的 exporter） | 人与 agent；日志插件的 `logger.where` 报告它的路径 | 写到 128 MB 轮转，只留一份旧的（[日志](/docs/seams/log)） |
+| `gwb.log`、`gwb.log.1` | 内核（注册在 cordis 日志流上的 exporter） | 日志插件、devkit、人与 agent | 一行一个 JSON；写到 128 MB 轮转，只留一份旧的（[日志](/docs/seams/log)） |
 | `runtime.json` | 内核每次启动整份重写 `pid`、`startedAt`、`version`、`cdp`；MCP 入口插件 `@godcreator/gwb-mcp` 读出、补上 `mcp` 字段再写回 | devkit、安装工作台的 agent | 退出时不删（[runtime.json](/docs/seams/runtime)） |
 | `electron/` | Electron（Chromium 的 userData） | Electron | 单实例锁按它区分 home |
 | `settings.json` | 设置插件 `@godcreator/gwb-settings` | 设置插件 | 与 `cordis.yml` 并排，按条目 id 的末段分区；内核不知道它 |
@@ -146,8 +148,7 @@ home 里每个文件谁写、谁读，全站只在这里列一份。
 
 | 通道 | 对方 | 名字 | 说明 |
 | --- | --- | --- | --- |
-| 日志的 logger 名 | 日志插件 `@godcreator/gwb-logger` | `kernel`、`loader`、`renderer` | 日志插件按 logger 名判断来源：`kernel`、`loader` 算内核，`renderer` 算页面，其余算插件。`kernel` 是内核自己的日志名，`renderer` 是内核转页面 console 用的名字，`loader` 是内核包依赖的 loader 自己用的名字。内核改了名字，这些日志在日志插件里就被当成插件的日志，不报错 |
-| 日志文件名 | 日志插件 | `gwb.log` | 日志插件的 `logger.where` 自己拼出 `<home>/gwb.log` 报告出去，不问内核 |
+| 日志文件名 | 日志插件 `@godcreator/gwb-logger`、devkit | `gwb.log`、`gwb.log.1` | 两者自己拼出 `<home>/gwb.log` 读，不问内核；一行的格式是日志接缝的契约（[日志](/docs/seams/log)） |
 | `runtime.json` 与其中的 `mcp` 字段 | MCP 入口插件 `@godcreator/gwb-mcp` | `runtime.json`、`mcp` | 内核每次启动整份重写这个文件，MCP 入口在端口开好后读出、补上 `mcp` 再写回；内核不认识 `mcp` 字段（[runtime.json](/docs/seams/runtime)） |
 | 条目 id 的形状 | 数据插件、设置插件 | `home:<手写 id>` | 两者从 `ctx.fiber.entry.id` 取末段当数据目录名、设置分区名，超过两段就报错。内核改掉根层那条 `home` 条目、或再嵌一层 include，这两个插件就算不出目录与分区 |
 | `ctx.fiber.entry` | 命令插件、说明书插件 `@godcreator/gwb-skills`、`@godcreator/gwb-node-cli`、`@godcreator/gwb-py-cli`、数据插件、设置插件、插件管理 | `id`、`options.name`、`parent.tree` | 靠 loader 加在 fiber 上的条目认出调用方：命令插件取包名，记下每条登记的命令属于哪个插件；数据与设置插件取 id 与包名；插件管理从自己的条目找到条目树。这些字段是 loader 的内部结构，内核只决定用哪个版本的 loader，换版本就是改接缝（[home 布局与条目树](/docs/seams/home)） |

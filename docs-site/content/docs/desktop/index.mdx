@@ -11,12 +11,12 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 - **选定 home**：环境变量 `GWB_HOME` 只写名字时，home 是 `%APPDATA%\gwb-kernel\homes\<名字>`；带路径分隔符时就是那个目录；不设时是 `default`。目录不存在就创建，路径统一成磁盘上的真实路径（大小写、junction、斜杠写法不同的同一个目录得到同一个字符串）。home 里缺 `package.json` 或 `cordis.yml` 时启动失败，报错写明缺哪个、home 在哪：这两个文件由安装步骤（`INSTALL.md`）或 `devkit.home.new` 准备，内核不补（[home 布局与条目树](/docs/seams/home)）
 - **同一个 home 只运行一个实例**：Chromium 的 userData 放在 `<home>/electron`，Electron 的单实例锁按它区分。同一个 home 再启动一次，新实例写一行 error、退出码 1，`runtime.json` 不动，已在运行的实例把窗口调到前面；不同的 home 可以同时运行。锁由操作系统在进程结束时释放，崩溃不留下过期的锁（[同一 home 只允许一个实例](/trajectory/2026-09-12-one-home-one-instance)）
-- **加载插件**：创建 cordis 实例，提供 `gwbKernel`，用 loader 与 include 按 `cordis.yml` 加载插件；插件按包名 import 时，按 home 里的真实路径找到文件，换了版本的包重新加载时拿到新版本（[插件加载](/docs/seams/loading)、[内核服务](/docs/seams/kernel)）
+- **加载插件**：创建 cordis 实例，提供 `gwbKernel`，用 loader 与 include 按 `cordis.yml` 加载插件；插件按包名 import 时，按 home 里的真实路径找到文件，换了版本的包重新加载时拿到新版本；每个插件挂上、挂载失败、卸载都写一行日志，条目树安定之后写一行汇总，列出在等服务的、失败的、没导入成功的（[插件加载](/docs/seams/loading)、[内核服务](/docs/seams/kernel)、[日志](/docs/seams/log)）
 - **窗口与外壳**：打开唯一的窗口，加载页面入口，把页面交给调用 `setShell` 的外壳插件（[外壳接管](/docs/seams/shell)）
 - **页面边界**：主框架只可能是内核包里的 `index.html`，跳到别的地址、重定向一律拒绝，只放行整页重新加载；`window.open` 与 `target="_blank"` 从不打开新窗口，`http:`、`https:` 地址交给系统默认浏览器；`gwb:request` 只接收顶层框架的调用。页面能调用整条命令总线，这是内核保证的唯一边界（[IPC 通道](/docs/seams/ipc#页面边界)）
 - **转交请求、推送事件**：页面发来的请求交给插件登记的处理器（[请求通道](/docs/seams/requests)），插件发出的事件推给页面（[IPC 通道](/docs/seams/ipc)）
 - **浏览器模块解析**：插件登记名字到文件 URL，页面准备 importmap 后再加载模块；内核不携带 React。
-- **日志**：插件、内核、页面 console 的日志汇成一条 cordis 日志流，每一行同时写 stderr 和 home 里的 `gwb.log`；`gwb.log` 写到 128 MB 改名为 `gwb.log.1`（只留这一份旧的）再开一份新的；`gwb.log` 启动时打不开就启动失败，运行中写不进、轮转失败都只告警一句，内核照常运行（[日志](/docs/seams/log)）
+- **日志**：插件、内核、页面 console 的日志汇成一条 cordis 日志流，每一条同时写 stderr（文本）和 home 里的 `gwb.log`（一行一个 JSON，带来源）；`gwb.log` 写到 128 MB 改名为 `gwb.log.1`（只留这一份旧的）再开一份新的；`gwb.log` 启动时打不开就启动失败，运行中写不进、轮转失败都只告警一句，内核照常运行（[日志](/docs/seams/log)）
 - **记下这次运行**：每次启动把 pid、启动时刻、版本、调试端口写进 home 里的 `runtime.json`；写不进、调试端口给的不是 1–65535 的整数时启动失败（[runtime.json](/docs/seams/runtime)）
 - **出错与退出**：启动失败时弹错误框、退出码 1；插件抛出的未捕获异常只记进日志，工作台不退出；所有窗口关闭时卸载整棵插件树，最多等 5 秒（[启动与退出](/docs/desktop/boot)）
 
@@ -43,7 +43,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 | 浏览器模块登记与准备 | 插件提供映射，页面调用 prepareImports 后加载模块 | [5 浏览器模块](/docs/seams/page-react) |
 | home 的文件布局与条目树 | 插件管理：启动时 home 里要已有 `package.json` 与 `cordis.yml`，缺了启动失败、内核不补；loader 根层只有一条承载 `cordis.yml` 的 include 条目 `home` | [6 home 布局与条目树](/docs/seams/home) |
 | `runtime.json` | devkit、安装工作台的 agent：每次启动整份重写 pid、启动时刻、版本，开了调试端口时还有端口 | [7 runtime.json](/docs/seams/runtime) |
-| cordis 日志流与 `gwb.log` | 插件用 `ctx.logger` 写日志、注册 exporter 收全部日志；人和 agent 读 `gwb.log`，一行是「时间 级别 名字 正文」 | [8 日志](/docs/seams/log) |
+| cordis 日志流与 `gwb.log` | 插件用 `ctx.logger` 写日志；日志插件、devkit、人和 agent 读 `gwb.log`，一行一个 JSON（`ts`、`level`、`source`、`name`、`msg`） | [8 日志](/docs/seams/log) |
 | 内核包清单的 `engines.electron` 与 `main` | 启动器：Electron 版本在范围里才 import `main` 指向的入口 `dist/main.js` | [9 启动器加载内核](/docs/seams/launcher) |
 | `handleRequest(channel, handler)` | 业务插件：主动登记通道；内核不解释载荷与业务回执 | [10 请求通道](/docs/seams/requests) |
 
@@ -74,7 +74,7 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 - **不渲染界面**：只读状态页之外，页面显示什么全由外壳插件决定；内核不认识窗格，不替插件做菜单（只在启动时去掉 Electron 默认的那套），需要菜单的插件在 Electron ready 之后自己调 `Menu.setApplicationMenu`
 - **不诊断插件故障**：只读状态页只列内核已有的数据，不分析失败原因、不重试、不放按钮；这些要认识具体的插件，归外壳和插件管理的窗格（[外壳未就位时的阶段页](/trajectory/2026-09-08-stage-page)）
 - **不经手插件之间的交互**：服务、命令、契约版本都在插件之间，由 cordis 与命令插件连接
-- **不显示、不查询日志**：内核只把日志写到 stderr 与 `gwb.log`；在界面上看日志归日志插件，它注册自己的 exporter
+- **不显示、不查询日志**：内核只把日志写到 stderr 与 `gwb.log`；查询与在界面上看日志归日志插件，它读 `gwb.log`
 - **不提供设置、数据、说明书、MCP 入口**：这些都是 `cordis.yml` 里的插件
 - **不确认 `runtime.json` 里的进程还活着**：退出时不删这份文件，读它的 devkit 与安装工作台的 agent 自己确认 pid 还在
 - **不比对插件兼容哪个内核**：插件 peer 里内核包的范围内核不读，由插件管理比对

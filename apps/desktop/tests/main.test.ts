@@ -216,7 +216,22 @@ interface BootOptions extends Omit<FakeElectronOptions, 'appData'> {
 interface BootedKernel {
   electron: FakeElectron
   dataDir: string
+  /** gwb.log 里的原始行 */
+  readLogLines(): string[]
+  /** 每行按 JSON 解析（不是 JSON 就抛），拼成「级别 名字 正文」一条一行，方便按文字断言 */
   readLog(): string
+}
+
+interface LogFileRecord {
+  ts: string
+  level: string
+  source: string
+  name: string
+  msg: string
+}
+
+function recordsOf(lines: string[]): LogFileRecord[] {
+  return lines.map((line) => JSON.parse(line) as LogFileRecord)
 }
 
 async function importMain(options: BootOptions): Promise<BootedKernel> {
@@ -234,10 +249,15 @@ async function importMain(options: BootOptions): Promise<BootedKernel> {
   const homePath = /[\\/]/.test(options.gwbHome) ? path.resolve(options.gwbHome) : path.join(appData, 'gwb-kernel', 'homes', options.gwbHome)
   const dataDir = fs.realpathSync.native(homePath)
   const logFile = path.join(dataDir, 'gwb.log')
+  const readLogLines = (): string[] => (fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8').split('\n').filter((line) => line !== '') : [])
   const booted: BootedKernel = {
     electron,
     dataDir,
-    readLog: () => (fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : ''),
+    readLogLines,
+    readLog: () =>
+      recordsOf(readLogLines())
+        .map((record) => `${record.level} ${record.name} ${record.msg}`)
+        .join('\n'),
   }
   if (options.resolveReady === true) electron.resolveReady()
   return booted
@@ -272,6 +292,28 @@ function fakeHomeWithPlugins(): string {
       '}',
       '',
     ].join('\n'),
+  })
+  return home
+}
+
+function pluginModule(name: string, body: string[]): Record<string, string> {
+  return {
+    [`node_modules/${name}/package.json`]: JSON.stringify({ name, type: 'module', exports: { '.': './index.mjs' } }),
+    [`node_modules/${name}/index.mjs`]: [`export const name = '${name}'`, ...body, ''].join('\n'),
+  }
+}
+
+/** 五种条目：同步挂上、异步 apply 等 50ms 挂上、apply 抛错、等一个没人提供的服务、包没装 */
+function fakeHomeForMountLog(): string {
+  const home = makeTemporaryDir('gwb-main-home-')
+  const ids = ['sync', 'slow', 'broken', 'waiting', 'missing']
+  writeFiles(home, {
+    'package.json': JSON.stringify({ name: 'gwb-home', private: true }),
+    'cordis.yml': ids.map((id) => `- id: ${id}\n  name: gwb-test-${id}\n`).join(''),
+    ...pluginModule('gwb-test-sync', ['export function apply() {}']),
+    ...pluginModule('gwb-test-slow', ['export async function apply() {', '  await new Promise((resolve) => setTimeout(resolve, 50))', '}']),
+    ...pluginModule('gwb-test-broken', ['export function apply() {', "  throw new Error('探针插件故意抛的错')", '}']),
+    ...pluginModule('gwb-test-waiting', ["export const inject = ['nobodyProvidesThis']", 'export function apply() {}']),
   })
   return home
 }
@@ -401,6 +443,60 @@ describe('main.ts：日志文件', () => {
     expect(stderrText).toContain(`error kernel 启动失败：日志文件打不开（${logFile}）：gwb.log 打不开（测试造的）`)
     expect(fs.existsSync(logFile)).toBe(false)
     expect(fs.existsSync(path.join(home, 'runtime.json'))).toBe(false)
+  })
+
+  it('gwb.log 一行一个 JSON：五个键、顺序固定；多行正文仍是一行；来源按名字分成内核、插件、页面；终端上是文本', async () => {
+    const stderrSpy = silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
+    probeGlobal.__gwbMainTestProbe.logger!.error('探针插件的第一行\n探针插件的第二行')
+    booted.electron.windows[0]!.webContents.events.emit('console-message', { level: 'info', message: '页面说的话' })
+
+    const lines = booted.readLogLines()
+    const records = recordsOf(lines)
+    for (const record of records) {
+      expect(Object.keys(record)).toEqual(['ts', 'level', 'source', 'name', 'msg'])
+      expect(new Date(record.ts).toISOString()).toBe(record.ts)
+    }
+    expect(records).toContainEqual(expect.objectContaining({ level: 'error', source: 'plugin', name: 'probe', msg: '探针插件的第一行\n探针插件的第二行' }))
+    expect(records).toContainEqual(expect.objectContaining({ level: 'info', source: 'renderer', name: 'renderer', msg: '页面说的话' }))
+    expect(records).toContainEqual(expect.objectContaining({ level: 'info', source: 'kernel', name: 'kernel', msg: expect.stringMatching(/^up，home=/) }))
+    expect(records.some((record) => record.source === 'kernel' && record.name === 'loader')).toBe(true)
+
+    const stderrText = stderrSpy.mock.calls.map((call) => String(call[0])).join('')
+    expect(stderrText).toMatch(/\d{4}-\d\d-\d\dT[\d:.]+Z error probe 探针插件的第一行\n探针插件的第二行\n/)
+    await quitAndWaitForCleanup(booted)
+  })
+})
+
+describe('main.ts：条目挂载日志', () => {
+  it('每个插件条目挂上（带 apply 耗时）或挂载失败各写一行 loader 日志；加载完写一行汇总，列出在等的、失败的、没导入成功的', async () => {
+    silenceStderr()
+    const booted = await bootUntilUp({ gwbHome: fakeHomeForMountLog() })
+    await vi.waitFor(() => expect(booted.readLog()).toContain('loader 条目加载完'), { timeout: 5_000 })
+    const log = booted.readLog()
+
+    expect(log).toMatch(/info loader gwb-test-sync 挂上了（apply \d+ ms）/)
+    const slowApplyMs = Number(/info loader gwb-test-slow 挂上了（apply (\d+) ms）/.exec(log)?.[1])
+    expect(slowApplyMs).toBeGreaterThanOrEqual(40)
+    expect(log).toContain('error loader gwb-test-broken 挂载失败：Error: 探针插件故意抛的错')
+    expect(log).not.toMatch(/loader gwb-test-(waiting|missing) 挂上了/)
+    expect(log).toContain(
+      'error loader 条目加载完：2 个挂上；在等：gwb-test-waiting（缺 nobodyProvidesThis）；' +
+        '挂载失败：gwb-test-broken（原因见前面各自的 error）；没导入成功：gwb-test-missing（原因见 include 的 error）',
+    )
+    expect(log).toMatch(/error include .*gwb-test-missing/)
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('全部挂上时汇总是 info；退出卸载插件树时不再逐条写卸载', async () => {
+    silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
+    await vi.waitFor(() => expect(booted.readLog()).toContain('info loader 条目加载完：2 个挂上'), { timeout: 5_000 })
+    await quitAndWaitForCleanup(booted)
+    expect(probeGlobal.__gwbMainTestProbe.events).toContain('probe disposed')
+    expect(booted.readLog()).not.toContain('已卸载')
   })
 })
 

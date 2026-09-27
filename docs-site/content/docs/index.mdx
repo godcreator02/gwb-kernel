@@ -57,7 +57,7 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 | 5 | 浏览器模块解析 | 内核应用 ↔ 页面上运行的代码 | 插件 registerImports → 页面 prepareImports → 动态加载 | [浏览器模块解析](/docs/seams/page-react) |
 | 6 | home 布局与条目树 | 内核应用 ↔ 插件管理 | home 的文件布局；loader 与 include 的版本与条目树；按真实路径解析包名 | [home 布局与条目树](/docs/seams/home) |
 | 7 | runtime.json（约定） | 内核应用 ↔ 外部工具 | pid、启动时刻、版本、调试端口；读的一方自己确认进程还在 | [runtime.json](/docs/seams/runtime) |
-| 8 | 日志 | 内核应用 ↔ 任何插件 | 三个来源汇成一条 cordis 日志流；插件注册 exporter；`gwb.log` 一行的格式 | [日志](/docs/seams/log) |
+| 8 | 日志 | 内核应用 ↔ 任何插件 | 三个来源汇成一条 cordis 日志流；`gwb.log` 一行一个 JSON 的格式；条目挂载日志 | [日志](/docs/seams/log) |
 | 9 | 启动器加载内核（约定） | 安装包里的启动器 ↔ home 里的内核包 | 选 home 的同一条规则与写回的 `GWB_HOME`；内核包清单的 `engines.electron` 与 `main` | [启动器加载内核](/docs/seams/launcher) |
 | 10 | 请求通道 | 内核应用 ↔ 提供方插件 | `handleRequest` 登记处理器；未登记时请求拒绝 | [请求通道](/docs/seams/requests) |
 

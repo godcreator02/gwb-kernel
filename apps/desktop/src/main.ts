@@ -11,7 +11,17 @@ import { createRequests } from './requests.js'
 import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
+import { watchEntryStates } from './entry-log.js'
 import { LOG_LIMIT_BYTES, openLogFile, type LogFile } from './log-file.js'
+import {
+  fileLineOf,
+  levelOf,
+  RENDERER_LOGGER_NAME,
+  sourceOfLoggerName,
+  terminalLineOf,
+  withLostErrorMessages,
+  type LogLevel,
+} from './log-record.js'
 import { isReloadOfCurrentDocument, isTopFrame, opensInSystemBrowser } from './page-boundary.js'
 
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = electron
@@ -69,11 +79,11 @@ function openLogFileOrExit(file: string): LogFile {
   }
 }
 
-/** cordis 实例建好之前、以及启动失败时才直接调用；其余日志一律走 cordis logger，注册了 exporter 的插件才收得到 */
-function writeLogLine(level: string, name: string, message: string): void {
-  const line = `${new Date().toISOString()} ${level} ${name} ${message}\n`
-  process.stderr.write(line)
-  logFile.write(line)
+/** 终端上是文本，`gwb.log` 里一行一个 JSON。cordis 实例建好之前、以及启动失败时直接调用；其余日志一律走 cordis logger */
+function writeLogLine(level: LogLevel, name: string, message: string, timestamp = Date.now()): void {
+  const record = { ts: new Date(timestamp).toISOString(), level, source: sourceOfLoggerName(name), name, msg: message }
+  process.stderr.write(terminalLineOf(record))
+  logFile.write(fileLineOf(record))
 }
 
 if (!app.requestSingleInstanceLock()) {
@@ -148,7 +158,7 @@ const gwbLogExporter = {
   // 3 是 debug 级：所有级别都写
   levels: { default: 3 },
   export: (message: CordisLogMessage): void => {
-    writeLogLine(message.type ?? 'info', message.name ?? '', formatLogMessage(message))
+    writeLogLine(levelOf(message.type ?? 'info'), message.name ?? '', formatLogMessage(message), message.ts)
     if (message.type === 'error') scheduleShellPush()
   },
 }
@@ -156,7 +166,7 @@ const gwbLogExporter = {
 function formatLogMessage(message: CordisLogMessage): string {
   // cordis 的 %o 用 JSON.stringify，参数有循环引用、BigInt 就抛；抛出去会让写日志的插件跟着抛，留在缓冲里的那一行还会让每次推送状态页都抛
   try {
-    return CordisLogger.format(gwbLogExporter, message)
+    return withLostErrorMessages(CordisLogger.format(gwbLogExporter, message), message.args ?? [])
   } catch {
     return (message.args ?? []).map((arg) => (arg instanceof Error ? arg.message : String(arg))).join(' ')
   }
@@ -167,6 +177,9 @@ cordisLoggerService.exporter(gwbLogExporter)
 const kernelLog = ctx.logger('kernel')
 process.on('unhandledRejection', (e) => kernelLog.error(`没有被处理的 rejection（插件加载失败多半在这里）：${stackOf(e)}`))
 process.on('uncaughtException', (e) => kernelLog.error(`未捕获异常：${stackOf(e)}`))
+
+// 与 cordis loader 自己的日志同名，都算内核来源
+const entryLogWatch = watchEntryStates(ctx, ctx.logger('loader'))
 
 interface StatusPageReport {
   home: string
@@ -305,7 +318,7 @@ function createMainWindow(): electron.BrowserWindow {
   browserWindow.once('ready-to-show', () => mainWindow?.show())
   lockPageToIndexHtml(browserWindow.webContents)
   browserWindow.webContents.on('console-message', (event) => {
-    ctx.logger('renderer')[cordisLevelOfConsoleLevel(event.level)](event.message)
+    ctx.logger(RENDERER_LOGGER_NAME)[cordisLevelOfConsoleLevel(event.level)](event.message)
   })
   browserWindow.on('closed', () => {
     mainWindow = null
@@ -361,6 +374,7 @@ app.on('will-quit', (event) => {
   if (quitCleanupStarted || loaderFiber === undefined) return
   event.preventDefault()
   quitCleanupStarted = true
+  entryLogWatch.stop()
   void Promise.race([disposePluginTreeLoggingErrors(loaderFiber), waitAtMost(QUIT_CLEANUP_TIMEOUT_MS)]).then(() => {
     kernelLog.info('清理完成，退出')
     app.quit()
