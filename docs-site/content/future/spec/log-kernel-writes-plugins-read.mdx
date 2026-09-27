@@ -9,7 +9,7 @@ title: 日志：内核写结构化文件，插件只读
 - [x] 新内核与 gwb-logger、baseui 装进同一个隔离 home（`log-jsonl-2609272237`）一起验证：`gwb.log` 全是 JSON、挂载日志与汇总、旧文本日志改名成 `.text`、`logger.query` 的筛选与 `after`、窗格显示与每秒拉取；devkit 只跑了单元测试
 - [ ] 三个插件的 `log-jsonl` 分支合并进各仓 main、peer 改 `^0.10.0`、升版本号发版（内核 0.10.0 发布之后；在那之前合并的话，别人发这几个包时会把只认 JSONL 的版本发给 0.9 内核）
 - [ ] default 升级
-- [ ] 待定：窗格每秒一次的 `logger.query` 让命令总线每秒记一行「执行完成」，是否把读命令的成功降成 debug
+- [ ] 命令总线：只读命令执行成功记 debug（用户 2026-09-27 定下），已在 base-plugins main 提交为 gwb-commands 0.5.7，待发版；与内核 0.10 无关，可以先发
 - [ ] 内核现状页补上「启动时把旧内核的文本日志改名成 `.text`」与「单实例锁挪到打开日志之前」（`seams/log.mdx` 的约定、`wiring.mdx` 的 home 文件表、`desktop/boot.mdx` 的第 2 步与钉码、`develop.mdx` 的测试表加 `legacy-text-log.test.ts`）：这几页正在别的会话的文档站迁移里，等它提交后再改
 
 用户于 2026-09-27 定下：写与存归内核、查询与界面归插件；`gwb.log` 只写一份 JSONL，不再写文本；接受内核升 x 带来的全部插件 peer 跟进。
