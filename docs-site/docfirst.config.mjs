@@ -1,33 +1,31 @@
 /**
- * 这个文档站的 docfirst 配置：用哪个格式包、哪几个目录参与检查、轨迹卡目录在哪、生成物写到哪、组件名单。
- * 命令行和文档站读的是同一份。
+ * docfirst 配置：命令行和站读的是同一份。项目根是这个站目录，被引用的代码在仓根，引用写 `../apps/…`、`../installer/…`。
  *
- * 项目根是站目录，被引用的源码在仓根（../apps…），引用里的路径都相对站目录。
- * 六个区里只有 docs（现状）与 outputs（生成物的正本）参与检查——只有这两个区的内容对应当前代码；
- * 轨迹、交接、未来、反馈四个区不参与检查，轨迹卡里不许引用代码。
+ * content 是各区的上一级目录。它下面只有两个名字是固定的：`trajectory/` 是轨迹卡目录，
+ * `future/` 是未来区（路线、在途方案 `future/spec/`、别的仓投来的反馈 `future/inbox/`）。
+ * 其余目录都是现状区，全部进 check；本站的现状区是 `content/docs/`。
  *
- * outputs：仓根 README.md、AGENTS.md、INSTALL.md、CLAUDE.md 都是生成物，正本是 content/outputs/ 下
- * 同名的 mdx。改 mdx 正本后在站目录运行 `pnpm docfirst render` 重新生成，正本与生成物放进同一个提交。
+ * outputs 把正本映射到生成物：仓根 README.md / AGENTS.md / INSTALL.md / CLAUDE.md 由 `content/docs/outputs/` 下的
+ * 同名 mdx 生成。改正本后运行 `pnpm doc:render`，正本与生成物放进同一个提交。生成正本按原文渲染，里面不能用 JSX 组件。
+ *
+ * components 是组件名册，fumadocsRoster 给 fumadocs 自带文件树 Files / Folder / File 与 Note 的压平规则，
+ * 站里自己加的组件在它后面追加。
  */
-import * as fumadocs from '@godcreator/docfirst-workflow/fumadocs'
+import { fumadocsRoster } from '@godcreator/docfirst-workflow/fumadocs/roster'
 
 export default {
-  formats: [fumadocs],
-  docs: ['content/docs', 'content/outputs'],
-  out: 'out',
-  comparator: 'git',
-  trajectory: 'content/trajectory',
+  content: 'content',
   outputs: {
-    'content/outputs/readme.mdx': ['../README.md'],
-    'content/outputs/agents.mdx': ['../AGENTS.md'],
-    'content/outputs/install.mdx': ['../INSTALL.md'],
-    'content/outputs/claude.mdx': ['../CLAUDE.md'],
+    'content/docs/outputs/readme.mdx': ['../README.md'],
+    'content/docs/outputs/agents.mdx': ['../AGENTS.md'],
+    'content/docs/outputs/install.mdx': ['../INSTALL.md'],
+    'content/docs/outputs/claude.mdx': ['../CLAUDE.md'],
   },
   components: {
-    ...fumadocs.defaultRoster,
-    // 示意图：图本身 agent 看不见，生成文件时只保留「[图] 标题」和子元素里的文字说明
+    ...fumadocsRoster,
+    // 示意图：机读版只保留「[图] 标题」和子元素里的文字说明
     Diagram: (node, h) => [h.paragraph(`[图] ${h.attr(node, 'title') ?? h.attr(node, 'name') ?? ''}`), ...h.children()],
-    // fumadocs 的提示框：生成文件时标题变成「[注意] 标题」一段，正文照原样保留（行内代码不转义）
+    // fumadocs 的提示框：机读版里标题变成「[注意] 标题」一段，正文照原样保留
     Callout: (node, h) => [h.paragraph(`[注意] ${h.attr(node, 'title') ?? ''}`), ...h.children()],
   },
 }

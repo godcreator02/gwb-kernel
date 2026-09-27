@@ -24,9 +24,9 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 没有插件调用 `setShell`，或外壳启动失败（import 失败、默认导出不是函数）时，页面入口画一页纯文本、没有按钮的只读状态页：第一行说明是哪种情况，然后是 home 的路径、每个条目一行（id、包名、加载到哪一步：等待中的写还缺哪个服务，失败的写错误的第一行）、最近 20 行 error 与 warn 日志。条目状态变化、每来一行 error、loader 加载完，内核都重新推送整份状态，200 毫秒内的多次合并成一次（warn 不触发推送）；页面订阅时也请求一次当前值，比插件晚加载完也不会错过。
 
-{/* has file="../apps/desktop/src/main.ts" text="RECENT_ERROR_LINES_SHOWN = 20" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="40-40" hash="c5b8bb5b4862" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="SHELL_PUSH_DEBOUNCE_MS = 200" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="41-41" hash="4a0426bc0130" blob="785abb202a73" */}
 
 窗口底色 `#151518` 与页面入口 `index.html` 的 html 背景、安装包图标的底色是同一个值，窗口创建到第一帧、整页重新加载的第一帧露出来的都是这个颜色，不闪白；改底色时三处一起改。
 
@@ -49,11 +49,11 @@ description: 内核应用 apps/desktop 是内核本身——Electron 主进程�
 
 内核在 cordis 上下文上声明的服务只有这两项：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="33-38" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="33-38" hash="be944b791f8f" blob="785abb202a73" */}
 
 **启动参数**不属于哪条接缝，启动内核的人或程序经这两项控制它：环境变量 `GWB_HOME`（用哪个 home，规则见上面「功能」的第一条；从安装版启动时，启动器已经把它换成了绝对路径），命令行开关 `--remote-debugging-port`（Chromium 调试端口，开了就记进 `runtime.json`；给的不是 1–65535 的整数时启动失败）。
 
-{/* has file="../apps/desktop/src/main.ts" text="getSwitchValue('remote-debugging-port')" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="127-127" hash="d90d53c5774a" blob="785abb202a73" */}
 
 ## 依赖
 

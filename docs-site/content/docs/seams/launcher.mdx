@@ -16,17 +16,17 @@ description: 连接安装包里的启动器与装在 home 里的内核包；交�
 
 **环境变量 `GWB_HOME`**：启动器按和内核同一条规则算出 home 的目录——是名字就在 appData 下 `gwb-kernel/homes/<名字>`，带路径分隔符就是目录本身，不设就是 `default`——再把绝对路径写回 `GWB_HOME`。内核启动时按同一条规则再选一次，拿到的是绝对路径，一定落在同一个目录：
 
-{/* ref file="../apps/launcher/src/main.ts" lines="17-19" */}
+{/* ref file="../apps/launcher/src/main.ts" lines="17-19" hash="475fe289ea98" blob="f6547781d717" */}
 
 **内核包清单里的两个字段**：`main` 写入口文件，`engines.electron` 写内核要的 Electron 版本范围：
 
-{/* ref file="../apps/desktop/package.json" lines="8-8" */}
+{/* ref file="../apps/desktop/package.json" lines="8-8" hash="3f8ef1581707" blob="df73ceac0ed7" */}
 
-{/* ref file="../apps/desktop/package.json" lines="34-36" */}
+{/* ref file="../apps/desktop/package.json" lines="34-36" hash="d14faf1367c1" blob="df73ceac0ed7" */}
 
 启动器依次判断：home 里有没有内核包、清单读不读得出、有没有声明 `engines.electron`、当前 Electron 在不在范围里、有没有 `main`：
 
-{/* ref file="../apps/launcher/src/launch-plan.ts" lines="28-53" */}
+{/* ref file="../apps/launcher/src/launch-plan.ts" lines="28-53" hash="29a02d7fa8f1" blob="7dff040f70bd" */}
 
 全部满足就 import 入口文件；不满足、或 import 抛错，弹框说明原因，退出码 1。
 
@@ -55,6 +55,6 @@ description: 连接安装包里的启动器与装在 home 里的内核包；交�
 
 `apps/launcher/tests/launch-plan.test.ts` 在临时目录上证明：选 home 的规则和内核的 `home-path.ts` 逐个输入结果相同；五种不满足各自拒绝并说明原因；满足时给出内核包的入口文件；启动器带的 Electron 满足内核包声明的范围。启动器从 home 真的加载起内核、拒绝时弹框，只能实机验证（[开发](/docs/develop#验证)）。
 
-{/* has file="../apps/launcher/tests/launch-plan.test.ts" text="和内核选 home 的规则逐个输入结果相同" */}
+{/* ref file="../apps/launcher/tests/launch-plan.test.ts" lines="33-33" hash="f1497cdf7f66" blob="196cbe33b166" */}
 
-{/* has file="../apps/launcher/tests/launch-plan.test.ts" text="启动器带的 Electron 满足内核包声明的 engines.electron" */}
+{/* ref file="../apps/launcher/tests/launch-plan.test.ts" lines="97-97" hash="a7a86e68b109" blob="196cbe33b166" */}

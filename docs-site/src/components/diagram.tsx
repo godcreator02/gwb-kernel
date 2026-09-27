@@ -7,6 +7,7 @@
  * 这套组件是从块笔记文档站复制来的，两个站都用下来之后再合并进 docfirst。
  */
 import type { ReactNode } from 'react'
+import './diagram.css'
 import { CommandRelay } from './diagrams/command-relay'
 import { FirstInstall } from './diagrams/first-install'
 import { KernelBoot } from './diagrams/kernel-boot'

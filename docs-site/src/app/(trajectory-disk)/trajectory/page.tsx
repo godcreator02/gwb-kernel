@@ -1,27 +1,30 @@
-import { resolve } from 'node:path'
-import Link from 'next/link'
-import type { Metadata } from 'next'
-import { ThemeSwitch } from 'fumadocs-ui/layouts/shared/slots/theme-switch'
-import { buildTrajectory } from '@godcreator/docfirst-trajectory'
-import { StarDisk } from '@godcreator/docfirst-trajectory/react'
-import { launcherThumbs } from '@godcreator/docfirst-trajectory/server'
+import { join } from 'node:path';
+import Link from 'next/link';
+import { ThemeSwitch } from 'fumadocs-ui/layouts/shared/slots/theme-switch';
+import { DocsBody } from 'fumadocs-ui/layouts/docs/page';
+import { loadTrajectory, StarDisk } from '@godcreator/docfirst-workflow/fumadocs/trajectory';
+import { sourceTrajectory } from '@/lib/source';
+import { getMDXComponents } from '@/components/mdx';
 
-export const metadata: Metadata = { title: '轨迹' }
-
-// 星轨整页：读站里的卡目录建模，渲一条顶栏加一张吃满剩余高度的盘或启动器卡阵。
-// `?disk=` 缺失渲启动器（每张盘一张服务端渲好的静态定妆照），有则渲那张盘；组件切盘 / 回
-// 启动器时也写回这个参数。轨迹区没有导读页，这条整页路由就是区的入口，侧栏第一项指到这儿。
-export default async function Page({ searchParams }: { searchParams: Promise<{ disk?: string }> }) {
-  const { disk } = await searchParams
-  const data = await buildTrajectory(resolve(process.cwd(), 'content/trajectory'))
-  const thumbs = launcherThumbs(data)
+// 顶栏归页面画（回文档、报病数、主题切换），搜索、设置、帮助、图例、日期轨是组件自己固定在容器边上的浮层。
+// 每张卡的正文在这里渲染好交给盘，点节点在盘右侧栏里看，不跳页；键是卡身份，跟卡页地址同一个。
+export default async function Page() {
+  const data = await loadTrajectory(join(process.cwd(), 'content', 'trajectory'));
+  const bodies = Object.fromEntries(
+    sourceTrajectory.getPages().map((page) => {
+      const MDX = page.data.body;
+      return [
+        page.slugs.join('/'),
+        <DocsBody key={page.url}>
+          <MDX components={getMDXComponents()} />
+        </DocsBody>,
+      ];
+    }),
+  );
   return (
-    <div className="trajectory-page">
+    <div className="trajectory-page star-surface">
       <header className="trajectory-topbar">
-        <div className="trajectory-topbar-left">
-          <Link href="/docs">← 文档</Link>
-          {disk ? <Link href="/trajectory">启动器</Link> : null}
-        </div>
+        <Link href="/docs">← 文档</Link>
         <div className="trajectory-topbar-right">
           {data.sick.length > 0 ? (
             <span className="trajectory-sick" title={data.sick.map((f) => f.path).join('\n')}>
@@ -32,8 +35,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
         </div>
       </header>
       <div className="trajectory-stage">
-        <StarDisk data={data} hrefBase="/trajectory" mode="page" initialDisk={disk} thumbs={thumbs} />
+        <StarDisk data={data} hrefBase="/trajectory" bodies={bodies} />
       </div>
     </div>
-  )
+  );
 }

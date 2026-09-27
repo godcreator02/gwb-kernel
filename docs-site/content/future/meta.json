@@ -1,7 +1,1 @@
-{
-  "title": "未来",
-  "description": "只放还没发生的事：在等什么前提、哪些决定到期再选",
-  "pages": [
-    "roadmap"
-  ]
-}
+{ "title": "未来", "pages": ["roadmap", "..."] }

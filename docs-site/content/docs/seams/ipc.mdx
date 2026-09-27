@@ -16,7 +16,7 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 页面上只有 `window.gwb`，形状是包根导出的 `GwbWindowApi`：
 
-{/* ref file="../apps/desktop/src/api.ts" lines="33-46" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="33-46" hash="37100dff40eb" blob="b2cf0ae6f72c" */}
 
 页面业务调用使用提供方的浏览器客户端，经 `request` 请求插件登记的通道；命令回执类型从 commands 取。
 
@@ -24,7 +24,7 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 `preload.cjs` 把页面接口接到 IPC 通道上，整个文件就是这些：
 
-{/* ref file="../apps/desktop/src/preload.cjs" */}
+{/* ref file="../apps/desktop/src/preload.cjs" hash="9a46cc9d8b0e" blob="97b2299ef0dc" */}
 
 | 通道 | 方向 | 传什么 |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 主进程这一侧收发这几个通道的代码：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="265-273" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="265-273" hash="a2e23c0dfcf2" blob="785abb202a73" */}
 
 `gwb:shell` 在这几种时候发：页面发来 `gwb:hello`；插件调用 `setShell` 或撤销（立刻发）；条目状态变化、有新的 error 日志、loader 加载完（200 毫秒内的多次合并成一次）。warn 日志只进日志，不触发推送。
 
@@ -46,11 +46,11 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 页面能调用整条命令总线，命令不分权限，所以内核在页面这一侧只保证一条边界：主框架只能是内核包里的 `index.html`，请求只收顶层框架发来的（[页面边界](/trajectory/2026-09-25-page-navigation-lock)、[网页链接交给系统浏览器](/trajectory/2026-09-25-open-external-links)）。三条判定是三个纯函数：
 
-{/* ref file="../apps/desktop/src/page-boundary.ts" */}
+{/* ref file="../apps/desktop/src/page-boundary.ts" hash="3a6b56976fb4" blob="c8ea974836da" */}
 
 窗口上的做法：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="283-306" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="283-306" hash="083b8d0fe513" blob="785abb202a73" */}
 
 这两段说明：主框架跳到别的地址（包括网页、拖进窗口的文件、不带 `target` 的链接点击）与主框架上的重定向一律拒绝，每次写一行 `kernel` 的 warn，只放行跳到当前地址（整页重新加载，`#` 之后的部分不算差别）；`window.open` 与 `target="_blank"` 从不打开新窗口，协议是 `http:` 或 `https:` 的交给系统默认浏览器并写一行 info，打开失败再写一行 warn，别的协议与解析不了的地址拒绝并写一行 warn。
 
@@ -86,16 +86,16 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 页面与主进程真的连起来只能在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）：插件 `emit` 的事件页面收得到，整页重新加载后立刻收到当前外壳状态，拖进窗口的链接被拒，`target="_blank"` 的网页链接在系统浏览器里打开。
 
-{/* has file="../apps/desktop/tests/preload.test.ts" text="只在页面上放一个 window.gwb，提供请求、事件、外壳订阅与模块准备" */}
+{/* ref file="../apps/desktop/tests/preload.test.ts" lines="90-90" hash="d5b473aeeaf1" blob="a0997b68b97a" */}
 
-{/* has file="../apps/desktop/tests/preload.test.ts" text="onShell 订阅 gwb:shell 之后马上发一次 gwb:hello" */}
+{/* ref file="../apps/desktop/tests/preload.test.ts" lines="119-119" hash="5f6f2bc2ef88" blob="a0997b68b97a" */}
 
-{/* has file="../apps/desktop/tests/page-boundary.test.ts" text="window.open 的地址只有 http、https 交给系统浏览器" */}
+{/* ref file="../apps/desktop/tests/page-boundary.test.ts" lines="40-40" hash="5517c57aa746" blob="9eb92267eb0c" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="gwb:hello：向发来的页面回一条整份外壳状态" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="708-708" hash="e067493df1ab" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="gwb:request" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="697-697" hash="9ca244b6d654" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="页面边界：主框架跳到别处（包括 http、https）、主框架的重定向一律拒绝" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="615-615" hash="8ffa95958b92" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="window.open：系统浏览器打开失败只记一行 warn" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="658-658" hash="e408180c3595" blob="ce25d5969e03" */}

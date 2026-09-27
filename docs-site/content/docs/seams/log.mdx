@@ -24,29 +24,29 @@ description: 连接内核应用与所有插件；插件、内核、页面 consol
 | `name` | logger 名 |
 | `msg` | 正文 |
 
-{/* ref file="../apps/desktop/src/log-record.ts" lines="1-35" */}
+{/* ref file="../apps/desktop/src/log-record.ts" lines="1-35" hash="899f301a0fe9" blob="9e005a2aef22" */}
 
 同一条同时写到 stderr，那里是给终端看的文本「时间 级别 名字 正文」，不是给程序读的：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="81-86" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="81-86" hash="03bc66e1ed2a" blob="785abb202a73" */}
 
 正文由 cordis 自己的 `Logger.format` 格式化，所有级别都写，包括 `debug`。插件传进来的参数 cordis 格式化不了时（`%o` 用 `JSON.stringify`，遇到循环引用、BigInt 就抛），内核退回把参数逐个转成字符串拼起来，这一行照样写进去：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="155-172" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="155-172" hash="ac4386f7eada" blob="785abb202a73" */}
 
 **挂载日志**：内核按条目写，logger 名是 `loader`（`source` 是 `kernel`）。每个插件条目挂上了（带 apply 的耗时，从进入 LOADING 算到 ACTIVE）、挂载失败（错误的第一行）、卸载、因为提供方被卸载而退回等待（缺哪几个服务）各写一行；include 这类只装条目的容器，以及插件里再 `ctx.plugin` 出来的子插件不写。
 
-{/* ref file="../apps/desktop/src/entry-log.ts" lines="96-120" */}
+{/* ref file="../apps/desktop/src/entry-log.ts" lines="96-120" hash="590ddbd5970f" blob="9c2a0bc85145" */}
 
 一开始就缺服务的条目不发任何状态事件，只能靠汇总报出来：条目树有变化（启动时逐条加载、插件管理换包）停下来 300 毫秒之后，等 `ctx.loader.await()` 返回，再写一行「条目加载完：N 个挂上；在等：…；挂载失败：…；没导入成功：…」。有挂载失败或没导入成功的是 error，只有在等的是 warn，全部挂上是 info。退出时卸载插件树，不写卸载与汇总。
 
-{/* ref file="../apps/desktop/src/entry-log.ts" lines="42-69" */}
+{/* ref file="../apps/desktop/src/entry-log.ts" lines="42-69" hash="69ff72158385" blob="9c2a0bc85145" */}
 
 **读**：要显示或查询日志的插件读 `<home>/gwb.log`，要更早的再读 `gwb.log.1`，按时间顺序是先 `gwb.log.1` 再 `gwb.log`。文件跨重启留着，所以上一次运行的日志也查得到。
 
 **上限与轮转**：`gwb.log` 写到 128 MB 就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多 256 MB），再开一份新的。128 MB 的依据是实测：平常一天约写 48 MB，某个插件出错、反复写同样的日志时一小时能写约 675 MB；128 MB 平常能留住两天半的日志，那种情况下十几分钟轮转一次。读数记录在仓根 `probes/2609201430_log-cap-rotation/`。
 
-{/* has file="../apps/desktop/src/log-file.ts" text="LOG_LIMIT_BYTES = 128 * 1024 * 1024" */}
+{/* ref file="../apps/desktop/src/log-file.ts" lines="4-4" hash="93b606e5ccc9" blob="0270a1017f7a" */}
 
 ## 约定
 
@@ -80,24 +80,24 @@ description: 连接内核应用与所有插件；插件、内核、页面 consol
 - `apps/desktop/tests/main.test.ts`：用假的 electron 与真的 cordis，证明 `gwb.log` 打不开时启动失败、只写 stderr，`gwb.log` 每行都能按 JSON 解析、来源分对、终端上是文本，页面 console 的级别记成名字 `renderer` 的对应级别，没被处理的异常记成 `kernel` 的 error，插件写的 error 进 `gwb.log` 并在 200 毫秒后随 `gwb:shell` 推给页面，带循环引用参数的 error 写日志的一方不抛、这一行照样写进去，warn 只进 `gwb.log`、不推送；六种条目（同步挂上、异步挂上、apply 抛错、等一个没人提供的服务、包没装、模块求值时抛错）各自的挂载日志与汇总，两种 import 失败的错误原文都在 include 那行 error 的第一行，全部挂上时汇总是 info，退出时不写卸载
 - `apps/desktop/tests/log-file.test.ts`：在临时目录里用真的文件系统，证明到上限轮转且只留一份旧的、轮转后写的行进新文件、启动时已超上限的文件第一行就轮转、轮转失败不丢行、首次打不开就抛错且错误信息带路径与原因、写不进不抛且只告警一次、轮转后重新打开失败只告警一次且不再重开
 
-{/* ref file="../apps/desktop/tests/log-record.test.ts" lines="7-12" */}
+{/* ref file="../apps/desktop/tests/log-record.test.ts" lines="7-12" hash="9d8f80064ac0" blob="03935a26d0e3" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="449-470" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="449-470" hash="0fa1690ad196" blob="ce25d5969e03" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="474-493" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="474-493" hash="beb2abc1e1c8" blob="ce25d5969e03" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="495-503" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="495-503" hash="548bac8acc16" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="页面 console 进 cordis 日志，名字是 renderer" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="599-599" hash="1d22ffb94bba" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="插件写的 error 带着 cordis 格式化不了的参数（循环引用）" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="780-780" hash="bf9dfdc24290" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="插件或页面写 warn：只进日志，不推 gwb:shell" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="797-797" hash="bc8480c3563d" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/log-file.test.ts" text="轮转没成不致命" */}
+{/* ref file="../apps/desktop/tests/log-file.test.ts" lines="65-65" hash="817e97359c8a" blob="6f43be67df8c" */}
 
-{/* has file="../apps/desktop/tests/log-file.test.ts" text="首次打不开就抛错：错误信息写明路径与原因" */}
+{/* ref file="../apps/desktop/tests/log-file.test.ts" lines="91-91" hash="2a731160abd8" blob="6f43be67df8c" */}
 
-{/* has file="../apps/desktop/tests/log-file.test.ts" text="轮转后重新打开失败：只告警一次" */}
+{/* ref file="../apps/desktop/tests/log-file.test.ts" lines="108-108" hash="c844910e9c10" blob="6f43be67df8c" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="gwb.log 打不开就启动失败" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="430-430" hash="6c1f6630a73b" blob="ce25d5969e03" */}

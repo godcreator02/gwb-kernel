@@ -18,7 +18,7 @@ description: 连接内核应用与工作台进程之外的读者（devkit、照 
 
 文件在 home 根上：`<home>/runtime.json`，两个空格缩进的 JSON，末尾一个换行。内核写的字段：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="100-130" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="100-130" hash="bc5cb85b227b" blob="785abb202a73" */}
 
 | 字段 | 内容 |
 | --- | --- |
@@ -56,10 +56,10 @@ MCP 入口插件 `@godcreator/gwb-mcp` 在端口开好之后往同一份文件�
 
 `apps/desktop/tests/main.test.ts` 保护内核写文件的那一段：写哪几个字段、每次整份重写、没给调试端口时没有 `cdp`、给了合法端口时写进 `cdp`、给的不是 1–65535 的整数或文件写不进时启动失败。读者那一侧没有代码接口，只能实机验证（[开发](/docs/develop#在隔离-home-里验证)）：带 `--remote-debugging-port=<端口>` 在隔离 home 里启动，`pid` 是正在运行的内核进程、`cdp` 是给的那个端口，关掉工作台后文件还在。
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="runtime.json 每次启动整份重写" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="514-514" hash="30b20f96903c" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="开了合法的调试端口就写 cdp" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="528-528" hash="f19516fb65cf" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="调试端口给的不是 1–65535 的整数：启动失败" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="535-535" hash="c07d3789911e" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="runtime.json 写不进：启动失败" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="547-547" hash="8ea4bb8f0808" blob="ce25d5969e03" */}

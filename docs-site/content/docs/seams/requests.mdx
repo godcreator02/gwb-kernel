@@ -20,7 +20,7 @@ description: 插件主动登记请求处理器，内核负责传输与生命周�
 
 登记和分发的实现集中在这一处：
 
-{/* ref file="../apps/desktop/src/requests.ts" */}
+{/* ref file="../apps/desktop/src/requests.ts" hash="17ba3b7ad9e6" blob="2041dd1920e9" */}
 
 `apps/desktop/tests/requests.test.ts` 验证冲突、重复注销、重新登记、在途请求与处理器异常；
 `apps/desktop/tests/main.test.ts` 验证非顶层框架不能进入处理器，`preload.test.ts` 验证内部传输状态不会泄漏或误解业务值。

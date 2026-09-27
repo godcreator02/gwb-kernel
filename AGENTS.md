@@ -15,10 +15,10 @@ god 工作台的内核：一个 Electron 应用，cordis 在主进程里，负�
 
 ## 遇到过的问题：别改回去
 
-* Electron ESM 主进程**不能顶层 `await app.whenReady()`**：ready 要等入口模块求值完才触发，互相等待，静默卡死
-* 不给 `loader.internal` 配包名 import（bare specifier，直接写包名、不带相对路径的 import）解析，插件按 loader 所在位置解析，**静默**加载失败
-* 工作区链接会替 registry 满足 peer：装包出问题先读当前的 `pnpm-workspace.yaml` 与 pnpm-lock 的 `settings`，别按旧配置办
-* 没有终端时每次写 stderr 都抛 EPIPE，`main.ts` 捕获忽略，日志文件照写
+- Electron ESM 主进程**不能顶层 `await app.whenReady()`**：ready 要等入口模块求值完才触发，互相等待，静默卡死
+- 不给 `loader.internal` 配包名 import（bare specifier，直接写包名、不带相对路径的 import）解析，插件按 loader 所在位置解析，**静默**加载失败
+- 工作区链接会替 registry 满足 peer：装包出问题先读当前的 `pnpm-workspace.yaml` 与 pnpm-lock 的 `settings`，别按旧配置办
+- 没有终端时每次写 stderr 都抛 EPIPE，`main.ts` 捕获忽略，日志文件照写
 
 ## 契约与版本号
 
@@ -42,6 +42,6 @@ cd apps\desktop; pnpm start
 
 ## 文档与注释
 
-* **知识随插件发布**，本仓不放说明书：在隔离 home 里验证读 skill「gwb-devkit」，升版本号、发版读「gwb-release」，写文档与轨迹卡读「docfirst-docs」「trajectory」；选型先把需求逐条问清楚（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
-* 这份 AGENTS 只放硬约束；为什么、遇到过什么问题写在文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
-* 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 是生成物，正本在 `docs-site/content/outputs/`，在 `docs-site` 运行 `pnpm docfirst render` 生成
+- **知识随插件发布**，本仓不放说明书：在隔离 home 里验证读 skill「gwb-devkit」，升版本号、发版读「gwb-release」，写文档与轨迹卡读「docfirst-docs」「trajectory」；选型先把需求逐条问清楚（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
+- 这份 AGENTS 只放硬约束；为什么、遇到过什么问题写在文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
+- 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 是生成物，正本在 `docs-site/content/outputs/`，在 `docs-site` 运行 `pnpm docfirst render` 生成

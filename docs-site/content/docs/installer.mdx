@@ -28,7 +28,7 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
   3. **加载内核**：import `main` 指向的入口，之后怎么准备 home、怎么加载插件全由内核决定
   4. **不满足就拒绝**：home 里没有内核包、清单读不了、没声明 `engines.electron`、版本不满足、没有 `main`、内核入口 import 失败，一律弹框说明是哪个 home、缺什么、怎么补，退出码 1
 
-{/* ref file="../apps/launcher/src/main.ts" lines="7-29" */}
+{/* ref file="../apps/launcher/src/main.ts" lines="7-29" hash="d037f92b2c67" blob="f6547781d717" */}
 
 启动器与内核包之间只靠两个清单字段与环境变量 `GWB_HOME` 对接，约定写在[接缝 9 启动器加载内核](/docs/seams/launcher)。
 
@@ -45,13 +45,13 @@ description: installer/ 把启动器（apps/launcher）与 Electron 打成 NSIS 
 | 环境变量 `GWB_HOME` | 启动器读它选定 home，再写回绝对路径交给内核 |
 | 拒绝时的弹框与退出码 1 | 告诉人或 agent 是哪个 home、缺什么、怎么补 |
 
-{/* has file="../installer/electron-builder.yml" text="artifactName: gwb-setup-" */}
+{/* ref file="../installer/electron-builder.yml" lines="21-21" hash="f0df499da995" blob="f2c1ac8ae6c9" */}
 
-{/* has file="../installer/electron-builder.yml" text="perMachine: false" */}
+{/* ref file="../installer/electron-builder.yml" lines="20-20" hash="c14bef02e5e6" blob="f2c1ac8ae6c9" */}
 
-{/* has file="../installer/electron-builder.yml" text="productName: gwb-kernel" */}
+{/* ref file="../installer/electron-builder.yml" lines="6-6" hash="c7b78249a645" blob="f2c1ac8ae6c9" */}
 
-{/* has file="../apps/launcher/src/launch-plan.ts" text="export const KERNEL_PACKAGE = '@godcreator/gwb-kernel-desktop'" */}
+{/* ref file="../apps/launcher/src/launch-plan.ts" lines="5-5" hash="70e11b952fe4" blob="7dff040f70bd" */}
 
 ## 依赖
 

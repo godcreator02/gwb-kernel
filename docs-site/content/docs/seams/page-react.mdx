@@ -23,7 +23,7 @@ ctx.effect(() => ctx.gwbKernel.registerImports(browserImports()))
 不接受前缀、scopes 或远程模块。整个批次先校验，再原子登记。同名同 URL 可以重复登记、按引用计数释放；
 同名不同 URL 直接拒绝，错误列出两个地址。撤销幂等，最后一个登记撤销时从主进程快照移除。
 
-{/* ref file="../apps/desktop/src/browser-imports.ts" */}
+{/* ref file="../apps/desktop/src/browser-imports.ts" hash="1cdc46619f34" blob="a9ce57cbee25" */}
 
 提供方发布无副作用的 `./browser-imports` 代码出口，导出同步 `browserImports()`，地址相对该模块的 `import.meta.url`。
 运行时登记、下游构建外置名单和 devkit 发版检查复用它。内核不读取这个出口，也不扫描 home 或包清单；
@@ -42,7 +42,7 @@ const pane = await import(clientUrl)
 `prepareImports` 串行处理并发调用：经 `gwb:imports` 拉取当前快照，校验后只追加尚未注入的名字。
 Promise 在 importmap 插入当前 Document 后完成；相同快照不重复插入，失败后允许再次请求。
 
-{/* ref file="../apps/desktop/src/preload.cjs" */}
+{/* ref file="../apps/desktop/src/preload.cjs" hash="9a46cc9d8b0e" blob="97b2299ef0dc" */}
 
 ## 撤销和升级
 

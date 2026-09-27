@@ -16,7 +16,7 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 `gwbKernel` 的形状就是包根导出的 `GwbKernelApi`，插件的 `apply` 拿到的上下文类型是 `GwbContext`：
 
-{/* ref file="../apps/desktop/src/api.ts" lines="9-31" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="9-31" hash="4d4da5ce95ba" blob="b2cf0ae6f72c" */}
 
 - `dataDir`：这个 home 目录在磁盘上的真实路径——大小写、junction、斜杠写法不同的同一个目录得到同一个字符串
 - `version`：内核包 `@godcreator/gwb-kernel-desktop` 清单里的版本号
@@ -27,7 +27,7 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 内核里这个对象就是这样实现的：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="247-263" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="247-263" hash="5ffc24fad0f0" blob="785abb202a73" */}
 
 这段说明三件事：`emit` 只是往当前窗口发一条 `gwb:event`，窗口不在就什么都不发；`setShell` 每次都立刻推一次整份外壳状态；撤销函数只在当前外壳地址仍是自己交出的那个时才清空。
 
@@ -57,8 +57,8 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 
 形状由类型检查保护：内核里这个对象标成同一个 `src/api.ts` 里的 `GwbKernelApi`，对不上时本仓 `pnpm check` 失败。行为由 `apps/desktop/tests/main.test.ts` 保护：一个从 `cordis.yml` 加载进来的测试插件取到 `gwbKernel`，证明它有五个成员、`dataDir` 是 home 的真实路径、`version` 是内核包的版本、`emit` 推到页面、后调用的 `setShell` 替换先调用的、撤销只在自己仍是当前外壳时清空。
 
-{/* has file="../apps/desktop/src/main.ts" text="const kernel: GwbKernelApi = {" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="247-247" hash="c60bdcee2fe8" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="插件拿到 gwbKernel：提供路径、版本、事件、模块登记与外壳接管" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="725-725" hash="5341d162897f" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="emit 推 gwb:event；setShell 立刻推整份状态" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="737-737" hash="6d12fbf862be" blob="ce25d5969e03" */}

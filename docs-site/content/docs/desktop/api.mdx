@@ -24,7 +24,7 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 
 `GwbRequestHandler` 是通道处理器类型，接受未知载荷，返回值可以是 Promise；内核不定义业务回执。整个 `src/api.ts` 就是这张表的定义：
 
-{/* ref file="../apps/desktop/src/api.ts" */}
+{/* ref file="../apps/desktop/src/api.ts" hash="c42ec0870f9b" blob="b2cf0ae6f72c" */}
 
 代码里只要 import 了内核包的类型（哪怕只是 `import type {}`），TypeScript 就认得 `window.gwb`。内核自己的 `main.ts` 从同一个文件取 `GwbKernelApi`、把内核服务对象标成这个类型，形状对不上时本仓 `pnpm check` 当场失败；仓外的插件与页面代码要等新内核包发到团队包源、装上之后，才在各自仓的类型检查里发现。
 
@@ -32,15 +32,15 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 
 内核包的包根有两个条件：`types` 指向 `dist/api.d.ts`，给 TypeScript 用；`default` 指向 `dist/main.js`，是内核入口。包根的运行时入口一加载就启动 Electron 应用，所以包根对外只给类型：
 
-{/* ref file="../apps/desktop/package.json" lines="8-15" */}
+{/* ref file="../apps/desktop/package.json" lines="8-15" hash="4f8340723bcf" blob="df73ceac0ed7" */}
 
 清单顶层不写 `types`，类型只经 `exports` 给出：插件的 TypeScript 要用认 `exports` 的模块解析方式（`bundler`，或 `node16` 起）。这几条由 `apps/desktop/tests/importmap.test.ts` 核对：
 
-{/* has file="../apps/desktop/tests/importmap.test.ts" text="包根的 types 指向接口类型那份 d.ts，default 是内核入口；清单顶层不写 types" */}
+{/* ref file="../apps/desktop/tests/importmap.test.ts" lines="16-16" hash="f2305668952d" blob="3b6f3cdb5d2d" */}
 
 `dist/api.d.ts` 由单独一份 tsc 配置生成：只编译 `src/api.ts`、只出声明文件，内核内部实现的类型不跟着发出去。构建时在编译内核之后运行它（构建步骤见[开发](/docs/develop#从源码启动)）：
 
-{/* ref file="../apps/desktop/tsconfig.api.json" */}
+{/* ref file="../apps/desktop/tsconfig.api.json" hash="d3be48890832" blob="2e25391fcdf3" */}
 
 ## 依赖
 

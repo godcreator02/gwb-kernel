@@ -31,11 +31,11 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 
 页面入口 import 这个地址，只认它的默认导出：拿到 `#root`，返回可选的 `dispose`。
 
-{/* ref file="../apps/desktop/src/api.ts" lines="48-49" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="48-49" hash="ec9ecc8997fe" blob="b2cf0ae6f72c" */}
 
 页面入口里接管的全部逻辑：
 
-{/* ref file="../apps/desktop/src/index.html" lines="61-110" */}
+{/* ref file="../apps/desktop/src/index.html" lines="61-110" hash="5e09fff64711" blob="27f4d97bcf1c" */}
 
 这段说明：换外壳先 `dispose` 旧的、清空 `#root`；同一个地址在 import 还没完成时又推来一次，靠 `shellUrlBeingLoaded` 认出来，不挂载第二遍；地址是 `null`、import 失败、默认导出不是函数，都画只读状态页，失败时第一行写明原因。页面先 await prepareImports，再动态 import 外壳；提供方必须事先登记模块（[页面上的 react](/docs/seams/page-react)）。
 
@@ -64,8 +64,8 @@ ctx.effect(() => ctx.gwbKernel.setShell(entry))   // 撤销函数交给 ctx.effe
 
 `apps/desktop/tests/index-html.test.ts` 证明：准备映射后挂载，同一地址不重复挂载，换外壳先 dispose，撤销后迟到的 import 不挂载。失败后的重复推送只更新报告，避免错误日志触发循环；撤销后重新交出地址才重试。要求整页重载是提供方更新时的正常过渡，显示提示而不记录 error。真实窗口在隔离 home 验证。
 
-{/* has file="../apps/desktop/tests/index-html.test.ts" text="同一个地址在 import 完成前连推两次，只挂载一次" */}
+{/* ref file="../apps/desktop/tests/index-html.test.ts" lines="231-231" hash="d214a28eeef3" blob="300970b180eb" */}
 
-{/* has file="../apps/desktop/tests/index-html.test.ts" text="外壳在用时推来 url: null（外壳撤销）：dispose 旧外壳，回到只读状态页" */}
+{/* ref file="../apps/desktop/tests/index-html.test.ts" lines="248-248" hash="1fb6ca246c5b" blob="300970b180eb" */}
 
-{/* has file="../apps/desktop/tests/index-html.test.ts" text="外壳 import 失败后重复状态不会重复记录错误" */}
+{/* ref file="../apps/desktop/tests/index-html.test.ts" lines="297-297" hash="fe2af47ca240" blob="300970b180eb" */}

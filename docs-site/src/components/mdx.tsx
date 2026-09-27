@@ -1,23 +1,42 @@
 /**
- * MDX 组件表中给人看的那一半：docfirst.config.mjs 声明生成文件时每个组件怎么变成文字，这里给 React 表。
- * 先用 fumadocs 的默认组件，再加上示意图，最后把 pre 换成 docfirst 格式包里会显示引用状态的那个。
+ * 名册里给人看的那一半：docfirst.config.mjs 里声明压平表，这里给 React 表。
+ * 表的类型由 registry.ts 的名单钉死：少一个编译不过，多一个也编译不过。
+ * 跟压平表齐不齐，由 scripts/verify-roster.mjs 两头对。
+ * 底下铺 fumadocs 的默认表，再把 pre 换成 @godcreator/docfirst-workflow/fumadocs 里会画状态点的 DocfirstPre。
  */
-import defaultMdxComponents from 'fumadocs-ui/mdx'
-import { File, Files, Folder } from 'fumadocs-ui/components/files'
-import type { MDXComponents } from 'mdx/types'
-import { DocfirstPre } from '@godcreator/docfirst-workflow/fumadocs/pre'
-import { Diagram } from './diagram'
+import defaultMdxComponents from 'fumadocs-ui/mdx';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { File, Files, Folder } from 'fumadocs-ui/components/files';
+import type { MDXComponents } from 'mdx/types';
+import type { ReactNode } from 'react';
+import { DocfirstPre } from '@godcreator/docfirst-workflow/fumadocs/pre';
+import { Diagram } from './diagram';
+import type { ComponentName } from './registry';
 
-type Loose = MDXComponents[string]
+export function Note({ children }: { children?: ReactNode }) {
+  return <div className="note">{children}</div>;
+}
 
-export function getMDXComponents(components: MDXComponents = {}): MDXComponents {
+const table: Record<ComponentName, MDXComponents[string]> = {
+  Note,
+  Files,
+  Folder,
+  File,
+  Diagram,
+  Callout,
+};
+
+export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
     ...components,
-    Files: Files as Loose,
-    Folder: Folder as Loose,
-    File: File as Loose,
-    Diagram: Diagram as Loose,
-    pre: DocfirstPre as unknown as NonNullable<MDXComponents['pre']>,
-  }
+    ...table,
+    pre: DocfirstPre,
+  } satisfies MDXComponents;
+}
+
+export const useMDXComponents = getMDXComponents;
+
+declare global {
+  type MDXProvidedComponents = ReturnType<typeof getMDXComponents>;
 }

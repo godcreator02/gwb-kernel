@@ -23,13 +23,13 @@ description: 连接内核应用与 cordis.yml 里的插件；交换的是 cordis
 
 **`cordis.yml` 的条目**：一条写一个手写的 `id`、一个包名 `name`、可选的 `config`。内核在 loader 的根层只放一条 include 条目，id 固定是 `home`，由它读 `cordis.yml`；所以只读状态页和插件管理看到的条目都在 `home` 之下：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="328-335" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="328-335" hash="e5fc330ba54d" blob="785abb202a73" */}
 
 这段说明两件事：include 是经 `loader.builtins` 交给 loader 的（条目名 `cordis:include`），loader 的 `internal.import` 换成了内核的按 home 解析；两者都在加载第一条条目之前设好。
 
 **包名怎么变成文件**：loader 要 import 一个包名时，内核先把 `<home>/node_modules/<包名>` 解析成磁盘上的真实路径，再从那里按 Node 的 `require.resolve` 规则读包清单的 `exports` 找到入口文件，最后按 ESM import：
 
-{/* ref file="../apps/desktop/src/bare-import.ts" lines="6-18" */}
+{/* ref file="../apps/desktop/src/bare-import.ts" lines="6-18" hash="c30f3452be03" blob="a03471e3e333" */}
 
 从真实路径开始，是为了运行中换了版本能拿到新版本：pnpm 布局里真实路径带着版本号，不会命中 Node 为上一版记下的解析缓存（[Node 的 CJS 解析缓存会返回旧版本](/trajectory/2026-09-09-wall-resolver-cache)）。页面上的包名不走这套解析，见[页面上的 react](/docs/seams/page-react)。
 
@@ -54,7 +54,7 @@ export function apply(ctx: GwbContext): void { /* … */ }
 - 一个插件出错不让内核退出：没被处理的 rejection 和未捕获的异常只记一行名字为 `kernel` 的 error 日志
 - 退出时卸载整棵插件树，等各插件的清理结束，最多等 5 秒，到时没清理完也照样退出（[启动与退出](/docs/desktop/boot)）
 
-{/* has file="../apps/desktop/src/main.ts" text="QUIT_CLEANUP_TIMEOUT_MS = 5000" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="42-42" hash="67d0b4ebe032" blob="785abb202a73" */}
 
 **插件**保证：
 
@@ -74,8 +74,8 @@ export function apply(ctx: GwbContext): void { /* … */ }
 
 `apps/desktop/tests/bare-import.test.ts` 在临时目录里手写 `node_modules` 布局，证明普通包与带 scope 的包都解析得到、junction 换指向后拿到新版本、包不存在时报错里带着 `node_modules` 下的那条路径。`apps/desktop/tests/main.test.ts` 用真的 loader 与 include 从临时 home 的 `cordis.yml` 加载测试插件，证明插件出错不退出、退出时先卸载插件树。运行中换版本后重新加载，只能在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
 
-{/* has file="../apps/desktop/tests/bare-import.test.ts" text="junction 换指向后拿到新版本" */}
+{/* ref file="../apps/desktop/tests/bare-import.test.ts" lines="50-50" hash="546f3833f095" blob="205f23de64b1" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="进程里没被处理的 rejection 与异常记成 kernel 的 error，不退出" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="671-671" hash="8f19e1cda0c1" blob="ce25d5969e03" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="will-quit：先拦下退出，卸载整棵插件树" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="815-815" hash="a777de08751a" blob="ce25d5969e03" */}

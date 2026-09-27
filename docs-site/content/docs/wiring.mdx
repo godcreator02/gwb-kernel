@@ -28,39 +28,39 @@ description: 内核给插件的全部接入面总表——上下文上的服务�
 `GwbWindowApi` 里 `onShell` 的参数类型只写了 `{ url }`，内核实际推送的是 `{ url, report }`：`report` 是只读状态页的数据（home 路径、各条目的状态、最近的错误行），只给内核自己的页面入口用，不在契约里。
 
 
-{/* has file="../apps/desktop/src/api.ts" text="export interface GwbKernelApi {" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="10-10" hash="f77cac8dcb09" blob="b2cf0ae6f72c" */}
 
-{/* has file="../apps/desktop/src/api.ts" text="export interface GwbContext extends Context {" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="29-29" hash="938435f7d73d" blob="b2cf0ae6f72c" */}
 
-{/* has file="../apps/desktop/src/api.ts" text="export interface GwbWindowApi {" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="34-34" hash="7e8e792445d7" blob="b2cf0ae6f72c" */}
 
-{/* has file="../apps/desktop/src/api.ts" text="gwb: GwbWindowApi" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="56-56" hash="3dc168617990" blob="b2cf0ae6f72c" */}
 
-{/* has file="../apps/desktop/src/api.ts" text="export type ShellBoot" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="49-49" hash="7fca2af58076" blob="b2cf0ae6f72c" */}
 
-{/* has file="../apps/desktop/src/api.ts" text="onShell(cb: (shell: { url: string | null }) => void): () => void" */}
+{/* ref file="../apps/desktop/src/api.ts" lines="45-45" hash="17b636ea17a4" blob="b2cf0ae6f72c" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="report: statusPageReport()" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="227-227" hash="71c655cca384" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="ctx.provide('gwbKernel', kernel)" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="263-263" hash="aee8976cbe61" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="ctx.baseUrl = pathToFileURL(dataDir + path.sep).href" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="134-134" hash="94e4e9da58c1" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="loaderFiber = await ctx.plugin(Loader, {})" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="329-329" hash="e09b69e1c3b8" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="ctx.loader.internal = { import: bareImportFromHome(dataDir) }" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="331-331" hash="81b98a51011a" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="{ id: 'home', name: 'cordis:include', config: { path: 'cordis.yml' } }" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="333-333" hash="918ba81a4d8b" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="cordisLoggerService.exporter(gwbLogExporter)" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="174-174" hash="ba6f3147fcc5" blob="785abb202a73" */}
 
 插件的生命周期上内核还保证两件事：插件里没被处理的 rejection 与未捕获的异常只记一行名字为 `kernel` 的 error，工作台不退出；退出时卸载整棵插件树，最多等 5 秒（[启动与退出](/docs/desktop/boot)）。
 
-{/* has file="../apps/desktop/src/main.ts" text="process.on('unhandledRejection'" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="177-177" hash="8133da756ee0" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="process.on('uncaughtException'" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="178-178" hash="fefec8b70e46" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="QUIT_CLEANUP_TIMEOUT_MS = 5000" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="42-42" hash="67d0b4ebe032" blob="785abb202a73" */}
 
 ### IPC 与页面接口
 
@@ -80,28 +80,28 @@ IPC 通道的两端都在内核包里（页面一侧是 `preload.cjs`，主进�
 | 页面上的 console | 页面 → 日志 | 转成名字为 `renderer` 的 cordis 日志，级别照搬 |
 
 
-{/* has file="../apps/desktop/src/main.ts" text="webContents.send('gwb:event', payload)" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="250-250" hash="5c0e8d9c04e9" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="webContents.send('gwb:shell'" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="232-232" hash="9b63d05d2ac4" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="ipcMain.on('gwb:hello'" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="273-273" hash="427321f0964b" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/preload.cjs" text="contextBridge.exposeInMainWorld('gwb'" */}
+{/* ref file="../apps/desktop/src/preload.cjs" lines="37-37" hash="67b08e317197" blob="97b2299ef0dc" */}
 
 
-{/* has file="../apps/desktop/src/preload.cjs" text="subscribe('gwb:event', callback)" */}
+{/* ref file="../apps/desktop/src/preload.cjs" lines="44-44" hash="4dcc83525282" blob="97b2299ef0dc" */}
 
-{/* has file="../apps/desktop/src/preload.cjs" text="ipcRenderer.send('gwb:hello')" */}
+{/* ref file="../apps/desktop/src/preload.cjs" lines="48-48" hash="00806ef10ed6" blob="97b2299ef0dc" */}
 
-{/* ref file="../apps/desktop/src/browser-imports.ts" */}
+{/* ref file="../apps/desktop/src/browser-imports.ts" hash="1cdc46619f34" blob="a9ce57cbee25" */}
 
-{/* has file="../apps/desktop/src/index.html" text="shellModule.default(root)" */}
+{/* ref file="../apps/desktop/src/index.html" lines="78-78" hash="8c504aee2f6d" blob="27f4d97bcf1c" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="if (opensInSystemBrowser(url)) openInSystemBrowser(url)" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="302-302" hash="1dde349d9f59" blob="785abb202a73" */}
 
-{/* ref file="../apps/desktop/src/main.ts" lines="320-320" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="320-320" hash="f750e557c57a" blob="785abb202a73" */}
 
-{/* ref file="../apps/desktop/src/log-record.ts" lines="15-16" */}
+{/* ref file="../apps/desktop/src/log-record.ts" lines="15-16" hash="8c633317c087" blob="9e005a2aef22" */}
 
 ### home 布局与文件
 
@@ -120,23 +120,23 @@ home 里每个文件谁写、谁读，全站只在这里列一份。
 | `data/<条目 id 末段>/` | 数据插件 `@godcreator/gwb-data` | 数据插件 | 每条条目一个目录 |
 | 其余目录 | 各插件自己（例如 MCP 入口插件的 `mcp/`） | 写它的插件 | 内核不分配、不检查 |
 
-{/* has file="../apps/desktop/src/main.ts" text="homePathFor(process.env.GWB_HOME ?? 'default', app.getPath('appData'))" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="49-49" hash="c3ca29673cbe" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/home-path.ts" text="path.join(appDataDir, 'gwb-kernel', 'homes', gwbHomeSetting)" */}
+{/* ref file="../apps/desktop/src/home-path.ts" lines="5-5" hash="3d69b52f4e2f" blob="8f1ac8757a53" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="const dataDir = fs.realpathSync.native(homePath)" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="52-52" hash="a2984f3af12f" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="HOME_FILES_REQUIRED_AT_BOOT = ['package.json', 'cordis.yml']" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="45-45" hash="31c66fb726a9" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/bare-import.ts" text="path.join(dataDir, 'node_modules', ...packageName.split('/'))" */}
+{/* ref file="../apps/desktop/src/bare-import.ts" lines="11-11" hash="76aaef294de5" blob="a03471e3e333" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="path.join(dataDir, 'gwb.log')" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="58-58" hash="f4cdf97a8df8" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="path.join(dataDir, 'runtime.json')" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="118-118" hash="1126592c5626" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="app.setPath('userData', path.join(dataDir, 'electron'))" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="53-53" hash="31238880df35" blob="785abb202a73" */}
 
-{/* has file="../apps/desktop/src/main.ts" text="app.requestSingleInstanceLock()" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="88-88" hash="a0b8c94f823c" blob="785abb202a73" */}
 
 ## 内核与插件
 
@@ -153,4 +153,4 @@ home 里每个文件谁写、谁读，全站只在这里列一份。
 | 条目 id 的形状 | 数据插件、设置插件 | `home:<手写 id>` | 两者从 `ctx.fiber.entry.id` 取末段当数据目录名、设置分区名，超过两段就报错。内核改掉根层那条 `home` 条目、或再嵌一层 include，这两个插件就算不出目录与分区 |
 | `ctx.fiber.entry` | 命令插件、说明书插件 `@godcreator/gwb-skills`、`@godcreator/gwb-node-cli`、`@godcreator/gwb-py-cli`、数据插件、设置插件、插件管理 | `id`、`options.name`、`parent.tree` | 靠 loader 加在 fiber 上的条目认出调用方：命令插件取包名，记下每条登记的命令属于哪个插件；数据与设置插件取 id 与包名；插件管理从自己的条目找到条目树。这些字段是 loader 的内部结构，内核只决定用哪个版本的 loader，换版本就是改接缝（[home 布局与条目树](/docs/seams/home)） |
 
-{/* has file="../apps/desktop/src/main.ts" text="const kernelLog = ctx.logger('kernel')" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="176-176" hash="00d6f84b3f23" blob="785abb202a73" */}
