@@ -1,0 +1,66 @@
+{
+  "D:/unitfolders/p0cd1-cgm-alert/gwb-cgm-alert": {
+    "dir": "D:/unitfolders/p0cd1-cgm-alert/gwb-cgm-alert",
+    "confirm": 0,
+    "doc": 0,
+    "commit": "[main f040e6c] docs: \u786e\u8ba4\u5185\u6838\u4e0e\u547d\u4ee4\u4f9d\u8d56\u8fc1\u79fb"
+  },
+  "D:/unitfolders/qrx1l-collab-site/collab-site": {
+    "dir": "D:/unitfolders/qrx1l-collab-site/collab-site",
+    "doc": 0
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-block-note": {
+    "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-block-note",
+    "confirm": 0,
+    "doc": 0,
+    "commit": "[detached HEAD b128798] docs: \u786e\u8ba4\u5185\u6838\u4e0e\u547d\u4ee4\u4f9d\u8d56\u8fc1\u79fb"
+  },
+  "D:/unitfolders/evew5-gwbapps/god-live-doc": {
+    "dir": "D:/unitfolders/evew5-gwbapps/god-live-doc",
+    "doc": 0
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-agent-hooks-skills": {
+    "dir": "D:/unitfolders/evew5-gwbapps/gwb-agent-hooks-skills",
+    "doc": 0
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-windows-backup": {
+    "dir": "D:/unitfolders/evew5-gwbapps/gwb-windows-backup",
+    "doc": 0
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-docs-site": {
+    "dir": "D:/unitfolders/evew5-gwbapps/gwb-docs-site",
+    "doc": 0
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-dsh": {
+    "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-dsh",
+    "doc": 0
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-gitea": {
+    "dir": "D:/unitfolders/evew5-gwbapps/gwb-gitea",
+    "confirm": 0,
+    "doc": 0,
+    "commit": "[main 71ea58b] docs: \u786e\u8ba4\u5185\u6838\u4e0e\u547d\u4ee4\u4f9d\u8d56\u8fc1\u79fb"
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-nas-suite": {
+    "dir": "D:/unitfolders/evew5-gwbapps/gwb-nas-suite",
+    "doc": 0
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-mineru": {
+    "dir": "D:/unitfolders/evew5-gwbapps/gwb-mineru",
+    "doc": 0
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-paper-fetch": {
+    "dir": "D:/unitfolders/evew5-gwbapps/gwb-paper-fetch",
+    "confirm": 0,
+    "doc": 0,
+    "commit": "[main a4c7cfe] docs: \u786e\u8ba4\u5185\u6838\u4e0e\u547d\u4ee4\u4f9d\u8d56\u8fc1\u79fb"
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-unit-folder": {
+    "dir": "D:/unitfolders/evew5-gwbapps/gwb-unit-folder",
+    "doc": 0
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-vscode": {
+    "dir": "D:/unitfolders/evew5-gwbapps/gwb-vscode",
+    "doc": 0
+  }
+}

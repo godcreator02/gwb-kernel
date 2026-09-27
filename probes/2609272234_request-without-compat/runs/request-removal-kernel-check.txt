@@ -1,0 +1,18 @@
+$ pnpm --filter @godcreator/gwb-kernel-desktop build && pnpm typecheck && pnpm lint && pnpm test
+$ node -e "require('fs').rmSync('dist',{recursive:true,force:true})" && tsc -p tsconfig.build.json && tsc -p tsconfig.api.json && node -e "const fs=require('fs');for(const f of ['index.html','preload.cjs'])fs.copyFileSync('src/'+f,'dist/'+f)"
+$ tsc --noEmit -p tsconfig.json && pnpm -r --no-bail typecheck
+apps/desktop typecheck$ tsc --noEmit -p tsconfig.json
+apps/launcher typecheck$ tsc --noEmit -p tsconfig.json
+apps/launcher typecheck: Done
+apps/desktop typecheck: Done
+$ oxlint . --type-aware --deny-warnings
+$ vitest run
+
+ RUN  v4.1.11 D:/unitfolders/igldu-gwbkernel/gwb-kernel
+
+
+ Test Files  11 passed (11)
+      Tests  96 passed (96)
+   Start at  22:04:26
+   Duration  6.12s (transform 3.31s, setup 0ms, import 3.85s, tests 5.38s, environment 1ms)
+

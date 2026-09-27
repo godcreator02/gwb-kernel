@@ -1,0 +1,170 @@
+{
+  "D:/unitfolders/p0cd1-cgm-alert/gwb-cgm-alert": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-cgm-alert-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-cgm-alert-retry1.log"
+    }
+  ],
+  "D:/unitfolders/qrx1l-collab-site/collab-site": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-collab-site-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-collab-site-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-block-note": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-block-note-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-block-note-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/god-live-doc": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-god-live-doc-retry0.log"
+    },
+    {
+      "step": "pnpm --dir plugins/docfirst check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-god-live-doc-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-agent-hooks-skills": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-agent-hooks-skills-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-agent-hooks-skills-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-windows-backup": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-windows-backup-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-windows-backup-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-docs-site": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-docs-site-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-docs-site-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-dsh": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-dsh-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-dsh-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-gitea": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-gitea-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-gitea-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-nas-suite": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-nas-suite-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-nas-suite-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-mineru": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-mineru-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-mineru-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-paper-fetch": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-paper-fetch-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-paper-fetch-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-unit-folder": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-unit-folder-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-unit-folder-retry1.log"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-vscode": [
+    {
+      "step": "pnpm install",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-vscode-retry0.log"
+    },
+    {
+      "step": "pnpm check",
+      "code": 0,
+      "log": "D:\\unitfolders\\00000-console\\console\\out\\request-removal-gwb-vscode-retry1.log"
+    }
+  ]
+}

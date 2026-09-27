@@ -1,0 +1,25 @@
+---
+born-at: 2026-09-27T22:34
+type: evidence
+parent: [2026-09-07-gwb-kernel]
+label: 请求拆分验证
+domain: 内核边界
+---
+
+## 背景
+
+用户要求「不要保留兼容了」。删除旧命令桥之后，需要确认通用请求仍能承载插件协议，以及下游能在新内核加载。
+
+pivots-from:: [不保留命令兼容层](2026-09-27-request-without-compat.md)
+
+## 结论与边界
+
+内核只提供 request 与 handleRequest；window.gwb.command、gwb:command、内核 GwbResult 和 devkit 旧 home 回退均已删除。commands 拥有 commands.run、回执和浏览器客户端，shell 的 host.call 接口保持不变。
+
+kernel 0.9.0 和 17 个下游仓的 36 个插件已发布。隔离 home 中的 37 个插件条目全部 ACTIVE，没有缺失 peer；页面实测旧 command 为 undefined，新 request 与 shell.panes 可用。四个核心仓检查通过，测试总数分别为 96、472、513、246 + 398。
+
+本次没有将 default 切换到新内核。academic-deck 的 manifest 以及 UI 首页正由其他会话修改，分别保留迁移通知，未合入他人的工作。其余目标下游已经完成内核 peer 适配与构建检查。
+
+## 依据
+
+材料在 `probes/2609272234_request-without-compat/`：README 写明复现命令和提交；runs 保存核心检查输出、页面输出、完整插件清单、下游版本计划与应用发布回执。发布回执只证明源上发版成功，隔离验证来自开发包，不代表 default 已升级。

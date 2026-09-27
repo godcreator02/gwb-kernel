@@ -1,0 +1,161 @@
+{
+  "page": "gwb",
+  "在哪个home": "request-channel-2609272140",
+  "did": "eval",
+  "文件": "D:\\unitfolders\\igldu-gwbkernel\\gwb-kernel\\probes\\2609272234_request-without-compat\\probe.js",
+  "表": {
+    "request": "function",
+    "legacy": "undefined",
+    "missing": {
+      "message": "GWB_REQUEST_UNAVAILABLE: request-channel-verification.missing",
+      "isError": true
+    },
+    "malformed": {
+      "ok": false,
+      "error": "命令名要是字符串"
+    },
+    "panes": {
+      "ok": true,
+      "data": [
+        {
+          "id": "appearance",
+          "title": "外观",
+          "icon": "palette",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-theme@file+_56157defc8089589bfa1f56d0de26b01/node_modules/@godcreator/gwb-theme/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-theme@file+_56157defc8089589bfa1f56d0de26b01/node_modules/@godcreator/gwb-theme/dist/style.css",
+          "kind": "tool",
+          "entryId": "home:theme",
+          "pkg": "@godcreator/gwb-theme"
+        },
+        {
+          "id": "logger",
+          "title": "日志",
+          "icon": "scroll-text",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-baseui@file_0d3c57f3de83849511b8bfa05b323fa1/node_modules/@godcreator/gwb-baseui/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-baseui@file_0d3c57f3de83849511b8bfa05b323fa1/node_modules/@godcreator/gwb-baseui/dist/style.css",
+          "kind": "tool",
+          "entryId": "home:baseui",
+          "pkg": "@godcreator/gwb-baseui"
+        },
+        {
+          "id": "plugin-manager",
+          "title": "插件管理",
+          "icon": "puzzle",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-baseui@file_0d3c57f3de83849511b8bfa05b323fa1/node_modules/@godcreator/gwb-baseui/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-baseui@file_0d3c57f3de83849511b8bfa05b323fa1/node_modules/@godcreator/gwb-baseui/dist/style.css",
+          "kind": "tool",
+          "entryId": "home:baseui",
+          "pkg": "@godcreator/gwb-baseui"
+        },
+        {
+          "id": "reader",
+          "title": "块笔记",
+          "icon": "scroll-text",
+          "kind": "document",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_8415979a3cd0b5b58a5c212a28562f72/node_modules/@godcreator/gwb-bn-core/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-bn-core@fil_8415979a3cd0b5b58a5c212a28562f72/node_modules/@godcreator/gwb-bn-core/dist/style.css",
+          "entryId": "home:bn-core",
+          "pkg": "@godcreator/gwb-bn-core"
+        },
+        {
+          "id": "view",
+          "title": "数据库视图",
+          "icon": "layout-grid",
+          "kind": "document",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-bn-query@fi_7ff8df02a134d382ce226cff2afa534e/node_modules/@godcreator/gwb-bn-query/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-bn-query@fi_7ff8df02a134d382ce226cff2afa534e/node_modules/@godcreator/gwb-bn-query/dist/style.css",
+          "entryId": "home:bn-query",
+          "pkg": "@godcreator/gwb-bn-query"
+        },
+        {
+          "id": "journal",
+          "title": "日志",
+          "icon": "calendar-days",
+          "kind": "document",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-bn-journal@_b1665e2efe411440527119dbc06ae14c/node_modules/@godcreator/gwb-bn-journal/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-bn-journal@_b1665e2efe411440527119dbc06ae14c/node_modules/@godcreator/gwb-bn-journal/dist/style.css",
+          "entryId": "home:bn-journal",
+          "pkg": "@godcreator/gwb-bn-journal"
+        },
+        {
+          "id": "main",
+          "title": "血糖告警",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@god-private+gwb-cgm-alert@_c2ba432f75e11479722c70bbc5e500a7/node_modules/@god-private/gwb-cgm-alert/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@god-private+gwb-cgm-alert@_c2ba432f75e11479722c70bbc5e500a7/node_modules/@god-private/gwb-cgm-alert/dist/style.css",
+          "kind": "tool",
+          "entryId": "home:cgm-alert",
+          "pkg": "@god-private/gwb-cgm-alert"
+        },
+        {
+          "id": "projects",
+          "title": "协作站",
+          "icon": "users",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-collab@file_80f46fa694a28948909a49e9dbb4a43e/node_modules/@godcreator/gwb-collab/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-collab@file_80f46fa694a28948909a49e9dbb4a43e/node_modules/@godcreator/gwb-collab/dist/style.css",
+          "kind": "tool",
+          "entryId": "home:collab",
+          "pkg": "@godcreator/gwb-collab"
+        },
+        {
+          "id": "main",
+          "title": "备份",
+          "icon": "shield-check",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-windows-bac_5e0a37f455287f9fbf7a9cc426e3a6e9/node_modules/@godcreator/gwb-windows-backup/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-windows-bac_5e0a37f455287f9fbf7a9cc426e3a6e9/node_modules/@godcreator/gwb-windows-backup/dist/style.css",
+          "kind": "tool",
+          "entryId": "home:windows-backup",
+          "pkg": "@godcreator/gwb-windows-backup"
+        },
+        {
+          "id": "main",
+          "title": "DSH 实例管家",
+          "icon": "terminal",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-dsh@file+de_0e20d76dbd6e973e2d127120bcf7182a/node_modules/@godcreator/gwb-dsh/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-dsh@file+de_0e20d76dbd6e973e2d127120bcf7182a/node_modules/@godcreator/gwb-dsh/dist/style.css",
+          "kind": "tool",
+          "entryId": "home:dsh",
+          "pkg": "@godcreator/gwb-dsh"
+        },
+        {
+          "id": "main",
+          "title": "NAS 体检看板",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-nas-board@f_66f832ec3ccbb58e0b06142c5add759e/node_modules/@godcreator/gwb-nas-board/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-nas-board@f_66f832ec3ccbb58e0b06142c5add759e/node_modules/@godcreator/gwb-nas-board/dist/style.css",
+          "kind": "tool",
+          "entryId": "home:nas-board",
+          "pkg": "@godcreator/gwb-nas-board"
+        },
+        {
+          "id": "main",
+          "title": "资讯精选阅读器",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-news-links@_651e64ecae6a66d902319d4d9e95ecff/node_modules/@godcreator/gwb-news-links/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-news-links@_651e64ecae6a66d902319d4d9e95ecff/node_modules/@godcreator/gwb-news-links/dist/style.css",
+          "kind": "tool",
+          "entryId": "home:news-links",
+          "pkg": "@godcreator/gwb-news-links"
+        },
+        {
+          "id": "main",
+          "title": "单元",
+          "icon": "folder-open",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-unit-folder_f65df030309958524a7977351f0d40c0/node_modules/@godcreator/gwb-unit-folder/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-unit-folder_f65df030309958524a7977351f0d40c0/node_modules/@godcreator/gwb-unit-folder/dist/style.css",
+          "kind": "tool",
+          "entryId": "home:unit-folder",
+          "pkg": "@godcreator/gwb-unit-folder"
+        },
+        {
+          "id": "viewer",
+          "title": "文件原文",
+          "icon": "file-text",
+          "kind": "document",
+          "client": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-unit-folder_f65df030309958524a7977351f0d40c0/node_modules/@godcreator/gwb-unit-folder/dist/client.js",
+          "style": "file:///C:/Users/godamericatb14/AppData/Roaming/gwb-kernel/homes/request-channel-2609272140/node_modules/.pnpm/@godcreator+gwb-unit-folder_f65df030309958524a7977351f0d40c0/node_modules/@godcreator/gwb-unit-folder/dist/style.css",
+          "entryId": "home:unit-folder",
+          "pkg": "@godcreator/gwb-unit-folder"
+        }
+      ]
+    },
+    "body": "插件管理\n安装\n已安装\n可安装\n检查更新\n全部更新\n全部\n启用\n停用\n异常\nplugin-timer\n已加载\nplugin-timer\n@cordisjs/plugin-timer@^1.1.3\ncgm-alert\n已加载\ncgm-alert\n@god-private/gwb-cgm-alert@file:./dev-packs/god-private-gwb-cgm-alert-0.2.5-dev.20260927222824.tgz\n· 30 项设置\nagent-hooks-skills\n已加载\nagent-hooks-skills\n@godcreator/gwb-agent-hooks-skills@file:./dev-packs/godcreator-gwb-agent-hooks-skills-0.1.10-dev.20260927222849.tgz\n基础界面\n已加载\nbaseui\n@godcreator/gwb-baseui@file:./dev-packs/godcreator-gwb-baseui-0.1.22-dev.20260927222200.tgz\nbn-comment\n已加载\nbn-comment\n@godcreator/gwb-bn-comment@file:./dev-packs/godcreator-gwb-bn-comment-0.7.7-dev.20260927222810.tgz\n块笔记\n已加载\nbn-core\n@godcreator/gwb-bn-core@file:./dev-packs/godcreator-gwb-bn-core"
+  }
+}

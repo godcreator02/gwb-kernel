@@ -1,0 +1,26 @@
+$ pnpm -r --no-bail check
+$ pnpm run typecheck && pnpm run lint && pnpm run test
+$ tsc --noEmit -p tsconfig.json
+$ oxlint . --deny-warnings
+$ vitest run
+
+ RUN  v4.1.11 D:/unitfolders/igldu-gwbkernel/gwb-lifecycle-plugins/plugins/plugin-manager
+
+
+ Test Files  24 passed (24)
+      Tests  246 passed (246)
+   Start at  22:21:46
+   Duration  2.91s (transform 2.39s, setup 0ms, import 3.82s, tests 4.45s, environment 3ms)
+
+$ pnpm run typecheck && pnpm run test
+$ tsc --noEmit -p tsconfig.json
+$ vitest run
+
+ RUN  v4.1.11 D:/unitfolders/igldu-gwbkernel/gwb-lifecycle-plugins/plugins/devkit
+
+
+ Test Files  15 passed (15)
+      Tests  398 passed (398)
+   Start at  22:21:50
+   Duration  5.00s (transform 3.36s, setup 0ms, import 7.02s, tests 7.35s, environment 2ms)
+

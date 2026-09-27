@@ -1,0 +1,29 @@
+$ pnpm typecheck && pnpm lint && pnpm test
+$ tsc --noEmit -p tsconfig.json && pnpm -r --no-bail typecheck
+plugins/commands typecheck$ tsc --noEmit -p tsconfig.json
+plugins/data typecheck$ tsc --noEmit -p tsconfig.json
+plugins/commands typecheck: Done
+plugins/logger typecheck$ tsc --noEmit -p tsconfig.json
+plugins/skills typecheck$ tsc --noEmit -p tsconfig.json
+plugins/data typecheck: Done
+plugins/logger typecheck: Done
+plugins/skills typecheck: Done
+plugins/py-cli typecheck$ tsc --noEmit -p tsconfig.json
+plugins/node-cli typecheck$ tsc --noEmit -p tsconfig.json
+plugins/settings typecheck$ tsc --noEmit -p tsconfig.json
+plugins/py-cli typecheck: Done
+plugins/settings typecheck: Done
+plugins/node-cli typecheck: Done
+plugins/mcp typecheck$ tsc --noEmit -p tsconfig.json
+plugins/mcp typecheck: Done
+$ oxlint . --type-aware --deny-warnings
+$ vitest run
+
+ RUN  v4.1.11 D:/unitfolders/igldu-gwbkernel/gwb-base-plugins
+
+
+ Test Files  39 passed (39)
+      Tests  472 passed (472)
+   Start at  22:14:09
+   Duration  3.72s (transform 1.35s, setup 0ms, import 4.86s, tests 14.35s, environment 10ms)
+

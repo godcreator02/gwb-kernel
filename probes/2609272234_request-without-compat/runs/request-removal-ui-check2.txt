@@ -1,0 +1,19 @@
+$ pnpm typecheck && pnpm lint && pnpm test
+$ tsc --noEmit -p tsconfig.json && pnpm -r --no-bail typecheck
+plugins/shell typecheck$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p src/client/tsconfig.json
+plugins/shell typecheck: Done
+plugins/baseui typecheck$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p src/client/tsconfig.json
+plugins/theme typecheck$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p src/client/tsconfig.json
+plugins/theme typecheck: Done
+plugins/baseui typecheck: Done
+$ oxlint . --type-aware --deny-warnings
+$ vitest run
+
+ RUN  v4.1.11 D:/unitfolders/igldu-gwbkernel/gwb-ui-plugins
+
+
+ Test Files  38 passed (38)
+      Tests  513 passed (513)
+   Start at  22:19:55
+   Duration  1.83s (transform 2.92s, setup 0ms, import 5.09s, tests 1.68s, environment 5ms)
+

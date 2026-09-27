@@ -1,0 +1,216 @@
+{
+  "D:/unitfolders/p0cd1-cgm-alert/gwb-cgm-alert": [
+    {
+      "path": "plugins/cgm-alert/package.json",
+      "name": "@god-private/gwb-cgm-alert",
+      "version": "0.2.4"
+    }
+  ],
+  "D:/unitfolders/igldu-gwbkernel/gwb-ui-plugins": [
+    {
+      "path": "plugins/theme/package.json",
+      "name": "@godcreator/gwb-theme",
+      "version": "0.3.15"
+    },
+    {
+      "path": "plugins/shell/package.json",
+      "name": "@godcreator/gwb-shell",
+      "version": "0.15.2"
+    },
+    {
+      "path": "plugins/baseui/package.json",
+      "name": "@godcreator/gwb-baseui",
+      "version": "0.1.21"
+    }
+  ],
+  "D:/unitfolders/qrx1l-collab-site/collab-site": [
+    {
+      "path": "plugins/collab/package.json",
+      "name": "@godcreator/gwb-collab",
+      "version": "0.3.2"
+    }
+  ],
+  "D:/unitfolders/igldu-gwbkernel/gwb-base-plugins": [
+    {
+      "path": "plugins/skills/package.json",
+      "name": "@godcreator/gwb-skills",
+      "version": "0.4.11"
+    },
+    {
+      "path": "plugins/settings/package.json",
+      "name": "@godcreator/gwb-settings",
+      "version": "0.3.8"
+    },
+    {
+      "path": "plugins/py-cli/package.json",
+      "name": "@godcreator/gwb-py-cli",
+      "version": "0.3.12"
+    },
+    {
+      "path": "plugins/node-cli/package.json",
+      "name": "@godcreator/gwb-node-cli",
+      "version": "0.4.12"
+    },
+    {
+      "path": "plugins/mcp/package.json",
+      "name": "@godcreator/gwb-mcp",
+      "version": "0.11.3"
+    },
+    {
+      "path": "plugins/logger/package.json",
+      "name": "@godcreator/gwb-logger",
+      "version": "0.4.10"
+    },
+    {
+      "path": "plugins/data/package.json",
+      "name": "@godcreator/gwb-data",
+      "version": "0.1.11"
+    },
+    {
+      "path": "plugins/commands/package.json",
+      "name": "@godcreator/gwb-commands",
+      "version": "0.5.6"
+    }
+  ],
+  "D:/unitfolders/igldu-gwbkernel/gwb-lifecycle-plugins": [
+    {
+      "path": "plugins/plugin-manager/package.json",
+      "name": "@godcreator/gwb-plugin-manager",
+      "version": "0.14.5"
+    },
+    {
+      "path": "plugins/devkit/package.json",
+      "name": "@godcreator/gwb-devkit",
+      "version": "0.24.0"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-block-note": [
+    {
+      "path": "plugins/gwb-bn-single/package.json",
+      "name": "@godcreator/gwb-bn-single",
+      "version": "0.4.5"
+    },
+    {
+      "path": "plugins/gwb-bn-query/package.json",
+      "name": "@godcreator/gwb-bn-query",
+      "version": "0.5.6"
+    },
+    {
+      "path": "plugins/gwb-bn-journal/package.json",
+      "name": "@godcreator/gwb-bn-journal",
+      "version": "0.2.7"
+    },
+    {
+      "path": "plugins/gwb-bn-comment/package.json",
+      "name": "@godcreator/gwb-bn-comment",
+      "version": "0.7.6"
+    },
+    {
+      "path": "plugins/gwb-bn-props/package.json",
+      "name": "@godcreator/gwb-bn-props",
+      "version": "0.5.6"
+    },
+    {
+      "path": "plugins/gwb-bn-core/package.json",
+      "name": "@godcreator/gwb-bn-core",
+      "version": "0.21.4"
+    },
+    {
+      "path": "plugins/gwb-bn-probe/package.json",
+      "name": "@godcreator/gwb-bn-probe",
+      "version": "0.4.5"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/god-live-doc": [
+    {
+      "path": "plugins/docfirst/package.json",
+      "name": "@godcreator/gwb-docfirst-workflow",
+      "version": "0.9.7"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-agent-hooks-skills": [
+    {
+      "path": "plugins/agent-hooks-skills/package.json",
+      "name": "@godcreator/gwb-agent-hooks-skills",
+      "version": "0.1.9"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-windows-backup": [
+    {
+      "path": "plugins/windows-backup/package.json",
+      "name": "@godcreator/gwb-windows-backup",
+      "version": "0.2.9"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-docs-site": [
+    {
+      "path": "plugins/docs-site/package.json",
+      "name": "@godcreator/gwb-docs-site",
+      "version": "0.6.3"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-dsh": [
+    {
+      "path": "plugins/dsh/package.json",
+      "name": "@godcreator/gwb-dsh",
+      "version": "0.5.7"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-gitea": [
+    {
+      "path": "plugins/gitea/package.json",
+      "name": "@godcreator/gwb-gitea",
+      "version": "0.1.7"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-nas-suite": [
+    {
+      "path": "plugins/deepseek/package.json",
+      "name": "@godcreator/gwb-deepseek",
+      "version": "0.1.6"
+    },
+    {
+      "path": "plugins/nas-board/package.json",
+      "name": "@godcreator/gwb-nas-board",
+      "version": "0.1.5"
+    },
+    {
+      "path": "plugins/news-links/package.json",
+      "name": "@godcreator/gwb-news-links",
+      "version": "0.1.5"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-mineru": [
+    {
+      "path": "plugins/mineru/package.json",
+      "name": "@godcreator/gwb-mineru",
+      "version": "0.6.4"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-paper-fetch": [
+    {
+      "path": "plugins/gwb-paper-fetch/package.json",
+      "name": "@godcreator/gwb-paper-fetch",
+      "version": "0.5.10"
+    },
+    {
+      "path": "plugins/gwb-bn-papers/package.json",
+      "name": "@godcreator/gwb-bn-papers",
+      "version": "0.6.5"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-unit-folder": [
+    {
+      "path": "plugins/unit-folder/package.json",
+      "name": "@godcreator/gwb-unit-folder",
+      "version": "0.7.15"
+    }
+  ],
+  "D:/unitfolders/evew5-gwbapps/gwb-vscode": [
+    {
+      "path": "plugins/vscode/package.json",
+      "name": "@godcreator/gwb-vscode",
+      "version": "0.1.3"
+    }
+  ]
+}

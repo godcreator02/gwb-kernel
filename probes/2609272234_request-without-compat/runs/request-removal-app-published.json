@@ -1,0 +1,266 @@
+{
+  "D:/unitfolders/evew5-gwbapps/gwb-block-note": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-block-note",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-bn-core",
+          "version": "0.21.4",
+          "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-block-note\\plugins\\gwb-bn-core",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        },
+        {
+          "pkg": "@godcreator/gwb-bn-comment",
+          "version": "0.7.6",
+          "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-block-note\\plugins\\gwb-bn-comment",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        },
+        {
+          "pkg": "@godcreator/gwb-bn-props",
+          "version": "0.5.6",
+          "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-block-note\\plugins\\gwb-bn-props",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        },
+        {
+          "pkg": "@godcreator/gwb-bn-query",
+          "version": "0.5.6",
+          "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-block-note\\plugins\\gwb-bn-query",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        },
+        {
+          "pkg": "@godcreator/gwb-bn-journal",
+          "version": "0.2.7",
+          "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-block-note\\plugins\\gwb-bn-journal",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        },
+        {
+          "pkg": "@godcreator/gwb-bn-single",
+          "version": "0.4.5",
+          "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-block-note\\plugins\\gwb-bn-single",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        },
+        {
+          "pkg": "@godcreator/gwb-bn-probe",
+          "version": "0.4.5",
+          "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-block-note\\plugins\\gwb-bn-probe",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-bn-core@0.21.4 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/、@godcreator/gwb-bn-comment@0.7.6 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/、@godcreator/gwb-bn-props@0.5.6 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/、@godcreator/gwb-bn-query@0.5.6 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/、@godcreator/gwb-bn-journal@0.2.7 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/、@godcreator/gwb-bn-single@0.4.5 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/、@godcreator/gwb-bn-probe@0.4.5 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/p0cd1-cgm-alert/gwb-cgm-alert": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\p0cd1-cgm-alert\\gwb-cgm-alert",
+      "shipped": [
+        {
+          "pkg": "@god-private/gwb-cgm-alert",
+          "version": "0.2.4",
+          "dir": "D:\\unitfolders\\p0cd1-cgm-alert\\gwb-cgm-alert\\plugins\\cgm-alert",
+          "registry": "https://git.tianshen02.online:28377/api/packages/god-private/npm/"
+        }
+      ],
+      "note": "发好了 @god-private/gwb-cgm-alert@0.2.4 → https://git.tianshen02.online:28377/api/packages/god-private/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/qrx1l-collab-site/collab-site": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\qrx1l-collab-site\\collab-site",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-collab",
+          "version": "0.3.2",
+          "dir": "D:\\unitfolders\\qrx1l-collab-site\\collab-site\\plugins\\collab",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-collab@0.3.2 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/god-live-doc": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-god-live-doc",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-docfirst-workflow",
+          "version": "0.9.7",
+          "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-god-live-doc\\plugins\\docfirst",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-docfirst-workflow@0.9.7 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-agent-hooks-skills": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\evew5-gwbapps\\gwb-agent-hooks-skills",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-agent-hooks-skills",
+          "version": "0.1.9",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-agent-hooks-skills\\plugins\\agent-hooks-skills",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-agent-hooks-skills@0.1.9 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-windows-backup": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\evew5-gwbapps\\gwb-windows-backup",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-windows-backup",
+          "version": "0.2.9",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-windows-backup\\plugins\\windows-backup",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-windows-backup@0.2.9 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-docs-site": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\evew5-gwbapps\\gwb-docs-site",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-docs-site",
+          "version": "0.6.3",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-docs-site\\plugins\\docs-site",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-docs-site@0.6.3 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-dsh": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-dsh",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-dsh",
+          "version": "0.5.7",
+          "dir": "D:\\unitfolders\\00000-console\\console\\out\\release-request-only-gwb-dsh\\plugins\\dsh",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-dsh@0.5.7 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-gitea": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\evew5-gwbapps\\gwb-gitea",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-gitea",
+          "version": "0.1.7",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-gitea\\plugins\\gitea",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-gitea@0.1.7 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-nas-suite": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\evew5-gwbapps\\gwb-nas-suite",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-deepseek",
+          "version": "0.1.6",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-nas-suite\\plugins\\deepseek",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        },
+        {
+          "pkg": "@godcreator/gwb-nas-board",
+          "version": "0.1.5",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-nas-suite\\plugins\\nas-board",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        },
+        {
+          "pkg": "@godcreator/gwb-news-links",
+          "version": "0.1.5",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-nas-suite\\plugins\\news-links",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-deepseek@0.1.6 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/、@godcreator/gwb-nas-board@0.1.5 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/、@godcreator/gwb-news-links@0.1.5 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-mineru": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\evew5-gwbapps\\gwb-mineru",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-mineru",
+          "version": "0.6.4",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-mineru\\plugins\\mineru",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-mineru@0.6.4 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-paper-fetch": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\evew5-gwbapps\\gwb-paper-fetch",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-paper-fetch",
+          "version": "0.5.10",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-paper-fetch\\plugins\\gwb-paper-fetch",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        },
+        {
+          "pkg": "@godcreator/gwb-bn-papers",
+          "version": "0.6.5",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-paper-fetch\\plugins\\gwb-bn-papers",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-paper-fetch@0.5.10 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/、@godcreator/gwb-bn-papers@0.6.5 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-unit-folder": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\evew5-gwbapps\\gwb-unit-folder",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-unit-folder",
+          "version": "0.7.15",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-unit-folder\\plugins\\unit-folder",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-unit-folder@0.7.15 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  },
+  "D:/unitfolders/evew5-gwbapps/gwb-vscode": {
+    "ok": true,
+    "data": {
+      "repoDir": "D:\\unitfolders\\evew5-gwbapps\\gwb-vscode",
+      "shipped": [
+        {
+          "pkg": "@godcreator/gwb-vscode",
+          "version": "0.1.3",
+          "dir": "D:\\unitfolders\\evew5-gwbapps\\gwb-vscode\\plugins\\vscode",
+          "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+        }
+      ],
+      "note": "发好了 @godcreator/gwb-vscode@0.1.3 → https://git.tianshen02.online:28377/api/packages/godcreator/npm/(tag latest)。这条命令只发到源、没碰任何 home:升级 default 用 plugin-manager.update {\"all\":true}(由插件管理自己做,热重新加载时它不会被停掉)。发版前该在隔离 home 里验过的,验完再升级"
+    }
+  }
+}
