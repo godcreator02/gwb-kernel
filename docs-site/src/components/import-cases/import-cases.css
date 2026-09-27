@@ -1,0 +1,43 @@
+/*
+ * 浏览器模块登记与页面准备的几种情况（import-cases.tsx）。宽屏两张卡并排、窄屏上下排；
+ * 行上的标记：新出现绿色、改过琥珀色、已对不上玫红，都取讲解播放器的角色色。
+ */
+.import-cases { container-type: inline-size; }
+.import-cases .ic-call { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.import-cases .ic-call code { font-family: var(--dx-mono); font-size: 12px; overflow-wrap: anywhere; }
+
+.import-cases .ic-sides { display: grid; gap: 12px; min-width: 0; }
+@container (min-width: 720px) { .import-cases .ic-sides { grid-template-columns: 1fr 1fr; } }
+
+.import-cases .ic-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.import-cases .ic-row {
+  --dx-c: var(--dx-slate);
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 3px 6px; border-radius: 6px;
+  border-left: 2px solid transparent; transition: background-color .3s, border-color .3s;
+}
+.import-cases .ic-row[data-mark='new'] { --dx-c: var(--dx-emerald); }
+.import-cases .ic-row[data-mark='changed'] { --dx-c: var(--dx-amber); }
+.import-cases .ic-row[data-mark='gone'] { --dx-c: var(--dx-rose); }
+.import-cases .ic-row[data-mark] { background: color-mix(in srgb, var(--dx-c) 12%, transparent); border-left-color: var(--dx-c); }
+.import-cases .ic-name { font-family: var(--dx-mono); font-size: 12px; font-weight: 600; color: var(--dx-fg); }
+.import-cases .ic-url { font-family: var(--dx-mono); font-size: 11px; color: var(--dx-dim); overflow-wrap: anywhere; }
+.import-cases .ic-count { font-size: 11px; color: var(--dx-dim); }
+.import-cases .ic-badge {
+  font-size: 10px; font-weight: 600; padding: 0 5px; border-radius: 4px;
+  background: color-mix(in srgb, var(--dx-c) 18%, transparent); color: var(--dx-c);
+}
+.import-cases .ic-row[data-mark='gone'] .ic-url { text-decoration: line-through; }
+
+.import-cases .ic-empty { margin: 0; font-size: 12.5px; color: var(--dx-dim); }
+.import-cases .ic-map { display: grid; gap: 4px; padding: 6px; border-radius: 8px; border: 1px dashed var(--dx-line); animation: dx-pop .35s ease-out both; }
+.import-cases .ic-map-title { font-family: var(--dx-mono); font-size: 11px; color: var(--dx-violet); }
+
+.import-cases .ic-result {
+  padding: 6px 10px; border-radius: 8px; font-family: var(--dx-mono); font-size: 12px; overflow-wrap: anywhere;
+  color: var(--dx-c); border: 1px solid color-mix(in srgb, var(--dx-c) 40%, transparent);
+  background: color-mix(in srgb, var(--dx-c) 8%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .import-cases .ic-map { animation: none; }
+  .import-cases .ic-row { transition: none; }
+}

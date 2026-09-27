@@ -157,9 +157,10 @@ if ($runtime) { $runtime } else { '30 秒内没等到这次启动写的 runtime.
 
 - `runtime.json` 里有 `version`（内核版本）与 `"mcp": { "url": "http://127.0.0.1:2870/mcp" }`——MCP 入口的地址
   **以这个字段为准**
-- 同目录的 `gwb.log` 一行一条，格式是 `<时间> <级别> <来源> <内容>`。应该有 `info kernel up` 与 `info gwb-mcp MCP 入口已就绪` 两行；
-  `Select-String "$env:APPDATA\gwb-kernel\homes\default\gwb.log" -Pattern '^\S+ error '` 应当没有任何输出
-  （`warn` 行读一读，不算失败）。`gwb.log` 超过 128 MB 会改名成 `gwb.log.1` 另起一份，找不到早先的行就去 `.1` 里找
+- 同目录的 `gwb.log` 一行一个 JSON 对象，键是 `ts`、`level`、`source`、`name`、`msg`。应该有 `name` 为 `kernel`、`msg` 以 `up` 开头的一行，
+  与 `name` 为 `gwb-mcp`、`msg` 为 `MCP 入口已就绪` 的一行；
+  `Get-Content "$env:APPDATA\gwb-kernel\homes\default\gwb.log" | ConvertFrom-Json | Where-Object level -eq 'error'` 应当没有任何输出
+  （`level` 为 `warn` 的行读一读，不算失败）。`gwb.log` 超过 128 MB 会改名成 `gwb.log.1` 另起一份，找不到早先的行就去 `.1` 里找
 
 能看到窗口的话，窗口里应该是：
 

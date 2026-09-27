@@ -1,0 +1,34 @@
+/*
+ * 泳道图（lanes.tsx）。参与者的颜色经 data-role 给出 --dx-c，框与底色从它调淡；
+ * 这一步亮着的参与者边框加粗、底色加深，其余淡下去；去程箭头实线、回程箭头虚线，都用强调色。
+ */
+.kl-scroll { min-width: 0; overflow-x: auto; }
+.kl-svg { display: block; width: 100%; height: auto; font-size: 12px; user-select: none; }
+
+.kl-band rect { fill: color-mix(in srgb, var(--dx-dim) 4%, transparent); stroke: var(--dx-line); stroke-dasharray: 4 4; }
+.kl-band text { fill: var(--dx-dim); font-size: 11px; font-weight: 600; }
+
+.kl-actor { transition: opacity .3s; }
+.kl-actor rect {
+  fill: color-mix(in srgb, var(--dx-c) 6%, var(--dx-surface));
+  stroke: color-mix(in srgb, var(--dx-c) 45%, transparent);
+  stroke-width: 1;
+  transition: fill .3s, stroke .3s, stroke-width .3s;
+}
+.kl-actor[data-lit='true'] rect { fill: color-mix(in srgb, var(--dx-c) 16%, var(--dx-surface)); stroke: var(--dx-c); stroke-width: 1.8; }
+.kl-actor[data-lit='false'] { opacity: .42; }
+.kl-name { fill: var(--dx-fg); font-weight: 600; font-size: 12.5px; }
+.kl-sub { fill: var(--dx-dim); font-family: var(--dx-mono); font-size: 10.5px; }
+.kl-actor[data-lit='true'] .kl-sub { fill: var(--dx-c); }
+
+.kl-flow { animation: kl-in .35s ease-out both; }
+.kl-flow path { fill: none; stroke: var(--dx-accent); stroke-width: 1.6; }
+.kl-flow[data-back='true'] path { stroke-dasharray: 5 4; }
+.kl-flow polygon { fill: var(--dx-accent); }
+.kl-flow text { fill: var(--dx-accent); font-family: var(--dx-mono); font-size: 10.5px; paint-order: stroke; stroke: var(--dx-surface); stroke-width: 4px; }
+
+@keyframes kl-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .kl-flow { animation: none; }
+  .kl-actor, .kl-actor rect { transition: none; }
+}

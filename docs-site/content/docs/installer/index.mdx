@@ -1,0 +1,77 @@
+---
+title: 安装包
+description: 启动器 apps/launcher 与打包脚本 installer/ 把 Electron 和启动器打成 NSIS 安装程序；内核包、cordis 与插件都不带，装在 home 里。启动器按 GWB_HOME 选定 home、确认 home 里的内核包能在自带的 Electron 上运行，再 import 内核
+full: true
+---
+
+安装包由两部分组成：启动器 `gwb-kernel-launcher`（源码在 `apps/launcher/src/`，入口文件 `main.ts`，不发布，只打进安装包）与打包脚本
+（`installer/`，入口文件 `installer/scripts/build.ps1`，不在 pnpm 工作区里）。
+
+<SeamMap module="installer" />
+
+## 功能
+
+- **产出安装程序**：在 `installer\build\dist\` 下生成 `gwb-setup-<版>.exe`，一键安装、按当前用户安装、不需要管理员权限；`<版>` 是启动器的版本号。
+  同目录的 `win-unpacked\` 是打包前的目录，只用来验证。怎么打、哪几道检查不能删、打完怎么验证，见[开发](/docs/develop#打安装包)
+- **只带启动器与 Electron**：内核是 npm 包 `@godcreator/gwb-kernel-desktop`，和插件一样装在每个 home 的 `node_modules` 里，由创建 home 的一方安装、
+  经插件管理升级；插件的 peer `cordis` 与内核解析到 home 根上同一份，各个 home 的内核版本也可以不同。所以只有 Electron 版本或启动器本身变了才重新打包。
+  为什么这样分，见轨迹卡[内核装进 home](/trajectory/2026-09-24-kernel-in-home)
+- **启动器**：每次启动按 `GWB_HOME` 选定 home、检查 home 里内核包的清单、import 内核入口；不满足就弹框说明、退出码 1。见[启动器](/docs/installer/launcher)
+- **装好之后**：Electron 与启动器装在 `%LOCALAPPDATA%\Programs\gwb-kernel\`，启动器在 `resources\app.asar` 里，开始菜单出现「gwb-kernel」。
+  home 在 `%APPDATA%\gwb-kernel\homes\` 下，和安装目录分开；设 `GWB_HOME` 再运行同一个 exe，就是另开一个 home
+
+`productName` 决定安装目录名与开始菜单项，`perMachine: false` 是按当前用户安装，安装程序的文件名里 `${version}` 是应用目录清单的版本，也就是启动器的版本：
+
+{/* ref file="../installer/electron-builder.yml" lines="6-6" hash="c7b78249a645" blob="f2c1ac8ae6c9" */}
+
+{/* ref file="../installer/electron-builder.yml" lines="18-21" hash="9c2a743b954f" blob="f2c1ac8ae6c9" */}
+
+## 接口
+
+安装包不导出模块或类型。启动器与 home 里的内核包之间没有代码接口，只靠一个环境变量与内核包清单里的两个字段：
+
+| 接口 | 谁写、谁读 | 约定 |
+| --- | --- | --- |
+| 环境变量 `GWB_HOME` | 人或 agent 设；启动器读，再写回绝对路径；内核读 | 不设是 `default`，只写名字是 `%APPDATA%\gwb-kernel\homes\<名字>`，带路径分隔符是那个目录本身。启动器写回的一定是绝对路径 |
+| 内核包清单的 `engines.electron` | 内核包写；启动器读 | 内核要的 Electron 版本范围（`^` 写法）。换了 Electron 主版本就改它，内核包升 x（见[开发](/docs/develop#发版)） |
+| 内核包清单的 `main` | 内核包写；启动器读 | 入口文件，相对内核包目录。入口模块求值时不顶层 `await` Electron 的 ready，只把启动注册到 ready 上 |
+| 拒绝：弹框、stderr 一行、退出码 1 | 启动器写；人或 agent 读 | 说清是哪个 home、缺什么、怎么补。拒绝时不写 home |
+
+启动器只认内核包的包名与清单的这两个字段：
+
+{/* ref file="../apps/launcher/src/launch-plan.ts" lines="5-5" hash="70e11b952fe4" blob="7dff040f70bd" */}
+
+{/* ref file="../apps/desktop/package.json" lines="8-8" hash="3f8ef1581707" blob="df73ceac0ed7" */}
+
+{/* ref file="../apps/desktop/package.json" lines="34-36" hash="d14faf1367c1" blob="df73ceac0ed7" */}
+
+给人和 agent 用的两样产出：
+
+| 产出 | 谁在用、做什么 |
+| --- | --- |
+| 安装程序 `gwb-setup-<版>.exe` | 人和安装工作台的 agent 用它安装；上传到 gitea 发布仓 `godcreator/gwb-kernel`（本仓的 git 远端 `gitea`）的 release，顺序见[开发](/docs/develop#发版) |
+| 开始菜单「gwb-kernel」与 `%LOCALAPPDATA%\Programs\gwb-kernel\gwb-kernel.exe` | 日常启动；另开 home 的步骤在仓根 `INSTALL.md` 的「装一个别的 home」；开发插件用的测试 home 由 devkit 的 `devkit.home.new` 建 |
+
+## 依赖
+
+| 依赖 | 用来做什么 | 缺了会怎样 |
+| --- | --- | --- |
+| Electron | 安装包里的运行时。版本只写在 `apps/launcher/package.json` 的 `devDependencies.electron` 一处，打包时经命令行传给 electron-builder；二进制从 `electron-builder.yml` 的 `electronDownload.mirror` 镜像下载 | 下载不下来时 electron-builder 失败，打包脚本停下 |
+| `semver` | 启动器唯一的运行时依赖，拿当前 Electron 版本和内核包的 `engines.electron` 比 | 打包时写进应用目录的清单再 `npm install`；没写进清单，electron-builder 不收它，装好的启动器一启动就 import 失败 |
+| home 里的内核包 `@godcreator/gwb-kernel-desktop` | 启动器读它的清单、import 它的入口 | 启动器弹框说明缺内核包、退出码 1 |
+| electron-builder | 打出 NSIS 安装程序：`installer/package.json` 的开发依赖，工具二进制经脚本设的环境变量 `ELECTRON_BUILDER_BINARIES_MIRROR` 从国内镜像下载 | `installer/node_modules` 里没有时脚本先 `npm install`；装不上或打包失败时脚本停下 |
+| pnpm 与 npm | `pnpm build` 构建启动器；`npm install` 装应用目录的依赖与 electron-builder | 退出码不是 0 时脚本停下 |
+| git | `git status --porcelain` 检查内核仓已跟踪的文件没有未提交的改动 | 找不到 git 或有改动时，脚本在第一步就停下 |
+
+{/* ref file="../apps/launcher/package.json" lines="15-22" hash="cee944b831cc" blob="3837fd0122c5" */}
+
+{/* ref file="../installer/package.json" lines="6-8" hash="7a7246809cc9" blob="04992eac0af7" */}
+
+## 不做的事
+
+- **不带内核、插件与 pnpm，不写 home**：启动器只读 home 里内核包的清单；home 里缺什么由创建 home 的一方照 `INSTALL.md` 装，启动器不替人安装。
+  装机为什么交给 agent，见轨迹卡[不带种子，装机交给 agent](/trajectory/2026-09-18-no-seed-agent-installs)
+- **不决定内核怎么运行**：内核怎么准备 home、怎么加载插件全由内核决定，见[启动与退出](/docs/desktop/boot)；启动器只保证交给内核的 `GWB_HOME` 是它选定的那个绝对路径
+- **不检查插件和内核兼不兼容**：插件 peer 里写的内核包范围由插件管理比对；启动器也不检查 home 里有没有 `cordis` 与插件
+- **不把安装包的版本交给内核**：内核与插件都拿不到安装包的版本号，理由见轨迹卡[删掉安装包版本](/trajectory/2026-09-25-drop-launcher-version)
+- **不在打包配置里写 Electron 版本**：`electron-builder.yml` 不写 `electronVersion`，版本只在启动器清单一处

@@ -10,8 +10,20 @@ import { File, Files, Folder } from 'fumadocs-ui/components/files';
 import type { MDXComponents } from 'mdx/types';
 import type { ReactNode } from 'react';
 import { DocfirstPre } from '@godcreator/docfirst-workflow/fumadocs/pre';
-import { Diagram } from './diagram';
 import type { ComponentName } from './registry';
+import { SeamMap } from './seam-map/seam-map';
+import { LauncherBootSteps } from './launcher-boot/launcher-boot';
+import { LauncherCases } from './launcher-cases/launcher-cases';
+import { BootAndRequestSteps } from './boot-and-request/boot-and-request';
+import { KernelBootSteps } from './kernel-boot/kernel-boot';
+import { BootFailureCases } from './boot-failure/boot-failure';
+import { QuitCleanupCases } from './quit-cleanup/quit-cleanup';
+import { HomeLoadSteps } from './home-load/home-load';
+import { RequestTripSteps } from './request-trip/request-trip';
+import { RequestOutcomes } from './request-outcomes/request-outcomes';
+import { ShellHandoverSteps } from './shell-handover/shell-handover';
+import { ImportCases } from './import-cases/import-cases';
+import { LogSources } from './log-sources/log-sources';
 
 export function Note({ children }: { children?: ReactNode }) {
   return <div className="note">{children}</div>;
@@ -22,8 +34,20 @@ const table: Record<ComponentName, MDXComponents[string]> = {
   Files,
   Folder,
   File,
-  Diagram,
   Callout,
+  SeamMap,
+  LauncherBootSteps,
+  LauncherCases,
+  BootAndRequestSteps,
+  HomeLoadSteps,
+  RequestTripSteps,
+  RequestOutcomes,
+  ShellHandoverSteps,
+  ImportCases,
+  LogSources,
+  KernelBootSteps,
+  BootFailureCases,
+  QuitCleanupCases,
 };
 
 export function getMDXComponents(components?: MDXComponents) {

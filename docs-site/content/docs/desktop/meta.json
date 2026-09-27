@@ -1,5 +1,1 @@
-{
-  "title": "gwb-kernel-desktop · 内核应用",
-  "description": "apps/desktop：Electron 主进程里的内核本身——首页讲它的功能、接口、依赖与不做的事，子页讲启动与退出的顺序、包根导出的接口类型",
-  "pages": ["index", "boot", "api"]
-}
+{ "title": "内核应用", "pages": ["index", "boot", "api", "home", "ipc", "page", "log"] }

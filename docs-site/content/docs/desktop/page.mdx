@@ -1,0 +1,113 @@
+---
+title: 页面入口
+description: 内核的页面 index.html 在窗口打开后先显示什么（只读状态页、外壳起不来时的状态页），怎么把 #root 交给调用 setShell 的外壳插件；浏览器模块怎么由插件经 registerImports 登记、页面经 prepareImports 注入 importmap（内核只提供机制、不带 React）；页面导航锁与外链交给系统浏览器
+---
+
+内核的页面只有一个 `index.html`：一个空的 `#root` 和一段脚本。它自己只会画一种东西——只读状态页；真正的界面由调用 `setShell` 的外壳插件接管。
+接管这件事跨主进程与页面两处、有严格的先后：外壳插件先登记页面要用的浏览器模块，再交出地址；页面先注入 importmap，再 import 外壳。
+
+<ShellHandoverSteps />
+
+## 只读状态页
+
+没有插件调用 `setShell`，或外壳起不来（import 失败、默认导出不是函数、`prepareImports` 拒绝）时，页面入口在 `#root` 上画一页纯文本、没有按钮的状态页：
+第一句说明是哪种情况，然后是 home 的路径、每个条目一行（id、包名、加载到哪一步：PENDING 带还缺哪个服务，FAILED 带错误的第一行，没有 fiber 的指向错误行）、
+最近 20 行 error 与 warn 日志。数据是主进程随 `gwb:shell` 一起推来的 `report`：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="204-227" hash="2096944eb6d1" blob="b613d37fa683" */}
+
+{/* ref file="../apps/desktop/src/main.ts" lines="41-42" hash="aa246cf23ed2" blob="b613d37fa683" */}
+
+状态页只陈述内核手里已有的数据：不分析失败原因、不重试、不放按钮，这些要认识具体的插件，归外壳和插件管理的窗格
+（[外壳没上来时的阶段页](/trajectory/2026-09-08-stage-page)）。`report` 只给内核自己的页面入口用，不在契约里：`GwbWindowApi` 里 `onShell` 的参数类型只写了 `url`。
+
+窗口底色 `#151518` 与 `index.html` 的 html 背景、安装包图标的底色是同一个值，窗口创建到第一帧、整页重新加载的第一帧露出来的都是这个颜色，不闪白；改底色时三处一起改。
+
+## 外壳模块的契约
+
+外壳插件在主进程里调用 `setShell`，把自己在页面上运行的那个模块的 `file:` 地址交给内核；页面入口 import 这个地址，只认它的默认导出：
+
+{/* ref file="../apps/desktop/src/api.ts" lines="21-25" hash="e98393537c67" blob="b2cf0ae6f72c" */}
+
+{/* ref file="../apps/desktop/src/api.ts" lines="48-49" hash="ec9ecc8997fe" blob="b2cf0ae6f72c" */}
+
+```ts
+ctx.effect(() => ctx.gwbKernel.registerImports(browserImports()))   // 先登记页面要用的模块
+const entry = new URL('./client.js', import.meta.url).href
+ctx.effect(() => ctx.gwbKernel.setShell(entry))                     // 再交出页面；卸载时自动交还
+```
+
+页面入口保证：
+
+- **同一时刻只有一个外壳**：换外壳先调用旧外壳的 `dispose`、清空 `#root`，再挂载新的；旧外壳的 `dispose` 抛错只打一行 `console.error`，照样换
+- **同一个地址只挂载一次**：外壳在用或正在 import 时同一个地址又推来，直接忽略
+- **不白屏**：地址是 `null`、import 失败、默认导出不是函数、`prepareImports` 拒绝，都画只读状态页；同一个失败地址再推来只更新状态页、不重试，撤销后重新交出才重试
+
+外壳插件要做到：`setShell` 返回的撤销函数交给 `ctx.effect`；`dispose` **同步**移除自己在页面上创建的一切——页面入口在 `dispose` 返回后紧接着清空 `#root`，
+清理放进 Promise 就会晚于清空。后调用 `setShell` 的替换先调用的；撤销函数只在自己仍是当前外壳时才清空地址。
+
+{/* ref file="../apps/desktop/tests/index-html.test.ts" lines="231-237" hash="7bf3fd78ac48" blob="300970b180eb" */}
+
+{/* ref file="../apps/desktop/tests/index-html.test.ts" lines="180-191" hash="180b6786a4a3" blob="300970b180eb" */}
+
+## 浏览器模块与 importmap
+
+外壳和窗格都是 ESM 模块，里面写 `import 'react'` 这样的包名，浏览器要靠 importmap 才知道去哪个文件找。内核只提供这套机制，不带任何运行时：
+React 由外壳插件打包、登记，升级 React 发外壳插件就够，不用发内核（[内核提供模块解析机制，外壳提供 React](/trajectory/2026-09-27-browser-imports-service)）。
+
+{/* ref file="../apps/desktop/tests/importmap.test.ts" lines="8-12" hash="422b60270d55" blob="3b6f3cdb5d2d" */}
+
+**登记在主进程**：插件调用 `registerImports({ 包名: 本地文件 URL })`，把撤销函数交给 `ctx.effect`。名字要是精确的包名或子路径，不收前缀、相对路径；
+地址要是本地 `.js` 或 `.mjs` 文件的 `file:` URL。整批先校验再登记；同名同地址复用并记登记者个数，最后一个登记者撤销才移除；同名不同地址直接抛错：
+
+{/* ref file="../apps/desktop/src/browser-imports.ts" hash="1cdc46619f34" blob="a9ce57cbee25" */}
+
+**注入在页面**：页面在动态 import 之前调用 `window.gwb.prepareImports(必需的名字?)`。preload 经 `gwb:imports` 取当前快照，只把这份文档里还没注入的名字
+写成一段新的 `<script type="importmap">`，插入之后 promise 才兑现。并发的几次调用排成一队依次处理，前一次失败不影响后一次：
+
+{/* ref file="../apps/desktop/src/preload.cjs" lines="25-29" hash="4d5040e083ee" blob="97b2299ef0dc" */}
+
+主进程的登记与页面文档里已经解析的模块是两回事：撤销登记不会卸载页面里的模块，同一份文档里的 importmap 也改不了。所以已经注入的名字
+地址变了或被撤销时，`prepareImports` 拒绝并要求整页重载，而不是在旧模块还活着时悄悄改指。选一种情况看两边：
+
+<ImportCases />
+
+{/* ref file="../apps/desktop/tests/browser-imports.test.ts" lines="13-27" hash="7b466838d806" blob="d69bab7be61b" */}
+
+{/* ref file="../apps/desktop/tests/preload.test.ts" lines="77-88" hash="a9bf81359d71" blob="a0997b68b97a" */}
+
+提供方的次序由 cordis 保证，不由这套机制保证：用到别人模块的插件要在 peer 与 `inject` 里写明提供方，`prepareImports` 给出必需名字时不等待，
+没登记就当场拒绝。提供方另外发布一个无副作用的 `./browser-imports` 代码出口导出 `browserImports()`，给运行时登记、下游构建的外置名单与 devkit 发版检查共用；
+内核不读这个出口，也不扫描 home 或包清单。
+
+## 页面导航锁与外链
+
+页面能调用任何插件登记的请求通道，所以内核在页面这一侧守一条边界：主框架只可能是内核包里的 `index.html`，工作台不开第二个窗口
+（[页面边界](/trajectory/2026-09-25-page-navigation-lock)、[网页链接交给系统浏览器](/trajectory/2026-09-25-open-external-links)）。
+
+| 页面上发生的事 | 结果 |
+| --- | --- |
+| 整页重新加载（目标地址去掉 `#` 之后与当前相同） | 放行 |
+| 主框架跳到别的地址：不带 `target` 的链接点击、拖进窗口的链接或文件，包括网页 | 拒绝，写一行 `kernel` 的 warn |
+| 主框架上的重定向 | 拒绝，写一行 warn；iframe 里的跳转与重定向不管 |
+| `window.open`、`target="_blank"`，协议是 `http:` / `https:` | 不开新窗口，交给系统默认浏览器，写一行 info；打不开再写一行 warn |
+| `window.open`，别的协议或解析不了的地址 | 不开新窗口，拒绝，写一行 warn |
+
+判定是三个纯函数，窗口上的接线在 `main.ts`：
+
+{/* ref file="../apps/desktop/src/page-boundary.ts" hash="3a6b56976fb4" blob="c8ea974836da" */}
+
+{/* ref file="../apps/desktop/src/main.ts" lines="304-327" hash="083b8d0fe513" blob="b613d37fa683" */}
+
+对插件作者的意思：要在系统浏览器里打开网页，链接写 `target="_blank"` 或调用 `window.open`；不带 `target` 的普通链接点击是主框架跳转，会被拒绝，什么都不会发生。
+`file:`、`javascript:`、`data:` 与自定义协议交给系统等于打开本地文件或唤起别的应用，页面上的任何代码都能触发，所以不放行。
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="640-665" hash="90b7bb4f884c" blob="db45edf1e552" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="667-681" hash="36211821e3e8" blob="db45edf1e552" */}
+
+## 不做的事
+
+- 不渲染界面：只读状态页之外，页面显示什么全由外壳决定；页面入口不认识窗格，也不挑外壳，主进程推来哪个地址就挂载哪个
+- 不带 React 或任何页面运行时，不预置任何 importmap；也不做 importmap 的前缀、scopes 与远程模块
+- 不替插件做菜单：启动时只去掉 Electron 默认的那套，需要菜单的插件在 Electron ready 之后自己调用 `Menu.setApplicationMenu`

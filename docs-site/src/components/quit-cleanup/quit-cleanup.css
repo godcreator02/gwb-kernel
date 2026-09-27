@@ -1,0 +1,30 @@
+/*
+ * 退出清理的时间轴（quit-cleanup.tsx）。横道的颜色经 data-role 给出，条的颜色经 data-tone 给出，都从 --dx-c 调淡；
+ * app.quit() 的竖线用强调色实线，5 秒上限用灰色虚线。
+ */
+.qc-panel { display: grid; gap: 10px; }
+.qc-scroll { min-width: 0; overflow-x: auto; }
+.qc-svg { display: block; width: 100%; min-width: 560px; height: auto; font-size: 11px; user-select: none; }
+
+.qc-lane rect { fill: color-mix(in srgb, var(--dx-c) 5%, transparent); stroke: color-mix(in srgb, var(--dx-c) 30%, transparent); }
+.qc-lane text { fill: var(--dx-fg); font-weight: 600; font-size: 12px; }
+
+.qc-bar rect {
+  fill: color-mix(in srgb, var(--dx-c) 22%, var(--dx-surface));
+  stroke: var(--dx-c);
+  stroke-width: 1.2;
+  animation: qc-in .35s ease-out both;
+}
+.qc-bar text { fill: var(--dx-c); font-family: var(--dx-mono); font-size: 10.5px; }
+
+.qc-limit line { stroke: var(--dx-dim); stroke-dasharray: 4 4; }
+.qc-limit text { fill: var(--dx-dim); font-size: 10.5px; }
+.qc-quit line { stroke: var(--dx-accent); stroke-width: 2; }
+.qc-quit text { fill: var(--dx-accent); font-family: var(--dx-mono); font-size: 11px; font-weight: 600; }
+.qc-axis line { stroke: var(--dx-line); }
+.qc-axis text { fill: var(--dx-dim); font-family: var(--dx-mono); font-size: 10px; }
+
+@keyframes qc-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .qc-bar rect { animation: none; }
+}

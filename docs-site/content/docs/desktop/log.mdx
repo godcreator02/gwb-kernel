@@ -1,0 +1,125 @@
+---
+title: 日志
+description: 插件、内核、页面 console 三处的日志怎么经 ctx.logger 汇成一条 cordis 日志流，内核把它写成 home 里的 gwb.log（一行一个 JSON：ts、level、source、name、msg）与 stderr 上的文本；按条目写的挂载日志与汇总；128 MB 轮转成 gwb.log.1；写日志出问题时内核怎么办；旧内核的文本日志改名成 .text；读日志的插件从哪读
+---
+
+插件、内核自己、页面上的 console，三处的日志都汇进同一条 cordis 日志流。内核注册唯一的 exporter，把每一条同时写成两份：
+stderr 上给终端看的文本，home 里 `gwb.log` 的一行 JSON。内核只负责写和存；要显示或查询日志的插件读这个文件
+（[写与存归内核，查询与界面归插件](/trajectory/2026-09-27-log-kernel-writes-plugins-read)）。选一种来源，看同一条日志在两处各写成什么：
+
+<LogSources />
+
+## gwb.log 的一行
+
+一行一个 JSON 对象，以换行结尾；五个键、顺序固定。正文里的换行留在 JSON 字符串里，一条记录永远是一行，按行读、按行解析就够了。
+
+| 键 | 值 |
+| --- | --- |
+| `ts` | ISO 8601 的 UTC 时间字符串，毫秒精度 |
+| `level` | `error` / `warn` / `info` / `debug`；cordis 的其余类型记成 `info` |
+| `source` | `kernel`（logger 名是 `kernel`，以及 cordis 的 `loader`、`include`）/ `renderer`（页面 console）/ `plugin`（其余） |
+| `name` | logger 名 |
+| `msg` | 正文 |
+
+{/* ref file="../apps/desktop/src/log-record.ts" lines="1-35" hash="899f301a0fe9" blob="9e005a2aef22" */}
+
+{/* ref file="../apps/desktop/tests/log-record.test.ts" lines="7-12" hash="9d8f80064ac0" blob="03935a26d0e3" */}
+
+这个格式是跨仓的契约：日志插件、devkit 都按它解析。改键、改取值、改格式，内核包都要升 x。stderr 上的文本「时间 级别 名字 正文」只给终端看，不是给程序读的。
+
+## 三处来源怎么汇成一条
+
+- **插件**用 cordis 的 `ctx.logger(名字)` 写，名字用自己能被认出的（通常是插件名或服务名）。`kernel`、`loader`、`include`、`renderer` 这几个名字的日志算内核或页面的，插件不要用
+- **页面**上任何代码的 console 输出，主进程从窗口的 `console-message` 事件收到，转成名字 `renderer` 的日志：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="340-342" hash="cb8cdc7db26f" blob="b613d37fa683" */}
+
+- **内核自己**也走 `ctx.logger`，名字是 `kernel`；插件里没被处理的 rejection 与未捕获异常记成 `kernel` 的 error，工作台不退出：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="197-199" hash="01aedbee110d" blob="b613d37fa683" */}
+
+只有 cordis 实例建好之前（单实例锁拿不到）与启动失败那一行不经 cordis，直接调用同一个写一行的函数：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="98-103" hash="03bc66e1ed2a" blob="b613d37fa683" */}
+
+内核的 exporter 收所有级别，包括 `debug`；正文由 cordis 自己的 `Logger.format` 格式化，格式化抛错时退回把参数逐个转成字符串，这一行照样写进去：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="176-193" hash="ac4386f7eada" blob="b613d37fa683" */}
+
+exporter 在写日志的那次调用里同步执行，所以它不能抛：抛出去会让写日志的插件跟着抛。插件自己再注册 cordis exporter 的，同样要保证 `export` 不抛、不做耗时的同步操作。
+每条 error 还触发一次只读状态页的重新推送（200 毫秒内的多次合并成一次）；warn 只进日志，下一次推送时随最近的错误行一起出现。
+
+## 按条目写的挂载日志
+
+插件有没有加载成功、在等什么，从 logger 名是 `loader` 的行里看。每个插件条目加载成功（日志里写「挂上了」，带 apply 从 LOADING 到 ACTIVE 的耗时）、挂载失败（错误的第一行）、
+卸载、因为提供方被卸载而退回等待（缺哪几个服务）各写一行；include 这类只装条目的容器，以及插件里再 `ctx.plugin` 出来的子插件不写：
+
+{/* ref file="../apps/desktop/src/entry-log.ts" lines="96-120" hash="590ddbd5970f" blob="9c2a0bc85145" */}
+
+一开始就缺服务的条目不发任何状态事件，只能靠汇总报出来（[条目状态的时机](/trajectory/2026-09-27-entry-state-timing)）。条目树有变化——启动时逐条加载、
+插件管理换包——停下来 300 毫秒之后，等 `ctx.loader.await()` 返回，再写一行「条目加载完：N 个挂上；在等：…；挂载失败：…；没导入成功：…」。
+有挂载失败或没导入成功的是 error，只有在等或状态未定的是 warn，全部加载成功是 info。退出时卸载整棵插件树，不再逐条写卸载与汇总。
+
+{/* ref file="../apps/desktop/src/entry-log.ts" lines="42-69" hash="69ff72158385" blob="9c2a0bc85145" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="499-518" hash="beb2abc1e1c8" blob="db45edf1e552" */}
+
+## 上限与轮转
+
+`gwb.log` 写到 128 MB，就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多约 256 MB），再开一份新的 `gwb.log`。启动时文件已经超过上限，第一条日志就把它轮转掉。
+128 MB 的依据是实测：平常一天约写 48 MB，某个插件出错、反复写同样的日志时一小时能写约 675 MB；128 MB 平常留得住两天半的日志，
+那种情况下十几分钟轮转一次。读数记在仓根 `probes/2609201430_log-cap-rotation/`。
+
+{/* ref file="../apps/desktop/src/log-file.ts" lines="4-4" hash="93b606e5ccc9" blob="0270a1017f7a" */}
+
+轮转要先关句柄、删掉旧的 `.1`、再改名：Windows 上开着句柄改名不保证成功，改名也不一定覆盖已有文件。
+
+{/* ref file="../apps/desktop/src/log-file.ts" lines="74-96" hash="14a16ba6d693" blob="0270a1017f7a" */}
+
+## 写日志出问题时
+
+| 情况 | 内核怎么办 |
+| --- | --- |
+| 启动时 `gwb.log` 打不开 | 启动失败：只写 stderr，错误框写明文件路径与原因，退出码 1 |
+| 运行中写不进 | 告警一次，恢复之前这些行只写 stderr；写成功一次后再出错会再告警 |
+| 轮转失败（比如 `.1` 被别的程序占着） | 告警一次，继续写原来的文件，再写满一个上限后重试；一行不丢 |
+| 轮转之后重新打开失败 | 告警一次，之后日志只写 stderr，不再重试 |
+| 没有终端，写 stderr 抛 EPIPE | 忽略，文件照写 |
+
+打开之后写日志出的任何问题都不让内核崩溃；这几句告警只写 stderr，不写 `gwb.log`——它们本来就是写这个文件出的问题。
+启动时打不开则直接失败，因为那多半是 home 目录本身有问题，照常启动的话之后出的问题都查不到日志（[内核把四处降级改成启动失败](/trajectory/2026-09-25-kernel-drop-fallbacks)）。
+
+没有终端时每写一次 stderr 都抛 EPIPE，这个监听不能删，否则一条日志就能让主进程弹窗停摆（[stderr 管道断了还能带走主进程](/trajectory/2026-09-08-wall-stderr-epipe)）：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="56-57" hash="b402d85a9d17" blob="b613d37fa683" */}
+
+{/* ref file="../apps/desktop/tests/log-file.test.ts" lines="65-89" hash="65a35bfc6f6f" blob="6f43be67df8c" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="431-448" hash="a165d343880c" blob="db45edf1e552" */}
+
+## 旧内核留下的文本日志
+
+0.10 之前的内核把 `gwb.log` 写成文本行。拿到单实例锁之后、打开 `gwb.log` 之前，内核看 `gwb.log` 与 `gwb.log.1` 的第一个字节：不是 `{` 的就是旧内核写的文本，
+改名成 `gwb.log.text` / `gwb.log.1.text` 原样留给人看，再写一行 `kernel` 的 info 说明改了哪几份。这样读的一方见到的 `gwb.log` 与 `gwb.log.1` 只会是一行一个 JSON，
+不用认两种格式（[文本日志改名成 .text](/trajectory/2026-09-27-set-aside-text-logs)）。拿不到单实例锁的实例不改名：同一个 home 里正在运行的那个还在写这些文件。
+读第一个字节失败、改名失败，都按日志文件用不了处理，启动失败：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="59-96" hash="c00f4e153f3e" blob="b613d37fa683" */}
+
+{/* ref file="../apps/desktop/src/legacy-text-log.ts" lines="25-44" hash="bebdeafaafb7" blob="538439016a95" */}
+
+只看第一个字节：先用 0.10、再降回旧内核、再升回来的 home（JSON 在前、文本在后）不处理，读的一方会按坏行报错。
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="477-485" hash="6774bcc26fe5" blob="db45edf1e552" */}
+
+## 读日志
+
+要显示或查询日志的插件（日志插件 `@godcreator/gwb-logger`）与 devkit 直接读 `<home>\gwb.log`，要更早的再读 `gwb.log.1`；按时间顺序是先 `gwb.log.1` 再 `gwb.log`。
+文件跨重启留着，上一次运行的日志也查得到。读的一方按行解析，认不出的行直接报错、不猜。
+日志一律经 `ctx.logger` 写，不直接写 `gwb.log`；插件直接写 stderr 的内容不会进文件。
+
+## 不做的事
+
+- 不查询、不显示日志，也不为页面建日志通道：页面上要看日志的插件自己读 `gwb.log`，再用自己登记的请求通道交给页面
+- 不分级过滤、不按插件分文件：所有级别写进同一个文件
+- 不保留全部历史：只留当前一份与一份旧的

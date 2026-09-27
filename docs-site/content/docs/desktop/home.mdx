@@ -1,0 +1,117 @@
+---
+title: home 与插件加载
+description: 内核怎么按 GWB_HOME 选定并检查 home、home 里每个文件归谁写；cordis 官方的 loader 与 include 怎么把 cordis.yml 变成条目树，条目里的包名怎么按 home 里的真实路径解析成文件；每次启动写进 runtime.json 的是什么
+---
+
+一个 home 是一个目录：包清单、条目清单、装好的包、日志都在里面，内核包自己也作为 npm 包装在它的 `node_modules` 里。
+内核启动时先选定并检查 home，再让 cordis 官方的 loader（`@cordisjs/plugin-loader`）与 include（`@cordisjs/plugin-include`）
+按 `cordis.yml` 加载插件。下面用一个叫 `demo` 的 home，从环境变量一直走到插件加载成功、再到换版本后重新加载。
+
+<HomeLoadSteps />
+
+## 选定 home
+
+环境变量 `GWB_HOME` 决定用哪个 home，规则只有一条函数：
+
+{/* ref file="../apps/desktop/src/home-path.ts" hash="482874f47488" blob="8f1ac8757a53" */}
+
+| `GWB_HOME` | home 目录 |
+| --- | --- |
+| 不设 | `%APPDATA%\gwb-kernel\homes\default` |
+| 只有名字，如 `demo` | `%APPDATA%\gwb-kernel\homes\demo` |
+| 带路径分隔符，如 `D:\tmp\h1` | 就是这个目录 |
+
+目录不存在就创建，然后统一成磁盘上的真实路径，插件从 `ctx.gwbKernel.dataDir` 拿到的就是它。Chromium 的 userData 放在 `<home>\electron`，
+Electron 的单实例锁按 userData 区分，所以**同一个 home 只能运行一个实例**：第二个实例写一行 error、退出码 1，不动 `runtime.json`，
+已在运行的那个把窗口调到前面；不同的 home 可以同时运行
+（[同一 home 只许一个实例](/trajectory/2026-09-12-one-home-one-instance)）。
+路径必须先 realpath：大小写、junction、斜杠写法不同的同一个目录要得到同一个字符串，锁才认得出是同一个 home。
+
+## home 里的文件归谁
+
+| 文件 | 谁写 | 内核怎么用 |
+| --- | --- | --- |
+| `package.json` | 创建 home 的一方写好（安装步骤 `INSTALL.md` 或 `devkit.home.new`）；之后只由插件管理运行的 pnpm 改 | 启动时只看在不在，缺了启动失败、不补 |
+| `cordis.yml` | 创建 home 的一方写好；之后由 include 经条目树写回 | 根层那条 include 条目读它；缺了启动失败、不补 |
+| `node_modules/` | pnpm，由插件管理调用 | 条目里的包名从这里按真实路径解析 |
+| `runtime.json` | 内核每次启动整份重写；别的插件可以往里补字段 | 内核自己不读 |
+| `gwb.log`、`gwb.log.1` | 内核 | 见[日志](/docs/desktop/log) |
+| `electron/` | Electron（Chromium 的 userData） | 单实例锁按它区分 home |
+| 其余文件与目录 | 各插件自己的数据 | 内核不认识 |
+
+home 根上的 `cordis` 只有一份：内核包把它写在 peer 里、写精确版本号，loader、include 与插件都解析到这一份。loader 与 include
+是内核包自己的依赖，同样写精确版本号，随内核包一起装进 home：
+
+{/* ref file="../apps/desktop/package.json" lines="37-43" hash="9afff01b3cb1" blob="df73ceac0ed7" */}
+
+条目树的形状、`cordis.yml` 怎么读写都由这两个包决定，所以升级 `cordis`、loader、include 中的任何一个，都是改了插件管理依赖的接口，内核版本号升 x。
+
+## 条目树
+
+内核在 loader 的根层只放一条条目，`cordis.yml` 里的条目都长在它下面：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="349-356" hash="e5fc330ba54d" blob="b613d37fa683" */}
+
+这几行里有三处必须这么写（[取址交给 cordis 官方 loader](/trajectory/2026-09-07-cordis-loader-addressing)）：
+
+- **`internal.import` 在加载第一条条目之前换掉**：Electron 主进程没有 `--expose-internals`，不换的话 loader 按它自己在内核包里的位置解析包名，插件静默加载失败，日志里什么都没有
+- **include 经 `builtins` 交给 loader、做成条目**：include 是内核包的依赖，按包名从 home 找不到它；loader 对 `cordis:` 开头的名字直接查 `builtins` 表。做成条目而不是 `ctx.plugin(Include)`，它读出来的条目才在 loader 的同一棵树上（[include 走 builtins](/trajectory/2026-09-07-wall-include-via-builtins)）
+- **这条条目的 id 固定是 `home`**：`cordis.yml` 里的条目完整 id 都是 `home:<手写 id>`。数据插件、设置插件按这个 id 的末段算自己的目录与分区；根层 id 不固定就会每次启动随机，所有条目的 id 跟着变（[id 写死 home](/trajectory/2026-09-07-wall-home-entry-id-fixed)）
+
+模块解析的起点 `ctx.baseUrl` 设在根上下文上、指向 home 的 `file:` 地址，loader 与 include 都从根上下文继承它
+（[baseUrl 设在根上下文](/trajectory/2026-09-07-wall-baseurl-on-root-ctx)）：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="153-155" hash="c80508e65041" blob="b613d37fa683" */}
+
+**运行中增删条目只经条目树**：loader 服务 `ctx.loader` 的 `create` / `update` / `remove` 会把改动写回 `cordis.yml`，同时当场加载或卸载。
+绕过它直接改文件，内存里的条目不知道，下一次写回会把磁盘上的改动盖掉；include 只在有 `hmr` 服务时才监听文件，内核不提供这个服务。
+条目树不在 `gwbKernel` 里，也不在内核包导出的类型里：它的形状就是上面那两个版本的 loader 与 include 的内部结构。
+
+**加载成功以 cordis 的状态为准**：条目的 fiber 进了 ACTIVE 才算加载成功；fiber 存在不等于加载成功，缺服务的条目停在 PENDING、不报错
+（[fiber 存在不等于加载成功](/trajectory/2026-09-07-wall-fiber-not-active)）。每个条目的结果在 `gwb.log` 里有一行，没有外壳时只读状态页也列出每个条目的状态。
+
+## 包名怎么变成文件
+
+条目写的是包名。loader 要 import 它时调用内核给的 `internal.import`，从 home 的 `node_modules` 按真实路径找到入口：
+
+{/* ref file="../apps/desktop/src/bare-import.ts" lines="6-18" hash="c30f3452be03" blob="a03471e3e333" */}
+
+先 realpath 再解析，是为了运行中换了版本能拿到新版本：Node 的 CJS 解析缓存按「请求名加起点」记，起点是 `node_modules` 下那个 junction 时，
+junction 改指新版之后它仍会交回上一版的路径；pnpm 布局里真实路径带着版本号，起点一换缓存就对不上
+（[Node 的解析缓存会返回旧版本](/trajectory/2026-09-09-wall-resolver-cache)）。守住这一点的测试照 pnpm 布局换 junction：
+
+{/* ref file="../apps/desktop/tests/bare-import.test.ts" lines="50-73" hash="9f32b11bcff4" blob="205f23de64b1" */}
+
+插件包的入口导出 cordis 认识的形状：`name`、`inject`、`apply`，或者默认导出一个继承 cordis `Service` 的类。包清单的 `exports`
+要让 `require.resolve` 解析得到入口（有 `default`、`require` 或 `node` 条件）。页面上 import 的包名不走这套解析，而是经 importmap，
+见[页面入口](/docs/desktop/page)。
+
+## runtime.json
+
+每次启动，内核在创建 cordis 实例之前把这次运行写进 `<home>\runtime.json`：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="121-151" hash="bc5cb85b227b" blob="b613d37fa683" */}
+
+| 字段 | 内容 |
+| --- | --- |
+| `pid` | 内核主进程的进程号 |
+| `startedAt` | 启动时刻，毫秒时间戳 |
+| `version` | 内核包的版本号，与 `gwbKernel.version` 相同 |
+| `cdp` | Chromium 调试端口；启动时没给 `--remote-debugging-port` 就没有这个字段，不写 0 也不写 `null` |
+
+调试端口只有启动进程的一方知道，页面和插件都读不到，所以由内核写下来；读它的是工作台进程之外的程序，比如 devkit 按 home 名找到运行中的工作台、
+安装工作台的 agent 核对这次启动（[内核把运行时身份写进 home](/trajectory/2026-09-11-kernel-writes-runtime-record)）。几条规则：
+
+- **每次启动整份重写**：上一次运行留下的字段，包括别的插件补写的，都被覆盖。写不进、端口给的不是 1–65535 的整数时启动失败，错误框写明原因
+- **退出时不删**：崩溃、被结束的进程来不及清理，文件总留着上一次的内容。读的一方自己确认 `pid` 还活着，要用调试端口的还要确认端口属于这个 `pid`
+- **往里补字段的插件先读、合并、再写回**：MCP 入口插件在端口开好之后补一个 `mcp` 字段；整份覆盖会抹掉内核写的那几项
+- 内核不加锁、不保证原子写入，自己也不读这份文件
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="539-551" hash="a4167bfa2bdc" blob="db45edf1e552" */}
+
+## 不做的事
+
+- 不补 home 里的文件：`package.json` 与 `cordis.yml` 缺了只报错，不写模板、不修复
+- 不装包、不带 pnpm：装卸包、增删条目由插件管理做；内核不知道插件管理存在，只照常加载 `cordis.yml` 里的条目
+- 不读插件 peer 里写的内核包范围：范围不包含当前内核的插件照常加载，比对由插件管理做
+- 不核对插件之间的依赖齐不齐：缺服务的插件停在 PENDING，由条目日志与只读状态页报出来

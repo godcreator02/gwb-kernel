@@ -1,0 +1,39 @@
+/*
+ * 从 GWB_HOME 到插件加载成功（home-load.tsx）。宽屏两张卡并排、窄屏上下排；这一步读写的文件行用琥珀色调淡做底，
+ * 条目的状态用讲解播放器的语气色（good 绿、pending 琥珀、info 蓝）。
+ */
+.home-load { container-type: inline-size; }
+.home-load .hl-panes { display: grid; gap: 12px; min-width: 0; }
+@container (min-width: 720px) { .home-load .hl-panes { grid-template-columns: 1.1fr 1fr; } }
+
+.home-load .hl-disk, .home-load .hl-tree { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; min-width: 0; }
+.home-load .hl-line {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 2px 6px; border-radius: 6px;
+  border-left: 2px solid transparent; transition: background-color .3s, border-color .3s, opacity .3s;
+}
+.home-load .hl-line[data-lit='false'] { opacity: .55; }
+.home-load .hl-line[data-lit='true'] {
+  background: color-mix(in srgb, var(--dx-amber) 14%, transparent); border-left-color: var(--dx-amber);
+}
+.home-load .hl-file { font-family: var(--dx-mono); font-size: 12px; color: var(--dx-fg); overflow-wrap: anywhere; }
+.home-load .hl-note { font-size: 11.5px; color: var(--dx-dim); overflow-wrap: anywhere; }
+.home-load .hl-line[data-lit='true'] .hl-note { color: var(--dx-amber); }
+
+.home-load .hl-empty { margin: 0; font-size: 12.5px; color: var(--dx-dim); }
+.home-load .hl-node {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 3px 6px; border-radius: 6px;
+  font-size: 12px; animation: hl-in .35s ease-out both;
+}
+.home-load .hl-root { font-size: 11.5px; color: var(--dx-dim); font-weight: 600; animation: none; }
+.home-load .hl-id { font-family: var(--dx-mono); font-size: 12px; color: var(--dx-blue); }
+.home-load .hl-name { font-family: var(--dx-mono); font-size: 11.5px; color: var(--dx-fg); overflow-wrap: anywhere; }
+.home-load .hl-state {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: auto; font-family: var(--dx-mono); font-size: 11px;
+  color: var(--dx-c); white-space: nowrap;
+}
+
+@keyframes hl-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .home-load .hl-node { animation: none; }
+  .home-load .hl-line { transition: none; }
+}

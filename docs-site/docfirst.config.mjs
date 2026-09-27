@@ -12,6 +12,19 @@
  * 站里自己加的组件在它后面追加。
  */
 import { fumadocsRoster } from '@godcreator/docfirst-workflow/fumadocs/roster'
+import * as seamMap from './src/components/seam-map/seam-map.ai.mjs'
+import * as launcherBoot from './src/components/launcher-boot/launcher-boot.ai.mjs'
+import * as launcherCases from './src/components/launcher-cases/launcher-cases.ai.mjs'
+import * as bootAndRequest from './src/components/boot-and-request/boot-and-request.ai.mjs'
+import * as kernelBoot from './src/components/kernel-boot/kernel-boot.ai.mjs'
+import * as bootFailure from './src/components/boot-failure/boot-failure.ai.mjs'
+import * as quitCleanup from './src/components/quit-cleanup/quit-cleanup.ai.mjs'
+import * as homeLoad from './src/components/home-load/home-load.ai.mjs'
+import * as requestTrip from './src/components/request-trip/request-trip.ai.mjs'
+import * as requestOutcomes from './src/components/request-outcomes/request-outcomes.ai.mjs'
+import * as shellHandover from './src/components/shell-handover/shell-handover.ai.mjs'
+import * as importCases from './src/components/import-cases/import-cases.ai.mjs'
+import * as logSources from './src/components/log-sources/log-sources.ai.mjs'
 
 export default {
   content: 'content',
@@ -23,9 +36,21 @@ export default {
   },
   components: {
     ...fumadocsRoster,
-    // 示意图：机读版只保留「[图] 标题」和子元素里的文字说明
-    Diagram: (node, h) => [h.paragraph(`[图] ${h.attr(node, 'title') ?? h.attr(node, 'name') ?? ''}`), ...h.children()],
     // fumadocs 的提示框：机读版里标题变成「[注意] 标题」一段，正文照原样保留
     Callout: (node, h) => [h.paragraph(`[注意] ${h.attr(node, 'title') ?? ''}`), ...h.children()],
+    // 自包含的讲解组件：规则读组件自己的讲解数据，把每一步、每一条写成段落
+    SeamMap: seamMap.SeamMap,
+    LauncherBootSteps: launcherBoot.LauncherBootSteps,
+    LauncherCases: launcherCases.LauncherCases,
+    BootAndRequestSteps: bootAndRequest.BootAndRequestSteps,
+    KernelBootSteps: kernelBoot.KernelBootSteps,
+    BootFailureCases: bootFailure.BootFailureCases,
+    QuitCleanupCases: quitCleanup.QuitCleanupCases,
+    HomeLoadSteps: homeLoad.HomeLoadSteps,
+    RequestTripSteps: requestTrip.RequestTripSteps,
+    RequestOutcomes: requestOutcomes.RequestOutcomes,
+    ShellHandoverSteps: shellHandover.ShellHandoverSteps,
+    ImportCases: importCases.ImportCases,
+    LogSources: logSources.LogSources,
   },
 }

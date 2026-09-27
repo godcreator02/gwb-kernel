@@ -1,0 +1,96 @@
+---
+title: 页面与主进程之间的通道
+description: 页面上的 window.gwb 与背后的五个 Electron IPC 通道；请求通道怎么把 window.gwb.request 交给插件用 ctx.gwbKernel.handleRequest 登记的处理器，内核只传输、不认识载荷；插件经 emit 推给页面的事件；命令为什么只是命令插件登记的一条请求通道
+---
+
+页面和主进程是两个进程。页面上的代码只能经 preload 注入的 `window.gwb` 与主进程通信，背后是五个 Electron IPC 通道。
+内核只负责把消息送到、送回，不认识里面装的是什么：命令名、载荷、回执都是登记通道的插件自己定的。
+
+## window.gwb 与五个通道
+
+页面上只有 `window.gwb`，形状是包根导出的 `GwbWindowApi`：
+
+{/* ref file="../apps/desktop/src/api.ts" lines="33-46" hash="37100dff40eb" blob="b2cf0ae6f72c" */}
+
+`preload.cjs` 把这四个函数接到 IPC 通道上，整个文件就是这些：
+
+{/* ref file="../apps/desktop/src/preload.cjs" hash="9a46cc9d8b0e" blob="97b2299ef0dc" */}
+
+| 通道 | 方向 | 传什么 |
+| --- | --- | --- |
+| `gwb:request` | 页面 → 主进程（invoke） | 通道名与载荷；回 `{ available, value? }`，由 preload 解开 |
+| `gwb:event` | 主进程 → 页面 | 插件经 `gwbKernel.emit` 发出的 payload，原样 |
+| `gwb:shell` | 主进程 → 页面 | 整份外壳状态 `{ url, report }`，见[页面入口](/docs/desktop/page) |
+| `gwb:hello` | 页面 → 主进程 | 不带内容；主进程向发来的页面回一条 `gwb:shell` |
+| `gwb:imports` | 页面 → 主进程（invoke） | 回当前浏览器模块登记的快照，见[页面入口](/docs/desktop/page) |
+
+主进程这一侧收发它们的代码：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="286-294" hash="a2e23c0dfcf2" blob="b613d37fa683" */}
+
+两个 invoke 通道都只接收顶层框架的调用：发送方是 iframe，或发送方框架已经跳走、销毁（`senderFrame` 是 `null`），直接拒绝。
+页面上除了 `window.gwb` 什么都不注入：没有 Node、没有 `ipcRenderer`，新的业务通道由插件用 `handleRequest` 登记，IPC 的接线只在内核里。
+
+## 一条请求走一个来回
+
+请求通道是插件主动登记、页面按名字调用的一条路。例子是页面上的外壳调命令 `shell.panes`：命令插件登记了通道 `commands.run`，
+外壳经命令插件的页面客户端发请求。这一路跨页面、preload、主进程三处，每一步只做一件事：
+
+<RequestTripSteps />
+
+插件这一侧只写一行，把返回的注销函数交给 `ctx.effect`，插件卸载时通道自动撤掉：
+
+```ts
+ctx.effect(() => ctx.gwbKernel.handleRequest('my-plugin.query', (payload) => answer(payload)))
+```
+
+登记与分发的实现全在这个文件里：
+
+{/* ref file="../apps/desktop/src/requests.ts" hash="17ba3b7ad9e6" blob="2041dd1920e9" */}
+
+- **同名拒绝**：一个通道只能有一个处理器，第二次登记同名通道直接抛错
+- **注销幂等**：注销函数只生效一次；旧的注销函数再调用，不会删掉后来重新登记的同名处理器
+- **注销不取消在途请求**：已经交给处理器的请求照样完成，之后的请求按未登记处理
+- **返回值要能经结构化克隆传回页面**：函数、DOM 节点、类实例上的方法都传不过去
+
+{/* ref file="../apps/desktop/tests/requests.test.ts" lines="12-20" hash="6c8fc2de32a0" blob="b660fe70de0c" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="718-732" hash="dcafcc0b1268" blob="db45edf1e552" */}
+
+## 传输状态与业务回执分开
+
+主进程回给 preload 的是 `{ available: false }` 或 `{ available: true, value }`。`available` 只说明「这个通道有人登记」，是 IPC 内部的传输状态；
+插件的返回值整个放在 `value` 里，preload 解开后原样交给页面。所以插件返回什么都不会被内核解释或改写，页面也只在一种情况下看到内核自己的错误格式：
+通道没人登记时的 `GWB_REQUEST_UNAVAILABLE: <通道名>`。选一种情况看三处各是什么：
+
+<RequestOutcomes />
+
+{/* ref file="../apps/desktop/tests/preload.test.ts" lines="96-105" hash="f2d4dd4887a3" blob="a0997b68b97a" */}
+
+## 命令只是一条请求通道
+
+命令的一切都在命令插件 `@godcreator/gwb-commands`（基础插件仓 `gwb-base-plugins`）：它登记通道 `commands.run`，定义载荷 `{ name, args }`，
+把页面发来的命令来源固定为 `ui`，定义回执 `GwbResult`，并提供页面用的客户端 `command(name, args)`——通道没人登记时，由这个客户端把
+`GWB_REQUEST_UNAVAILABLE: commands.run` 换成一条命令失败回执。内核不 import 命令插件、不查找它的服务，`gwbKernel` 上也没有任何命令相关的成员
+（[请求与命令拆开](/trajectory/2026-09-27-request-channel)、[不保留命令兼容层](/trajectory/2026-09-27-request-without-compat)）：
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="750-760" hash="8ef5a873192f" blob="db45edf1e552" */}
+
+换掉命令插件，只要新插件登记同名通道、载荷与回执保持一致，页面上的代码和内核都不用改。
+
+## 插件推给页面的事件
+
+插件调用 `ctx.gwbKernel.emit(payload)`，主进程把 payload 原样经 `gwb:event` 发给窗口，页面用 `window.gwb.on(cb)` 收：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="271-271" hash="5c0e8d9c04e9" blob="b613d37fa683" */}
+
+{/* ref file="../apps/desktop/tests/preload.test.ts" lines="107-117" hash="50fe76666976" blob="a0997b68b97a" */}
+
+内核不保留事件、不补发、不标发送方：窗口不在时事件直接丢掉，页面重新加载之前发的也收不到。payload 同样要能结构化克隆。
+要区分事件归谁，由插件在 payload 里自己写明。
+
+## 不做的事
+
+- 不认识命令名、不校验载荷、不给通道分权限：谁登记了通道，页面上的任何代码都能调用它
+- 不管 iframe 里加载什么：`window.gwb` 只注入顶层框架，但与页面同源的 iframe 能经 `parent.gwb` 调到它，这时发送方就是顶层框架，内核分不出来；页面上放哪些同源 iframe 由外壳和插件决定（[页面边界](/trajectory/2026-09-25-page-navigation-lock)）
+- 不做重试、取消、超时：请求什么时候结束由处理器决定

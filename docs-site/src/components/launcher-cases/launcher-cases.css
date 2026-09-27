@@ -1,0 +1,49 @@
+/*
+ * 启动器遇到的几种 home（launcher-cases.tsx）。检查一行一条：通过的是绿色勾、停下的那一道用玫红描出、没走到的淡下去；
+ * 弹框用玫红细边框，内核接手用绿色胶囊。颜色都取讲解播放器的角色色与语气色，深浅主题自动切换。
+ */
+.launcher-cases .lc-grid { display: grid; gap: 12px; }
+@container (min-width: 720px) { .launcher-cases .lc-grid { grid-template-columns: 1fr 1.2fr; } }
+
+.launcher-cases .lc-path { font-family: var(--dx-mono); font-size: 11px; color: var(--dx-dim); overflow-wrap: anywhere; margin-bottom: 6px; }
+.launcher-cases .lc-missing {
+  padding: 18px 8px; text-align: center; font-size: 12.5px; color: var(--dx-rose);
+  border: 1px dashed color-mix(in srgb, var(--dx-rose) 45%, transparent); border-radius: 8px;
+}
+
+.launcher-cases .lc-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.launcher-cases .lc-row {
+  display: grid; grid-template-columns: 1.6em 1fr auto; gap: 8px; align-items: baseline;
+  padding: 4px 6px; border-radius: 6px; font-size: 12.5px; transition: background-color .3s, color .3s, opacity .3s;
+}
+.launcher-cases .lc-row-no { font-family: var(--dx-mono); font-size: 11px; color: var(--dx-dim); }
+.launcher-cases .lc-row-state { font-size: 11px; white-space: nowrap; }
+.launcher-cases .lc-row[data-state='pass'] .lc-row-state { color: var(--dx-emerald); }
+.launcher-cases .lc-row[data-state='stop'] {
+  color: var(--dx-rose); font-weight: 600;
+  background: color-mix(in srgb, var(--dx-rose) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--dx-rose);
+}
+.launcher-cases .lc-row[data-state='skip'] { opacity: .42; }
+
+.launcher-cases .lc-ok { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--dx-dim); }
+
+.launcher-cases .lc-dialog {
+  border: 1px solid color-mix(in srgb, var(--dx-rose) 45%, transparent); border-radius: 12px;
+  background: color-mix(in srgb, var(--dx-rose) 5%, var(--dx-surface)); overflow: hidden;
+  animation: lc-in .3s ease-out both;
+}
+.launcher-cases .lc-dialog-title {
+  padding: 6px 12px; font-size: 12.5px; font-weight: 600; color: var(--dx-rose);
+  border-bottom: 1px solid color-mix(in srgb, var(--dx-rose) 25%, transparent);
+  background: color-mix(in srgb, var(--dx-rose) 8%, transparent);
+}
+.launcher-cases .lc-dialog-body { padding: 10px 12px; font-size: 13px; overflow-wrap: anywhere; }
+.launcher-cases .lc-dialog-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 12px 10px; }
+.launcher-cases .lc-dialog-foot code { font-family: var(--dx-mono); font-size: 11px; color: var(--dx-dim); overflow-wrap: anywhere; }
+
+@keyframes lc-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .launcher-cases .lc-dialog { animation: none; }
+  .launcher-cases .lc-row { transition: none; }
+}

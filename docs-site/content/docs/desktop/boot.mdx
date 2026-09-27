@@ -1,80 +1,89 @@
 ---
 title: 启动与退出
-description: 内核一次启动按什么顺序做事、分成模块求值时与 ready 之后两段、哪几处顺序不能换以及为什么；启动失败和插件出错时内核怎么办；退出时怎样卸载整棵插件树、最多等多久；由哪些测试保护
+description: 内核从被启动器加载到页面交给外壳的每一步、分成模块求值时与 Electron ready 之后两段、哪几处顺序不能换；启动失败与插件出错时 stderr、gwb.log、错误框、runtime.json 各留下什么；退出时怎样卸载整棵插件树、最多等 5 秒，插件的清理要怎么写才等得到
 ---
 
-**本页回答**：内核从被加载到外壳显示出来依次做了什么，哪几处顺序是约束、为什么；启动失败和插件出错时内核怎么办；退出时怎样清理。
+一次启动跨三个地方：主进程里的内核与 cordis、窗口里的页面、磁盘上的 home 目录。下面从启动器找到内核开始，一步一步走到外壳接管页面。
 
-<Diagram name="kernel-boot" title="一次启动：内核准备好 home 和 cordis，插件从 cordis.yml 进来，页面最后交给外壳">
-- 整个应用只有两个进程：主进程里是内核和 cordis 实例，所有插件都运行在 cordis 里；渲染进程是唯一的窗口。home 是磁盘上的一个目录
-- 第 1 步：按 `GWB_HOME` 选定 home，目录不存在就创建
-- 第 2 步：打开 `gwb.log`；同一个 home 已有实例在运行就退出；确认 home 里有 `package.json` 与 `cordis.yml`；把本次运行的 pid、版本写进 `runtime.json`。除了单实例锁，这几步有一步不成就启动失败
-- 第 3 步：创建 cordis 实例，根上下文指向 home，并提供 `gwbKernel`——早于任何插件
-- 第 4 步：创建窗口；这时还没有外壳，页面显示只读状态页
-- 第 5 步：注册 loader，设好按 home 解析包名的 import，根层只放一条 include 条目 `home`，它读 `cordis.yml`；loader 按条目从 home 的 `node_modules` 找到插件包并加载
-- 第 6 步：外壳插件调用 `setShell`，页面 import 外壳、把 `#root` 交给它
-</Diagram>
-
-## 在这之前：启动器找到内核
-
-从安装版启动时，Electron 先运行的是启动器：它选定 home、把绝对路径写回 `GWB_HOME`，确认 home 里内核包的 `engines.electron` 包含当前 Electron、有 `main`，才 import 内核入口；不满足就弹框、退出码 1，内核一行都不运行（[启动器加载内核](/docs/seams/launcher)）。在本仓 `pnpm start` 时没有这一步，Electron 直接运行内核。下面从内核入口模块开始求值算起。
+<KernelBootSteps />
 
 ## 两段：模块求值时与 ready 之后
 
-**模块求值时**做完不需要窗口的部分：选定 home、设置 userData，打开日志文件，检查单实例锁，确认 home 里有 `package.json` 与 `cordis.yml`，检查调试端口、写 `runtime.json`，创建 cordis 实例、把根上下文的 `baseUrl` 设到 home、接上日志、提供 `gwbKernel`、注册 IPC 通道。**Electron ready 之后**才去掉默认菜单、创建窗口并加载页面、注册 loader、加载全部条目。
+**入口模块求值时**做完不需要窗口的部分：选定 home、设置 userData、拿单实例锁、打开 `gwb.log`、检查 home 里的两个文件、检查调试端口并写 `runtime.json`、建 cordis 实例并注册日志出口、提供 `gwbKernel`、注册 IPC 处理器。**Electron ready 之后**才去掉默认菜单、开窗口并加载页面、注册 loader、加载全部条目。
 
-入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等它会互相等待、静默卡死（[ESM 主进程顶层等 ready 会卡死](/trajectory/2026-09-09-wall-esm-await-whenready)）。ready 之后的部分放在 `whenReady()` 返回的 promise 的 `then` 里执行，启动失败也在这条链上处理：
+入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等它会互相等待，进程静默卡住（[ESM 主进程顶层等 ready 会卡死](/trajectory/2026-09-09-wall-esm-await-whenready)）。ready 之后的部分放在 `whenReady()` 返回的 promise 的 `then` 里执行，出错也在这条链上处理：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="347-356" hash="e1c2bdee5894" blob="785abb202a73" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="375-377" hash="8e1b809bcbf4" blob="b613d37fa683" */}
 
-启动失败时先写一行日志，再弹错误框（Electron 保证 ready 之前也能弹出，窗口可能还没有），框里带着 `gwb.log` 的路径，退出码 1。
+启动器那一端同样只 import 内核入口、不等它：内核入口求值完，Electron 才触发 ready。
 
-模块求值时的几项检查不通过也调用这个函数：home 里缺 `package.json` 或 `cordis.yml`（报错写明缺哪个、home 在哪，这两个文件由安装步骤 `INSTALL.md` 或 `devkit.home.new` 准备，内核不补）、`--remote-debugging-port` 给的不是 1–65535 的整数（报错带着给的原值）、`runtime.json` 写不进。模块求值时调用 `app.exit` 会当场结束进程，后面的代码不再执行（在本机 Electron 44 上实测过）。
-
-只有 `gwb.log` 打不开时不经过这个函数，因为它要写的正是这个文件：这时只写 stderr，错误框里写明日志文件的路径与打不开的原因，退出码 1。所以 `gwb.log` 在其余几项检查之前打开，那几项失败时的那一行才进得了日志文件。
-
-{/* ref file="../apps/desktop/src/main.ts" lines="58-79" hash="6f0db77b37c9" blob="785abb202a73" */}
+{/* ref file="../apps/launcher/src/main.ts" lines="21-29" hash="597eb062da8b" blob="f6547781d717" */}
 
 ## 顺序是约束
 
-ready 之后这一段：
-
-{/* ref file="../apps/desktop/src/main.ts" lines="328-345" hash="8704a3d356e6" blob="785abb202a73" */}
-
-- **`gwbKernel` 在注册 loader 之前提供**：它在模块求值时就已提供，任何插件加载时都已经在了（[`gwbKernel` 要在注册 loader 之前提供](/trajectory/2026-09-07-wall-gwbkernel-provide-early)）
+- **`gwbKernel` 在注册 loader 之前提供**：它在模块求值时就提供了，而 loader 在 ready 之后才注册，任何插件加载时它都已经在（[`gwbKernel` 要在注册 loader 之前提供](/trajectory/2026-09-07-wall-gwbkernel-provide-early)）
+- **`gwb.log` 在其余检查之前打开**：缺文件、端口给错、`runtime.json` 写不进时的那一行 error 才进得了日志文件
 - **窗口先于 loader**：插件加载的过程中页面就显示只读状态页，页面的 console 也从一开始就进日志
-- **`loader.internal` 在加载条目之前设好**：主进程没有 `--expose-internals`，不设的话 loader 按自己所在的位置解析包名，插件静默加载失败（[插件加载](/docs/seams/loading)）
-- **等 loader 加载完**才写「up」那行日志并推送一次页面状态：那时各条目都已走到各自的终态
+- **`loader.internal` 在加载条目之前设好**：主进程没有 `--expose-internals`，不设的话 loader 按自己所在的位置解析包名，插件静默加载失败
+- **等 loader 加载完才写「up」**并推一次页面状态：那时各条目都已走到各自的终态
 
-窗口创建时不显示，`ready-to-show` 之后才显示，窗口底色与页面背景是同一个颜色，所以不闪白（[内核应用](/docs/desktop#只读状态页)）。
+{/* ref file="../apps/desktop/src/main.ts" lines="349-366" hash="8704a3d356e6" blob="b613d37fa683" */}
 
-## 插件出错不带走内核
+窗口创建时不显示，`ready-to-show` 之后才显示；窗口底色 `#151518` 与 `index.html` 的背景、安装包图标的底色是同一个值，改就三处一起改，窗口出现与整页重新加载的第一帧都不闪白。
 
-插件和内核在同一个进程里，插件的错误就是这个进程的错误。内核对未捕获的异常和没人处理的 rejection 只写一行 `kernel` 的 error、不退出——一个坏插件不该让整个工作台退出（[两个进程合并为一个](/trajectory/2026-09-09-single-process)）。插件自己加载失败由 cordis 记在它的条目上，内核在日志里写一行 `loader` 的 error，只读状态页上也看得到（[日志](/docs/seams/log)）。
+{/* ref file="../apps/desktop/src/main.ts" lines="329-338" hash="56d971f94675" blob="b613d37fa683" */}
 
-{/* ref file="../apps/desktop/src/main.ts" lines="176-178" hash="01aedbee110d" blob="785abb202a73" */}
+## 启动失败与插件出错
+
+出错时人从哪里看到原因，取决于错在哪一步：选一种情况，看 stderr、`gwb.log`、错误框、`runtime.json` 与进程各自的结果。
+
+<BootFailureCases />
+
+大多数启动失败走同一个函数：先写一行 error（stderr 与 `gwb.log` 各一份），再弹错误框、框里带 `gwb.log` 的路径，退出码 1。Electron 保证错误框在 ready 之前也弹得出来，这时窗口可能还没有。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="368-373" hash="9c736404ce39" blob="b613d37fa683" */}
+
+模块求值时调用 `app.exit(1)` 会当场结束进程，后面的代码不再执行，所以求值时的几项检查失败之后不用另外阻止往下走（本机 Electron 44 实测，见[内核删掉四处兜底](/trajectory/2026-09-25-kernel-drop-fallbacks)）。home 缺文件时报错写明缺哪个、由谁准备：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="114-119" hash="0066ba403eca" blob="b613d37fa683" */}
+
+插件和内核在同一个进程里。内核对未捕获的异常和没人处理的 rejection 只写一行名字为 `kernel` 的 error，不退出（[两个进程合并为一个](/trajectory/2026-09-09-single-process)）；插件自己加载失败由 cordis 记在它的条目上，挂载日志与只读状态页上看得到。
+
+{/* ref file="../apps/desktop/src/main.ts" lines="197-199" hash="01aedbee110d" blob="b613d37fa683" */}
 
 ## 退出
 
 所有窗口关闭就退出。退出前内核卸载 loader，整棵插件树的清理逐层执行；插件启动的长期子进程靠这一步结束，否则主进程一退它们就成了孤儿进程。谁创建了 cordis 实例，谁负责卸载它。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="358-381" hash="a8eb09335cb7" blob="785abb202a73" */}
+<QuitCleanupCases />
 
-- 第一次进入 `will-quit` 时拦下退出、开始清理；清理完调用的 `app.quit()` 会再次进入，那一次放行。loader 还没加载（刚启动就退出）时没有可卸载的，同样放行
-- **等清理结束要内核和插件都做到**：内核 `dispose()` 之后还要 `await()` 才等得到嵌套的异步清理；插件要把清理的 promise 从 effect 的清理函数里返回出来。少做一方，退出时就等不到插件的清理（[退出收尾：内核等、插件返回](/trajectory/2026-09-12-quit-dispose-two-halves)）
+{/* ref file="../apps/desktop/src/main.ts" lines="379-402" hash="a8eb09335cb7" blob="b613d37fa683" */}
+
+- **等到清理结束要内核和插件都做到**：内核 `dispose()` 之后还要 `await()`，才等得到嵌套的异步清理；插件要把清理的 promise 从 effect 的清理函数里**返回**出来。少做一方，退出日志一切正常，子进程却还在运行（[退出收尾：内核等、插件返回](/trajectory/2026-09-12-quit-dispose-two-halves)）
 - **最多等 5 秒**：某个插件的清理卡住时，到 5 秒就不再等它、照常退出；清理中抛出的错误只写一行 warn
-- **退出时不写挂载日志**：开始清理之前先停掉按条目写的挂载日志，整棵插件树卸载时不逐条写「已卸载」和汇总
+- **退出时不写挂载日志**：开始清理之前先停掉按条目写的挂载日志，卸载整棵插件树时不逐条写「已卸载」和汇总
+- **只拦一次**：第一次进入 `will-quit` 时拦下退出、开始清理；清理完调用的 `app.quit()` 会再次进入，那一次放行。loader 还没加载就退出时没有要卸载的，同样放行
 
-## 由什么测试保护
+Electron 被强制结束或崩溃时，任何清理都来不及执行，插件的子进程仍可能留下。
 
-`apps/desktop/tests/main.test.ts` 把 electron 换成假的、cordis 与 loader 用真的，覆盖 ready 之后的顺序与「up」那一行、启动失败（包括模块求值时的几项：缺 `package.json` 或 `cordis.yml`、`gwb.log` 打不开、调试端口给错、`runtime.json` 写不进）、未捕获异常不退出、退出时先卸载插件树再放行、loader 还没加载时直接放行、所有窗口关闭就退出。真实窗口的显示、插件清理超过 5 秒时照常退出、插件的子进程是否都已结束，只能在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
+## 守住它的测试
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="573-573" hash="58e798e567b7" blob="ce25d5969e03" */}
+`apps/desktop/tests/main.test.ts` 把 electron 换成假的、cordis 与 loader 用真的，覆盖 ready 之后的顺序与「up」那一行、启动失败的各种情况、未捕获异常不退出、退出时先卸载插件树再放行。真实窗口的显示、插件清理超过 5 秒时照常退出、插件的子进程是否都已结束，只能在隔离 home 里实机验证（[开发](/docs/develop)）。
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="588-588" hash="a8892d29c1a3" blob="ce25d5969e03" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="598-611" hash="300f176a78a8" blob="db45edf1e552" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="430-430" hash="6c1f6630a73b" blob="ce25d5969e03" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="613-622" hash="bae089bbfeec" blob="db45edf1e552" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="815-815" hash="a777de08751a" blob="ce25d5969e03" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="395-408" hash="0c1f7d502bdd" blob="db45edf1e552" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="828-828" hash="bf95853b6528" blob="ce25d5969e03" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="431-448" hash="a165d343880c" blob="db45edf1e552" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="532-537" hash="2b0780be4508" blob="db45edf1e552" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="560-570" hash="314ce52e3de8" blob="db45edf1e552" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="696-708" hash="45fdf0abbd7c" blob="db45edf1e552" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="840-851" hash="396b3730cd3a" blob="db45edf1e552" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="853-859" hash="a3f58c40493e" blob="db45edf1e552" */}

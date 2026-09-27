@@ -1,0 +1,25 @@
+/*
+ * 一条日志从哪来、写成什么（log-sources.tsx）。经过的几步排成一行胶囊，会触发推送的那一步用琥珀色；
+ * 宽屏终端与 gwb.log 两张卡并排，窄屏上下排。
+ */
+.log-sources { container-type: inline-size; }
+.log-sources .ls-call { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.log-sources .ls-call code { font-family: var(--dx-mono); font-size: 12px; overflow-wrap: anywhere; }
+
+.log-sources .ls-path { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.log-sources .ls-stage { display: inline-flex; align-items: center; gap: 6px; }
+.log-sources .ls-arrow { color: var(--dx-dim); }
+.log-sources .ls-chip {
+  --dx-c: var(--dx-blue);
+  padding: 1px 8px; border-radius: 999px; font-family: var(--dx-mono); font-size: 11.5px; color: var(--dx-c);
+  border: 1px solid color-mix(in srgb, var(--dx-c) 40%, transparent); background: color-mix(in srgb, var(--dx-c) 8%, transparent);
+  animation: dx-pop .3s ease-out both;
+}
+.log-sources .ls-chip[data-push='true'] { --dx-c: var(--dx-amber); }
+
+.log-sources .ls-outputs { display: grid; gap: 12px; min-width: 0; }
+@container (min-width: 760px) { .log-sources .ls-outputs { grid-template-columns: 1fr 1.3fr; } }
+.log-sources .ls-foot { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .log-sources .ls-chip { animation: none; }
+}

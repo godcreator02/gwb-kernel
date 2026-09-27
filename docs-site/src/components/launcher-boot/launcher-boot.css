@@ -1,0 +1,41 @@
+/*
+ * 启动器的分步讲解（launcher-boot.tsx）。参与者的颜色经 data-role 给出 --dx-c，框与底色从它调淡；
+ * 这一步亮着的参与者边框加粗、底色加深，其余淡下去；箭头用强调色，读磁盘文件的那条画成虚线。
+ */
+.launcher-boot .lb-env { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.launcher-boot .lb-env code { font-family: var(--dx-mono); font-size: 12px; overflow-wrap: anywhere; color: var(--dx-dim); }
+.launcher-boot .lb-env code span[data-set='true'] { color: var(--dx-blue); transition: color .3s; }
+
+.launcher-boot .lb-scroll { min-width: 0; overflow-x: auto; }
+.launcher-boot .lb-svg { display: block; width: 100%; min-width: 600px; height: auto; font-size: 12px; user-select: none; }
+
+.launcher-boot .lb-band rect { fill: color-mix(in srgb, var(--dx-dim) 4%, transparent); stroke: var(--dx-line); stroke-dasharray: 4 4; }
+.launcher-boot .lb-band text { fill: var(--dx-dim); font-family: var(--dx-mono); font-size: 10.5px; font-weight: 600; }
+
+.launcher-boot .lb-actor { transition: opacity .3s; }
+.launcher-boot .lb-actor rect {
+  fill: color-mix(in srgb, var(--dx-c) 6%, var(--dx-surface));
+  stroke: color-mix(in srgb, var(--dx-c) 45%, transparent);
+  stroke-width: 1;
+  transition: fill .3s, stroke .3s, stroke-width .3s;
+}
+.launcher-boot .lb-actor[data-lit='true'] rect { fill: color-mix(in srgb, var(--dx-c) 16%, var(--dx-surface)); stroke: var(--dx-c); stroke-width: 1.8; }
+.launcher-boot .lb-actor[data-lit='false'] { opacity: .42; }
+.launcher-boot .lb-name { fill: var(--dx-fg); font-weight: 600; font-size: 12.5px; }
+.launcher-boot .lb-sub { fill: var(--dx-dim); font-family: var(--dx-mono); font-size: 10.5px; }
+.launcher-boot .lb-actor[data-lit='true'] .lb-sub { fill: var(--dx-c); }
+
+.launcher-boot .lb-flow { animation: lb-in .35s ease-out both; }
+.launcher-boot .lb-flow path { fill: none; stroke: var(--dx-accent); stroke-width: 1.6; }
+.launcher-boot .lb-flow[data-disk='true'] path { stroke-dasharray: 5 4; }
+.launcher-boot .lb-flow polygon { fill: var(--dx-accent); }
+.launcher-boot .lb-flow text {
+  fill: var(--dx-accent); font-family: var(--dx-mono); font-size: 10.5px;
+  paint-order: stroke; stroke: var(--dx-surface); stroke-width: 4px;
+}
+
+@keyframes lb-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .launcher-boot .lb-flow { animation: none; }
+  .launcher-boot .lb-actor, .launcher-boot .lb-actor rect, .launcher-boot .lb-env code span { transition: none; }
+}

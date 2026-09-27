@@ -1,13 +1,3 @@
 {
-  "pages": [
-    "index",
-    "design",
-    "develop",
-    "wiring",
-    "glossary",
-    "seams",
-    "---包---",
-    "desktop",
-    "installer"
-  ]
+  "pages": ["index", "desktop", "installer", "develop", "glossary", "outputs"]
 }

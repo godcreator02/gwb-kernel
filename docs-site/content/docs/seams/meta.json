@@ -1,5 +1,0 @@
-{
-  "title": "接缝",
-  "description": "十条接缝各一页，标题前的数字是首页接缝图上的编号：连接的模块、接口、约定（各模块保证什么）、不负责的事、测试",
-  "pages": ["loading", "kernel", "ipc", "shell", "page-react", "home", "runtime", "log", "launcher", "commands"]
-}

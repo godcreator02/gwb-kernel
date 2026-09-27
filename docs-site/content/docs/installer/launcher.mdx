@@ -1,0 +1,86 @@
+---
+title: 启动器
+description: 安装版 Electron 运行的第一个模块：按 GWB_HOME 选定 home 并写回绝对路径，读 home 里内核包的清单、用 engines.electron 确认内核能在自带的 Electron 上运行，再 import 清单 main 指向的内核入口；第一次安装后 home 里还没有内核包时为什么只弹框
+---
+
+启动器是 `apps/launcher/src/` 下的两个文件：`main.ts` 碰 Electron（取版本、弹框、退出），`launch-plan.ts` 是两个只读文件的纯函数。
+它只做三件事：选定 home、确认 home 里的内核包能在这个 Electron 上运行、把内核入口 import 进来；之后的事全由内核负责。
+整页用同一个例子：不设 `GWB_HOME` 打开 default，安装包带 Electron 44.1.1，home 里装的是内核包 0.10.0。
+
+<LauncherBootSteps />
+
+启动器的全部代码就是这一个入口文件加上它调用的两个函数：
+
+{/* ref file="../apps/launcher/src/main.ts" hash="5d0dc467684c" blob="f6547781d717" */}
+
+## 按 GWB_HOME 选定 home
+
+| `GWB_HOME` 的值 | home 目录 |
+| --- | --- |
+| 不设 | `%APPDATA%\gwb-kernel\homes\default` |
+| 只写名字，如 `kernel-in-home-2609241500` | `%APPDATA%\gwb-kernel\homes\kernel-in-home-2609241500` |
+| 带路径分隔符，如 `D:\somewhere\home`、`C:/a/b` | 那个目录本身 |
+| 带路径分隔符的相对路径，如 `./relative/home` | 按当前目录解析成绝对路径 |
+
+判断只看值里有没有 `\` 或 `/`：
+
+{/* ref file="../apps/launcher/src/launch-plan.ts" lines="7-10" hash="88a97c55a6cf" blob="7dff040f70bd" */}
+
+**同一条规则写了两份，必须一起改**：启动器要先知道 home 在哪才找得到内核包，没法 import 内核里的那一份（`apps/desktop/src/home-path.ts`）。
+两份不一致时，启动器检查的是一个 home、内核打开的是另一个。启动器的测试拿同一组输入逐个比对两份的结果：
+
+{/* ref file="../apps/desktop/src/home-path.ts" hash="482874f47488" blob="8f1ac8757a53" */}
+
+{/* ref file="../apps/launcher/tests/launch-plan.test.ts" lines="33-38" hash="9476000fe208" blob="196cbe33b166" */}
+
+算出的绝对路径当场写回 `GWB_HOME`。内核启动时照同一条规则再读一次，读到的值带路径分隔符，按规则就是这个目录本身；
+所以不管 `GWB_HOME` 原来是没设、写的名字还是相对路径，内核打开的都是启动器检查过的那个目录。
+
+## 确认内核包能在这个 Electron 上运行
+
+启动器只读 home 里 `node_modules\@godcreator\gwb-kernel-desktop\package.json` 这一个文件，按顺序检查，任何一道不过就停下。选一种情况看它停在哪、弹框说什么：
+
+<LauncherCases />
+
+{/* ref file="../apps/launcher/src/launch-plan.ts" lines="29-53" hash="79a3468b5e17" blob="7dff040f70bd" */}
+
+几条必须这么写的地方：
+
+- **拒绝原因写成给人看的完整一句话**：是哪个 home、缺什么、怎么补。启动器拒绝时内核还没运行，home 里没有这次的 `gwb.log`，人或 agent 只能从弹框与 stderr 知道原因
+- **清单缺字段就拒绝，不补缺省值**：没有 `engines.electron` 不当成「不限版本」，没有 `main` 不去猜 `index.js`
+- **Electron 版本写在内核包清单的 `engines.electron`**：`engines` 是 npm 的标准字段，键可以自定。内核随 home 升级，安装包不一定跟着换，
+  只有在运行时比一次，才能在「新内核配旧 Electron」时拒绝启动，而不是让内核在不支持的 Electron 上运行
+
+这几种拒绝由测试逐条守着，每条都检查原因里写了该写的东西（home 路径、包名、要求的范围与当前版本）：
+
+{/* ref file="../apps/launcher/tests/launch-plan.test.ts" lines="41-94" hash="fb41ae1cc977" blob="196cbe33b166" */}
+
+本仓的内核包与启动器之间，版本对不对得上由另一条测试在 `pnpm check` 里检查：它读两份清单，要求启动器的 `devDependencies.electron` 在内核包 `engines.electron` 的范围里。
+已经发出去的安装包配 home 里别的内核版本，只能靠上面运行时的检查：
+
+{/* ref file="../apps/launcher/tests/launch-plan.test.ts" lines="97-103" hash="c91dfd56daf0" blob="196cbe33b166" */}
+
+## import 内核
+
+检查通过后启动器只做一次动态 import，不 `await`：
+
+- **启动器与内核都不能顶层 `await app.whenReady()`**：Electron 要等入口模块求值完才触发 ready，模块顶层等 ready 就互相等待，进程没有报错、没有窗口、没有日志地卡住。
+  内核在求值时只把启动注册到 `app.whenReady()` 上，见[启动与退出](/docs/desktop/boot)与轨迹卡[ready 顶层等](/trajectory/2026-09-09-wall-esm-await-whenready)
+- **import 抛错也弹框**：比如 home 根上没装 `cordis`，内核包把它写成 peer，按 home 解析找不到。原因里带上错误的调用栈，退出码同样是 1
+- **内核不知道自己是被启动器加载的**：从仓里 `pnpm start` 直接运行时没有启动器，内核照样自己读 `GWB_HOME`、读自己包里的清单取版本号，两种情况做法相同
+
+## 第一次安装
+
+安装程序只放下 Electron 与启动器，不建 home、不装内核。第一次安装的顺序照仓根 `INSTALL.md`，由 agent 替人做：
+
+1. 配好机器上的前置条件：pnpm 12、`@godcreator` 的包源、放行 `@godcreator/*` 里刚发布的包
+2. 静默安装 `gwb-setup-<版>.exe`。**这时启动就是上面「刚装完安装包」那种情况**：弹框说 home 里没有内核包，退出码 1，home 里一个文件都不写
+3. 在 `%APPDATA%\gwb-kernel\homes\default` 写 `package.json`，用 pnpm 装内核包，再按内核包 peer 里写的版本装 `cordis`（写精确版本号）；
+   写 `cordis.yml`，装基础插件
+4. 再启动：启动器的检查全部通过，import 内核；内核加载插件，MCP 入口把地址写进 home 的 `runtime.json`
+
+内核包、`cordis` 与插件都不进安装包，也不在第一次启动时由程序自动安装：装机路上的网络、包源、pnpm 版本、装到一半失败这些情况由 agent 当场判断处理，
+理由见轨迹卡[不带种子，装机交给 agent](/trajectory/2026-09-18-no-seed-agent-installs)。
+测试用的 home 由 devkit 的 `devkit.home.new` 按同样的顺序装好。
+
+启动器的弹框、从 home 真的加载起内核，只能在打好的安装包上实机验证，做法见[开发](/docs/develop#打安装包)。

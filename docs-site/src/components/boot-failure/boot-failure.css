@@ -1,0 +1,24 @@
+/*
+ * 启动失败的五格（boot-failure.tsx）。每格的颜色经 data-tone 给出 --dx-c，边框与底色从它调淡；
+ * 没有动静的格子（data-quiet）用虚线边、灰字。窄屏时五格换成两列。
+ */
+.bf-panel { display: grid; gap: 10px; }
+.bf-when { display: flex; }
+.bf-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@container (min-width: 560px) {
+  .bf-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+.bf-cell {
+  border: 1px solid color-mix(in srgb, var(--dx-c) 40%, transparent);
+  background: color-mix(in srgb, var(--dx-c) 7%, var(--dx-surface));
+  border-radius: 10px;
+  padding: 8px 10px;
+  transition: background .25s, border-color .25s;
+}
+.bf-cell[data-quiet='true'] { --dx-c: var(--dx-slate); border-style: dashed; background: transparent; color: var(--dx-dim); }
+.bf-name { font-family: var(--dx-mono); font-size: 11px; color: var(--dx-dim); margin-bottom: 4px; }
+.bf-result { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+.bf-none { width: 8px; height: 8px; border-radius: 999px; border: 1px dashed var(--dx-dim); flex: none; }
+@media (prefers-reduced-motion: reduce) {
+  .bf-cell { transition: none; }
+}
