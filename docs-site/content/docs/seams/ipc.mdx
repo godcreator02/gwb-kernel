@@ -1,6 +1,6 @@
 ---
 title: 3 IPC 通道 window.gwb
-description: 连接页面与内核应用的主进程；交换的是页面上 window.gwb 的请求、事件、外壳订阅与模块准备接口，以及兼容命令入口，背后包含请求、事件、外壳状态和模块映射 IPC 通道；内核应用保证命令原样转交、事件原样推送、外壳状态每次整份推送，并保证页面边界（主框架只能是内核的 index.html、新窗口一律不开、命令只收顶层框架的）；页面保证参数能经结构化克隆传过去
+description: 连接页面与内核应用的主进程；交换的是页面上 window.gwb 的请求、事件、外壳订阅与模块准备接口，背后包含请求、事件、外壳状态和模块映射 IPC 通道；内核应用保证请求原样转交、事件原样推送、外壳状态每次整份推送，并保证页面边界（主框架只能是内核的 index.html、新窗口一律不开、请求只收顶层框架的）；页面保证参数能经结构化克隆传过去
 ---
 
 **本页回答**：页面上的代码怎样调命令、收事件、知道外壳是谁；页面与主进程之间有哪几个通道、各传什么；内核在页面这一侧保证的边界是什么；内核应用和页面各保证什么。
@@ -18,9 +18,9 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 {/* ref file="../apps/desktop/src/api.ts" lines="40-55" */}
 
-新页面使用 commands 的浏览器客户端，经 `request` 请求插件登记的通道。`command` 与内核的 `GwbResult` 仅为旧调用方保留，新的命令回执类型从 commands 取：
+页面业务调用使用提供方的浏览器客户端，经 `request` 请求插件登记的通道；命令回执类型从 commands 取。
 
-{/* ref file="../apps/desktop/src/api.ts" lines="6-11" */}
+
 
 `preload.cjs` 把页面接口接到 IPC 通道上，整个文件就是这些：
 
@@ -29,7 +29,6 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 | 通道 | 方向 | 传什么 |
 | --- | --- | --- |
 | `gwb:request` | 页面 → 主进程 | 通道名与载荷；返回值由登记方解释，未登记或传输错误拒绝（[请求通道](/docs/seams/requests)） |
-| `gwb:command`（兼容） | 页面 → 主进程，回执原路返回 | 命令名与参数；主进程交给命令转交（[接缝 10](/docs/seams/commands)），回执原样交回 |
 | `gwb:event` | 主进程 → 页面 | 插件经 `gwbKernel.emit` 发出的 payload，原样 |
 | `gwb:shell` | 主进程 → 页面 | 整份外壳状态 `{ url, report }`：外壳地址、只读状态页的数据 |
 | `gwb:imports` | 页面 → 主进程 | 返回当前登记快照；只接受顶层框架；prepareImports 准备后再动态 import |
@@ -45,7 +44,7 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 ### 页面边界
 
-页面能调用整条命令总线，命令不分权限，所以内核在页面这一侧只保证一条边界：主框架只能是内核包里的 `index.html`，命令只收顶层框架发来的（[页面边界](/trajectory/2026-09-25-page-navigation-lock)、[网页链接交给系统浏览器](/trajectory/2026-09-25-open-external-links)）。三条判定是三个纯函数：
+页面能调用整条命令总线，命令不分权限，所以内核在页面这一侧只保证一条边界：主框架只能是内核包里的 `index.html`，请求只收顶层框架发来的（[页面边界](/trajectory/2026-09-25-page-navigation-lock)、[网页链接交给系统浏览器](/trajectory/2026-09-25-open-external-links)）。三条判定是三个纯函数：
 
 {/* ref file="../apps/desktop/src/page-boundary.ts" */}
 
@@ -59,8 +58,8 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 **内核应用**保证：
 
-- `gwb:command` 收到的命令名和参数交给命令转交，回执原样交回页面；内核自己不登记任何命令
-- `gwb:command` 只接收顶层框架的调用：发送方是 iframe，或发送方框架已经跳走、销毁，都回 `{ ok: false, error }`，不转交
+- `gwb:request` 收到的通道与载荷交给登记的处理器，结果原样交回页面；内核不定义业务协议
+- `gwb:request` 只接收顶层框架的调用：发送方是 iframe，或发送方框架已经跳走、销毁，请求拒绝，不转交
 - 主框架只可能是内核包里的 `index.html`，新窗口一律不开（做法见上一节）
 - `gwb:event` 原样推给页面；窗口不在时事件就丢了，不补发
 - 每条 `gwb:shell` 都是整份当前状态，不是增量；页面发来 `gwb:hello` 就回一条，所以外壳插件比页面先调用 `setShell` 也不会错过
@@ -70,7 +69,7 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 - 参数能经 Electron 的 IPC 传过去（结构化克隆：函数、DOM 节点传不过去）
 - 不再需要时调用 `on`、`onShell` 返回的取消订阅函数
-- `onShell` 只由内核的页面入口订阅；外壳和别的页面代码用 `request`、`on` 与 `prepareImports`；旧代码仍可用 `command`
+- `onShell` 只由内核的页面入口订阅；外壳和别的页面代码用 `request`、`on` 与 `prepareImports`
 - 要在系统浏览器里打开网页，链接写 `target="_blank"` 或调用 `window.open`；不带 `target` 的链接点击是主框架跳转，会被拒绝
 
 ## 不负责的事
@@ -81,13 +80,13 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 ## 测试
 
-- `apps/desktop/tests/preload.test.ts`：给 `preload.cjs` 一个假的 `electron` 求值，证明页面上只有 `window.gwb` 的公开函数、`command` 走 `gwb:command`、订阅能取消、`onShell` 订阅后马上发 `gwb:hello`
+- `apps/desktop/tests/preload.test.ts`：给 `preload.cjs` 一个假的 `electron` 求值，证明页面上只有 `window.gwb` 的公开函数、`request` 走 `gwb:request`、订阅能取消、`onShell` 订阅后马上发 `gwb:hello`
 - `apps/desktop/tests/page-boundary.test.ts`：三条判定——哪些跳转算整页重新加载、哪些发送方算顶层框架、`window.open` 的哪些地址交给系统浏览器
-- `apps/desktop/tests/main.test.ts`：主进程回 `gwb:hello`、`gwb:command` 拒绝非顶层框架、主框架跳转与重定向被拒、`window.open` 按协议交给系统浏览器或拒绝、系统浏览器打开失败只写 warn
+- `apps/desktop/tests/main.test.ts`：主进程回 `gwb:hello`、`gwb:request` 拒绝非顶层框架、主框架跳转与重定向被拒、`window.open` 按协议交给系统浏览器或拒绝、系统浏览器打开失败只写 warn
 
 页面与主进程真的连起来只能在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）：插件 `emit` 的事件页面收得到，整页重新加载后立刻收到当前外壳状态，拖进窗口的链接被拒，`target="_blank"` 的网页链接在系统浏览器里打开。
 
-{/* has file="../apps/desktop/tests/preload.test.ts" text="只在页面上放一个 window.gwb，提供命令、事件、外壳订阅与模块准备" */}
+{/* has file="../apps/desktop/tests/preload.test.ts" text="只在页面上放一个 window.gwb，提供请求、事件、外壳订阅与模块准备" */}
 
 {/* has file="../apps/desktop/tests/preload.test.ts" text="onShell 订阅 gwb:shell 之后马上发一次 gwb:hello" */}
 
@@ -95,7 +94,7 @@ description: 连接页面与内核应用的主进程；交换的是页面上 win
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="gwb:hello：向发来的页面回一条整份外壳状态" */}
 
-{/* has file="../apps/desktop/tests/main.test.ts" text="gwb:command 只接收顶层框架" */}
+{/* has file="../apps/desktop/tests/main.test.ts" text="gwb:request" */}
 
 {/* has file="../apps/desktop/tests/main.test.ts" text="页面边界：主框架跳到别处（包括 http、https）、主框架的重定向一律拒绝" */}
 

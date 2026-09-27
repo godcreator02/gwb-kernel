@@ -8,7 +8,6 @@ import { describe, expect, it, vi } from 'vitest'
 interface ExposedGwb {
   request(channel: string, payload?: unknown): Promise<unknown>
   prepareImports(required?: string[]): Promise<void>
-  command(command: string, args?: unknown): Promise<unknown>
   on(callback: (payload: unknown) => void): () => void
   onShell(callback: (shell: unknown) => void): () => void
 }
@@ -88,16 +87,10 @@ describe('preload.cjs', () => {
     await expect(gwb.prepareImports()).rejects.toThrow(/重载/)
   })
 
-  it('只在页面上放一个 window.gwb，提供命令、事件、外壳订阅与模块准备', () => {
+  it('只在页面上放一个 window.gwb，提供请求、事件、外壳订阅与模块准备', () => {
     const { gwb, exposedName } = loadPreload()
     expect(exposedName).toBe('gwb')
-    expect(Object.keys(gwb).sort()).toEqual(['command', 'on', 'onShell', 'prepareImports', 'request'])
-  })
-
-  it('command 经 gwb:command 调到主进程，回执原样交回', async () => {
-    const { gwb, ipcRenderer } = loadPreload()
-    expect(await gwb.command('demo.hello', { a: 1 })).toEqual({ invoked: ['gwb:command', 'demo.hello', { a: 1 }] })
-    expect(ipcRenderer.invoke).toHaveBeenCalledWith('gwb:command', 'demo.hello', { a: 1 })
+    expect(Object.keys(gwb).sort()).toEqual(['on', 'onShell', 'prepareImports', 'request'])
   })
 
   it('request 解开传输状态而不改业务回执；仅未登记转换为稳定的不可用错误', async () => {

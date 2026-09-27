@@ -15,7 +15,7 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 
 **一次启动**：人从开始菜单打开「gwb-kernel」→ 启动器按 `GWB_HOME` 选定 home，确认 home 里的内核包能在这个 Electron 上运行，import 内核（接缝 9）→ 内核准备 home、打开日志、写 `runtime.json`（接缝 7），创建 cordis 实例并提供 `gwbKernel`（接缝 2）→ 打开窗口，页面入口先显示只读状态页 → loader 按 `cordis.yml` 从 home 加载插件（接缝 1、6）→ 外壳插件调用 `setShell`，页面入口 import 外壳、把 `#root` 交给它（接缝 4），外壳先登记 React 模块，页面 prepareImports 后加载（接缝 5）。每一步的顺序与为什么见[启动与退出](/docs/desktop/boot)。
 
-**一条命令**：页面调用 `window.gwb.command(命令名, 参数)` → 经 IPC 通道 `gwb:command` 到主进程（接缝 3）→ 内核原样交给命令插件的 `gwbCommands.run`，标明来自界面（接缝 10）→ 命令插件找到登记了这条命令的插件执行，回执原路返回页面。插件要主动告诉页面什么，调 `gwbKernel.emit`，经 `gwb:event` 推到页面。一路上的日志——插件、内核、页面 console——汇成一条流写进 home 里的 `gwb.log`（接缝 8）。
+**一条命令**：页面调用 commands 客户端 → `window.gwb.request` 经 `gwb:request` 到主进程（接缝 3）→ 内核按通道找到插件登记的处理器（接缝 10）→ commands 校验载荷、固定 ui 来源并执行命令，回执原路返回。插件要主动告诉页面什么，调 `gwbKernel.emit`，经 `gwb:event` 推到页面。一路上的日志——插件、内核、页面 console——汇成一条流写进 home 里的 `gwb.log`（接缝 8）。
 
 ## 按要做的事读
 
@@ -24,7 +24,7 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 - **改内核应用**：[内核应用](/docs/desktop)看它有哪些功能、提供哪些接口，再看[启动与退出](/docs/desktop/boot)
 - **写插件**：内核给插件的全部接入面先看总表[插件之间怎么连](/docs/wiring)，再按需读[插件加载](/docs/seams/loading)、[内核服务](/docs/seams/kernel)、[日志](/docs/seams/log)，接口类型从[包根导出的接口类型](/docs/desktop/api)取
 - **做界面**：[IPC 通道](/docs/seams/ipc)、[外壳接管](/docs/seams/shell)、[浏览器模块解析](/docs/seams/page-react)
-- **换命令插件**：[命令转交](/docs/seams/commands)
+- **换命令插件**：[请求通道](/docs/seams/requests)
 - **改了内核之后**：版本号升哪一位见[开发](/docs/develop#发版)；插件怎样发现自己不兼容新内核见[关键设计](/docs/design#插件在-peer-里写兼容哪个内核)
 - **第一次安装、另开一个 home，或改安装包与启动器**：[安装包与启动器](/docs/installer)；给 agent 照着装的完整步骤在仓根 `INSTALL.md`
 - **排查故障**：日志在 home 里的 `gwb.log`（[日志](/docs/seams/log)）；外壳没加载出来时页面显示[只读状态页](/docs/desktop#只读状态页)；找进程看 home 里的 `runtime.json`（[runtime.json](/docs/seams/runtime)）
@@ -52,14 +52,14 @@ god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里�
 | --- | --- | --- | --- | --- |
 | 1 | 插件加载 | 内核应用 ↔ `cordis.yml` 里的插件 | `cordis.yml` 的条目；按 home 把包名解析成真实路径再 import；插件的 `apply` 或 `Service` 类 | [插件加载](/docs/seams/loading) |
 | 2 | 内核服务 | 内核应用 ↔ 任何插件 | `ctx.gwbKernel` 的 `dataDir`、`version`、`emit`、`setShell` | [内核服务](/docs/seams/kernel) |
-| 3 | IPC 通道 | 页面 ↔ 内核应用 | `window.gwb` 的四个函数；`gwb:command`、`gwb:event`、`gwb:shell`、`gwb:hello`、`gwb:imports` 五个通道；页面边界 | [IPC 通道](/docs/seams/ipc) |
+| 3 | IPC 通道 | 页面 ↔ 内核应用 | `window.gwb` 的四个函数；`gwb:request`、`gwb:event`、`gwb:shell`、`gwb:hello`、`gwb:imports` 五个通道；页面边界 | [IPC 通道](/docs/seams/ipc) |
 | 4 | 外壳接管 | 页面入口 ↔ 调用 `setShell` 的插件 | 外壳模块的默认导出 `ShellBoot`、`#root`、`dispose`；没有外壳时显示只读状态页 | [外壳接管](/docs/seams/shell) |
 | 5 | 浏览器模块解析 | 内核应用 ↔ 页面上运行的代码 | 插件 registerImports → 页面 prepareImports → 动态加载 | [浏览器模块解析](/docs/seams/page-react) |
 | 6 | home 布局与条目树 | 内核应用 ↔ 插件管理 | home 的文件布局；loader 与 include 的版本与条目树；按真实路径解析包名 | [home 布局与条目树](/docs/seams/home) |
 | 7 | runtime.json（约定） | 内核应用 ↔ 外部工具 | pid、启动时刻、版本、调试端口；读的一方自己确认进程还在 | [runtime.json](/docs/seams/runtime) |
 | 8 | 日志 | 内核应用 ↔ 任何插件 | 三个来源汇成一条 cordis 日志流；插件注册 exporter；`gwb.log` 一行的格式 | [日志](/docs/seams/log) |
 | 9 | 启动器加载内核（约定） | 安装包里的启动器 ↔ home 里的内核包 | 选 home 的同一条规则与写回的 `GWB_HOME`；内核包清单的 `engines.electron` 与 `main` | [启动器加载内核](/docs/seams/launcher) |
-| 10 | 命令转交 | 内核应用 ↔ 命令插件 | 服务 `ctx.gwbCommands` 的 `run(命令名, 参数, { via: 'ui' })`；没有这个服务时内核回失败回执 | [命令转交](/docs/seams/commands) |
+| 10 | 请求通道 | 内核应用 ↔ 提供方插件 | `handleRequest` 登记处理器；未登记时请求拒绝 | [请求通道](/docs/seams/requests) |
 
 ## 包
 

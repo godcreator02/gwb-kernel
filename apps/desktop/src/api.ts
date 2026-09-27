@@ -3,13 +3,6 @@
 // `ShellBoot` 与 `Window` 用到 DOM 类型；写在声明里，插件的 tsconfig 不带 DOM 库、且关掉 skipLibCheck 时也能通过类型检查
 import type { Context } from 'cordis'
 
-/** @deprecated 命令回执正本由 @godcreator/gwb-commands 导出；此定义仅为旧调用方保留。 */
-export interface GwbResult<T = unknown> {
-  ok: boolean
-  data?: T
-  error?: string
-}
-
 /** 页面请求的处理器；载荷与返回值由提供方解释，异常使页面请求拒绝。 */
 export type GwbRequestHandler = (payload: unknown) => unknown
 
@@ -43,8 +36,6 @@ export interface GwbWindowApi {
   request(channel: string, payload?: unknown): Promise<unknown>
   /** 在动态 import 前等待当前映射注入；可检查必需名字。已注入的地址改变或撤销时拒绝，需整页重载。 */
   prepareImports(required?: readonly string[]): Promise<void>
-  /** @deprecated 新调用方使用 @godcreator/gwb-commands/client 的 command；此入口仅为旧调用方保留。 */
-  command<T = unknown>(command: string, args?: unknown): Promise<T>
   /** 收插件经 `gwbKernel.emit` 推来的事件，返回取消订阅的函数 */
   on(cb: (payload: unknown) => void): () => void
   /**

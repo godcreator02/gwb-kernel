@@ -25,7 +25,6 @@ description: 插件主动登记请求处理器，内核负责传输与生命周�
 `apps/desktop/tests/requests.test.ts` 验证冲突、重复注销、重新登记、在途请求与处理器异常；
 `apps/desktop/tests/main.test.ts` 验证非顶层框架不能进入处理器，`preload.test.ts` 验证内部传输状态不会泄漏或误解业务值。
 
-## 兼容入口
+## 业务协议的归属
 
-`window.gwb.command` 仍按旧协议工作；新代码使用 commands 的浏览器客户端。
-内核的 `GwbResult` 也保留为弃用定义，不反向依赖 commands。移除它们需要单独的破坏性版本和下游迁移。
+命令客户端与 `GwbResult` 由 commands 提供。内核只公开通道能力，不提供命令适配器，不重导出业务类型。

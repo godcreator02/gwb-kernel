@@ -1,66 +1,16 @@
 ---
-title: 10 兼容命令转交 gwbCommands
-description: 连接内核应用与命令插件；交换的是服务 ctx.gwbCommands 的 run(命令名, 参数, { via：'ui' })；内核应用把页面经 gwb:command 发来的命令原样交给它、标明来自界面、回执原样交回，命令名不是字符串或没有这个服务时自己回失败回执；命令插件保证任何命令都回 { ok, data, error }、run 不 reject
+title: 命令如何使用请求通道
+description: commands 主动登记业务通道；内核传输未知载荷，命令语义全部由提供方处理。
 ---
 
-**本页回答**：页面发来的命令怎样交到命令插件手里；内核应用对命令插件要求什么；home 里没有命令插件时会怎样；换一个命令插件要满足什么。
-
-<Diagram name="command-relay" title="内核应用只调用 gwbCommands.run，不认识任何命令名">
-- 页面调用 `window.gwb.command(命令名, 参数)`，经 IPC 通道 `gwb:command`（接缝 3）到内核应用
-- 内核应用每次转交时读取 `ctx.gwbCommands`，把命令名和参数原样交给它的 `run`，再带上第三个参数 `{ via: 'ui' }` 标明来自界面；命令插件找到登记了这条命令的插件执行
-- 回执 `{ ok, data, error }` 原路返回页面；命令不存在、处理函数抛错，命令插件也收成 `ok: false`
-- 命令名不是字符串，或 `ctx.gwbCommands` 不存在（home 里没装命令插件、它没加载成功或已停用）时，内核应用直接回 `{ ok: false, error }`
-- 命令插件是 `cordis.yml` 里的普通插件；内核应用认识的只有 `gwbCommands` 这个服务名
+<Diagram name="command-relay" title="commands 定义命令协议，内核只分发通道">
+- 页面导入 commands 的纯浏览器客户端，调用 command(name, args)
+- 客户端通过 window.gwb.request 发往 commands.run 通道
+- 内核只按通道定位处理器并传递载荷与结果
+- commands 校验名字、固定 via 为 ui，执行命令并返回业务回执
+- 未登记的通道由内核拒绝；命令客户端将命令服务不可用映射为命令失败回执
 </Diagram>
 
-新调用方通过 commands 提供的浏览器客户端与[请求通道](/docs/seams/requests)连接；本页的 `gwb:command` 仍保留给未迁移调用方。内核不从 commands 重导出类型，兼容接口仅保留旧定义。
+内核的契约见[请求通道](/docs/seams/requests)。命令载荷、来源、`GwbResult` 与客户端校验由基础插件仓的 `plugins/commands/src/page-request.ts`、`result.ts`、`client.ts` 定义。
 
-## 连接的模块
-
-- [内核应用](/docs/desktop)：主进程里处理通道 `gwb:command` 的那一段
-- 命令插件 `@godcreator/gwb-commands`（基础插件仓 `gwb-base-plugins`）：`cordis.yml` 里的普通插件，提供服务 `gwbCommands`
-
-页面怎么把命令送到主进程是 [IPC 通道](/docs/seams/ipc) 的事，本页从命令到了主进程讲起。
-
-## 接口
-
-内核只用到 `gwbCommands` 的 `run` 一个方法，在自己的代码里把它声明成 cordis 上下文上的可选服务：
-
-{/* ref file="../apps/desktop/src/main.ts" lines="24-31" */}
-
-转交的全部逻辑：
-
-{/* ref file="../apps/desktop/src/main.ts" lines="255-261" */}
-
-这段说明：先判断发送方是不是顶层框架（[IPC 通道](/docs/seams/ipc#页面边界)），再判断命令名是不是字符串，然后在这一刻读 `ctx.gwbCommands`——没有就回失败回执，有就把 `run` 的结果原样返回。
-
-第三个参数是请求来源：命令插件把它原样交给处理函数，处理函数据此认出请求来自界面。内核转交的命令一律带 `'ui'`；别的调用方（MCP 入口、插件之间直接调用）带什么与内核无关。`gwbCommands` 的完整类型（怎么登记命令、来源有哪些取值）不在内核包导出的类型里，由命令插件自己导出。
-
-## 约定
-
-**内核应用**保证：
-
-- 每条命令都在转交那一刻读取 `ctx.gwbCommands`：命令插件运行中装上、换掉、停用，下一条命令就跟着变
-- 命令名和参数原样交给 `run`，第三个参数固定是 `{ via: 'ui' }`；`run` 得到的值原样交回页面
-- 不是顶层框架发来的、命令名不是字符串的、没有 `ctx.gwbCommands` 的，都自己回 `{ ok: false, error }`，error 里写明是哪一种
-- 只找 `gwbCommands` 这一个服务名，不认识任何命令名，自己不登记命令
-
-**命令插件**保证：
-
-- 提供名为 `gwbCommands` 的服务，`run(命令名, 参数, 来源)` 返回 promise
-- 任何命令都回 `{ ok, data, error }`：命令不存在、处理函数抛错也收成 `ok: false`，`run` 不 reject
-- 来源只转交，不按来源限制谁能调哪条命令
-
-## 不负责的事
-
-- 内核应用不校验参数，不给命令分权限，不检查回执的形状，也不捕获 `run` 的异常：`run` 一旦 reject，页面上的 `command` 就收到一个异常
-- 内核应用不管命令怎么登记：登记规则由命令插件定
-- 命令插件不管页面怎么把命令送到主进程
-
-## 测试
-
-`apps/desktop/tests/main.test.ts` 保护内核应用这一边：命令名不是字符串、没有命令服务时回失败回执；home 里有一个提供 `gwbCommands` 的测试插件时，命令原样交给它、带上 `via: 'ui'`、回执原样交回。命令插件自己的行为由它在基础插件仓里的测试保护。页面调到真实插件登记的命令、调不存在的命令收到 `ok: false`，只能在隔离 home 里实机验证（[开发](/docs/develop#在隔离-home-里验证)）。
-
-{/* has file="../apps/desktop/tests/main.test.ts" text="gwb:command：命令名不是字符串、没有命令服务时回失败回执" */}
-
-{/* has file="../apps/desktop/tests/main.test.ts" text="页面的命令交给插件提供的 gwbCommands，带上 via: ui" */}
+内核不导入 commands，不查找其服务，不合成命令回执；commands 的登记跟随服务生命周期撤销。

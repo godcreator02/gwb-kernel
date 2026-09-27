@@ -269,7 +269,6 @@ function fakeHomeWithPlugins(): string {
     'node_modules/gwb-test-commands/index.mjs': [
       "export const name = 'gwb-test-commands'",
       'export function apply(ctx) {',
-      "  ctx.provide('gwbCommands', { run: async (command, args, context) => ({ ok: true, data: { command, args, context } }) })",
       '}',
       '',
     ].join('\n'),
@@ -607,27 +606,6 @@ describe('main.ts：IPC 通道', () => {
     expect(await request(topFrameEvent, 'sample', 42)).toEqual({ available: false })
     await quitAndWaitForCleanup(booted)
   })
-  it('gwb:command：命令名不是字符串、没有命令服务时回失败回执', async () => {
-    silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
-    const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
-    expect(await relayCommand(topFrameEvent, 42, undefined)).toEqual({ ok: false, error: '命令名要是字符串' })
-    expect(await relayCommand(topFrameEvent, 'demo.hello', undefined)).toEqual({ ok: false, error: '没有命令服务（ctx.gwbCommands），无法执行 demo.hello' })
-    await quitAndWaitForCleanup(booted)
-  })
-
-  it('gwb:command 只接收顶层框架：iframe 发来的、发送方框架已销毁的都回失败回执，不交给命令服务', async () => {
-    silenceStderr()
-    probeGlobal.__gwbMainTestProbe = { events: [] }
-    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
-    const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
-    const rejected = { ok: false, error: 'gwb:command 只接收顶层框架的调用，demo.echo 没有执行' }
-    expect(await relayCommand({ senderFrame: { parent: { parent: null } } }, 'demo.echo', {})).toEqual(rejected)
-    expect(await relayCommand({ senderFrame: null }, 'demo.echo', {})).toEqual(rejected)
-    expect(await relayCommand(topFrameEvent, 'demo.echo', {})).toMatchObject({ ok: true })
-    await quitAndWaitForCleanup(booted)
-  })
-
   it('gwb:hello：向发来的页面回一条整份外壳状态；没有外壳时 url 是 null，report 列出 home 与条目', async () => {
     silenceStderr()
     const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
@@ -645,7 +623,7 @@ describe('main.ts：IPC 通道', () => {
 })
 
 describe('main.ts：插件看到的内核', () => {
-  it('插件拿到 gwbKernel：提供路径、版本、事件、模块登记与外壳接管，dataDir 是 home 的真实路径、version 是内核包的版本；页面的命令交给插件提供的 gwbCommands，带上 via: ui', async () => {
+  it('插件拿到 gwbKernel：提供路径、版本、事件、模块登记与外壳接管，dataDir 是 home 的真实路径、version 是内核包的版本', async () => {
     silenceStderr()
     probeGlobal.__gwbMainTestProbe = { events: [] }
     const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
@@ -653,8 +631,7 @@ describe('main.ts：插件看到的内核', () => {
     expect(Object.keys(probe.kernel!).sort()).toEqual(['dataDir', 'emit', 'handleRequest', 'registerImports', 'setShell', 'version'])
     expect(probe.kernel?.dataDir).toBe(booted.dataDir)
     expect(probe.kernel?.version).toBe(kernelPackageVersion)
-    const relayCommand = booted.electron.ipcHandlers.get('gwb:command')!
-    expect(await relayCommand(topFrameEvent, 'demo.echo', { a: 1 })).toEqual({ ok: true, data: { command: 'demo.echo', args: { a: 1 }, context: { via: 'ui' } } })
+    expect(booted.electron.ipcHandlers.has('gwb:command')).toBe(false)
     await quitAndWaitForCleanup(booted)
   })
 

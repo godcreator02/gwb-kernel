@@ -41,7 +41,6 @@ contextBridge.exposeInMainWorld('gwb', {
     return reply.value
   },
   prepareImports,
-  command: (command, args) => ipcRenderer.invoke('gwb:command', command, args),
   on: (callback) => subscribe('gwb:event', callback),
   onShell: (callback) => {
     const unsubscribe = subscribe('gwb:shell', callback)

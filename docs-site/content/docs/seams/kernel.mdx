@@ -10,7 +10,7 @@ description: 连接内核应用与任何插件；交换的是内核在 cordis �
 - [内核应用](/docs/desktop)：在 cordis 的根上下文上提供 `gwbKernel`
 - 任何插件：从 `ctx.gwbKernel` 直接取用，不写进 `inject`
 
-上下文上的命令服务 `gwbCommands` 不属于这条接缝：它由命令插件提供，内核只调用它来转交页面发来的命令（[命令转交](/docs/seams/commands)）。
+业务插件通过 `handleRequest` 主动登记请求处理器；内核不读取任何业务插件服务（[请求通道](/docs/seams/requests)）。
 
 ## 接口
 

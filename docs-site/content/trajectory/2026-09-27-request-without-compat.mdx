@@ -1,0 +1,17 @@
+---
+born-at: 2026-09-27T22:04
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 不保留命令兼容层
+domain: 内核边界
+---
+
+## 决定
+
+用户明确要求不保留兼容。直接删除 window.gwb.command、gwb:command 与内核 GwbResult；devkit 去掉对旧 home 的回退。协议和回执只在 commands，内核仅提供通用请求通道。
+
+pivots-from:: [请求与命令](2026-09-27-request-channel.md)
+
+## 代价
+
+内核升到 0.9，devkit 因移除旧 home 调用语义升到 0.24。18 个下游仓已收到迁移通知，插件必须在新内核验证、更新 peer 后配套发布；default 不做混用验证。

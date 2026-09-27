@@ -2,14 +2,12 @@
 title: 页面请求与命令协议拆分
 ---
 
-- [x] 通道登记、冲突、注销、在途请求与 IPC 来源检查
-- [x] commands 主动接入、拥有 GwbResult 与纯浏览器客户端
-- [x] shell 与工具接线迁移、文档同步、隔离 home 验证
-- [ ] 配套发版
+- [x] 通用通道登记、冲突、注销、在途请求与 IPC 来源检查
+- [x] commands 拥有页面命令处理器、GwbResult 与浏览器客户端
+- [x] shell 接入客户端
+- [x] 18 个下游仓迁移通知已提交
+- [x] 移除内核 command、GwbResult 及 devkit 的旧通道回退
+- [ ] 内核 0.9 与配套插件隔离验证、文档检查及发版
+- [ ] 下游内核 peer 适配与检查
 
-第一阶段保留 window.gwb.command 与内核 GwbResult，新增请求通道和提供方出口。
-第二阶段必须先清点剩余直接调用者，再单独通知下游、移除兼容接口并发破坏性版本。
-
-第二阶段清点起点：块笔记仓的 `scripts/cdp.mjs` 仍直接使用旧 command；devkit 保留对旧 home 的兼容分支。删除内核旧类型前还需逐仓扫描 GwbResult 的来源，不能只看运行时代码。
-
-第一阶段隔离验收：`request-channel-2609272140`，真实 shell 与插件管理窗格正常；CDP 从目标 home 动态导入 commands 客户端调通 shell.env；不存在通道抛出的 Error 经 contextBridge 后仍可识别，非法命令载荷回失败回执。
+用户于 2026-09-27 明确要求不保留兼容；直接删除旧协议，按破坏性版本执行。块笔记本地 CDP 脚本也改用 commands 客户端。内核不导入或重导出任何命令协议。

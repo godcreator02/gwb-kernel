@@ -1,6 +1,6 @@
 ---
 title: 包根导出的接口类型
-description: 内核包 @godcreator/gwb-kernel-desktop 的包根给插件与页面代码导出内核的全部接口类型（GwbResult、GwbKernelApi、GwbContext、GwbWindowApi 与 window.gwb 的全局声明、ShellBoot），正本 apps/desktop/src/api.ts，只有类型、没有运行时代码；本页讲有哪些类型、各属于哪条接缝、包根怎么导出、依赖什么、改它们时版本号怎么升、哪些不归它们管
+description: 内核包 @godcreator/gwb-kernel-desktop 的包根给插件与页面代码导出内核的全部接口类型（GwbRequestHandler、GwbKernelApi、GwbContext、GwbWindowApi 与 window.gwb 的全局声明、ShellBoot），正本 apps/desktop/src/api.ts，只有类型、没有运行时代码；本页讲有哪些类型、各属于哪条接缝、包根怎么导出、依赖什么、改它们时版本号怎么升、哪些不归它们管
 ---
 
 **本页回答**：插件和页面代码从哪里 `import type` 内核的接口；有哪些类型、各属于哪条接缝；包根为什么只导出类型、怎么构建出来；它们依赖什么；改这些类型时内核版本号怎么升；哪些类型不在这里。
@@ -17,10 +17,9 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 
 | 类型 | 是什么 | 接缝 |
 | --- | --- | --- |
-| `GwbResult` | 已弃用的兼容导出；命令回执正本从 `@godcreator/gwb-commands` 取 | [3 IPC 通道](/docs/seams/ipc)、[10 命令转交](/docs/seams/commands) |
 | `GwbKernelApi` | 内核服务 `gwbKernel`：`dataDir`、`version`、`emit`、`handleRequest`、`registerImports`、`setShell` | [2 内核服务](/docs/seams/kernel) |
 | `GwbContext` | 插件 `apply` 拿到的上下文：cordis 的 `Context` 加 `gwbKernel` | [2 内核服务](/docs/seams/kernel) |
-| `GwbWindowApi`，以及 `Window.gwb` 的全局声明 | 页面上的 `window.gwb`：`request`、`on`、`onShell`、`prepareImports`，以及已弃用的 `command` | [3 IPC 通道](/docs/seams/ipc) |
+| `GwbWindowApi`，以及 `Window.gwb` 的全局声明 | 页面上的 `window.gwb`：`request`、`on`、`onShell`、`prepareImports` | [3 IPC 通道](/docs/seams/ipc) |
 | `ShellBoot` | 外壳模块默认导出的形状 | [4 外壳接管](/docs/seams/shell) |
 
 `GwbRequestHandler` 是通道处理器类型，接受未知载荷，返回值可以是 Promise；内核不定义业务回执。整个 `src/api.ts` 就是这张表的定义：
@@ -57,8 +56,8 @@ import type { GwbContext } from '@godcreator/gwb-kernel-desktop'
 ## 不在这里的
 
 - **实现**：`gwbKernel` 由内核应用的 `main.ts` 提供，`window.gwb` 由 `preload.cjs` 注入；`src/api.ts` 只写形状
-- **命令插件的类型**：`gwbCommands` 服务、命令的登记形状由命令插件 `@godcreator/gwb-commands` 自己导出，调用方从它那里 `import type`
+- **命令插件的类型**：`GwbResult`、`gwbCommands` 服务、命令的登记形状由命令插件 `@godcreator/gwb-commands` 自己导出，调用方从它那里 `import type`
 - **插件管理的回执类型**：由插件管理 `@godcreator/gwb-plugin-manager` 自己导出
 - **运行时的值**：`dataDir` 这类值是那一次运行算出来的，插件只能从 `ctx.gwbKernel` 取
-- **日志行的格式与 IPC 通道名**：日志行格式归[日志](/docs/seams/log)接缝；`gwb:command` 这类通道名在内核应用里，页面代码只经 `window.gwb` 调用
+- **日志行的格式与 IPC 通道名**：日志行格式归[日志](/docs/seams/log)接缝；`gwb:request` 这类通道名在内核应用里，页面代码只经 `window.gwb` 调用
 - **只读状态页的数据形状**：`gwb:shell` 里还有一个 `report` 字段，只给内核自己的页面入口用，`onShell` 的参数只写了 `url`

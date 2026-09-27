@@ -23,7 +23,7 @@ describe('isReloadOfCurrentDocument：主框架只能重新加载它正显示的
   })
 })
 
-describe('isTopFrame：gwb:command 只接收顶层框架', () => {
+describe('isTopFrame：gwb:request 只接收顶层框架', () => {
   it('没有父框架的是顶层框架', () => {
     expect(isTopFrame({ parent: null })).toBe(true)
   })

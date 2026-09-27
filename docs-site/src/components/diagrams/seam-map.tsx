@@ -91,7 +91,7 @@ export function SeamMap() {
       <Box x={552} y={132} w={92} h={36} lines={['外壳']} />
       <Box x={654} y={132} w={94} h={36} lines={['MCP 入口']} />
       <Box x={552} y={180} w={196} h={36} lines={['插件管理', 'gwb-plugin-manager']} mono />
-      <Box x={552} y={228} w={196} h={36} lines={['命令插件', 'gwb-commands']} mono />
+      <Box x={552} y={228} w={196} h={36} lines={['请求提供方', 'handleRequest']} mono />
       <Box x={552} y={276} w={196} h={100} lines={['任何插件', '数据 · 设置 · 说明书', '日志插件 …']} />
 
       <GroupLabel x={222} y={566} name="安装包" where="apps/launcher · installer/" />
