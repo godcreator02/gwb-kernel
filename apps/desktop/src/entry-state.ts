@@ -11,12 +11,20 @@ export interface EntryStatus {
 const FIBER_STATE_NAMES = ['PENDING', 'LOADING', 'ACTIVE', 'FAILED', 'DISPOSED', 'UNLOADING'] as const
 
 /** 读条目状态要用的 fiber 字段；`_error`（失败原因）与 `_store`（已就绪的 inject）是 cordis 标了 private 的普通字段 */
-interface FiberInternals {
+export interface FiberInternals {
   state: number
   inject: Record<string, unknown>
   _error?: unknown
   _store?: Record<string, unknown>
 }
+
+/** 条目加载到哪一步。`other` 是 LOADING、ACTIVE、DISPOSED、UNLOADING 与认不出的状态数字 */
+export type EntryCondition =
+  | { kind: 'disabled' }
+  | { kind: 'no-fiber' }
+  | { kind: 'pending'; missingServices: string[] }
+  | { kind: 'failed'; firstErrorLine: string }
+  | { kind: 'other'; stateName: string }
 
 const stackOf = (e: unknown): string => (e instanceof Error ? (e.stack ?? e.message) : String(e))
 
@@ -24,22 +32,37 @@ function servicesStillMissing(fiber: FiberInternals): string[] {
   return Object.keys(fiber.inject).filter((serviceName) => !(serviceName in (fiber._store ?? {})))
 }
 
-function describePending(fiber: FiberInternals): string {
-  const missingServices = servicesStillMissing(fiber)
-  return `PENDING（缺 ${missingServices.length > 0 ? missingServices.join('、') : '？'}）`
-}
-
 function firstLineOf(text: string): string {
   return text.split('\n')[0] ?? ''
 }
 
+export function conditionOfFiber(fiber: FiberInternals): EntryCondition {
+  const stateName = FIBER_STATE_NAMES[fiber.state] ?? `state=${String(fiber.state)}`
+  if (stateName === 'PENDING') return { kind: 'pending', missingServices: servicesStillMissing(fiber) }
+  if (stateName === 'FAILED') return { kind: 'failed', firstErrorLine: firstLineOf(stackOf(fiber._error)) }
+  return { kind: 'other', stateName }
+}
+
+export function conditionOfEntry(entry: Entry): EntryCondition {
+  if (entry.disabled) return { kind: 'disabled' }
+  const fiber = entry.fiber as unknown as FiberInternals | undefined
+  if (fiber === undefined) return { kind: 'no-fiber' }
+  return conditionOfFiber(fiber)
+}
+
 /** 条目加载到哪一步，说成只读状态页上的一句话 */
 export function describeEntry(entry: Entry): string {
-  if (entry.disabled) return 'disabled'
-  const fiber = entry.fiber as unknown as FiberInternals | undefined
-  if (fiber === undefined) return 'no fiber（import 失败，原因在错误行里）'
-  const stateName = FIBER_STATE_NAMES[fiber.state] ?? `state=${String(fiber.state)}`
-  if (stateName === 'PENDING') return describePending(fiber)
-  if (stateName === 'FAILED') return `FAILED：${firstLineOf(stackOf(fiber._error))}`
-  return stateName
+  const condition = conditionOfEntry(entry)
+  switch (condition.kind) {
+    case 'disabled':
+      return 'disabled'
+    case 'no-fiber':
+      return 'no fiber（import 失败，原因在错误行里）'
+    case 'pending':
+      return `PENDING（缺 ${condition.missingServices.length > 0 ? condition.missingServices.join('、') : '？'}）`
+    case 'failed':
+      return `FAILED：${condition.firstErrorLine}`
+    case 'other':
+      return condition.stateName
+  }
 }
