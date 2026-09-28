@@ -59,7 +59,7 @@ pnpm 装插件时拿它和 home 里的内核包比，不满足只警告；插件
 
 形状对不上时谁先发现：内核自己的 `main.ts` 从同一个文件取 `GwbKernelApi`，内核服务对象的形状对不上时本仓的类型检查当场失败；`preload.cjs` 是 CJS、不经类型检查，`window.gwb` 上有哪几个成员由 `preload.test.ts` 核对；仓外的插件与页面代码要等新内核包发到团队包源、装上之后，才在各自仓的类型检查里发现。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="266-268" hash="ed09f1a9b5fd" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="278-280" hash="ed09f1a9b5fd" blob="db3e92ccd653" */}
 
 {/* ref file="../apps/desktop/tests/preload.test.ts" lines="90-94" hash="e381f7cedff0" blob="a0997b68b97a" */}
 

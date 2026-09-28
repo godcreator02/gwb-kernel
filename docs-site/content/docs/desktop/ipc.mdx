@@ -26,7 +26,7 @@ description: 页面上的 window.gwb 与背后的五个 Electron IPC 通道；�
 
 主进程这一侧收发它们的代码：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="286-294" hash="a2e23c0dfcf2" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="298-306" hash="a2e23c0dfcf2" blob="db3e92ccd653" */}
 
 两个 invoke 通道都只接收顶层框架的调用：发送方是 iframe，或发送方框架已经跳走、销毁（`senderFrame` 是 `null`），直接拒绝。
 页面上除了 `window.gwb` 什么都不注入：没有 Node、没有 `ipcRenderer`，新的业务通道由插件用 `handleRequest` 登记，IPC 的接线只在内核里。
@@ -58,7 +58,7 @@ ctx.effect(() => ctx.gwbKernel.handleRequest('my-plugin.query', (payload) => ans
 
 {/* ref file="../apps/desktop/tests/requests.test.ts" lines="22-34" hash="5369f0a33118" blob="b660fe70de0c" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="718-732" hash="dcafcc0b1268" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="764-778" hash="dcafcc0b1268" blob="49dcfb3b680a" */}
 
 ## 传输状态与业务回执分开
 
@@ -77,7 +77,7 @@ ctx.effect(() => ctx.gwbKernel.handleRequest('my-plugin.query', (payload) => ans
 `GWB_REQUEST_UNAVAILABLE: commands.run` 换成一条命令失败回执。内核不 import 命令插件、不查找它的服务，`gwbKernel` 上也没有任何命令相关的成员
 （[请求与命令拆开](/trajectory/2026-09-27-request-channel)、[不保留命令兼容层](/trajectory/2026-09-27-request-without-compat)）：
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="750-760" hash="8ef5a873192f" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="796-806" hash="8ef5a873192f" blob="49dcfb3b680a" */}
 
 换掉命令插件，只要新插件登记同名通道、载荷与回执保持一致，页面上的代码和内核都不用改。
 
@@ -85,7 +85,7 @@ ctx.effect(() => ctx.gwbKernel.handleRequest('my-plugin.query', (payload) => ans
 
 插件调用 `ctx.gwbKernel.emit(payload)`，主进程把 payload 原样经 `gwb:event` 发给窗口，页面用 `window.gwb.on(cb)` 收：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="271-271" hash="5c0e8d9c04e9" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="283-283" hash="5c0e8d9c04e9" blob="db3e92ccd653" */}
 
 {/* ref file="../apps/desktop/tests/preload.test.ts" lines="107-117" hash="50fe76666976" blob="a0997b68b97a" */}
 

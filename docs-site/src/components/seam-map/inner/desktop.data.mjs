@@ -247,7 +247,7 @@ export const desktopGraph = defineSeamGraph({
       text:
         '启动器不 import 内核的任何模块，只读 home 里内核包的清单：有 engines.electron、当前 Electron 在范围里、有 main，才 import main 指向的入口，内核从这一刻开始求值。选 home 的规则启动器与内核各写一份，启动器把算出的绝对路径写回 GWB_HOME，内核再选一次一定落在同一个目录。',
     },
-    /* ref file="../apps/desktop/src/main.ts" lines="375-377" hash="8e1b809bcbf4" blob="b613d37fa683" */
+    /* ref file="../apps/desktop/src/main.ts" lines="387-389" hash="8e1b809bcbf4" blob="db3e92ccd653" */
     {
       n: 2,
       name: '应用生命周期',
@@ -260,7 +260,7 @@ export const desktopGraph = defineSeamGraph({
         '入口模块求值时拿单实例锁，只把启动注册到 whenReady 上，不能顶层 await：ready 要等入口模块求值完才触发，互相等待会静默卡死。所有窗口关闭就 app.quit()，will-quit 里拦下一次、卸载插件树后再退。启动失败弹错误框、退出码 1。',
     },
     /* ref file="../apps/desktop/src/home-path.ts" hash="482874f47488" blob="8f1ac8757a53" */
-    /* ref file="../apps/desktop/src/main.ts" lines="50-54" hash="70afb08b9c0e" blob="b613d37fa683" */
+    /* ref file="../apps/desktop/src/main.ts" lines="51-55" hash="70afb08b9c0e" blob="db3e92ccd653" */
     {
       n: 3,
       name: '选定 home',
@@ -272,8 +272,8 @@ export const desktopGraph = defineSeamGraph({
       text:
         '目录不存在就创建，再统一成磁盘上的真实路径：大小写、junction、斜杠写法不同的同一个目录得到同一个字符串。Chromium 的 userData 设在 <home>/electron，单实例锁按它区分，所以同一个 home 只运行一个实例、不同 home 可以同时运行。',
     },
-    /* ref file="../apps/desktop/src/main.ts" lines="114-119" hash="0066ba403eca" blob="b613d37fa683" */
-    /* ref file="../apps/desktop/src/main.ts" lines="147-151" hash="3c19c4c90a26" blob="b613d37fa683" */
+    /* ref file="../apps/desktop/src/main.ts" lines="115-120" hash="0066ba403eca" blob="db3e92ccd653" */
+    /* ref file="../apps/desktop/src/main.ts" lines="160-164" hash="3c19c4c90a26" blob="db3e92ccd653" */
     {
       n: 4,
       name: '启动时的 home 文件',
@@ -285,7 +285,7 @@ export const desktopGraph = defineSeamGraph({
       text:
         'package.json 与 cordis.yml 缺一个就启动失败，报错写明缺哪个，内核不补。runtime.json 每次启动整份重写，开了调试端口时带 cdp；写不进、端口给的不是 1–65535 的整数都启动失败。退出时不删这份文件，读它的一方自己确认 pid 还活着。',
     },
-    /* ref file="../apps/desktop/src/main.ts" lines="349-356" hash="e5fc330ba54d" blob="b613d37fa683" */
+    /* ref file="../apps/desktop/src/main.ts" lines="361-368" hash="e5fc330ba54d" blob="db3e92ccd653" */
     {
       n: 5,
       name: '注册与卸载 loader',
@@ -320,7 +320,7 @@ export const desktopGraph = defineSeamGraph({
       text: 'include 读 cordis.yml、在条目树变化时写回；包名按 home 的 node_modules 找到入口文件。内核不看插件包清单里的任何字段。',
     },
     /* ref file="../apps/desktop/src/api.ts" lines="9-31" hash="4d4da5ce95ba" blob="b2cf0ae6f72c" */
-    /* ref file="../apps/desktop/src/main.ts" lines="266-284" hash="a3aef0339ac9" blob="b613d37fa683" */
+    /* ref file="../apps/desktop/src/main.ts" lines="278-296" hash="a3aef0339ac9" blob="db3e92ccd653" */
     {
       n: 8,
       name: '内核服务',
@@ -344,17 +344,17 @@ export const desktopGraph = defineSeamGraph({
       text:
         'main.ts 把内核服务对象标成 GwbKernelApi，形状对不上时本仓类型检查失败；插件与页面代码从包根 import type，编译后不留 import。preload.cjs 是 CJS，不经类型检查，window.gwb 的四个成员由 preload.test.ts 核对。',
     },
-    /* ref file="../apps/desktop/src/main.ts" lines="176-184" hash="02b49b6c7079" blob="b613d37fa683" */
+    /* ref file="../apps/desktop/src/main.ts" lines="189-196" hash="d00c19984ea4" blob="db3e92ccd653" */
     {
       n: 10,
       name: '日志出口',
       a: ['ctx'],
       b: ['exporter'],
-      iface: 'ctx.logger.exporter({ levels: { default: 3 }, export(message) })',
+      iface: 'ctx.logger.exporter({ levels: fileLogLevels(GWB_DEBUG), export(message) })',
       convention: false,
       via: 'code',
       text:
-        '内核在 cordis 日志流上注册唯一的出口：插件、内核、loader 与页面 console 的每一条日志都经它写出，所有级别都写。每来一条 error 还会排一次外壳状态推送，只读状态页上看得到最近的错误行。',
+        '内核在 cordis 日志流上注册唯一的出口：插件、内核、loader 与页面 console 的日志都经它写出，默认只写 info 及以上，环境变量 GWB_DEBUG 点名的 logger 连 debug 也写。每来一条 error 还会排一次外壳状态推送，只读状态页上看得到最近的错误行。',
     },
     /* ref file="../apps/desktop/src/log-record.ts" lines="28-35" hash="6ea79d3dce38" blob="9e005a2aef22" */
     {
@@ -389,7 +389,7 @@ export const desktopGraph = defineSeamGraph({
       text:
         'include 与分组条目只是装条目的容器，插件里再 ctx.plugin 出来的子 fiber 也不算条目。一开始就缺服务的条目不发任何状态变化，只能靠汇总报出来。退出时先停掉它，卸载整棵树时不逐条写。',
     },
-    /* ref file="../apps/desktop/src/main.ts" lines="218-227" hash="c4235b59edd3" blob="b613d37fa683" */
+    /* ref file="../apps/desktop/src/main.ts" lines="230-239" hash="c4235b59edd3" blob="db3e92ccd653" */
     {
       n: 14,
       name: '状态页数据',
@@ -423,7 +423,7 @@ export const desktopGraph = defineSeamGraph({
       via: 'code',
       text: '名字要是精确的包名或子路径，地址要是本地 .js 或 .mjs 的 file: 地址；一批里有一个不合格或冲突，整批都不登记。撤销只从主进程的表里减掉，已经注入页面的映射不会跟着撤销。',
     },
-    /* ref file="../apps/desktop/src/main.ts" lines="309-327" hash="9438488c6351" blob="b613d37fa683" */
+    /* ref file="../apps/desktop/src/main.ts" lines="321-339" hash="9438488c6351" blob="db3e92ccd653" */
     {
       n: 17,
       name: '窗口与页面边界',
@@ -435,7 +435,7 @@ export const desktopGraph = defineSeamGraph({
       text:
         '页面能调用插件登记的所有请求通道，所以主框架只能是内核的 index.html：跳到别处、主框架重定向一律拒绝并记一行 warn，只放行整页重新加载；开新窗口一律拒绝，http、https 地址交给系统浏览器。IPC 处理器也只接收顶层框架的调用。',
     },
-    /* ref file="../apps/desktop/src/main.ts" lines="340-342" hash="cb8cdc7db26f" blob="b613d37fa683" */
+    /* ref file="../apps/desktop/src/main.ts" lines="352-354" hash="cb8cdc7db26f" blob="db3e92ccd653" */
     {
       n: 18,
       name: '页面 console',

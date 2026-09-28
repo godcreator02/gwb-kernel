@@ -7,7 +7,7 @@
 /** 时间轴的长度，秒 */
 export const axisSeconds = 6;
 
-/* ref file="../apps/desktop/src/main.ts" lines="43-43" hash="67d0b4ebe032" blob="b613d37fa683" */
+/* ref file="../apps/desktop/src/main.ts" lines="44-44" hash="67d0b4ebe032" blob="db3e92ccd653" */
 export const cleanupTimeoutSeconds = 5;
 
 /** 三条横道 */
@@ -22,7 +22,7 @@ export const lanes = [
  * @typedef {{ id: string, label: string, text: string, bars: Bar[], quitAt: number, log: string[] }} QuitCase
  * @type {QuitCase[]}
  */
-/* ref file="../apps/desktop/src/main.ts" lines="379-402" hash="a8eb09335cb7" blob="b613d37fa683" */
+/* ref file="../apps/desktop/src/main.ts" lines="391-414" hash="a8eb09335cb7" blob="db3e92ccd653" */
 export const cases = [
   {
     id: 'returned',

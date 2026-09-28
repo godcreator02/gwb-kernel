@@ -25,7 +25,7 @@ stderr 上给终端看的文本，home 里 `gwb.log` 的一行 JSON。内核只�
 
 {/* ref file="../apps/desktop/tests/log-record.test.ts" lines="7-12" hash="9d8f80064ac0" blob="03935a26d0e3" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="450-471" hash="0fa1690ad196" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="455-476" hash="0fa1690ad196" blob="49dcfb3b680a" */}
 
 这个格式是跨仓的契约：基础界面、devkit 都按它解析。改键、改取值、改格式，内核包都要升 x。stderr 上的文本「时间 级别 名字 正文」只给终端看，不是给程序读的。
 
@@ -34,21 +34,29 @@ stderr 上给终端看的文本，home 里 `gwb.log` 的一行 JSON。内核只�
 - **插件**用 cordis 的 `ctx.logger(名字)` 写，名字用自己能被认出的（通常是插件名或服务名）。`kernel`、`loader`、`include`、`renderer` 这几个名字的日志算内核或页面的，插件不要用
 - **页面**上任何代码的 console 输出，主进程从窗口的 `console-message` 事件收到，转成名字 `renderer` 的日志：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="340-342" hash="cb8cdc7db26f" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="352-354" hash="cb8cdc7db26f" blob="db3e92ccd653" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="624-638" hash="bc02c50d5105" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="670-684" hash="b8cc90644049" blob="49dcfb3b680a" */}
 
 - **内核自己**也走 `ctx.logger`，名字是 `kernel`；插件里没被处理的 rejection 与未捕获异常记成 `kernel` 的 error，工作台不退出：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="197-199" hash="01aedbee110d" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="209-211" hash="01aedbee110d" blob="db3e92ccd653" */}
 
 只有 cordis 实例建好之前（单实例锁拿不到）与启动失败那一行不经 cordis，直接调用同一个写一行的函数：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="98-103" hash="03bc66e1ed2a" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="99-104" hash="03bc66e1ed2a" blob="db3e92ccd653" */}
 
-内核的 exporter 收所有级别，包括 `debug`；正文由 cordis 自己的 `Logger.format` 格式化，格式化抛错时退回把参数逐个转成字符串，这一行照样写进去：
+内核的 exporter 默认只收 info 及以上；启动时环境变量 `GWB_DEBUG` 点名的 logger 连 `debug` 也收，文件与终端一样。`GWB_DEBUG` 是逗号分隔的 logger 名，要写全名、不认通配，
+比如排查命令调用写 `GWB_DEBUG=gwb-commands`，看页面的 `console.debug` 写 `renderer`。逗号之间是空的、写了 cordis 级别表的保留项 `default`，都启动失败
+（[debug 默认不写进 gwb.log](/trajectory/2026-09-28-debug-off-by-default)）：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="176-193" hash="ac4386f7eada" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/file-log-levels.ts" hash="71839fd93424" blob="f19a737d571f" */}
+
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="478-517" hash="458da209445c" blob="49dcfb3b680a" */}
+
+正文由 cordis 自己的 `Logger.format` 格式化，格式化抛错时退回把参数逐个转成字符串，这一行照样写进去：
+
+{/* ref file="../apps/desktop/src/main.ts" lines="189-205" hash="5525c07cdcdf" blob="db3e92ccd653" */}
 
 exporter 在写日志的那次调用里同步执行，所以它不能抛：抛出去会让写日志的插件跟着抛。插件自己再注册 cordis exporter 的，同样要保证 `export` 不抛、不做耗时的同步操作。
 每条 error 还触发一次只读状态页的重新推送（200 毫秒内的多次合并成一次）；warn 只进日志，下一次推送时随最近的错误行一起出现。
@@ -66,12 +74,12 @@ exporter 在写日志的那次调用里同步执行，所以它不能抛：抛�
 
 {/* ref file="../apps/desktop/src/entry-log.ts" lines="42-69" hash="69ff72158385" blob="9c2a0bc85145" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="499-518" hash="beb2abc1e1c8" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="545-564" hash="beb2abc1e1c8" blob="49dcfb3b680a" */}
 
 ## 上限与轮转
 
 `gwb.log` 写到 128 MB，就改名为 `gwb.log.1`（只留这一份旧的，磁盘占用最多约 256 MB），再开一份新的 `gwb.log`。启动时文件已经超过上限，第一条日志就把它轮转掉。
-128 MB 的依据是实测：平常一天约写 48 MB，某个插件出错、反复写同样的日志时一小时能写约 675 MB；128 MB 平常留得住两天半的日志，
+128 MB 的依据是 debug 还全部写进文件时的实测：平常一天约写 48 MB，某个插件出错、反复写同样的日志时一小时能写约 675 MB；128 MB 平常留得住两天半的日志，
 那种情况下十几分钟轮转一次。读数记在仓根 `probes/2609201430_log-cap-rotation/`。
 
 {/* ref file="../apps/desktop/src/log-file.ts" lines="4-4" hash="93b606e5ccc9" blob="0270a1017f7a" */}
@@ -95,11 +103,11 @@ exporter 在写日志的那次调用里同步执行，所以它不能抛：抛�
 
 没有终端时每写一次 stderr 都抛 EPIPE，这个监听不能删，否则一条日志就能让主进程弹窗停摆（[stderr 管道断了还能带走主进程](/trajectory/2026-09-08-wall-stderr-epipe)）：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="56-57" hash="b402d85a9d17" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="57-58" hash="b402d85a9d17" blob="db3e92ccd653" */}
 
 {/* ref file="../apps/desktop/tests/log-file.test.ts" lines="65-89" hash="65a35bfc6f6f" blob="6f43be67df8c" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="431-448" hash="a165d343880c" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="436-453" hash="a165d343880c" blob="49dcfb3b680a" */}
 
 ## 旧内核留下的文本日志
 
@@ -108,13 +116,13 @@ exporter 在写日志的那次调用里同步执行，所以它不能抛：抛�
 不用认两种格式（[文本日志改名成 .text](/trajectory/2026-09-27-set-aside-text-logs)）。拿不到单实例锁的实例不改名：同一个 home 里正在运行的那个还在写这些文件。
 读第一个字节失败、改名失败，都按日志文件用不了处理，启动失败：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="59-96" hash="c00f4e153f3e" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="60-97" hash="c00f4e153f3e" blob="db3e92ccd653" */}
 
 {/* ref file="../apps/desktop/src/legacy-text-log.ts" lines="25-44" hash="bebdeafaafb7" blob="538439016a95" */}
 
 只看第一个字节：先用 0.10、再降回旧内核、再升回来的 home（JSON 在前、文本在后）不处理，读的一方会按坏行报错。
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="477-485" hash="6774bcc26fe5" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="523-531" hash="6774bcc26fe5" blob="49dcfb3b680a" */}
 
 ## 读日志
 
@@ -125,5 +133,5 @@ exporter 在写日志的那次调用里同步执行，所以它不能抛：抛�
 ## 不做的事
 
 - 不查询、不显示日志，也不为页面建日志通道：页面上要看日志的插件自己读 `gwb.log`，再用自己登记的请求通道交给页面
-- 不分级过滤、不按插件分文件：所有级别写进同一个文件
+- 不按级别或插件分文件：写进文件的日志都在同一个 `gwb.log` 里；不在运行中改级别，改 `GWB_DEBUG` 要重启
 - 不保留全部历史：只留当前一份与一份旧的

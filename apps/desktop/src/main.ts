@@ -12,6 +12,7 @@ import { homePathFor } from './home-path.js'
 import { bareImportFromHome } from './bare-import.js'
 import { describeEntry, type EntryStatus } from './entry-state.js'
 import { watchEntryStates } from './entry-log.js'
+import { fileLogLevels } from './file-log-levels.js'
 import { setAsideTextLogs } from './legacy-text-log.js'
 import { LOG_LIMIT_BYTES, openLogFile, type LogFile } from './log-file.js'
 import {
@@ -118,6 +119,18 @@ if (missingHomeFiles.length > 0) {
   )
 }
 
+function fileLogLevelsOrExit(): Record<string, number> {
+  try {
+    return fileLogLevels(process.env.GWB_DEBUG)
+  } catch (err) {
+    reportBootFailureAndExit(err instanceof Error ? err.message : String(err))
+    // 模块求值时 app.exit 当场结束进程、走不到这一行；throw 让这条路径在类型上不返回
+    throw err
+  }
+}
+
+const logLevelsByLoggerName = fileLogLevelsOrExit()
+
 /** 开关原值要是十进制整数且在 1–65535 之间 */
 function isPortNumber(switchValue: string): boolean {
   if (!/^[0-9]+$/.test(switchValue)) return false
@@ -175,8 +188,7 @@ function isErrorOrWarning(message: CordisLogMessage): boolean {
 
 const gwbLogExporter = {
   colors: 0,
-  // 3 是 debug 级：所有级别都写
-  levels: { default: 3 },
+  levels: logLevelsByLoggerName,
   export: (message: CordisLogMessage): void => {
     writeLogLine(levelOf(message.type ?? 'info'), message.name ?? '', formatLogMessage(message), message.ts)
     if (message.type === 'error') scheduleShellPush()

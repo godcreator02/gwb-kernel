@@ -33,7 +33,7 @@ export const shellUpgradedNote = '→ .pnpm\\@godcreator+gwb-shell@1.1.0\\…';
 
 /** @type {LoadStep[]} */
 export const steps = [
-  /* ref file="../apps/desktop/src/main.ts" lines="50-54" hash="70afb08b9c0e" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="51-55" hash="70afb08b9c0e" blob="db3e92ccd653" */
   {
     title: '选定 home',
     text:
@@ -55,7 +55,7 @@ export const steps = [
       highlight: [53, 54],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="114-119" hash="0066ba403eca" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="115-120" hash="0066ba403eca" blob="db3e92ccd653" */
   {
     title: '检查两个文件，缺了就停',
     text:
@@ -76,7 +76,7 @@ export const steps = [
       ],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="138-151" hash="02c2df3340c0" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="151-164" hash="02c2df3340c0" blob="db3e92ccd653" */
   {
     title: '整份重写 runtime.json',
     text:
@@ -106,7 +106,7 @@ export const steps = [
       highlight: [141, 141],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="349-356" hash="e5fc330ba54d" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="361-368" hash="e5fc330ba54d" blob="db3e92ccd653" */
   {
     title: 'loader 的根层只放一条 include 条目',
     text:

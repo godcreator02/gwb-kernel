@@ -51,7 +51,7 @@ home 根上的 `cordis` 只有一份：内核包把它写在 peer 里、写精�
 
 内核在 loader 的根层只放一条条目，`cordis.yml` 里的条目都是它的子条目：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="349-356" hash="e5fc330ba54d" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="361-368" hash="e5fc330ba54d" blob="db3e92ccd653" */}
 
 这几行里有三处必须这么写（[取址交给 cordis 官方 loader](/trajectory/2026-09-07-cordis-loader-addressing)）：
 
@@ -62,7 +62,7 @@ home 根上的 `cordis` 只有一份：内核包把它写在 peer 里、写精�
 模块解析的起点 `ctx.baseUrl` 设在根上下文上、指向 home 的 `file:` 地址，loader 与 include 都从根上下文继承它
 （[baseUrl 设在根上下文](/trajectory/2026-09-07-wall-baseurl-on-root-ctx)）：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="153-155" hash="c80508e65041" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="166-168" hash="c80508e65041" blob="db3e92ccd653" */}
 
 **运行中增删条目只经条目树**：loader 服务 `ctx.loader` 的 `create` / `update` / `remove` 会把改动写回 `cordis.yml`，同时当场加载或卸载。
 绕过它直接改文件，内存里的条目不知道，下一次写回会把磁盘上的改动覆盖掉；include 只在有 `hmr` 服务时才监听文件，内核不提供这个服务。
@@ -102,7 +102,7 @@ export function apply(ctx: GwbContext): void { /* … */ }
 
 每次启动，内核在创建 cordis 实例之前把这次运行写进 `<home>\runtime.json`：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="121-151" hash="bc5cb85b227b" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="134-164" hash="bc5cb85b227b" blob="db3e92ccd653" */}
 
 | 字段 | 内容 |
 | --- | --- |
@@ -119,7 +119,7 @@ export function apply(ctx: GwbContext): void { /* … */ }
 - **往里补字段的插件先读、合并、再写回**：MCP 入口插件在端口开好之后补一个 `mcp` 字段；整份覆盖会抹掉内核写的那几项
 - 内核不加锁、不保证原子写入，自己也不读这份文件
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="539-551" hash="a4167bfa2bdc" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="585-597" hash="a4167bfa2bdc" blob="49dcfb3b680a" */}
 
 ## 不做的事
 

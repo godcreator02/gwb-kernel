@@ -13,7 +13,7 @@ description: 内核从被启动器加载到页面交给外壳的每一步、分�
 
 入口不能顶层 `await app.whenReady()`：Electron 要等入口模块求值完才触发 ready，顶层等它会互相等待，进程静默卡住（[ESM 主进程顶层等 ready 会卡死](/trajectory/2026-09-09-wall-esm-await-whenready)）。ready 之后的部分放在 `whenReady()` 返回的 promise 的 `then` 里执行，出错也在这条链上处理：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="375-377" hash="8e1b809bcbf4" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="387-389" hash="8e1b809bcbf4" blob="db3e92ccd653" */}
 
 启动器那一端同样只 import 内核入口、不等它：内核入口求值完，Electron 才触发 ready。
 
@@ -27,11 +27,11 @@ description: 内核从被启动器加载到页面交给外壳的每一步、分�
 - **`loader.internal` 在加载条目之前设好**：主进程没有 `--expose-internals`，不设的话 loader 按自己所在的位置解析包名，插件静默加载失败
 - **等 loader 加载完才写「up」**并推一次页面状态：那时各条目都已走到各自的终态
 
-{/* ref file="../apps/desktop/src/main.ts" lines="349-366" hash="8704a3d356e6" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="361-378" hash="8704a3d356e6" blob="db3e92ccd653" */}
 
 窗口创建时不显示，`ready-to-show` 之后才显示；窗口底色 `#151518` 与 `index.html` 的背景、安装包图标的底色是同一个值，改就三处一起改，窗口出现与整页重新加载的第一帧都不闪白。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="329-338" hash="56d971f94675" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="341-350" hash="56d971f94675" blob="db3e92ccd653" */}
 
 ## 启动失败与插件出错
 
@@ -41,15 +41,15 @@ description: 内核从被启动器加载到页面交给外壳的每一步、分�
 
 大多数启动失败走同一个函数：先写一行 error（stderr 与 `gwb.log` 各一份），再弹错误框、框里带 `gwb.log` 的路径，退出码 1。Electron 保证错误框在 ready 之前也弹得出来，这时窗口可能还没有。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="368-373" hash="9c736404ce39" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="380-385" hash="9c736404ce39" blob="db3e92ccd653" */}
 
 模块求值时调用 `app.exit(1)` 会当场结束进程，后面的代码不再执行，所以求值时的几项检查失败之后不用另外阻止往下走（本机 Electron 44 实测，见[内核删掉四处兜底](/trajectory/2026-09-25-kernel-drop-fallbacks)）。home 缺文件时报错写明缺哪个、由谁准备：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="114-119" hash="0066ba403eca" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="115-120" hash="0066ba403eca" blob="db3e92ccd653" */}
 
 插件和内核在同一个进程里。内核对未捕获的异常和没人处理的 rejection 只写一行名字为 `kernel` 的 error，不退出（[两个进程合并为一个](/trajectory/2026-09-09-single-process)）；插件自己加载失败由 cordis 记在它的条目上，挂载日志与只读状态页上看得到。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="197-199" hash="01aedbee110d" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="209-211" hash="01aedbee110d" blob="db3e92ccd653" */}
 
 ## 退出
 
@@ -57,7 +57,7 @@ description: 内核从被启动器加载到页面交给外壳的每一步、分�
 
 <QuitCleanupCases />
 
-{/* ref file="../apps/desktop/src/main.ts" lines="379-402" hash="a8eb09335cb7" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="391-414" hash="a8eb09335cb7" blob="db3e92ccd653" */}
 
 - **等到清理结束要内核和插件都做到**：内核 `dispose()` 之后还要 `await()`，才等得到嵌套的异步清理；插件要把清理的 promise 从 effect 的清理函数里**返回**出来。少做一方，退出日志一切正常，子进程却还在运行（[退出收尾：内核等、插件返回](/trajectory/2026-09-12-quit-dispose-two-halves)）
 - **最多等 5 秒**：某个插件的清理卡住时，到 5 秒就不再等它、照常退出；清理中抛出的错误只写一行 warn
@@ -70,20 +70,20 @@ Electron 被强制结束或崩溃时，任何清理都来不及执行，插件�
 
 `apps/desktop/tests/main.test.ts` 把 electron 换成假的、cordis 与 loader 用真的，覆盖 ready 之后的顺序与「up」那一行、启动失败的各种情况、未捕获异常不退出、退出时先卸载插件树再放行。真实窗口的显示、插件清理超过 5 秒时照常退出、插件的子进程是否都已结束，只能在隔离 home 里实机验证（[开发](/docs/develop)）。
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="598-611" hash="300f176a78a8" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="644-657" hash="300f176a78a8" blob="49dcfb3b680a" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="613-622" hash="bae089bbfeec" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="659-668" hash="bae089bbfeec" blob="49dcfb3b680a" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="395-408" hash="0c1f7d502bdd" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="400-413" hash="0c1f7d502bdd" blob="49dcfb3b680a" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="431-448" hash="a165d343880c" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="436-453" hash="a165d343880c" blob="49dcfb3b680a" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="532-537" hash="2b0780be4508" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="578-583" hash="2b0780be4508" blob="49dcfb3b680a" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="560-570" hash="314ce52e3de8" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="606-616" hash="314ce52e3de8" blob="49dcfb3b680a" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="696-708" hash="45fdf0abbd7c" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="742-754" hash="45fdf0abbd7c" blob="49dcfb3b680a" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="840-851" hash="396b3730cd3a" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="886-897" hash="396b3730cd3a" blob="49dcfb3b680a" */}
 
-{/* ref file="../apps/desktop/tests/main.test.ts" lines="853-859" hash="a3f58c40493e" blob="db45edf1e552" */}
+{/* ref file="../apps/desktop/tests/main.test.ts" lines="899-905" hash="a3f58c40493e" blob="49dcfb3b680a" */}

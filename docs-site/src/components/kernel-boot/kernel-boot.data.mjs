@@ -62,7 +62,7 @@ export const steps = [
       highlight: [21, 24],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="50-57" hash="f6dd84bfa472" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="51-58" hash="f6dd84bfa472" blob="db3e92ccd653" */
   {
     title: '模块求值：选定 home、拿锁、打开日志',
     text:
@@ -88,7 +88,7 @@ export const steps = [
       highlight: [53, 54],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="147-151" hash="3c19c4c90a26" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="160-164" hash="3c19c4c90a26" blob="db3e92ccd653" */
   {
     title: '模块求值：检查 home 的两个文件，写 runtime.json',
     text:
@@ -110,7 +110,7 @@ export const steps = [
       highlight: [149, 151],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="266-284" hash="a3aef0339ac9" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="278-296" hash="a3aef0339ac9" blob="db3e92ccd653" */
   {
     title: '模块求值：建 cordis 实例，提供 gwbKernel',
     text:
@@ -146,7 +146,7 @@ export const steps = [
       highlight: [284, 284],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="375-377" hash="8e1b809bcbf4" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="387-389" hash="8e1b809bcbf4" blob="db3e92ccd653" */
   {
     title: '入口模块求值完，Electron 触发 ready',
     text:
@@ -166,7 +166,7 @@ export const steps = [
       highlight: [376, 376],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="358-366" hash="3a901e174df6" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="370-378" hash="3a901e174df6" blob="db3e92ccd653" */
   {
     title: 'ready 之后：开窗口，页面先显示只读状态页',
     text:
@@ -192,7 +192,7 @@ export const steps = [
       highlight: [360, 362],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="349-356" hash="e5fc330ba54d" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="361-368" hash="e5fc330ba54d" blob="db3e92ccd653" */
   {
     title: 'ready 之后：注册 loader，按 cordis.yml 加载插件',
     text:
@@ -243,7 +243,7 @@ export const steps = [
       highlight: [73, 78],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="358-366" hash="3a901e174df6" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="370-378" hash="3a901e174df6" blob="db3e92ccd653" */
   {
     title: 'loader 加载完：写「up」，再推一次状态',
     text:

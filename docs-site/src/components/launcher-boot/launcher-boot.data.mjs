@@ -97,13 +97,13 @@ export const steps = [
     },
   },
   /* ref file="../apps/launcher/src/launch-plan.ts" lines="38-52" hash="326602de0f8a" blob="7dff040f70bd" */
-  /* ref file="../apps/desktop/package.json" lines="3-3" hash="8b8e72319506" blob="df73ceac0ed7" */
+  /* ref file="../apps/desktop/package.json" lines="3-3" hash="8a14e97c8586" blob="fab53490ba27" */
   /* ref file="../apps/desktop/package.json" lines="8-8" hash="3f8ef1581707" blob="df73ceac0ed7" */
   /* ref file="../apps/desktop/package.json" lines="34-36" hash="d14faf1367c1" blob="df73ceac0ed7" */
   {
     title: '比 Electron 版本，找入口',
     text:
-      '内核包 0.10.0 的清单写着 engines.electron 是 ^44.1.1，安装包带的 44.1.1 在范围里；main 是 dist/main.js，入口就是内核包目录下的这个文件。' +
+      '内核包 0.10.1 的清单写着 engines.electron 是 ^44.1.1，安装包带的 44.1.1 在范围里；main 是 dist/main.js，入口就是内核包目录下的这个文件。' +
       '没声明范围、版本不满足、没有 main，各回一句说明原因的话。',
     lit: ['plan', 'manifest'],
     shown: ['kernelEntryFor', 'read'],
@@ -157,7 +157,7 @@ export const steps = [
       highlight: [24, 26],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="50-50" hash="c3ca29673cbe" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="51-51" hash="c3ca29673cbe" blob="db3e92ccd653" */
   {
     title: '内核按同一条规则再选一次 home',
     text:

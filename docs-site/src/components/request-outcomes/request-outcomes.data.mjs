@@ -58,7 +58,7 @@ export const cases = [
     pageKind: 'reject',
     handlerRan: true,
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="287-287" hash="260198c4b1d9" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="299-299" hash="260198c4b1d9" blob="db3e92ccd653" */
   {
     id: 'not-top',
     label: '发送方不是顶层框架',

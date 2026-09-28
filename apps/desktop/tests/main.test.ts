@@ -17,7 +17,7 @@ vi.mock('electron', () => ({
 
 interface ProbeRecord {
   kernel?: GwbKernelApi
-  logger?: { error(...args: unknown[]): void; warn(message: string): void }
+  logger?: { error(...args: unknown[]): void; warn(message: string): void; info(message: string): void; debug(message: string): void }
   events: string[]
 }
 const probeGlobal = globalThis as typeof globalThis & { __gwbMainTestProbe?: ProbeRecord }
@@ -209,6 +209,8 @@ function listenersAddedSince(before: Map<string, Set<unknown>>): [string, (...ar
 
 interface BootOptions extends Omit<FakeElectronOptions, 'appData'> {
   gwbHome: string
+  /** 环境变量 GWB_DEBUG；不给就删掉，不受跑测试的终端里设的值影响 */
+  gwbDebug?: string
   appData?: string
   resolveReady?: boolean
 }
@@ -239,6 +241,8 @@ async function importMain(options: BootOptions): Promise<BootedKernel> {
   const electron = makeFakeElectron({ ...options, appData })
   harness.electron = electron.module
   process.env.GWB_HOME = options.gwbHome
+  if (options.gwbDebug === undefined) delete process.env.GWB_DEBUG
+  else process.env.GWB_DEBUG = options.gwbDebug
   const before = listenerSnapshot()
   vi.resetModules()
   try {
@@ -358,6 +362,7 @@ afterEach(() => {
   stderrWrite?.mockRestore()
   stderrWrite = undefined
   delete process.env.GWB_HOME
+  delete process.env.GWB_DEBUG
   delete probeGlobal.__gwbMainTestProbe
   // main.ts 退出时不关日志文件，这里替它关，临时目录才删得掉
   for (const descriptor of openedDescriptors.splice(0)) fs.closeSync(descriptor)
@@ -468,6 +473,47 @@ describe('main.ts：日志文件', () => {
     const stderrText = stderrSpy.mock.calls.map((call) => String(call[0])).join('')
     expect(stderrText).toMatch(/\d{4}-\d\d-\d\dT[\d:.]+Z error probe 探针插件的第一行\n探针插件的第二行\n/)
     await quitAndWaitForCleanup(booted)
+  })
+
+  it('默认不写 debug：文件与终端都只有 info 及以上', async () => {
+    const stderrSpy = silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins() })
+    probeGlobal.__gwbMainTestProbe.logger!.debug('探针插件的调试')
+    probeGlobal.__gwbMainTestProbe.logger!.info('探针插件的普通话')
+    booted.electron.windows[0]!.webContents.events.emit('console-message', { level: 'debug', message: '页面说了一句调试' })
+    const log = booted.readLog()
+    expect(log).toContain('info probe 探针插件的普通话')
+    expect(log).not.toContain('探针插件的调试')
+    expect(log).not.toContain('页面说了一句调试')
+    expect(stderrSpy.mock.calls.map((call) => String(call[0])).join('')).not.toContain('调试')
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('GWB_DEBUG 点名的 logger 连 debug 也写，没点名的照旧不写', async () => {
+    silenceStderr()
+    probeGlobal.__gwbMainTestProbe = { events: [] }
+    const booted = await bootUntilUp({ gwbHome: fakeHomeWithPlugins(), gwbDebug: 'probe' })
+    probeGlobal.__gwbMainTestProbe.logger!.debug('探针插件的调试')
+    booted.electron.windows[0]!.webContents.events.emit('console-message', { level: 'debug', message: '页面说了一句调试' })
+    const log = booted.readLog()
+    expect(log).toContain('debug probe 探针插件的调试')
+    expect(log).not.toContain('页面说了一句调试')
+    await quitAndWaitForCleanup(booted)
+  })
+
+  it('GWB_DEBUG 写错就启动失败：对话框与日志写明给的原值，不写 runtime.json', async () => {
+    silenceStderr()
+    const home = homeWithRequiredFiles()
+    await expect(importMain({ gwbHome: home, gwbDebug: 'probe,' })).rejects.toThrow('GWB_DEBUG 给的是 "probe,"')
+    const electron = harness.electron as { app: { exit: Mock }; dialog: { showErrorBox: Mock } }
+    expect(electron.app.exit).toHaveBeenCalledWith(1)
+    const [title, body] = electron.dialog.showErrorBox.mock.calls[0] as [string, string]
+    expect(title).toBe('gwb 启动失败')
+    expect(body).toContain('GWB_DEBUG 给的是 "probe,"：逗号之间不能是空的')
+    const logText = fs.readFileSync(path.join(fs.realpathSync.native(home), 'gwb.log'), 'utf8')
+    expect(logText).toContain('启动失败：GWB_DEBUG 给的是')
+    expect(fs.existsSync(path.join(home, 'runtime.json'))).toBe(false)
   })
 })
 
@@ -623,7 +669,7 @@ describe('main.ts：启动', () => {
 
   it('页面 console 进 cordis 日志，名字是 renderer，warning 记成 warn', async () => {
     silenceStderr()
-    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles() })
+    const booted = await bootUntilUp({ gwbHome: homeWithRequiredFiles(), gwbDebug: 'renderer' })
     const window = booted.electron.windows[0]!
     window.webContents.events.emit('console-message', { level: 'warning', message: '页面说了一句警告' })
     window.webContents.events.emit('console-message', { level: 'error', message: '页面说了一句错误' })

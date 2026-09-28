@@ -46,7 +46,7 @@ export const steps = [
       highlight: [48, 48],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="256-264" hash="06deb6d70bd0" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="268-276" hash="06deb6d70bd0" blob="db3e92ccd653" */
   {
     title: '插件加载中，状态页跟着刷新',
     text:
@@ -71,7 +71,7 @@ export const steps = [
       ],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="273-283" hash="22635bb98b06" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="285-295" hash="22635bb98b06" blob="db3e92ccd653" */
   {
     title: '外壳插件登记模块、交出地址',
     text:

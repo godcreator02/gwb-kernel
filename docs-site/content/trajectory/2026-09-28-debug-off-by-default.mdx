@@ -1,0 +1,32 @@
+---
+title: debug 默认不写进 gwb.log，GWB_DEBUG 按 logger 名打开
+born-at: 2026-09-28T13:45
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: debug 默认关
+domain: 日志
+---
+
+## 背景
+
+内核的 exporter 一直收所有级别。default home 的 `gwb.log` 在 2026-09-28 00:07 到 13:13（本地时间）这 13 个小时里写了 2.7 MB、约 1.95 万行：debug 13846 行，几乎全是命令总线的「命令 X 执行完成」，日志窗格开着时每秒一行「命令 logger.query 执行完成」；warn 与 error 一共 58 行。`gwb.log` 只留当前一份和一份 `.1`，刷得越快，几天前的 error 越早被挤掉。用户看了窗格里的日志：
+
+> 这个日志全都显示没有意义吧
+
+讨论中先提过「debug 写另一个文件、error 与 warn 单独长期保存」，用户认为方向不对：
+
+> 那还是不对。看看成熟软件里的日志都是咋设计的
+
+对照的几家：VS Code 默认级别是 Info，debug 与 trace 要用户用「Set Log Level」打开，可以只开某个扩展；JetBrains 的 `idea.log` 默认 INFO，「Debug Log Settings」按类别打开 debug；npm 的 `debug` 包用环境变量 `DEBUG=名字` 点名打开；macOS 统一日志的 debug 默认不采集；systemd journald 按服务限速。共同点是 debug 默认不落盘、需要时按组件打开。以上是按这些软件公开文档与源码的记忆写的，当时没有逐条核对原文。用户选了推荐方案：
+
+> 按你推荐
+
+## 结论与边界
+
+exporter 的 `levels` 默认是 info（cordis 的 2），`gwb.log` 与终端都只有 info 及以上。启动时环境变量 `GWB_DEBUG` 写逗号分隔的 logger 名，点名的那几个连 debug 也写；名字要写全，不认通配。逗号之间是空的、写了 cordis 级别表的保留项 `default`，都启动失败；名字格式对但不存在的不报错，因为启动时插件还没加载，内核认不出哪些名字存在。
+
+选环境变量而不是运行中切换：cordis 的 exporter 本来就按 logger 名查 `levels`，环境变量只需要在内核里填这张表；运行中切换要给插件开一个改级别的接口，是改注入契约，等真觉得重启麻烦了再加。
+
+不做的：error 与 warn 单独长期保存（去掉 debug 与命令成功的 info 之后，按上面的数据每天约 0.8 MB，128 MB 能留约五个月，挤掉 error 的原因已经没了）；debug 放内存缓冲、出错时写出前文（macOS 的做法，成本高，而挂载、卸载、失败这些 info 行已经能说明出错前在做什么）；按来源限速（这 13 个小时里没有刷屏，留到真出现时再做）。
+
+同一天命令总线把命令执行成功从 info 降到 debug、只读命令的成功不再记，见基础插件仓的轨迹卡。

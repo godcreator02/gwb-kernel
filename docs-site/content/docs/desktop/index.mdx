@@ -40,11 +40,11 @@ full: true
 
 内核里这个对象就是这样实现的：每个方法都只转给 `requests.ts`、`browser-imports.ts` 或当前窗口，`setShell` 每次都立刻推一次整份外壳状态，撤销只在自己仍是当前外壳时清空。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="266-284" hash="a3aef0339ac9" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="278-296" hash="a3aef0339ac9" blob="db3e92ccd653" */}
 
 内核在 cordis 的 `Context` 类型上只声明了这一项：
 
-{/* ref file="../apps/desktop/src/main.ts" lines="34-39" hash="be944b791f8f" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="35-40" hash="be944b791f8f" blob="db3e92ccd653" */}
 
 ### 给页面的 `window.gwb`
 
@@ -85,9 +85,9 @@ full: true
 
 {/* ref file="../apps/desktop/package.json" lines="34-36" hash="d14faf1367c1" blob="df73ceac0ed7" */}
 
-启动内核的人或程序经两项参数控制它：环境变量 `GWB_HOME`（用哪个 home，规则见「功能」第一条；从安装版启动时启动器已经把它换成了绝对路径），命令行开关 `--remote-debugging-port`（Chromium 调试端口，开了就记进 `runtime.json`，给的不是 1–65535 的整数时启动失败）。
+启动内核的人或程序经三项参数控制它：环境变量 `GWB_HOME`（用哪个 home，规则见「功能」第一条；从安装版启动时启动器已经把它换成了绝对路径），环境变量 `GWB_DEBUG`（哪几个 logger 的 debug 也写进日志，写法见[日志](/docs/desktop/log)，写错时启动失败），命令行开关 `--remote-debugging-port`（Chromium 调试端口，开了就记进 `runtime.json`，给的不是 1–65535 的整数时启动失败）。
 
-{/* ref file="../apps/desktop/src/main.ts" lines="147-151" hash="3c19c4c90a26" blob="b613d37fa683" */}
+{/* ref file="../apps/desktop/src/main.ts" lines="160-164" hash="3c19c4c90a26" blob="db3e92ccd653" */}
 
 ## 依赖
 

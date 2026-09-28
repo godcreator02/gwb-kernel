@@ -34,9 +34,9 @@ export const steps = [
       { from: 'launcher', to: 'main', label: 'import(main)', seam: 1 },
     ],
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="50-63" hash="2cf16ed46b50" blob="b613d37fa683" */
-  /* ref file="../apps/desktop/src/main.ts" lines="105-119" hash="eddcba4adb21" blob="b613d37fa683" */
-  /* ref file="../apps/desktop/src/main.ts" lines="147-151" hash="3c19c4c90a26" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="51-64" hash="2cf16ed46b50" blob="db3e92ccd653" */
+  /* ref file="../apps/desktop/src/main.ts" lines="106-120" hash="eddcba4adb21" blob="db3e92ccd653" */
+  /* ref file="../apps/desktop/src/main.ts" lines="160-164" hash="3c19c4c90a26" blob="db3e92ccd653" */
   {
     title: '内核准备 home',
     text:
@@ -49,9 +49,9 @@ export const steps = [
       { from: 'main', to: 'home', label: '写 runtime.json', seam: 12 },
     ],
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="153-155" hash="c80508e65041" blob="b613d37fa683" */
-  /* ref file="../apps/desktop/src/main.ts" lines="284-294" hash="3b1194ad1282" blob="b613d37fa683" */
-  /* ref file="../apps/desktop/src/main.ts" lines="358-362" hash="177f922bd078" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="166-168" hash="c80508e65041" blob="db3e92ccd653" */
+  /* ref file="../apps/desktop/src/main.ts" lines="296-306" hash="3b1194ad1282" blob="db3e92ccd653" */
+  /* ref file="../apps/desktop/src/main.ts" lines="370-374" hash="177f922bd078" blob="db3e92ccd653" */
   {
     title: '建 cordis 实例，打开窗口',
     text:
@@ -65,7 +65,7 @@ export const steps = [
       { from: 'main', to: 'page', label: 'gwb:shell { url: null, report }', seam: null },
     ],
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="349-356" hash="e5fc330ba54d" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="361-368" hash="e5fc330ba54d" blob="db3e92ccd653" */
   /* ref file="../apps/desktop/src/bare-import.ts" lines="10-18" hash="a38ff6e7d777" blob="a03471e3e333" */
   {
     title: '加载 cordis.yml 里的插件',
@@ -79,7 +79,7 @@ export const steps = [
       { from: 'cordis', to: 'plugins', label: 'apply(ctx)', seam: 4 },
     ],
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="273-282" hash="90d67a6739aa" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="285-294" hash="90d67a6739aa" blob="db3e92ccd653" */
   /* ref file="../apps/desktop/src/index.html" lines="71-78" hash="21a222533841" blob="27f4d97bcf1c" */
   {
     title: '外壳插件接管页面',
@@ -95,7 +95,7 @@ export const steps = [
     ],
   },
   /* ref file="../apps/desktop/src/preload.cjs" lines="38-42" hash="acee284069bd" blob="97b2299ef0dc" */
-  /* ref file="../apps/desktop/src/main.ts" lines="286-289" hash="95573aa880ff" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="298-301" hash="95573aa880ff" blob="db3e92ccd653" */
   /* ref file="../apps/desktop/src/requests.ts" lines="25-30" hash="fe3d88f4430d" blob="2041dd1920e9" */
   {
     title: '页面调一条命令',
@@ -109,12 +109,12 @@ export const steps = [
       { from: 'main', to: 'page', label: '{ available: true, value }', seam: 9 },
     ],
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="176-184" hash="02b49b6c7079" blob="b613d37fa683" */
-  /* ref file="../apps/desktop/src/main.ts" lines="340-342" hash="cb8cdc7db26f" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="189-196" hash="d00c19984ea4" blob="db3e92ccd653" */
+  /* ref file="../apps/desktop/src/main.ts" lines="352-354" hash="cb8cdc7db26f" blob="db3e92ccd653" */
   {
     title: '一路上的日志',
     text:
-      '插件经 ctx.logger 写的日志、内核自己的日志、页面 console 的输出都进 cordis 的同一条日志流；内核注册的 exporter 把每一条写成 gwb.log 里的一行 JSON，同时往 stderr 写一行文本。' +
+      '插件经 ctx.logger 写的日志、内核自己的日志、页面 console 的输出都进 cordis 的同一条日志流；内核注册的 exporter 把 info 及以上的每一条（GWB_DEBUG 点名的 logger 连 debug）写成 gwb.log 里的一行 JSON，同时往 stderr 写一行文本。' +
       'error 还会在 200 毫秒内触发一次外壳状态推送，没有外壳时它显示在只读状态页上。',
     messages: [
       { from: 'plugins', to: 'main', label: 'ctx.logger(名字).info(…)', seam: 10 },

@@ -49,7 +49,7 @@ export const cases = [
     record: { ts: '2026-09-27T14:00:01.000Z', level: 'error', name: 'gwb-demo', msg: '第一行\n第二行' },
     pushes: true,
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="297-302" hash="e6573ba774b5" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="309-314" hash="e6573ba774b5" blob="db3e92ccd653" */
   {
     id: 'renderer',
     label: '页面 console.warn',
@@ -87,7 +87,7 @@ export const cases = [
     },
     pushes: true,
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="186-193" hash="5ee69982453f" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="198-205" hash="5ee69982453f" blob="db3e92ccd653" */
   {
     id: 'unformattable',
     label: '参数格式化不了',
@@ -98,7 +98,7 @@ export const cases = [
     record: { ts: '2026-09-27T14:00:05.000Z', level: 'error', name: 'gwb-demo', msg: '带循环引用的错 [object Object]' },
     pushes: true,
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="105-108" hash="15d5f409766e" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="106-109" hash="15d5f409766e" blob="db3e92ccd653" */
   {
     id: 'before-cordis',
     label: 'cordis 实例建好之前',

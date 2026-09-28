@@ -65,6 +65,21 @@ export const cases = [
     },
   },
   {
+    id: 'gwb-debug',
+    label: 'GWB_DEBUG 写错',
+    when: '模块求值时',
+    text:
+      '环境变量 GWB_DEBUG 逗号之间是空的（比如末尾多一个逗号），或写了 cordis 级别表的保留项 default：启动失败，报错带着给的原值，runtime.json 不写。' +
+      '名字写错了但格式对的不报错：启动时插件还没加载，内核认不出哪些 logger 名存在，那个名字只是没有日志。',
+    outcomes: {
+      stderr: { tone: 'info', text: '一行 error' },
+      log: { tone: 'info', text: '同一行' },
+      dialog: { tone: 'info', text: '给的原值' },
+      runtime: { tone: null, text: '不写' },
+      exit: { tone: 'bad', text: '退出码 1' },
+    },
+  },
+  {
     id: 'port',
     label: '调试端口给错',
     when: '模块求值时',

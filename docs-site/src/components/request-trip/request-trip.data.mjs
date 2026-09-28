@@ -91,7 +91,7 @@ export const steps = [
       highlight: [39, 39],
     },
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="286-289" hash="95573aa880ff" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="298-301" hash="95573aa880ff" blob="db3e92ccd653" */
   {
     title: '只收顶层框架，按通道名找处理器',
     text:

@@ -126,7 +126,7 @@ const seams = [
     via: 'disk',
     text: '启动器按和内核同一条规则选定 home、把绝对路径写回 GWB_HOME，读 home 里内核包的清单：当前 Electron 在 engines.electron 的范围里、有 main，才 import 入口；否则弹框退出。两边之间没有代码接口，只靠这份约定。',
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="349-356" hash="e5fc330ba54d" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="361-368" hash="e5fc330ba54d" blob="db3e92ccd653" */
   /* ref file="../apps/desktop/package.json" lines="37-43" hash="9afff01b3cb1" blob="df73ceac0ed7" */
   {
     n: 2,
@@ -138,7 +138,7 @@ const seams = [
     via: 'code',
     text: '内核建 cordis 实例、把 home 设成模块解析起点、注册 loader，把 loader 的包名 import 换成按 home 解析，再把 include 交给 loader。cordis 写在内核包的 peer 里，loader 与 include 写在依赖里，版本都写死。',
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="45-46" hash="a753fc87f52c" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="46-47" hash="a753fc87f52c" blob="db3e92ccd653" */
   /* ref file="../apps/desktop/src/bare-import.ts" lines="10-13" hash="84fcae22dd01" blob="a03471e3e333" */
   {
     n: 3,
@@ -217,7 +217,7 @@ const seams = [
     via: 'code',
     text: '页面上只注入 window.gwb 一个对象，背后是 gwb:request、gwb:imports、gwb:event、gwb:shell、gwb:hello 几个 IPC 通道，两端都在内核包里。内核同时保证页面边界：主框架只能是内核的 index.html，新窗口一律不开，http、https 链接交给系统浏览器。',
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="176-184" hash="02b49b6c7079" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="189-196" hash="d00c19984ea4" blob="db3e92ccd653" */
   {
     n: 10,
     name: '写日志',
@@ -226,7 +226,7 @@ const seams = [
     iface: 'ctx.logger(名字).info / warn / error / debug；页面 console 记成名字 renderer',
     convention: false,
     via: 'code',
-    text: '插件、内核自己、页面 console 都写进 cordis 的同一条日志流，内核注册唯一的 exporter 收下每一条。每个插件条目加载成功、加载失败各有一行 loader 日志，条目树安定后写一行汇总。',
+    text: '插件、内核自己、页面 console 都写进 cordis 的同一条日志流，内核注册唯一的 exporter，默认收下 info 及以上的每一条，环境变量 GWB_DEBUG 点名的 logger 连 debug 也收。每个插件条目加载成功、加载失败各有一行 loader 日志，条目树安定后写一行汇总。',
   },
   /* ref file="../apps/desktop/src/log-record.ts" lines="28-31" hash="fa06eefeb6ed" blob="9e005a2aef22" */
   {
@@ -239,7 +239,7 @@ const seams = [
     via: 'disk',
     text: '内核把每一条日志写成 gwb.log 里的一行 JSON，五个键、顺序固定；同一条另写一份文本到 stderr。基础界面（logger.query 与日志窗格）、devkit、人按行读这个文件，内核不提供查询。',
   },
-  /* ref file="../apps/desktop/src/main.ts" lines="128-145" hash="a7ec7254b2ed" blob="b613d37fa683" */
+  /* ref file="../apps/desktop/src/main.ts" lines="141-158" hash="a7ec7254b2ed" blob="db3e92ccd653" */
   {
     n: 12,
     name: 'runtime.json',

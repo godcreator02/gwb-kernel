@@ -23,7 +23,7 @@ export const checks = [
 /* ref file="../apps/launcher/src/launch-plan.ts" lines="20-26" hash="2962b220b3fd" blob="7dff040f70bd" */
 /* ref file="../apps/launcher/src/main.ts" lines="7-12" hash="3f735c49f055" blob="f6547781d717" */
 /* ref file="../apps/launcher/src/main.ts" lines="24-26" hash="24e21848e8c2" blob="f6547781d717" */
-/* ref file="../apps/desktop/package.json" lines="3-3" hash="8b8e72319506" blob="df73ceac0ed7" */
+/* ref file="../apps/desktop/package.json" lines="3-3" hash="8a14e97c8586" blob="fab53490ba27" */
 /* ref file="../apps/desktop/package.json" lines="8-8" hash="3f8ef1581707" blob="df73ceac0ed7" */
 /* ref file="../apps/desktop/package.json" lines="34-39" hash="3daa60be1e2f" blob="df73ceac0ed7" */
 /**
@@ -36,7 +36,7 @@ export const cases = [
     label: '装好了',
     text:
       '照 INSTALL.md 装好的 default：清单里 engines.electron 是 ^44.1.1、main 是 dist/main.js。清单的几道检查都过，启动器 import 内核入口、没有抛错，窗口、插件、日志从这里起都由内核负责。',
-    manifest: ['{', '  "name": "@godcreator/gwb-kernel-desktop",', '  "version": "0.10.0",', '  "main": "dist/main.js",', '  "engines": { "electron": "^44.1.1" },', '  …', '}'],
+    manifest: ['{', '  "name": "@godcreator/gwb-kernel-desktop",', '  "version": "0.10.1",', '  "main": "dist/main.js",', '  "engines": { "electron": "^44.1.1" },', '  …', '}'],
     stopAt: null,
     message: null,
   },
@@ -87,7 +87,7 @@ export const cases = [
     label: '入口 import 失败',
     text:
       '清单全对，但 import 内核入口时抛错，比如 home 根上没装 cordis：内核把 cordis 写成 peer，按 home 解析找不到它。启动器把错误的调用栈原样放进弹框，同样退出码 1。',
-    manifest: ['{', '  "version": "0.10.0",', '  "main": "dist/main.js",', '  "engines": { "electron": "^44.1.1" },', '  "peerDependencies": { "cordis": "4.0.0-rc.10" }', '}'],
+    manifest: ['{', '  "version": "0.10.1",', '  "main": "dist/main.js",', '  "engines": { "electron": "^44.1.1" },', '  "peerDependencies": { "cordis": "4.0.0-rc.10" }', '}'],
     stopAt: 'import',
     message: '内核启动失败：<import 抛的错误与调用栈>',
   },
