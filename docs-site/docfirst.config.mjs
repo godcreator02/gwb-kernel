@@ -8,7 +8,7 @@
  * outputs 把正本映射到生成物：仓根 README.md / AGENTS.md / INSTALL.md / CLAUDE.md 由 `content/docs/outputs/` 下的
  * 同名 mdx 生成。改正本后运行 `pnpm doc:render`，正本与生成物放进同一个提交。生成正本按原文渲染，里面不能用 JSX 组件。
  *
- * components 是组件名册，fumadocsRoster 给 fumadocs 自带文件树 Files / Folder / File 与 Note 的压平规则，
+ * components 是组件名册，fumadocsRoster 给出 fumadocs 自带文件树 Files / Folder / File 与 Note 的机读规则，
  * 站里自己加的组件在它后面追加。
  */
 import { fumadocsRoster } from '@godcreator/docfirst-workflow/fumadocs/roster'

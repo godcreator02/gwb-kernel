@@ -1,6 +1,6 @@
 ---
 title: 页面入口
-description: 内核的页面 index.html 在窗口打开后先显示什么（只读状态页、外壳起不来时的状态页），怎么把 #root 交给调用 setShell 的外壳插件；浏览器模块怎么由插件经 registerImports 登记、页面经 prepareImports 注入 importmap（内核只提供机制、不带 React）；页面导航锁与外链交给系统浏览器
+description: 内核的页面 index.html 在窗口打开后先显示什么（只读状态页、外壳启动失败时的状态页），怎么把 #root 交给调用 setShell 的外壳插件；浏览器模块怎么由插件经 registerImports 登记、页面经 prepareImports 注入 importmap（内核只提供机制、不带 React）；页面导航锁与外链交给系统浏览器
 ---
 
 内核的页面只有一个 `index.html`：一个空的 `#root` 和一段脚本。它自己只会画一种东西——只读状态页；真正的界面由调用 `setShell` 的外壳插件接管。
@@ -10,7 +10,7 @@ description: 内核的页面 index.html 在窗口打开后先显示什么（只�
 
 ## 只读状态页
 
-没有插件调用 `setShell`，或外壳起不来（import 失败、默认导出不是函数、`prepareImports` 拒绝）时，页面入口在 `#root` 上画一页纯文本、没有按钮的状态页：
+没有插件调用 `setShell`，或外壳启动失败（import 失败、默认导出不是函数、`prepareImports` 拒绝）时，页面入口在 `#root` 上画一页纯文本、没有按钮的状态页：
 第一句说明是哪种情况，然后是 home 的路径、每个条目一行（id、包名、加载到哪一步：PENDING 带还缺哪个服务，FAILED 带错误的第一行，没有 fiber 的指向错误行）、
 最近 20 行 error 与 warn 日志。数据是主进程随 `gwb:shell` 一起推来的 `report`：
 
@@ -19,7 +19,7 @@ description: 内核的页面 index.html 在窗口打开后先显示什么（只�
 {/* ref file="../apps/desktop/src/main.ts" lines="41-42" hash="aa246cf23ed2" blob="b613d37fa683" */}
 
 状态页只陈述内核手里已有的数据：不分析失败原因、不重试、不放按钮，这些要认识具体的插件，归外壳和插件管理的窗格
-（[外壳没上来时的阶段页](/trajectory/2026-09-08-stage-page)）。`report` 只给内核自己的页面入口用，不在契约里：`GwbWindowApi` 里 `onShell` 的参数类型只写了 `url`。
+（[外壳没启动成功时的阶段页](/trajectory/2026-09-08-stage-page)）。`report` 只给内核自己的页面入口用，不在契约里：`GwbWindowApi` 里 `onShell` 的参数类型只写了 `url`。
 
 窗口底色 `#151518` 与 `index.html` 的 html 背景、安装包图标的底色是同一个值，窗口创建到第一帧、整页重新加载的第一帧露出来的都是这个颜色，不闪白；改底色时三处一起改。
 
@@ -90,7 +90,7 @@ React 由外壳插件打包、登记，升级 React 发外壳插件就够，不�
 
 ## 页面导航锁与外链
 
-页面能调用任何插件登记的请求通道，所以内核在页面这一侧守一条边界：主框架只可能是内核包里的 `index.html`，工作台不开第二个窗口
+页面能调用任何插件登记的请求通道，所以内核在页面这一侧设了一条边界：主框架只可能是内核包里的 `index.html`，工作台不开第二个窗口
 （[页面边界](/trajectory/2026-09-25-page-navigation-lock)、[网页链接交给系统浏览器](/trajectory/2026-09-25-open-external-links)）。
 
 | 页面上发生的事 | 结果 |

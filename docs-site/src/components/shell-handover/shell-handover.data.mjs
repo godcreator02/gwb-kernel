@@ -238,7 +238,7 @@ export const steps = [
   },
   /* ref file="../apps/desktop/src/index.html" lines="79-85" hash="e13a95ad7561" blob="27f4d97bcf1c" */
   {
-    title: '外壳起不来：回到状态页，不白屏',
+    title: '外壳启动失败：回到状态页，不白屏',
     text:
       'import 抛错、默认导出不是函数、prepareImports 拒绝，页面入口都画只读状态页，第一句写「外壳启动失败：原因」，并打一行 console.error（它经页面日志进 gwb.log）。' +
       '要求整页重载的那种不打 console.error：那是提供方更新时的正常过渡。同一个失败地址再推来只更新状态页，不再重试、不再打日志，否则 error 日志触发推送、推送又触发重试，会一直循环。',
