@@ -4,7 +4,7 @@
  * 下面是这一步对应的源码。讲解文字与源码在 home-load.data.mjs。磁盘一侧用琥珀色，内核与条目树用蓝色。
  */
 import type { JSX } from 'react';
-import { Dot, Pane, Stepper } from '@godcreator/explainer-player';
+import { Dot, Pane, Stepper } from '@godcreator/docfirst-explainer';
 import { CodeBlock } from '../desktop-lanes/lanes';
 import { diskLines, steps } from './home-load.data.mjs';
 import './home-load.css';

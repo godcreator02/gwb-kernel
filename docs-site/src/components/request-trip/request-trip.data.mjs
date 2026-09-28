@@ -6,7 +6,7 @@
 
 /**
  * 参与者：页面上的代码琥珀色，preload 紫色，内核主进程蓝色，登记通道的命令插件绿色
- * @type {{ id: string, name: string, sub: string, role: import('@godcreator/explainer-player').Role }[]}
+ * @type {{ id: string, name: string, sub: string, role: import('@godcreator/docfirst-explainer').Role }[]}
  */
 export const actors = [
   { id: 'client', name: '页面上的代码', sub: '命令插件的页面客户端', role: 'amber' },

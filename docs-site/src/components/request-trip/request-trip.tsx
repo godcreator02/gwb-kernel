@@ -4,7 +4,7 @@
  * （去程实线、回程虚线），下面给出这一步对应的源码。讲解文字与源码在 request-trip.data.mjs。
  */
 import type { JSX } from 'react';
-import { Stepper } from '@godcreator/explainer-player';
+import { Stepper } from '@godcreator/docfirst-explainer';
 import { CodeBlock, Lanes } from '../desktop-lanes/lanes';
 import type { LaneActor, LaneBand, LaneFlow } from '../desktop-lanes/lanes';
 import { actors, steps } from './request-trip.data.mjs';

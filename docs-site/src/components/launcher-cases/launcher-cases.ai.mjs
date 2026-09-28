@@ -3,7 +3,7 @@
  * 先一段写按顺序的检查，再每种情况一段：清单长什么样、停在哪一道、结果（内核接手或弹框原因与退出码 1）。
  * 这个文件不 import React，docfirst.config.mjs 引它，命令行也能运行。
  */
-import { casesText } from '@godcreator/explainer-player/text';
+import { casesText } from '@godcreator/docfirst-explainer/text';
 import { cases, checks } from './launcher-cases.data.mjs';
 
 export function LauncherCases(_node, { paragraph }) {

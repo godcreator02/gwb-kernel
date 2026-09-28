@@ -4,8 +4,8 @@
  * 跨行的线走行与行之间的空隙；安装程序回到 Electron 的那条走最左的空隙（x=10），Electron 版本比对那条走最右的空隙（x=1150）。
  */
 import { Atom, FileBraces, FileCog, Hammer, ListChecks, Package, PackageOpen, Rocket, SquareTerminal, User, Wrench } from 'lucide-react';
-import { cap } from '@godcreator/explainer-player';
-import type { SeamLayout } from '@godcreator/explainer-player';
+import { cap } from '@godcreator/docfirst-explainer';
+import type { SeamLayout } from '@godcreator/docfirst-explainer';
 
 export const installerLayout: SeamLayout = {
   view: { w: 1160, h: 720 },

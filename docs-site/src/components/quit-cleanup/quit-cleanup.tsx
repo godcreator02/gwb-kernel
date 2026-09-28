@@ -4,8 +4,8 @@
  * 竖线是内核调用 app.quit() 的时刻、虚线是 5 秒上限；下面的终端是这一次退出写出的日志行。讲解文字与数据在 quit-cleanup.data.mjs。
  */
 import type { JSX } from 'react';
-import { CasePicker, Terminal } from '@godcreator/explainer-player';
-import type { TerminalLine } from '@godcreator/explainer-player';
+import { CasePicker, Terminal } from '@godcreator/docfirst-explainer';
+import type { TerminalLine } from '@godcreator/docfirst-explainer';
 import { axisSeconds, cases, cleanupTimeoutSeconds, lanes } from './quit-cleanup.data.mjs';
 import './quit-cleanup.css';
 

@@ -6,7 +6,7 @@
 
 /**
  * 竖线：安装包是琥珀色、内核是蓝色，与首页接缝图一致；包外的东西是灰色
- * @type {{ id: string, name: string, sub: string, role: import('@godcreator/explainer-player').Role }[]}
+ * @type {{ id: string, name: string, sub: string, role: import('@godcreator/docfirst-explainer').Role }[]}
  */
 export const lanes = [
   { id: 'launcher', name: '启动器', sub: 'apps/launcher', role: 'amber' },

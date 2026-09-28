@@ -4,7 +4,7 @@
  * 讲解文字与每格的结果在 boot-failure.data.mjs。
  */
 import type { JSX } from 'react';
-import { CasePicker, Dot, Pill } from '@godcreator/explainer-player';
+import { CasePicker, Dot, Pill } from '@godcreator/docfirst-explainer';
 import { cases, outlets } from './boot-failure.data.mjs';
 import './boot-failure.css';
 

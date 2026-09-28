@@ -4,8 +4,8 @@
  * 从上往下的竖线都避开各框的标题文字，接缝 12 因此从左边接进 runtime.json；接缝 3、12 各有两段，画出了两个读写 home 文件的地方。
  */
 import { Boxes, Cpu, FolderOpen, Monitor, Package, Puzzle, Terminal, User } from 'lucide-react';
-import { cap } from '@godcreator/explainer-player';
-import type { SeamLayout } from '@godcreator/explainer-player';
+import { cap } from '@godcreator/docfirst-explainer';
+import type { SeamLayout } from '@godcreator/docfirst-explainer';
 
 export const systemLayout: SeamLayout = {
   view: { w: 1330, h: 536 },

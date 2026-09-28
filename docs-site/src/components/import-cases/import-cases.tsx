@@ -4,7 +4,7 @@
  * （每段一张卡），下面是结果。主进程一侧蓝色、页面文档紫色；新出现的行绿色，改过的琥珀色，已经对不上的玫红。内容全在 import-cases.data.mjs。
  */
 import type { JSX } from 'react';
-import { CasePicker, Pane, Pill } from '@godcreator/explainer-player';
+import { CasePicker, Pane, Pill } from '@godcreator/docfirst-explainer';
 import { cases } from './import-cases.data.mjs';
 import './import-cases.css';
 

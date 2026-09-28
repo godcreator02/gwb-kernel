@@ -1,6 +1,6 @@
 /*
  * 启动器遇到的几种 home（launcher-cases.tsx）。检查一行一条：通过的是绿色勾、停下的那一道用玫红描出、没走到的淡下去；
- * 弹框用玫红细边框，内核接手用绿色胶囊。颜色都取讲解播放器的角色色与语气色，深浅主题自动切换。
+ * 弹框用玫红细边框，内核接手用绿色胶囊。颜色都取讲解组件包的角色色与语气色，深浅主题自动切换。
  */
 .launcher-cases .lc-grid { display: grid; gap: 12px; }
 @container (min-width: 720px) { .launcher-cases .lc-grid { grid-template-columns: 1fr 1.2fr; } }

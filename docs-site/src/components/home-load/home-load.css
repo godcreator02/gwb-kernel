@@ -1,6 +1,6 @@
 /*
- * 从 GWB_HOME 到插件加载成功（home-load.tsx）。宽屏两张卡并排、窄屏上下排；这一步读写的文件行用琥珀色调淡做底，
- * 条目的状态用讲解播放器的语气色（good 绿、pending 琥珀、info 蓝）。
+ * 从 GWB_HOME 到插件加载成功（home-load.tsx）。宽屏两张卡并排、窄屏上下排；这一步读写的文件行用调淡的琥珀色作背景，
+ * 条目的状态用讲解组件包的语气色（good 绿、pending 琥珀、info 蓝）。
  */
 .home-load { container-type: inline-size; }
 .home-load .hl-panes { display: grid; gap: 12px; min-width: 0; }

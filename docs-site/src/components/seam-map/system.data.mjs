@@ -6,9 +6,9 @@
  * 页面接内核（9），日志与 runtime.json 两份文件（10–12），最后是插件管理改条目与包（13）。
  * 每条接缝在首页有同名的一节，这里的 text 是那一节的概括。坐标不在这里，在 system.layout.ts。
  */
-import { defineSeamGraph } from '@godcreator/explainer-player/seam-graph';
+import { defineSeamGraph } from '@godcreator/docfirst-explainer/seam-graph';
 
-/** @type {import('@godcreator/explainer-player/seam-graph').SeamModule[]} */
+/** @type {import('@godcreator/docfirst-explainer/seam-graph').SeamModule[]} */
 const modules = [
   {
     id: 'page',
@@ -105,13 +105,13 @@ const modules = [
   },
 ];
 
-/** @type {import('@godcreator/explainer-player/seam-graph').SeamEntry[]} */
+/** @type {import('@godcreator/docfirst-explainer/seam-graph').SeamEntry[]} */
 const entries = [
   { id: 'human-ui', name: '人（界面）', to: 'pg-shell' },
   { id: 'human-start', name: '人（开始菜单）', to: 'launcher' },
 ];
 
-/** @type {import('@godcreator/explainer-player/seam-graph').SeamInput[]} */
+/** @type {import('@godcreator/docfirst-explainer/seam-graph').SeamInput[]} */
 const seams = [
   /* ref file="../apps/launcher/src/main.ts" lines="17-19" hash="475fe289ea98" blob="f6547781d717" */
   /* ref file="../apps/desktop/package.json" lines="8-8" hash="3f8ef1581707" blob="df73ceac0ed7" */

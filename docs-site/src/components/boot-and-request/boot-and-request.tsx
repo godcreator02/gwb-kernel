@@ -4,7 +4,7 @@
  * 每一步画出这一步里依次发生的消息；实线带首页接缝图的编号，虚线是内核包内部的 IPC。讲解文字与消息在 boot-and-request.data.mjs。
  */
 import type { JSX } from 'react';
-import { Stepper } from '@godcreator/explainer-player';
+import { Stepper } from '@godcreator/docfirst-explainer';
 import { lanes, steps } from './boot-and-request.data.mjs';
 import './boot-and-request.css';
 

@@ -2,7 +2,7 @@
  * BootFailureCases 在机读版里变成什么：跟画面读同一份数据（boot-failure.data.mjs），每种情况一段话，后面列出五处各自的结果。
  * 这个文件不 import React，docfirst.config.mjs 引它，命令行也能运行。
  */
-import { casesText } from '@godcreator/explainer-player/text';
+import { casesText } from '@godcreator/docfirst-explainer/text';
 import { cases, outlets } from './boot-failure.data.mjs';
 
 export function BootFailureCases(_node, { paragraph }) {

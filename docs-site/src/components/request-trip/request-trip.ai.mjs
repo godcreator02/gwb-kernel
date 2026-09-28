@@ -2,7 +2,7 @@
  * RequestTripSteps 在机读版里变成什么：跟画面读同一份数据（request-trip.data.mjs），每一步一段话，后面跟这一步对应的源码位置。
  * 这个文件不 import React，docfirst.config.mjs 引它，命令行也能运行。
  */
-import { stepsText } from '@godcreator/explainer-player/text';
+import { stepsText } from '@godcreator/docfirst-explainer/text';
 import { steps } from './request-trip.data.mjs';
 
 export function RequestTripSteps(_node, { paragraph }) {

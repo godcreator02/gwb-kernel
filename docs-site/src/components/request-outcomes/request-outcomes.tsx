@@ -4,7 +4,7 @@
  * 页面一侧琥珀色、主进程蓝色；兑现用绿色语气、拒绝用玫红语气。内容全在 request-outcomes.data.mjs。
  */
 import type { JSX } from 'react';
-import { CasePicker, Pane, Pill } from '@godcreator/explainer-player';
+import { CasePicker, Pane, Pill } from '@godcreator/docfirst-explainer';
 import { cases } from './request-outcomes.data.mjs';
 import './request-outcomes.css';
 

@@ -4,7 +4,7 @@
  * 下半张是打包：installer/scripts/build.ps1 读启动器的清单、组装应用目录、调 electron-builder 打出安装程序。
  * 虚线框是启动器与打包脚本里的文件，灰色实线框是包外的东西。坐标在 installer.layout.ts。
  */
-import { defineSeamGraph } from '@godcreator/explainer-player/seam-graph';
+import { defineSeamGraph } from '@godcreator/docfirst-explainer/seam-graph';
 
 export const installerGraph = defineSeamGraph({
   id: 'installer',

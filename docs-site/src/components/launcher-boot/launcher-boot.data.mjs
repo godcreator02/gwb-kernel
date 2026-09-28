@@ -7,7 +7,7 @@
 /* ref file="../apps/launcher/package.json" lines="21-21" hash="f93a571f104b" blob="3837fd0122c5" */
 /**
  * 参与者：启动器的两个文件是蓝色与紫色，home 里的内核包是灰色（包外的东西），Electron 也是灰色
- * @type {{ id: string, name: string, sub: string, role: import('@godcreator/explainer-player').Role }[]}
+ * @type {{ id: string, name: string, sub: string, role: import('@godcreator/docfirst-explainer').Role }[]}
  */
 export const actors = [
   { id: 'exe', name: 'gwb-kernel.exe', sub: 'Electron 44.1.1', role: 'slate' },

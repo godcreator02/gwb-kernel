@@ -4,7 +4,7 @@
  * 右边是 gwb.log 里的那一行 JSON，最后一行说它会不会触发只读状态页的推送。两种格式由数据模块里照内核写法的函数算出。
  */
 import type { JSX } from 'react';
-import { CasePicker, CodeLines, Pane, Pill, Terminal } from '@godcreator/explainer-player';
+import { CasePicker, CodeLines, Pane, Pill, Terminal } from '@godcreator/docfirst-explainer';
 import { cases, fileLineOf, terminalLineOf } from './log-sources.data.mjs';
 import './log-sources.css';
 

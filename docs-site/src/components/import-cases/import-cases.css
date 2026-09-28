@@ -1,6 +1,6 @@
 /*
  * 浏览器模块登记与页面准备的几种情况（import-cases.tsx）。宽屏两张卡并排、窄屏上下排；
- * 行上的标记：新出现绿色、改过琥珀色、已对不上玫红，都取讲解播放器的角色色。
+ * 行上的标记：新出现绿色、改过琥珀色、已对不上玫红，都取讲解组件包的角色色。
  */
 .import-cases { container-type: inline-size; }
 .import-cases .ic-call { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }

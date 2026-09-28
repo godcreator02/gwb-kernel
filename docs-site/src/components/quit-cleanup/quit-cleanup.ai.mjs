@@ -2,7 +2,7 @@
  * QuitCleanupCases 在机读版里变成什么：跟画面读同一份数据（quit-cleanup.data.mjs），每种情况一段话，后面写内核在第几秒调用 app.quit() 与写出的日志行。
  * 这个文件不 import React，docfirst.config.mjs 引它，命令行也能运行。
  */
-import { casesText } from '@godcreator/explainer-player/text';
+import { casesText } from '@godcreator/docfirst-explainer/text';
 import { cases, cleanupTimeoutSeconds } from './quit-cleanup.data.mjs';
 
 export function QuitCleanupCases(_node, { paragraph }) {

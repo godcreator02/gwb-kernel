@@ -4,7 +4,7 @@
  * 走过的打勾、停下的那一道标红、后面的淡下去；最下面是结果：内核接手，或者启动器的弹框与退出码。内容全在 launcher-cases.data.mjs。
  */
 import type { JSX } from 'react';
-import { CasePicker, CodeLines, Pane, Pill } from '@godcreator/explainer-player';
+import { CasePicker, CodeLines, Pane, Pill } from '@godcreator/docfirst-explainer';
 import { cases, checks, manifestFile } from './launcher-cases.data.mjs';
 import './launcher-cases.css';
 

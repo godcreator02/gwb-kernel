@@ -23,8 +23,8 @@ import {
   User,
   Zap,
 } from 'lucide-react';
-import { cap } from '@godcreator/explainer-player';
-import type { SeamLayout } from '@godcreator/explainer-player';
+import { cap } from '@godcreator/docfirst-explainer';
+import type { SeamLayout } from '@godcreator/docfirst-explainer';
 
 export const desktopLayout: SeamLayout = {
   view: { w: 1240, h: 1234 },

@@ -3,7 +3,7 @@
  * 虚线框是 apps/desktop/src/ 下的文件或目录（main.ts 按对外能力拆成三个框），方块是它们对外给的函数；
  * 灰色实线框是包外的启动器、Electron、cordis、插件、home 里的文件与页面上的外壳代码。坐标在 desktop.layout.ts。
  */
-import { defineSeamGraph } from '@godcreator/explainer-player/seam-graph';
+import { defineSeamGraph } from '@godcreator/docfirst-explainer/seam-graph';
 
 export const desktopGraph = defineSeamGraph({
   id: 'desktop',

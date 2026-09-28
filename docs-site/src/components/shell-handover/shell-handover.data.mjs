@@ -6,7 +6,7 @@
 
 /**
  * 参与者：外壳插件绿色，内核主进程蓝色，preload 紫色，页面入口青色，#root 琥珀色
- * @type {{ id: string, name: string, sub: string, role: import('@godcreator/explainer-player').Role }[]}
+ * @type {{ id: string, name: string, sub: string, role: import('@godcreator/docfirst-explainer').Role }[]}
  */
 export const actors = [
   { id: 'plugin', name: '外壳插件', sub: '主进程里的 apply', role: 'emerald' },

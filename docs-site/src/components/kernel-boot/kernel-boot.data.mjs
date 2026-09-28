@@ -6,7 +6,7 @@
 
 /**
  * 参与者：内核的 main.ts 是蓝色，页面是紫色，home 里的文件是绿色，包外的启动器、Electron、cordis、插件、外壳是灰色
- * @type {{ id: string, name: string, sub: string, role: import('@godcreator/explainer-player').Role }[]}
+ * @type {{ id: string, name: string, sub: string, role: import('@godcreator/docfirst-explainer').Role }[]}
  */
 export const actors = [
   { id: 'launcher', name: '启动器', sub: 'apps/launcher', role: 'slate' },

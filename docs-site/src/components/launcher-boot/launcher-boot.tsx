@@ -4,7 +4,7 @@
  * 带里是参与者方块，方块之间是这一步走过的箭头；下面是这一步对应的源码。讲解文字与源码在 launcher-boot.data.mjs。
  */
 import type { JSX } from 'react';
-import { CodeLines, Pane, Pill, Stepper } from '@godcreator/explainer-player';
+import { CodeLines, Pane, Pill, Stepper } from '@godcreator/docfirst-explainer';
 import { actors, bands, steps } from './launcher-boot.data.mjs';
 import './launcher-boot.css';
 
