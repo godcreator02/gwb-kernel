@@ -43,6 +43,6 @@ cd apps\desktop; pnpm start
 
 ## 文档与注释
 
-- **知识随插件发布**，本仓不放说明书：在隔离 home 里验证读 skill「gwb-devkit」，升版本号、发版读「gwb-release」，写文档与轨迹卡读「docfirst-docs」「trajectory」；选型先把需求逐条问清楚（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
+- **知识随插件发布**，本仓不放说明书：在隔离 home 里验证读 skill「gwb-devkit」，升版本号、发版读「gwb-release」，写文档读「docs-writing」，文档检查、确认黄灯、生成仓根文件读「docs-site」，写轨迹卡读「trajectory」；选型先把需求逐条问清楚（`matt-pocock` 的 grill 一节），推荐方案交人决定，决定后写轨迹卡
 - 这份 AGENTS 只放硬约束；为什么、遇到过什么问题写在文档站；代码注释只写现状，**不写文档站的页名或锚点**（要指路写「见文档站」）
 - 仓根 `README.md`、`AGENTS.md`、`INSTALL.md`、`CLAUDE.md` 是生成物，正本在 `docs-site/content/docs/outputs/`，在 `docs-site` 运行 `pnpm doc:render` 生成
