@@ -120,8 +120,10 @@ $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json 
   name: '@godcreator/gwb-devkit'
 - id: mcp
   name: '@godcreator/gwb-mcp'
+- id: plugin-timer
+  name: '@cordisjs/plugin-timer'
 '@)
-& $pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp
+& $pnpm add @godcreator/gwb-commands @godcreator/gwb-data @godcreator/gwb-settings @godcreator/gwb-skills @godcreator/gwb-plugin-manager @godcreator/gwb-shell @godcreator/gwb-baseui @godcreator/gwb-node-cli @godcreator/gwb-devkit @godcreator/gwb-mcp @cordisjs/plugin-timer
 ```
 
 - 内核包与 `cordis` 装完读回核对：`node_modules\@godcreator\gwb-kernel-desktop\package.json` 的 `version` 等于 `$kernel`，
@@ -129,6 +131,7 @@ $cordis = (Get-Content node_modules\@godcreator\gwb-kernel-desktop\package.json 
   （清单里原来写着 `^` 范围时，pnpm 会沿用范围、装上别的版本）。内核与所有插件用的是 home 根上这一份 `cordis`
 - `cordis.yml` 是条目表：一行一个插件，`id` 必须手写（不写的话每次启动都会换一个随机字符串）；内核包与 `cordis` 不是插件，不写进去
 - 命令插件（`gwb-commands`，页面和 MCP 入口的命令都经它执行）与插件管理（`gwb-plugin-manager`，之后装卸、升级插件都经它）是普通插件，和别的插件一样写进 `cordis.yml`、装进 home
+- `@cordisjs/plugin-timer` 是 cordis 官方插件，提供定时器服务 `timer`：协作站、Windows 备份这类插件必需注入它，home 里没有它，这些插件装上以后一直停在等待状态、不会运行
 - 除了内核包与 `cordis`，只装插件、不装库：页面用的 React 随 shell 插件装上，
   设计令牌表随 `gwb-shell` 装上
 - 退出码为 0 就成功。输出里如果有一行 `Issues with peer dependencies found`：说明有插件的 peer 没满足——它用到的某个插件没装，
@@ -223,7 +226,7 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 连上后**先调 `index`**：它返回的 instructions 讲清楚之后怎么使用工作台。再核对：
 
 - `run plugin-manager.list` 返回第 3 步 `cordis.yml` 里的每个插件，各带一个条目、`active: true`；内核包与 `cordis` 不是插件，不在里面。
-  插件的 `kernelUntested` 为 `true` 只是报告：它的 peer 里没写内核包，或写的范围不包含运行中的内核，照常加载，不算失败
+  插件的 `unmetPeers` 里有内核包 `@godcreator/gwb-kernel-desktop` 只是报告：它 peer 里写的范围不包含运行中的内核，照常加载，不算失败
 - `run skill.list` 能列出说明书，至少有 `mcp`、`gwb-commands`、`gwb-plugin-manager`、`gwb-devkit`
 - `run plugin-manager.search` 能列出源上可装的插件——「插件管理」窗格的「可装」栏用的就是它
 
@@ -263,9 +266,9 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
   `run plugin-manager.list` 里它是 `active: true` 就成功了，下一次调 `index` 就能看到它的命令
 - 插件有新版本：`run plugin-manager.update {"all":true}`，成功后 `run shell.reload` 整页重新加载（升级到 `gwb-mcp` 自己时连接会断一次，
   重连后用 `run plugin-manager.list` 核对，再调 `shell.reload`）
-- 内核有新版本：`run plugin-manager.update {"specs":{"@godcreator/gwb-kernel-desktop":"latest"}}`，回执里 `pluginsOutsideRange` 是 peer 范围不包含新内核的插件，告诉用户；
+- 内核有新版本：`run plugin-manager.update {"specs":{"@godcreator/gwb-kernel-desktop":"latest"}}`，
   `restartRequired` 为 `true` 时关掉窗口（用命令行关就对 `runtime.json` 里那个 pid 调 `(Get-Process -Id <pid>).CloseMainWindow()`）→ 从开始菜单重新打开。
-  重启之后 `run plugin-manager.list` 里 `kernelUntested` 为 true 的插件就是这些
+  重启之后 `run plugin-manager.list` 里 `unmetPeers` 列出内核包的插件，就是 peer 范围不包含新内核的，告诉用户
 
 ## 开发插件
 

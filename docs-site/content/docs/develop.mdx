@@ -25,7 +25,7 @@ cd apps\desktop; pnpm setup:electron
 
 {/* ref file="../.npmrc" lines="3-3" hash="a8b8a37fe3b5" blob="1418d8b82153" */}
 
-仓根是 pnpm 工作区，收 `apps/*` 与文档站。**工作区链接会替包源满足 peer**：装包出问题先读当前的 `pnpm-workspace.yaml` 与 `pnpm-lock.yaml` 里的 `settings`，别照旧配置办。
+仓根是 pnpm 工作区，收 `apps/*` 与文档站。**工作区链接会替包源满足 peer**：装包出问题先读当前的 `pnpm-workspace.yaml` 与 `pnpm-lock.yaml` 里的 `settings`，别照旧的配置处理。
 
 {/* ref file="../pnpm-workspace.yaml" hash="3584ed56f73a" blob="e99660a82204" */}
 
@@ -194,7 +194,7 @@ pwsh installer\scripts\build.ps1
    - tag 跟安装包（启动器）的版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
    - **推送 tag 会让同名的草稿 release 自动公开**：要先存草稿、人工确认后再公开，就最后推 tag
 4. **本机升级**：先在隔离 home 里装新内核包验证，再在 default 上调 `plugin-manager.update {"specs":{"@godcreator/gwb-kernel-desktop":"<版本>"}}`（插件管理把 `cordis` 一起对齐，
-   `specs` 里不写它）；回执 `restartRequired` 为 `true` 时重启工作台，`pluginsOutsideRange` 列出 peer 范围不包含新内核的插件。
+   `specs` 里不写它）；回执 `restartRequired` 为 `true` 时重启工作台，重启后 `plugin-manager.list` 的 `unmetPeers` 里有内核包的插件，就是 peer 范围不包含新内核的。
    改了契约时先装新内核、再发用到新契约的插件：插件先到、内核还是旧的，插件拿到的 `gwbKernel` 就缺它要的东西。升了 x 时，再在新内核上测插件、把它们 peer 里内核包的范围改到新内核并发版
 
 {/* ref file="../apps/desktop/package.json" lines="24-26" hash="4e600c678123" blob="df73ceac0ed7" */}
