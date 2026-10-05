@@ -177,26 +177,26 @@ if ($runtime) { $runtime } else { '30 秒内没等到这次启动写的 runtime.
 ## 5. 连接 MCP 入口
 
 MCP 入口的地址在 `runtime.json` 的 `mcp.url`（default 就是 `http://127.0.0.1:2870/mcp`），只绑定本机，**要求
-`Authorization: Bearer <token>`**：token 每个 home 一份，存在 `<home>\mcp\secret.json`（字段 `token`），重启不变；
+`Authorization: Bearer <token>`**：token 每个 home 一份，由 settings 保存在 `<home>\credentials.json` 的 `sections.mcp.token.value`，重启不变；
 没带或对不上一律返回 401。
 
-先不改任何客户端配置，用 MCP 入口自带的命令行客户端验证一遍（零依赖；不给 token 时它读 default home 的凭据文件）。
+先不改任何客户端配置，用 MCP 入口自带的命令行客户端验证一遍（零依赖；用 `--home` 选定 home 后，内部读取该 home 的地址和凭据）。
 它装在第 3 步的 home 里（第 3 步没装成就没有它），要 Node 18 起才能运行。**机器上没有 `node` 命令也能跑**（比如 pnpm 是用官方安装脚本装的独立版本）：
 安装包带的 Electron 设了环境变量 `ELECTRON_RUN_AS_NODE=1` 就是一个 Node（版本见状态栏悬停提示里的 Node 那一项）。下面先定义一个 `gwbClient`，两种情况都用它：
 
 ```powershell
-$gwbHome = "$env:APPDATA\gwb-kernel\homes\default"
+$gwbHomeName = 'default'
+$gwbHome = "$env:APPDATA\gwb-kernel\homes\$gwbHomeName"
 $client = "$gwbHome\node_modules\@godcreator\gwb-mcp\bin\client.mjs"
-$url = (Get-Content "$gwbHome\runtime.json" -Raw | ConvertFrom-Json).mcp.url
 if (Get-Command node -ErrorAction SilentlyContinue) {
-  function gwbClient { node $client --url $url @args }
+  function gwbClient { node $client --home $gwbHomeName @args }
 } else {
   # gwb-kernel.exe 是窗口程序：直接调用时 PowerShell 不等它结束、也收不到输出，所以经 Start-Process 等它结束、输出写进临时文件
   function gwbClient {
     $outFile = New-TemporaryFile
     $env:ELECTRON_RUN_AS_NODE = '1'
     try {
-      $process = Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe" -ArgumentList (@("`"$client`"", '--url', $url) + $args) -NoNewWindow -Wait -PassThru -RedirectStandardOutput $outFile
+      $process = Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe" -ArgumentList (@("`"$client`"", '--home', $gwbHomeName) + $args) -NoNewWindow -Wait -PassThru -RedirectStandardOutput $outFile
     } finally {
       Remove-Item Env:ELECTRON_RUN_AS_NODE
     }
@@ -215,13 +215,14 @@ gwbClient run skill.list
 **`index` 调通才算第 4 步的启动成功**：回执开头的 `home` 是这个 home 的名字（default 就是 `default`），`version` 是 MCP 插件的版本。
 连不上、401、或 `home` 不是你启动的那个，都不算成功。
 
-MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带请求头的配置片段：`gwbClient run mcp.token`
-返回 `{ token, file, mcpServers }`，`mcpServers` 里已带 `headers`，原样复制就能连上（**返回内容含明文凭据**，别贴到
-公开的地方）：
+MCP 入口能连通后，读取 onboard 说明书及其 `references/mcp-clients.md` 附件，按实际客户端配置接线。说明书包尚未安装时先安装 `@godcreator/gwb-agent-hooks-skills`，再读取：
 
-- Claude Code：`claude mcp add --transport http gwb http://127.0.0.1:2870/mcp --header "Authorization: Bearer <token>"`
-  （要所有项目都能用就加 `--scope user`），然后开新会话，或在会话里 `/mcp` 重连
-- 其他客户端：原样复制上面 `mcpServers` 那一段（形状是 `{ "gwb": { "type": "http", "url": …, "headers": { "Authorization": "Bearer <token>" } } }`）
+```powershell
+gwbClient run skill.read '{"name":"onboard"}'
+gwbClient run skill.read '{"name":"onboard","file":"references/mcp-clients.md"}'
+```
+
+配置过程在本地直接取凭据写目标文件，只输出配置位置和验证状态；`mcp.info` 与 `mcp.token` 经 MCP 只回状态。需要临时接入时用 `mcp.client.issue` 签发，接线失败按本次编号撤销。Codex、Claude、ZCode、Kimi 的配置形状和恢复步骤以 onboard 为准，内核不维护客户端适配代码。
 
 连上后**先调 `index`**：它返回的 instructions 讲清楚之后怎么使用工作台。再核对：
 
@@ -239,8 +240,7 @@ MCP 入口能连通，再给用户常用的客户端配置上。先拿到已带�
 - 把第 3 步起的 `$gwbHome` 换成那个目录；启动前设 `GWB_HOME`：写名字就是 `%APPDATA%\gwb-kernel\homes\<名字>`，写带路径分隔符的就是那个目录本身。
   例：`$env:GWB_HOME = $gwbHome; Start-Process "$env:LOCALAPPDATA\Programs\gwb-kernel\gwb-kernel.exe"`
 - MCP 入口的端口不是 2870，一律从那个 home 的 `runtime.json` 的 `mcp.url` 取
-- 命令行客户端要显式给那个 home 的 token：`gwbClient --token (Get-Content "$gwbHome\mcp\secret.json" -Raw | ConvertFrom-Json).token index`（`$url` 先换成那个 home 的）
-  （也可以设环境变量 `GWB_MCP_TOKEN`）。不给的话它用 default home 的 token，会 401
+- 命令行客户端把 `$gwbHomeName` 改成目标名字，用 `--home <名字>` 自动读取该 home 的地址和凭据；缺少凭据时不借用 default。自定义目录的接线流程在本地读取该目录，由 onboard 编排
 
 ## 常见问题
 
