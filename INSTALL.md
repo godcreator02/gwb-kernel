@@ -31,14 +31,9 @@
    `$env:PNPM_VERSION='12.4.2'; iwr https://get.pnpm.io/install.ps1 -useb | iex`（它会改用户级环境变量：写入 `PNPM_HOME`、
    把 `%LOCALAPPDATA%\pnpm\bin` 加进 PATH），机器上有 node 的话也可以 `npm i -g pnpm@12.4.2`。装完重新运行上面两行确认。
    用 corepack、volta 装的，或设过 `PNPM_HOME`、改过 npm 全局目录的 pnpm，不在这两个位置，插件管理找不到
-2. **`@godcreator` 的包从哪里下载**：`& $pnpm config get @godcreator:registry` 输出下面这个地址就是配好了。
-   没有就往用户级 `%USERPROFILE%\.npmrc` 追加这一行（其他行一律不动，已有的 token 行保留）：
-
-   ```
-   @godcreator:registry=https://git.tianshen02.online:28377/api/packages/godcreator/npm/
-   ```
-
-   只读安装不需要 token。少了这一行，pnpm 会去 npmjs 找这些包，报 404。**别把 `.npmrc` 全文打印出来**
+2. **`@godcreator` 的包从 npmjs 下载**：npmjs 就是 pnpm 的默认源，不用配，安装也不需要 token。
+   `& $pnpm config get @godcreator:registry` 输出 `undefined` 就是走 npmjs。输出的是别的地址，说明用户的 `~/.npmrc` 给这个范围另配过源，
+   pnpm 会去那个源找包：告诉用户这个地址，问清楚要不要保留，别自己删。**别把 `.npmrc` 全文打印出来**
    ——里面可能有用户的发布 token。
 3. **放行刚发布的包**：pnpm 11 起，发布不满一天的包默认不允许安装，而 gwb 的插件常常当天发布。
    `& $pnpm config get minimumReleaseAgeExclude` 的输出里有 `@godcreator/*` 就是配好了。没有：
@@ -51,8 +46,9 @@
    ```
 
    只放行这一个 scope，其他包仍受这条规则保护。
-4. **可选**：连 npmjs 慢的话，第三方包改走镜像：`& $pnpm config set registry https://registry.npmmirror.com`
-   （`@godcreator` 仍按第 2 条走自己的源）。这也是用户级配置，先问用户。
+4. **可选**：连 npmjs 慢的话，第三方包改走镜像：`& $pnpm config set registry https://registry.npmmirror.com`。
+   镜像从 npmjs 同步有延迟，刚发布的 `@godcreator` 包在镜像上可能还没有，所以同时往 `%USERPROFILE%\.npmrc` 追加一行，
+   让这个范围仍直接从 npmjs 下载：`@godcreator:registry=https://registry.npmjs.org/`。这两处都是用户级配置，先问用户。
 
 ## 2. 安装启动器
 
@@ -241,7 +237,7 @@ gwbClient run skill.read '{"name":"onboard","file":"references/mcp-clients.md"}'
 
 | 现象 | 多半是 | 怎么办 |
 | --- | --- | --- |
-| `pnpm add` 报 404，找不到 `@godcreator/…` | 第 1 步第 2 条那行没配 | 补上再装 |
+| `pnpm add` 报 404，找不到 `@godcreator/…` | `~/.npmrc` 给 `@godcreator` 另配了源，那个源上没有这个包 | 照第 1 步第 2 条查出那个地址，告诉用户 |
 | 启动时弹框说 home 里没有内核包 | 第 3 步的内核包没装，或装在了别的 home | 照第 3 步在这个 home 里装内核包与 `cordis` 再启动 |
 | 启动时弹框说 Electron 版本不满足内核包要求 | 安装包太旧，内核包要的 Electron 更新 | 装最新的安装包 |
 | 装完提示 `Issues with peer dependencies found` | 有插件没适配上游的新版本 | `& $pnpm peers check` 看明细告诉用户 |
