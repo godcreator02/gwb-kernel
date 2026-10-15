@@ -111,7 +111,7 @@ export const installerGraph = defineSeamGraph({
       role: null,
       outside: true,
       blurb:
-        'gwb-setup-<版>.exe 是 NSIS 安装程序：一键安装、按当前用户安装、不需要管理员权限，发到 gitea 发布页。win-unpacked/ 是打包前的目录，只用来验证；' +
+        'gwb-setup-<版>.exe 是 NSIS 安装程序：一键安装、按当前用户安装、不需要管理员权限，发到 GitHub 上本仓的 release。win-unpacked/ 是打包前的目录，只用来验证；' +
         '每次打包整个重新生成，日常别直接运行它。',
       caps: [
         { id: 'setup', name: '安装程序', ident: 'gwb-setup-<版>.exe' },

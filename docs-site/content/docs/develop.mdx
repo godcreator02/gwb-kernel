@@ -189,8 +189,8 @@ pwsh installer\scripts\build.ps1
 
 1. **升版本号并提交**，同一个版本号永不重发
 2. **发内核包到 npmjs**：`devkit.release {"dir":"<本仓根>","packages":["apps/desktop"]}`。发到哪由内核包清单的 `publishConfig.registry` 决定（`https://registry.npmjs.org/`，`access` 是 `public`），没写 `devkit.release` 就拒发。本机的 `@godcreator` 还从 gitea 的团队源装的这段时间，加上 `"alsoPublishTo":["https://git.tianshen02.online:28377/api/packages/godcreator/npm/"]` 同时发到团队源
-3. **启动器或 Electron 变了才打安装包、发布到 gitea releases**：发布仓是 gitea 上的 `godcreator/gwb-kernel`（本仓的 git 远端 `gitea`），release 附带安装程序；
-   push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
+3. **启动器或 Electron 变了才打安装包、发布到 GitHub releases**：发布仓是 GitHub 上的 `godcreator02/gwb-kernel`（本仓的 git 远端 `origin`），release 附带安装程序；
+   push 与 GitHub API 都用 git 凭据管理器里 github.com 的凭据，凭据只在本机进程里用，不打印
    - tag 跟安装包（启动器）的版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
    - **推送 tag 会让同名的草稿 release 自动公开**：要先存草稿、人工确认后再公开，就最后推 tag
 4. **本机升级**：先在隔离 home 里装新内核包验证，再在 default 上调 `plugin-manager.update {"specs":{"@godcreator/gwb-kernel-desktop":"<版本>"}}`（插件管理把 `cordis` 一起对齐，

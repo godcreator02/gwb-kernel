@@ -61,11 +61,11 @@ description: 仓根 INSTALL.md 由这一页生成——写给替用户安装 gwb
 
 ## 2. 安装启动器
 
-从 `https://git.tianshen02.online:28377/godcreator/gwb-kernel/releases` 下载最新的
+从 `https://github.com/godcreator02/gwb-kernel/releases` 下载最新的
 `gwb-setup-<版>.exe`（下载之前告诉用户文件名与大小），静默安装。文件名、大小与下载地址不开浏览器也拿得到：
 
 ```powershell
-(Invoke-RestMethod https://git.tianshen02.online:28377/api/v1/repos/godcreator/gwb-kernel/releases/latest).assets |
+(Invoke-RestMethod https://api.github.com/repos/godcreator02/gwb-kernel/releases/latest).assets |
   Select-Object name, size, browser_download_url
 ```
 
@@ -279,23 +279,18 @@ gwbClient run skill.read '{"name":"onboard","file":"references/mcp-clients.md"}'
 1. **Node 24 以上与 git**：插件模板的构建脚本直接用 `node` 运行 `build.ts`，模板的 `package.json` 写着 `"engines": { "node": ">=24" }`；
    `devkit.release` 要求仓的 git 工作区干净。`node --version` 输出 24 以上、`git --version` 有输出就是装好了；
    没有的话先征得用户同意，再 `winget install OpenJS.NodeJS.LTS` 与 `winget install Git.Git`，装完开一个新的 PowerShell 重新确认
-2. **插件发到用户自己名下**：`@godcreator` 只有维护者能发。用户向这台 gitea（`https://git.tianshen02.online:28377`）的管理员要一个账号，
-   下面把用户名写作 `<用户名>`。用户登录后在「设置 → 应用」生成一个访问令牌，权限里 package 选读写
-3. **往 `~/.npmrc` 追加这个用户的两行**（其他行一律不动，`@godcreator` 那行保留）：
-
-   ```
-   @<用户名>:registry=https://git.tianshen02.online:28377/api/packages/<用户名>/npm/
-   //git.tianshen02.online:28377/api/packages/<用户名>/npm/:_authToken=<令牌>
-   ```
-
-   第一行让安装与 `devkit.release` 找到这个包名范围的源，第二行是发布凭据。令牌向用户要，别写进回复与日志
+2. **插件发到用户自己名下**：`@godcreator` 只有维护者能发。用户在 npmjs.com 用自己的账号名，或在账号下新建一个组织，作为包名范围，
+   下面写作 `<范围>`。用户登录后在「Access Tokens」生成一个细粒度 token，给这个范围读写权限；token 由用户自己生成，向用户要，别写进回复与日志
+3. **把 token 存进发起 home 的 `npm-auth`**：键是 `//registry.npmjs.org/:_authToken`，做法照说明书 `gwb-plugin-manager`「加一个市场」的第 2 步（合并进已有的对象，别的源保留）。
+   npmjs 就是 pnpm 的默认源，不用给这个范围另配源路由
 4. **建仓时带上包名范围与发布目标**：
 
    ```
-   run devkit.scaffold {"name":"<短名>","dir":"<还不存在的绝对路径>","scope":"@<用户名>","registry":"https://git.tianshen02.online:28377/api/packages/<用户名>/npm/"}
+   run devkit.scaffold {"name":"<短名>","dir":"<还不存在的绝对路径>","scope":"@<范围>","registry":"https://registry.npmjs.org/"}
    ```
 
-   包名是 `@<用户名>/gwb-<短名>`，发布目标写进插件包的 `publishConfig.registry`。之后照 `gwb-devkit` 在隔离 home 里验证，照 `gwb-release` 发版，
-   再 `run plugin-manager.install {"pkg":"@<用户名>/gwb-<短名>"}` 装进 default
+   包名是 `@<范围>/gwb-<短名>`，发布目标写进插件包的 `publishConfig.registry`。npmjs 上带范围的包默认按私有包发，免费账号会被拒，
+   第一次发版前在插件包的 `publishConfig` 里加上 `"access": "public"`。之后照 `gwb-devkit` 在隔离 home 里验证，照 `gwb-release` 发版，
+   再 `run plugin-manager.install {"pkg":"@<范围>/gwb-<短名>"}` 装进 default
 
-别的机器要装这个插件：在那台机器的 `~/.npmrc` 加上第 3 步的第一行，再 `run plugin-manager.install`。
+别的机器要装这个插件：直接 `run plugin-manager.install`；想在插件管理的「可安装」一栏里看到它，照 `gwb-plugin-manager`「加一个市场」的第 3 步把 `@<范围>` 加进市场名单。
