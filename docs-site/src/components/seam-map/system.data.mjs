@@ -115,7 +115,7 @@ const entries = [
 const seams = [
   /* ref file="../apps/launcher/src/main.ts" lines="17-19" hash="475fe289ea98" blob="f6547781d717" */
   /* ref file="../apps/desktop/package.json" lines="8-8" hash="3f8ef1581707" blob="df73ceac0ed7" */
-  /* ref file="../apps/desktop/package.json" lines="34-36" hash="d14faf1367c1" blob="df73ceac0ed7" */
+  /* ref file="../apps/desktop/package.json" lines="37-39" hash="d14faf1367c1" blob="c71ee837c7eb" */
   {
     n: 1,
     name: '启动器加载内核',
@@ -127,7 +127,7 @@ const seams = [
     text: '启动器按和内核同一条规则选定 home、把绝对路径写回 GWB_HOME，读 home 里内核包的清单：当前 Electron 在 engines.electron 的范围里、有 main，才 import 入口；否则弹框退出。两边之间没有代码接口，只靠这份约定。',
   },
   /* ref file="../apps/desktop/src/main.ts" lines="361-368" hash="e5fc330ba54d" blob="db3e92ccd653" */
-  /* ref file="../apps/desktop/package.json" lines="37-43" hash="9afff01b3cb1" blob="df73ceac0ed7" */
+  /* ref file="../apps/desktop/package.json" lines="40-46" hash="9afff01b3cb1" blob="c71ee837c7eb" */
   {
     n: 2,
     name: 'cordis 与 loader',
@@ -250,7 +250,7 @@ const seams = [
     via: 'disk',
     text: '内核每次启动把进程号、启动时刻、版本、调试端口整份写进 runtime.json，退出不删。devkit 与装机 agent 靠它找到运行中的工作台，自己确认进程还在；MCP 入口读出、补上 mcp 再写回。',
   },
-  /* ref file="../apps/desktop/package.json" lines="37-43" hash="9afff01b3cb1" blob="df73ceac0ed7" */
+  /* ref file="../apps/desktop/package.json" lines="40-46" hash="9afff01b3cb1" blob="c71ee837c7eb" */
   {
     n: 13,
     name: '条目树与包',

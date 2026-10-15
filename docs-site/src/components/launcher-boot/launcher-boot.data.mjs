@@ -97,13 +97,13 @@ export const steps = [
     },
   },
   /* ref file="../apps/launcher/src/launch-plan.ts" lines="38-52" hash="326602de0f8a" blob="7dff040f70bd" */
-  /* ref file="../apps/desktop/package.json" lines="3-3" hash="8a14e97c8586" blob="fab53490ba27" */
+  /* ref file="../apps/desktop/package.json" lines="3-3" hash="9847c60863b7" blob="c71ee837c7eb" */
   /* ref file="../apps/desktop/package.json" lines="8-8" hash="3f8ef1581707" blob="df73ceac0ed7" */
-  /* ref file="../apps/desktop/package.json" lines="34-36" hash="d14faf1367c1" blob="df73ceac0ed7" */
+  /* ref file="../apps/desktop/package.json" lines="37-39" hash="d14faf1367c1" blob="c71ee837c7eb" */
   {
     title: '比 Electron 版本，找入口',
     text:
-      '内核包 0.10.1 的清单写着 engines.electron 是 ^44.1.1，安装包带的 44.1.1 在范围里；main 是 dist/main.js，入口就是内核包目录下的这个文件。' +
+      '内核包 0.10.2 的清单写着 engines.electron 是 ^44.1.1，安装包带的 44.1.1 在范围里；main 是 dist/main.js，入口就是内核包目录下的这个文件。' +
       '没声明范围、版本不满足、没有 main，各回一句说明原因的话。',
     lit: ['plan', 'manifest'],
     shown: ['kernelEntryFor', 'read'],

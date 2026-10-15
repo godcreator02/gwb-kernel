@@ -1,6 +1,6 @@
 {
   "name": "@godcreator/gwb-kernel-desktop",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "author": {
     "name": "godcreator"
   },
@@ -14,15 +14,18 @@
     "./package.json": "./package.json"
   },
   "description": "gwb 内核：提供主进程插件启动基础能力与页面模块解析环境；包根导出插件与页面的接口类型",
+  "license": "MIT",
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "repository": {
     "type": "git",
-    "url": "https://git.tianshen02.online:28377/godcreator/gwb-kernel.git"
+    "url": "https://github.com/godcreator02/gwb-kernel.git"
   },
   "publishConfig": {
-    "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "scripts": {
     "setup:electron": "node node_modules/electron/install.js",

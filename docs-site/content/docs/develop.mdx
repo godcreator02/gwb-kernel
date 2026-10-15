@@ -21,7 +21,7 @@ cd apps\desktop; pnpm setup:electron
 **`setup:electron` 必须显式运行一次**：electron 这个包没有安装脚本，二进制要运行它的 `install.js` 才会下载下来，仓根 `.npmrc` 让它走 npmmirror 镜像。
 不运行的话启动失败，pnpm 也不提示（[electron 不带安装脚本](/trajectory/2026-09-07-wall-electron-postinstall)）。
 
-{/* ref file="../apps/desktop/package.json" lines="28-28" hash="89c471411463" blob="df73ceac0ed7" */}
+{/* ref file="../apps/desktop/package.json" lines="31-31" hash="89c471411463" blob="c71ee837c7eb" */}
 
 {/* ref file="../.npmrc" lines="3-3" hash="a8b8a37fe3b5" blob="1418d8b82153" */}
 
@@ -42,11 +42,11 @@ cd apps\desktop; pnpm start
 `pnpm start` 先构建再启动 electron。构建依次是：整个删掉 `dist/`；`tsc` 编译内核；用 `tsconfig.api.json` 只为 `src/api.ts` 生成包根导出的类型声明；
 把页面的 `index.html`、`preload.cjs` 复制进 `dist/`：
 
-{/* ref file="../apps/desktop/package.json" lines="29-29" hash="0105543ddee3" blob="df73ceac0ed7" */}
+{/* ref file="../apps/desktop/package.json" lines="32-32" hash="0105543ddee3" blob="c71ee837c7eb" */}
 
-**第一步必须删掉 `dist/`**：内核包清单的 `files` 只列 `dist`，上一次构建留下的文件不删，就会跟着发到每个 home（[残留 dist](/trajectory/2026-09-25-stale-dist-shipped)）。
+**第一步必须删掉 `dist/`**：内核包清单的 `files` 里构建产物只有 `dist`（另一项是许可证 `LICENSE`），上一次构建留下的文件不删，就会跟着发到每个 home（[残留 dist](/trajectory/2026-09-25-stale-dist-shipped)）。
 
-{/* ref file="../apps/desktop/package.json" lines="17-19" hash="8e3ed34eac97" blob="df73ceac0ed7" */}
+{/* ref file="../apps/desktop/package.json" lines="18-21" hash="d1062216c4a7" blob="c71ee837c7eb" */}
 
 ### 隔离 home 里的插件从哪来
 
@@ -180,7 +180,7 @@ pwsh installer\scripts\build.ps1
   `gwb.log` 的格式、内核包清单的 `engines.electron`，以及 `@cordisjs/plugin-loader`、`@cordisjs/plugin-include`、`cordis` 的版本（拿不准会不会弄坏插件管理，一律按会弄坏算）
 - **只改内核内部或修 bug**，升 y
 
-{/* ref file="../apps/desktop/package.json" lines="37-43" hash="9afff01b3cb1" blob="df73ceac0ed7" */}
+{/* ref file="../apps/desktop/package.json" lines="40-46" hash="9afff01b3cb1" blob="c71ee837c7eb" */}
 
 插件在 peer 里写内核包的 `^` 范围（`^0.x.y` 只包含同一个 x），**升了 x 之后所有插件的范围都不再包含新内核**：发之前照 `gwb-release` 的「发破坏性版本多做的两步」给下游仓投反馈；
 能加一个可选字段、一个类型解决的，就不删名字、不改形状。契约之外的东西不放进 `src/api.ts`（见[包根导出的接口类型](/docs/desktop/api)）。
@@ -188,7 +188,7 @@ pwsh installer\scripts\build.ps1
 ### 发版顺序
 
 1. **升版本号并提交**，同一个版本号永不重发
-2. **发内核包到团队包源**：`devkit.release {"dir":"<本仓根>","packages":["apps/desktop"]}`。发到哪由内核包清单的 `publishConfig.registry` 决定，没写 `devkit.release` 就拒发
+2. **发内核包到 npmjs**：`devkit.release {"dir":"<本仓根>","packages":["apps/desktop"]}`。发到哪由内核包清单的 `publishConfig.registry` 决定（`https://registry.npmjs.org/`，`access` 是 `public`），没写 `devkit.release` 就拒发。本机的 `@godcreator` 还从 gitea 的团队源装的这段时间，加上 `"alsoPublishTo":["https://git.tianshen02.online:28377/api/packages/godcreator/npm/"]` 同时发到团队源
 3. **启动器或 Electron 变了才打安装包、发布到 gitea releases**：发布仓是 gitea 上的 `godcreator/gwb-kernel`（本仓的 git 远端 `gitea`），release 附带安装程序；
    push 用 git 凭据管理器里的凭据，API 用 gwb-gitea 插件的 `gitea.http`（用法在它的说明书）
    - tag 跟安装包（启动器）的版本走（`v<版>`），与 release 一一对应；release 说明指向仓根 `INSTALL.md`
@@ -197,4 +197,4 @@ pwsh installer\scripts\build.ps1
    `specs` 里不写它）；回执 `restartRequired` 为 `true` 时重启工作台，重启后 `plugin-manager.list` 的 `unmetPeers` 里有内核包的插件，就是 peer 范围不包含新内核的。
    改了契约时先装新内核、再发用到新契约的插件：插件先到、内核还是旧的，插件拿到的 `gwbKernel` 就缺它要的东西。升了 x 时，再在新内核上测插件、把它们 peer 里内核包的范围改到新内核并发版
 
-{/* ref file="../apps/desktop/package.json" lines="24-26" hash="4e600c678123" blob="df73ceac0ed7" */}
+{/* ref file="../apps/desktop/package.json" lines="26-29" hash="c645e426776e" blob="c71ee837c7eb" */}

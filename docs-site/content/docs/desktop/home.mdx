@@ -42,7 +42,7 @@ Electron 的单实例锁按 userData 区分，所以**同一个 home 只能运�
 home 根上的 `cordis` 只有一份：内核包把它写在 peer 里、写精确版本号，loader、include 与插件都解析到这一份。loader 与 include
 是内核包自己的依赖，同样写精确版本号，随内核包一起装进 home：
 
-{/* ref file="../apps/desktop/package.json" lines="37-43" hash="9afff01b3cb1" blob="df73ceac0ed7" */}
+{/* ref file="../apps/desktop/package.json" lines="40-46" hash="9afff01b3cb1" blob="c71ee837c7eb" */}
 
 条目树的形状、`cordis.yml` 怎么读写都由这两个包决定，所以升级 `cordis`、loader、include 中的任何一个，都是改了插件管理依赖的接口，内核版本号升 x。
 插件管理点名换内核包时，把 home 根上的 `cordis` 一起对齐到新内核包 peer 里的版本，装完要重启工作台才生效。

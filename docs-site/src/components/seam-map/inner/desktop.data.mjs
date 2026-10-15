@@ -235,7 +235,7 @@ export const desktopGraph = defineSeamGraph({
   seams: [
     /* ref file="../apps/launcher/src/main.ts" lines="17-29" hash="0f906fc09c31" blob="f6547781d717" */
     /* ref file="../apps/desktop/package.json" lines="8-8" hash="3f8ef1581707" blob="df73ceac0ed7" */
-    /* ref file="../apps/desktop/package.json" lines="34-36" hash="d14faf1367c1" blob="df73ceac0ed7" */
+    /* ref file="../apps/desktop/package.json" lines="37-39" hash="d14faf1367c1" blob="c71ee837c7eb" */
     {
       n: 1,
       name: '加载内核',
