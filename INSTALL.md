@@ -206,7 +206,7 @@ gwbClient run skill.list
 **`index` 调通才算第 4 步的启动成功**：回执开头的 `home` 是这个 home 的名字（default 就是 `default`），`version` 是 MCP 插件的版本。
 连不上、401、或 `home` 不是你启动的那个，都不算成功。
 
-MCP 入口能连通后，读取 onboard 说明书及其 `references/mcp-clients.md` 附件，按实际客户端配置接线。说明书包尚未安装时先安装 `@godcreator/gwb-agent-hooks-skills`，再读取：
+MCP 入口能连通后，读取 onboard 说明书及其 `references/mcp-clients.md` 附件，按实际客户端配置接线。onboard 随 MCP 插件 `@godcreator/gwb-mcp` 装上，第 3 步装好就有：
 
 ```powershell
 gwbClient run skill.read '{"name":"onboard"}'
@@ -219,7 +219,7 @@ gwbClient run skill.read '{"name":"onboard","file":"references/mcp-clients.md"}'
 
 - `run plugin-manager.list` 返回第 3 步 `cordis.yml` 里的每个插件，各带一个条目、`active: true`；内核包与 `cordis` 不是插件，不在里面。
   插件的 `unmetPeers` 里有内核包 `@godcreator/gwb-kernel-desktop` 只是报告：它 peer 里写的范围不包含运行中的内核，照常加载，不算失败
-- `run skill.list` 能列出说明书，至少有 `mcp`、`gwb-commands`、`gwb-plugin-manager`、`gwb-devkit`
+- `run skill.list` 能列出说明书，至少有 `mcp`、`onboard`、`gwb-commands`、`gwb-plugin-manager`、`gwb-devkit`
 - `run plugin-manager.search` 能列出源上可装的插件——「插件管理」窗格的「可装」栏用的就是它
 
 做完，把第 1 步改过的配置告诉用户。
