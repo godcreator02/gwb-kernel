@@ -3,6 +3,10 @@ title: 页面与主进程之间的通道
 description: 页面上的 window.gwb 与背后的五个 Electron IPC 通道；请求通道怎么把 window.gwb.request 交给插件用 ctx.gwbKernel.handleRequest 登记的处理器，内核只传输、不认识载荷；插件经 emit 推给页面的事件；命令为什么只是命令插件登记的一条请求通道
 ---
 
+import { RequestTripSteps } from './ipc/request-trip/request-trip';
+import { RequestOutcomes } from './ipc/request-outcomes/request-outcomes';
+
+
 页面和主进程是两个进程。页面上的代码只能经 preload 注入的 `window.gwb` 与主进程通信，背后是五个 Electron IPC 通道。
 内核只负责把消息送到、送回，不认识里面装的是什么：命令名、载荷、回执都是登记通道的插件自己定的。
 

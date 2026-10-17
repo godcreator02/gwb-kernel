@@ -3,14 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm -r --filter=!gwb-kernel-docs-site build",
+    "build": "pnpm -r build",
     "start": "pnpm --filter @godcreator/gwb-kernel-desktop start",
     "typecheck": "tsc --noEmit -p tsconfig.json && pnpm -r --no-bail typecheck",
     "lint": "oxlint . --type-aware --deny-warnings",
     "test": "vitest run",
     "check": "pnpm --filter @godcreator/gwb-kernel-desktop build && pnpm typecheck && pnpm lint && pnpm test",
-    "doc": "pnpm --filter gwb-kernel-docs-site exec docfirst check",
-    "doc:confirm": "pnpm --filter gwb-kernel-docs-site exec docfirst confirm"
+    "doc": "pnpm -C docs-site run doc",
+    "doc:confirm": "pnpm -C docs-site run doc:confirm"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

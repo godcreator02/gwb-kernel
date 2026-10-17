@@ -3,6 +3,10 @@ title: 启动器
 description: 安装版 Electron 运行的第一个模块：按 GWB_HOME 选定 home 并写回绝对路径，读 home 里内核包的清单、用 engines.electron 确认内核能在自带的 Electron 上运行，再 import 清单 main 指向的内核入口；第一次安装后 home 里还没有内核包时为什么只弹框
 ---
 
+import { LauncherBootSteps } from './launcher/launcher-boot/launcher-boot';
+import { LauncherCases } from './launcher/launcher-cases/launcher-cases';
+
+
 启动器是 `apps/launcher/src/` 下的两个文件：`main.ts` 碰 Electron（取版本、弹框、退出），`launch-plan.ts` 是两个只读文件的纯函数。
 它只做三件事：选定 home、确认 home 里的内核包能在这个 Electron 上运行、把内核入口 import 进来；之后的事全由内核负责。
 整页用同一个例子：不设 `GWB_HOME` 打开 default，安装包带 Electron 44.1.1，home 里装的是内核包 0.10.0。

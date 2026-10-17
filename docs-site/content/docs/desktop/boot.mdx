@@ -3,6 +3,11 @@ title: 启动与退出
 description: 内核从被启动器加载到页面交给外壳的每一步、分成模块求值时与 Electron ready 之后两段、哪几处顺序不能换；启动失败与插件出错时 stderr、gwb.log、错误框、runtime.json 各留下什么；退出时怎样卸载整棵插件树、最多等 5 秒，插件的清理要怎么写才等得到
 ---
 
+import { KernelBootSteps } from './boot/kernel-boot/kernel-boot';
+import { BootFailureCases } from './boot/boot-failure/boot-failure';
+import { QuitCleanupCases } from './boot/quit-cleanup/quit-cleanup';
+
+
 一次启动跨三个地方：主进程里的内核与 cordis、窗口里的页面、磁盘上的 home 目录。下面从启动器找到内核开始，一步一步走到外壳接管页面。
 
 <KernelBootSteps />

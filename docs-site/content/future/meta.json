@@ -1,1 +1,5 @@
-{ "title": "未来", "pages": ["roadmap", "..."] }
+{
+  "title": "未来",
+  "root": true,
+  "pages": ["roadmap", "..."]
+}

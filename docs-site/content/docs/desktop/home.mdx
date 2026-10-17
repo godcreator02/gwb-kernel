@@ -3,6 +3,9 @@ title: home 与插件加载
 description: 内核怎么按 GWB_HOME 选定并检查 home、home 里每个文件归谁写；cordis 官方的 loader 与 include 怎么把 cordis.yml 变成条目树，条目里的包名怎么按 home 里的真实路径解析成文件；每次启动写进 runtime.json 的是什么
 ---
 
+import { HomeLoadSteps } from './home/home-load/home-load';
+
+
 一个 home 是一个目录：包清单、条目清单、装好的包、日志都在里面，内核包自己也作为 npm 包装在它的 `node_modules` 里。
 内核启动时先选定并检查 home，再让 cordis 官方的 loader（`@cordisjs/plugin-loader`）与 include（`@cordisjs/plugin-include`）
 按 `cordis.yml` 加载插件。下面用一个叫 `demo` 的 home，从环境变量一直走到插件加载成功、再到换版本后重新加载。

@@ -4,6 +4,9 @@ description: 内核本身——Electron 主进程里的一个 cordis 实例加�
 full: true
 ---
 
+import { SeamMap } from '../_shared/seam-map/seam-map';
+
+
 内核应用是包 `@godcreator/gwb-kernel-desktop`，源码在 `apps/desktop/src/`，入口文件是 `main.ts`（构建成 `dist/main.js`）；页面上运行的 `index.html` 与注入 `window.gwb` 的 `preload.cjs` 也在这个包里。它和插件一样装在每个 home 的 `node_modules` 里，由安装包里的启动器加载，在本仓 `pnpm start` 时由 Electron 直接运行。
 
 <SeamMap module="desktop" />

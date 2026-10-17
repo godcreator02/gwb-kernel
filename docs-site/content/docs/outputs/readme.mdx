@@ -29,11 +29,7 @@ $env:GWB_HOME = 'try-1'; cd apps\desktop; pnpm start   # 构建并在隔离 home
 
 ## 文档
 
-文档站在 `docs-site/`，从首页读起：内核是什么、只做什么不做什么、全局接缝图与逐条接缝。每个包一个目录（内核应用、安装包），
-另有开发（怎么跑、怎么测、怎么发版）、轨迹（怎么走到今天）与路线。
-
-```powershell
-cd docs-site; pnpm build; pnpm start      # http://127.0.0.1:4314
-```
+文档站在 `docs-site/`（god-docsite + docfirst，自己一套依赖，不在 pnpm 工作区里），从首页读起：内核是什么、只做什么不做什么、全局接缝图与逐条接缝。每个包一个目录（内核应用、安装包），
+另有开发（怎么跑、怎么测、怎么发版）、轨迹（怎么走到今天）与路线。站里的 `pnpm build` 只作提交前的检查；看页面由工作台托管开发服务：`docsite.site.add {"dir":"<站目录>"}`，地址以 `docsite.site.list` 回的 `url` 为准，不在会话里自己 `pnpm dev`。
 
 这份 README 是生成物，正本是 `docs-site/content/docs/outputs/readme.mdx`。

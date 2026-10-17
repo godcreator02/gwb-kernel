@@ -1,0 +1,44 @@
+---
+born-at: 2026-10-17T12:11
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 文档站迁到 god-docsite 平台
+domain: 文档站
+---
+
+## 背景
+
+站原来是 Next 16 + `@godcreator/docfirst-workflow` 0.5.2 + `@godcreator/docfirst-explainer` 0.1.1，路由、页面 loader、
+功能包接线与 god-docsite 平台（fumadocs + React Router + Vite）全不同。god-docsite 的维护页
+（`content/maintain/migrate-next-docfirst.mdx`）定了做法：在空目录 `docfirst.create` 生成骨架，把建站器负责的文件整份换进旧站，
+`content/` 正文留着，逐类处理差异；前面的 gwb-vscode、gwb-windows-backup、gwb-qq-bot、gwb-ui-plugins、gwb-base-plugins 等站照它迁过。
+
+## 结论与边界
+
+照维护页迁完，站目录 `pnpm doc` / `typecheck` / `build` 全绿，站点经 `docsite.site.*` 托管、各页 200：
+
+- 骨架建在 `D:\gwb-docfirst-migrate\gwb-kernel\docs-site`（做完保留），`app/`、根配置（vite / react-router / source.config / tsconfig /
+  .gitignore / pnpm-workspace / 锁文件）、身份文件 docsite.json、people.json、glossary.json、comments/ 换进站；package.json 换 type /
+  scripts / 依赖，名字版本描述照旧。Next 的 `src/app/`、`src/lib/`、`src/proxy.ts`、组件表与名册核对（mdx.tsx、registry.ts、
+  scripts/verify-roster.mjs）、next / postcss 配置与构建产物删掉
+- 13 个讲解组件挪出 `src/components/`：接缝图 SeamMap 被 docs、desktop、installer 三个首页共用，进 `content/docs/_shared/`；
+  desktop-lanes（泳道与代码卡片的共用画法）被六张分步讲解共用，也进 `content/docs/_shared/`；其余 11 个各进所用页面的同名文件夹。
+  九个页面开头 import 组件，组件去掉 `'use client'`；讲解组件包换成 `@godcreator/explainer`（组件从 `./site` 取、机读文字从 `.` 取），
+  15 份 `.data.mjs` 旁补 `.d.mts`。组件样式原本就各在自己目录的 `.css` 里、由组件 import，没碰上变量写在 global.css 的情况
+- 轨迹卡 135 张从 `content/trajectory/` 挪到站点根 `trajectory/`，删掉旧的 meta.json；`content/meta.json` 写站名，
+  docs、future 两区加 `title` 与 `root: true`；`docfirst.config.mjs` 照模板改（`fumadocsRoster: true`、`trajectory`、名册加 `Term`，
+  Callout 的自定义规则与 13 条讲解组件的机读规则照抄、跟着组件换路径）
+- 仓根：`pnpm-workspace.yaml` 去掉 docs-site（平台站自带工作区文件，留着就是嵌套工作区），锁文件跟着更新；
+  `doc` / `doc:confirm` 从 `pnpm --filter` 改成 `pnpm -C docs-site run`，`build` 里 `--filter=!gwb-kernel-docs-site` 一段删掉。
+  develop.mdx 里「仓根工作区收 `apps/*` 与文档站」改成只收 `apps/*`、文档站在工作区外；钉 workspace 与仓根 scripts 的两处黄灯复核后接受
+- 生成物重新 render 后只有 README 一处有意改（「cd docs-site; pnpm build; pnpm start，端口 4314」改成由工作台托管开发服务）；
+  AGENTS、INSTALL、CLAUDE 逐字没变——正本的列表与表格写法两个渲染器写出来一致
+
+没做完 / 平台侧的遗留：
+
+- docs、desktop、installer 三个首页 frontmatter 的 `full: true` 不再生效：平台的页面组件不把它交给 fumadocs 的 DocsPage，
+  接缝图旁边照样有目录栏，宽图在正文里横向滚动。这是平台包的事，迁移时页面原样保留
+- 旧站 `global.css` 里 `@theme` 设的更纱黑体没带过来，站用平台默认字体
+- 旧 `next.config.mjs` 里 71 条历史跳转与 1 条改写（`/docs/kernel/*` → `desktop/` 各页、`/docs/seams/*`、`/future/not-doing`、
+  `/spec/*` 等）新站没有对应，删掉后这些旧地址回 404。现状区没有链接指向它们；约 30 处出现在轨迹卡正文里
+  （如 `/docs/kernel/logs`、`/spec/platform-plugins`），卡只增不改，链接没动，点开是 404

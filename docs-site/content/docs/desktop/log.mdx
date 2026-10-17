@@ -3,6 +3,9 @@ title: 日志
 description: 插件、内核、页面 console 三处的日志怎么经 ctx.logger 汇成一条 cordis 日志流，内核把它写成 home 里的 gwb.log（一行一个 JSON：ts、level、source、name、msg）与 stderr 上的文本；按条目写的挂载日志与汇总；128 MB 轮转成 gwb.log.1；写日志出问题时内核怎么办；旧内核的文本日志改名成 .text；读日志的插件从哪读
 ---
 
+import { LogSources } from './log/log-sources/log-sources';
+
+
 插件、内核自己、页面上的 console，三处的日志都汇进同一条 cordis 日志流。内核注册唯一的 exporter，把每一条同时写成两份：
 stderr 上给终端看的文本，home 里 `gwb.log` 的一行 JSON。内核只负责写和存；要显示或查询日志的插件读这个文件
 （[写与存归内核，查询与界面归插件](/trajectory/2026-09-27-log-kernel-writes-plugins-read)）。选一种来源，看同一条日志在两处各写成什么：

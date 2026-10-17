@@ -4,6 +4,10 @@ description: god 工作台的内核：什么能进内核、刻意不做什么；
 full: true
 ---
 
+import { SeamMap } from './_shared/seam-map/seam-map';
+import { BootAndRequestSteps } from './index/boot-and-request/boot-and-request';
+
+
 `gwb-kernel` 是 god 工作台的内核：一个 Electron 应用，cordis 运行在主进程里。内核只做两类事——主进程插件启动所需的基础能力，和页面模块加载前必须建立的解析环境：选定 home、建 cordis 实例并按 `cordis.yml` 加载插件、打开窗口并把页面交给外壳、在页面与插件之间传递消息、把日志写进 home。
 命令总线、插件管理、界面、数据、设置、给 agent 用的 MCP 入口全是 `cordis.yml` 里的插件，各在自己的仓里；内核越小，换掉任何一个插件都越不用改内核（[这个内核的起点](/trajectory/2026-09-07-gwb-kernel)）。
 本仓只有两个包：内核应用 `@godcreator/gwb-kernel-desktop`，和插件一样装在每个 home 里；安装包，只带启动器与 Electron。

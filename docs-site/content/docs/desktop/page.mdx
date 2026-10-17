@@ -3,6 +3,10 @@ title: 页面入口
 description: 内核的页面 index.html 在窗口打开后先显示什么（只读状态页、外壳启动失败时的状态页），怎么把 #root 交给调用 setShell 的外壳插件；浏览器模块怎么由插件经 registerImports 登记、页面经 prepareImports 注入 importmap（内核只提供机制、不带 React）；页面导航锁与外链交给系统浏览器
 ---
 
+import { ShellHandoverSteps } from './page/shell-handover/shell-handover';
+import { ImportCases } from './page/import-cases/import-cases';
+
+
 内核的页面只有一个 `index.html`：一个空的 `#root` 和一段脚本。它自己只会画一种东西——只读状态页；真正的界面由调用 `setShell` 的外壳插件接管。
 接管这件事跨主进程与页面两处、有严格的先后：外壳插件先登记页面要用的浏览器模块，再交出地址；页面先注入 importmap，再 import 外壳。
 

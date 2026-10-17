@@ -4,6 +4,9 @@ description: 启动器 apps/launcher 与打包脚本 installer/ 把 Electron 和
 full: true
 ---
 
+import { SeamMap } from '../_shared/seam-map/seam-map';
+
+
 安装包由两部分组成：启动器 `gwb-kernel-launcher`（源码在 `apps/launcher/src/`，入口文件 `main.ts`，不发布，只打进安装包）与打包脚本
 （`installer/`，入口文件 `installer/scripts/build.ps1`，不在 pnpm 工作区里）。
 
