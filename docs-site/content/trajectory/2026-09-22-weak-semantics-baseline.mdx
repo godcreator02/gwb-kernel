@@ -1,0 +1,36 @@
+---
+title: 弱语义基线 D1–D10：插件换代不做准入与回滚，依赖按三档声明，破坏性变更走发版列车
+born-at: 2026-09-22T12:00
+type: choice
+parent: [2026-09-07-gwb-kernel]
+label: 弱语义基线
+domain: 这条线
+---
+
+## 背景
+
+2026-09 上旬到 09-22，运行时实验仓 `D:\unitfolders\igldu-gwbkernel\gwb-runtime-lab` 做了 11 轮实验：每个插件一个进程、一个 Cordis 管全部插件、原生 ESM、依赖版本与成组升级、
+卸载后用 pnpm 重装、接入真实内核等。实验先收敛出一份完整的运行时协议（忙则拒绝、封门、排空、前端回执、激活回滚），再对照「这些机制真能挡住什么」裁剪，
+09-22 定下实施用的弱语义版本。这批决定当时只记在实验仓的文档站里，本站没有对应的卡；本卡在 2026-10-17 整理单元时补记。
+
+## 结论与边界
+
+- **D1–D4 换代不设防**：受影响的在途任务允许被打断，由插件在 disposer 里收尾；清理失败只记 warning、不阻断换代；不做忙拒绝、封门、排空、前端回执、激活回滚和失败锁；前端退场只靠整页刷新 `shell.reload`
+- **D5 peer 回到 npm 原意**：只在安装期解析并给出 `peerWarnings`，插件管理不在上面叠加准入
+- **D6 `gwb-plugin-api` 收成纯类型包**：随内核发版，运行时 helper 内联进各插件，运行时零 import
+- **D7 shared-react 与 tokens 取消**：react 与两张主题 CSS 归 shell 导出
+- **D8 importmap 由一次完整安装生成、重名直接拒**
+- **D9 依赖三档**：运行时值 import 写 peer；只 `import type` 但类型出现在导出面写 peer；只在内部用类型写 dev（`^` 范围）；纯服务调用不声明
+- **D10 破坏性变更走发版列车**：下游全部适配完再一起发，不让坏组合在 home 里过夜
+
+边界：D8 的做法后来被卡[importmap 写死](2026-09-25-static-importmap.md)取代；`gwb-plugin-api` 之后整个删掉、类型改从内核包的包根导出（见卡[词汇表并进内核](2026-09-24-vocab-into-kernel-package.md)）。其余几条仍是现状的依据。
+
+## 否掉的候选
+
+- **完整的强语义协议**（忙则拒绝、封门、排空、前端回执、激活回滚）：实验 04 的反例说明「await 正常返回」本身证明不了清理成功，门控只是更重的仪式；备份这类任务本来就要求崩溃安全，打断不增加新要求
+- **peer 范围当准入条件**：第一方锁步发版的生态里，范围只是橡皮图章，信号交给 pnpm 的 `peerWarnings` 与开发侧依赖审计
+
+## 依据
+
+实验仓 `D:\unitfolders\igldu-gwbkernel\gwb-runtime-lab`（本机仓，提交 `d3616b1` 记录 D1–D10 全部实施），实施规格在它的 `docs-site/content/docs/implementation-spec.mdx` 第 1 节；
+11 轮实验各自的结果在 `experiments/<编号>/results/`。
